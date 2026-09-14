@@ -146,7 +146,7 @@ form.tx input{width:90px}
   <div class="tab" id="t-set">
    <div class="sett">
     <b>Mum verisi kaynağı</b>
-    <select id="srcsel" onchange="setSrc()"><option value="yahoo">Yahoo Finance (tüm BIST, anahtarsız)</option><option value="td">Twelve Data (anahtar gerekir)</option></select>
+    <select id="srcsel" onchange="setSrc()"><option value="yahoo">Yahoo (kendi Cloudflare proxy'n)</option><option value="td">Twelve Data (anahtar gerekir)</option></select>
     <input id="tdkey" placeholder="Twelve Data apikey (opsiyonel)"><button onclick="saveKey()">Anahtarı kaydet</button>
     <button class="g" onclick="testSrc()">Veri kaynağını test et</button>
     <div id="srcmsg" class="note"></div>
@@ -187,7 +187,7 @@ if(S.ind.poc===undefined)S.ind.poc=1;
 $('#tdkey').value=S.key;$('#srcsel').value=S.src;
 function saveKey(){S.key=$('#tdkey').value.trim();LS.set('tdkey',S.key);S.ccache={};S.wsig={};loadCandles();alert('Kaydedildi')}
 function setSrc(){S.src=$('#srcsel').value;LS.set('src',S.src);S.ccache={};S.wsig={};loadCandles()}
-async function testSrc(){const m=$('#srcmsg');m.textContent='test ediliyor: THYAO 15dk...';try{const cs=await getBars('THYAO','15min');m.innerHTML='<b style="color:#26a69a">Calisiyor</b> — '+cs.length+' mum ('+(S.src==='td'?'Twelve Data':'Yahoo, servis #'+(PBEST+1))+')'}catch(e){m.innerHTML='<b style="color:#ef5350">Basarisiz</b> — '+e.message}}
+async function testSrc(){const m=$('#srcmsg');m.textContent='test ediliyor: THYAO 15dk...';try{const cs=await getBars('THYAO','15min');m.innerHTML='<b style="color:#26a69a">Calisiyor</b> — '+cs.length+' mum ('+(S.src==='td'?'Twelve Data':'Yahoo / kendi proxy')+')'}catch(e){m.innerHTML='<b style="color:#ef5350">Basarisiz</b> — '+e.message}}
 
 function mark(t){if(S.tab===t)draw(t);else S.dirty[t]=1}
 function draw(t){S.dirty[t]=0;if(t==='watch')renderWatch();else if(t==='scr')renderScreener();else if(t==='mov')renderMov();else if(t==='heat')renderHeat();else if(t==='quote')renderQuote();else if(t==='port')renderPort();else if(t==='alarm')renderAlarms();else if(t==='crypto')renderCrypto()}
@@ -253,34 +253,21 @@ async function refreshStrip(){
 
 /* Mum verisi */
 const YF={'1min':['1m','7d'],'5min':['5m','60d'],'15min':['15m','60d'],'1h':['60m','730d'],'4h':['60m','730d'],'1day':['1d','2y'],'1week':['1wk','5y'],'1month':['1mo','10y']};
-const PROXIES=[
- u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
- u=>'https://corsproxy.io/?url='+encodeURIComponent(u),
- u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u),
- u=>'https://cors.isomorphic-git.org/'+u,
- u=>'https://thingproxy.freeboard.io/fetch/'+u,
- u=>'https://api.cors.lol/?url='+encodeURIComponent(u)
-];
+const WORKER='https://bist.c8jmvhdm8c.workers.dev/';
 let PBEST=0;
-async function pfetch(url,ms=8000){
- const idx=PROXIES.map((_,i)=>i).sort((a,b)=>(a===PBEST?-1:b===PBEST?1:0));
- let last='';
- for(const i of idx){
-  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),ms);
-  try{
-   const r=await fetch(PROXIES[i](url),{signal:ctl.signal});
-   clearTimeout(t);
-   if(!r.ok)throw new Error('HTTP '+r.status);
-   const j=await r.json();
-   PBEST=i;return j;
-  }catch(e){clearTimeout(t);last=(e&&e.name==='AbortError')?'zaman asimi':(e.message||'hata')}
- }
- throw new Error('aktarim servisleri yanit vermedi ('+last+')');
+async function pfetch(sym,iv,rg,ms=10000){
+ const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),ms);
+ try{
+  const r=await fetch(WORKER+'?s='+encodeURIComponent(sym)+'&i='+iv+'&g='+rg,{signal:ctl.signal});
+  clearTimeout(t);
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  return await r.json();
+ }catch(e){clearTimeout(t);throw new Error((e&&e.name==='AbortError')?'zaman asimi':(e.message||'baglanti hatasi'))}
 }
 const isDaily=tf=>['1day','1week','1month'].includes(tf);
 async function yahooBars(sym,tf){
  const p=YF[tf]||['15m','60d'];
- const j=await pfetch('https://query1.finance.yahoo.com/v8/finance/chart/'+sym+'.IS?interval='+p[0]+'&range='+p[1]);
+ const j=await pfetch(sym+'.IS',p[0],p[1]);
  const res=j&&j.chart&&j.chart.result&&j.chart.result[0];
  if(!res)throw new Error('Yahoo verisi bos');
  const t=res.timestamp||[],q=res.indicators.quote[0];
