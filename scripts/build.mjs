@@ -19,18 +19,16 @@ const appConfig = {
 await rm(outputDir, { recursive: true, force: true });
 await mkdir(outputDir, { recursive: true });
 
-await cp(indexPath, path.join(outputDir, 'index.html'));
 await cp(vercelConfigPath, path.join(outputDir, 'vercel.json'));
 
 const sourceHtml = await readFile(indexPath, 'utf8');
-const outputHtml = sourceHtml.includes('./env-config.js')
-  ? sourceHtml
-  : sourceHtml.replace('<script>', '<script src="./env-config.js"></script>\n<script>');
+if (!sourceHtml.includes('<script src="./env-config.js"></script>')) {
+  throw new Error('index.html must load ./env-config.js before the application script');
+}
 
-await writeFile(path.join(outputDir, 'index.html'), outputHtml, 'utf8');
+await writeFile(path.join(outputDir, 'index.html'), sourceHtml, 'utf8');
 await writeFile(
   envConfigPath,
   `window.TRADING_TERMINAL_CONFIG = Object.freeze(${JSON.stringify(appConfig, null, 2)});\n`,
   'utf8'
 );
-

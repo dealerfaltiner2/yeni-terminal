@@ -5,9 +5,10 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
 
 const execFileAsync = promisify(execFile);
-const repoDir = '/home/runner/work/yeni-terminal/yeni-terminal';
+const repoDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 test('build generates deployable Vercel bundle with env config', async () => {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), 'yeni-terminal-build-'));

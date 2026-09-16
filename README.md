@@ -13,7 +13,7 @@ Uygulama build/deploy sırasında aşağıdaki değişkenleri kullanır:
 - `VERCEL_ORG_ID`: Vercel organization/team id
 - `VERCEL_PROJECT_ID`: Vercel project id
 
-Örnek değerler için `/home/runner/work/yeni-terminal/yeni-terminal/.env.example` dosyasını kullanın.
+Örnek değerler için `.env.example` dosyasını kullanın.
 
 ## Local production build
 
@@ -51,7 +51,7 @@ https://<vercel-proje-adiniz>.vercel.app
 
 ## GitHub Actions otomatik deploy
 
-`/home/runner/work/yeni-terminal/yeni-terminal/.github/workflows/ci-cd.yml` workflow'u:
+`.github/workflows/ci-cd.yml` workflow'u:
 
 1. `npm test` ile build konfigürasyonunu doğrular
 2. `npm run build` ile production bundle üretir
