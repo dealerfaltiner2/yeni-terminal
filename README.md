@@ -65,7 +65,41 @@ npm run mock-api  # Sadece mock API server
 npm test          # Mock API kontrat testleri
 npm run build     # Production build
 npm run preview   # Build çıktısını yerelde önizle
+npm run deploy    # Vercel'e production deploy (lokal)
+npm run deploy:ci # Vercel'e production deploy (CI)
 ```
+
+## Vercel dağıtım kurulumu
+
+Bu proje Vercel'de `dist/` çıktısı ile deploy edilir.
+
+1. Vercel CLI ve GitHub entegrasyonunu hazırlayın:
+   ```bash
+   npm install
+   npx vercel login
+   npx vercel link
+   ```
+2. Production bundle'ı oluşturun:
+   ```bash
+   npm run build
+   ```
+3. Lokalden production deploy edin:
+   ```bash
+   npm run deploy
+   ```
+
+### CI/CD (GitHub Actions → Vercel)
+
+`.github/workflows/ci-cd.yml` pipeline'ı:
+- PR ve `main` push'larında test + build doğrulaması yapar
+- `main` push'unda Vercel production deploy çalıştırır
+
+Repository Secrets olarak aşağıdakileri ekleyin:
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+
+Runtime endpoint ayarları `env-config.js` üzerinden yönetilir ve build sırasında `dist/env-config.js` içine taşınır.
 
 ## Başlatma doğrulaması
 

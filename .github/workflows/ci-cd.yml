@@ -1,129 +1,72 @@
 name: CI/CD Pipeline
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
+  push:
+    branches: [main]
 
 jobs:
-  lint:
-    name: Lint & Format Check
+  verify:
+    name: Test and Build
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run ESLint
-        run: npm run lint
-      
-      - name: Check Prettier
-        run: npx prettier --check "src/**/*.{js,css,html}"
 
-  test:
-    name: Unit & Integration Tests
-    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
-      
+          node-version: '20'
+          cache: npm
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run tests
-        run: npm test -- --coverage
-      
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
+        run: npm test
 
-  build:
-    name: Build & Bundle Analysis
-    runs-on: ubuntu-latest
-    needs: [lint, test]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
       - name: Build production bundle
         run: npm run build
-      
-      - name: Check bundle size
-        run: |
-          SIZE=$(du -sh dist | cut -f1)
-          echo "📦 Bundle size: $SIZE"
-      
+
       - name: Upload dist artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
 
-  security:
-    name: Security Audit
+  deploy_vercel:
+    name: Deploy to Vercel
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-      
-      - name: Run npm audit
-        run: npm audit --audit-level=moderate
-        continue-on-error: true
-      
-      - name: Check for vulnerabilities
-        run: npx snyk test --severity-threshold=high
-        continue-on-error: true
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-  performance:
-    name: Performance Check
-    runs-on: ubuntu-latest
-    needs: build
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v3
-        with:
-          name: dist
-      
-      - name: Analyze bundle
-        run: npx webpack-bundle-analyzer dist/stats.json
-        continue-on-error: true
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  deploy:
-    name: Deploy to GitHub Pages
-    runs-on: ubuntu-latest
-    needs: [build, security]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          name: dist
-          path: dist
-      
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          cname: bist-terminal.dev
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Ensure Vercel secrets are configured
+        run: |
+          test -n "$VERCEL_TOKEN" || (echo "Missing VERCEL_TOKEN secret" && exit 1)
+          test -n "$VERCEL_ORG_ID" || (echo "Missing VERCEL_ORG_ID secret" && exit 1)
+          test -n "$VERCEL_PROJECT_ID" || (echo "Missing VERCEL_PROJECT_ID secret" && exit 1)
+
+      - name: Pull Vercel environment
+        run: npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+
+      - name: Deploy to production
+        run: npm run deploy:ci

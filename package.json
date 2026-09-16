@@ -8,9 +8,12 @@
     "start": "concurrently -k \"npm:mock-api\" \"npm:dev\"",
     "dev": "vite",
     "mock-api": "node server.js",
-    "build": "vite build",
+    "build": "node scripts/build.mjs",
+    "build:vite": "vite build",
     "preview": "vite preview",
-    "test": "node --test"
+    "test": "node --test",
+    "deploy": "npm run build && npx vercel deploy --prod --yes",
+    "deploy:ci": "npm run build && npx vercel deploy --prod --yes --token \"$VERCEL_TOKEN\""
   },
   "keywords": [
     "trading",

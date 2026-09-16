@@ -246,7 +246,14 @@ form.tx input{width:84px}
 </div>
 <div id="pal" onclick="if(event.target.id==='pal')closePal()"><div id="palbox"><input id="palin" placeholder="Hisse veya kripto ara" autocomplete="off"><div id="pallist"></div></div></div>
 
+<script src="/env-config.js"></script>
 <script>
+const APP_CONFIG=window.__APP_CONFIG__||{};
+const WORKER_URL=APP_CONFIG.WORKER_URL||'https://bist.c8jmvhdm8c.workers.dev/';
+const TRADINGVIEW_SCANNER_BASE=APP_CONFIG.TRADINGVIEW_SCANNER_BASE||'https://scanner.tradingview.com';
+const TWELVE_DATA_BASE=APP_CONFIG.TWELVE_DATA_BASE||'https://api.twelvedata.com';
+const BINANCE_BASE=APP_CONFIG.BINANCE_BASE||'https://api.binance.com';
+const COINGECKO_BASE=APP_CONFIG.COINGECKO_BASE||'https://api.coingecko.com';
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const $=s=>document.querySelector(s);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -285,7 +292,7 @@ const BASE=['name','description','close','change','change_abs','open','high','lo
 const MTF=['close|15','EMA20|15','EMA50|15','EMA200|15','VWAP|15','RSI|15','ADX|15','ATR|15','BB.upper|15','BB.lower|15','Stoch.K|15','MACD.macd|15','MACD.signal|15','close|60','EMA20|60','RSI|60','close|240','EMA20|240','EMA50|240','RSI|240','ADX|240'];
 let COLS=BASE.concat(MTF),mtfOk=true;
 const FILT=[{left:'type',operation:'equal',right:'stock'},{left:'subtype',operation:'in_range',right:['common','foreign-issuer']}];
-async function tvScan(ep,body){const r=await fetch('https://scanner.tradingview.com/'+ep+'/scan',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});if(!r.ok)throw new Error('TV '+r.status);return r.json()}
+async function tvScan(ep,body){const r=await fetch(TRADINGVIEW_SCANNER_BASE+'/'+ep+'/scan',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});if(!r.ok)throw new Error('TV '+r.status);return r.json()}
 const rowObj=(row,cols)=>{const o={ticker:row.s};cols.forEach((c,i)=>o[c]=row.d[i]);return o};
 async function loadUniverse(){
  if(document.hidden)return;
@@ -473,12 +480,11 @@ async function deepScan(){
 }
 
 /* ================= mum verisi ================= */
-const WORKER='https://bist.c8jmvhdm8c.workers.dev/';
 const YFS={'1min':['1m','5d'],'5min':['5m','20d'],'15min':['15m','20d'],'1h':['60m','180d'],'4h':['60m','360d'],'1day':['1d','1y'],'1week':['1wk','3y'],'1month':['1mo','8y']};
 const YFL={'1min':['1m','7d'],'5min':['5m','60d'],'15min':['15m','60d'],'1h':['60m','730d'],'4h':['60m','730d'],'1day':['1d','5y'],'1week':['1wk','10y'],'1month':['1mo','20y']};
 async function pfetch(sym,iv,rg,ms=12000){
  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),ms);
- try{const r=await fetch(WORKER+'?s='+encodeURIComponent(sym)+'&i='+iv+'&g='+rg,{signal:ctl.signal});clearTimeout(t);
+ try{const r=await fetch(WORKER_URL+'?s='+encodeURIComponent(sym)+'&i='+iv+'&g='+rg,{signal:ctl.signal});clearTimeout(t);
   if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}
  catch(e){clearTimeout(t);throw new Error(e&&e.name==='AbortError'?'zaman asimi':(e.message||'baglanti'))}
 }
@@ -499,7 +505,7 @@ const TD={last:0};
 async function tdBars(sym,tf,n){
  if(!S.key)throw new Error('anahtar yok');
  const w=Math.max(0,TD.last+9000-Date.now());if(w)await sleep(w);TD.last=Date.now();
- const j=await (await fetch('https://api.twelvedata.com/time_series?symbol='+sym+':BIST&interval='+tf+'&outputsize='+(n||500)+'&order=ASC&apikey='+S.key)).json();
+ const j=await (await fetch(TWELVE_DATA_BASE+'/time_series?symbol='+sym+':BIST&interval='+tf+'&outputsize='+(n||500)+'&order=ASC&apikey='+S.key)).json();
  if(j.status==='error')throw new Error(j.message);
  return j.values.map(v=>{const d=v.datetime.split(' ')[0],tt=v.datetime.split(' ')[1];let time;if(isDaily(tf))time=d;else{const a=d.split('-').map(Number),b=tt.split(':').map(Number);time=Date.UTC(a[0],a[1]-1,a[2],b[0],b[1])/1000}return{time,open:+v.open,high:+v.high,low:+v.low,close:+v.close,volume:+v.volume||0}});
 }
@@ -584,17 +590,17 @@ async function refreshTick(){
 async function loadCrypto(){
  if(document.hidden)return;
  try{
-  const all=await (await fetch('https://api.binance.com/api/v3/ticker/24hr')).json();
+  const all=await (await fetch(BINANCE_BASE+'/api/v3/ticker/24hr')).json();
   const list=all.filter(x=>x.symbol.endsWith('USDT')&&!/UP|DOWN|BULL|BEAR|USDC|FDUSD|TUSD|BUSD/.test(x.symbol.slice(0,-4))).sort((a,b)=>b.quoteVolume-a.quoteVolume).slice(0,25);
   S.crypto=list.map(x=>({name:x.symbol.slice(0,-4),ticker:x.symbol,close:+x.lastPrice,change:+x.priceChangePercent,volume:+x.quoteVolume,spark:(S.cmap[x.symbol.slice(0,-4)]||{}).spark}));
   S.cmap={};S.crypto.forEach(c=>S.cmap[c.name]=c);
   mark('crypto');if(S.mode==='crypto')renderPx();
   const ns=S.crypto.filter(c=>!c.spark);
-  for(const c of ns){try{const k=await (await fetch('https://api.binance.com/api/v3/klines?symbol='+c.ticker+'&interval=4h&limit=42')).json();c.spark=k.map(r=>+r[4])}catch(e){}}
+  for(const c of ns){try{const k=await (await fetch(BINANCE_BASE+'/api/v3/klines?symbol='+c.ticker+'&interval=4h&limit=42')).json();c.spark=k.map(r=>+r[4])}catch(e){}}
   if(ns.length)mark('crypto');
  }catch(e){$('#cdom').textContent='Binance hata'}
 }
-async function loadDom(){if(document.hidden)return;try{const g=(await (await fetch('https://api.coingecko.com/api/v3/global')).json()).data,m=g.market_cap_percentage;$('#cdom').innerHTML='PD $'+big(g.total_market_cap.usd)+' · BTC '+nf(m.btc,1)+'% · ETH '+nf(m.eth,1)+'% · 24s <i class="'+cls(g.market_cap_change_percentage_24h_usd)+'">'+pct(g.market_cap_change_percentage_24h_usd)+'</i>'}catch(e){}}
+async function loadDom(){if(document.hidden)return;try{const g=(await (await fetch(COINGECKO_BASE+'/api/v3/global')).json()).data,m=g.market_cap_percentage;$('#cdom').innerHTML='PD $'+big(g.total_market_cap.usd)+' · BTC '+nf(m.btc,1)+'% · ETH '+nf(m.eth,1)+'% · 24s <i class="'+cls(g.market_cap_change_percentage_24h_usd)+'">'+pct(g.market_cap_change_percentage_24h_usd)+'</i>'}catch(e){}}
 function sparkSvg(a){if(!a||a.length<2)return'';const mn=Math.min.apply(null,a),mx=Math.max.apply(null,a),w=64,h=20;const p=a.map((v,i)=>(i/(a.length-1)*w).toFixed(1)+','+(h-(v-mn)/(mx-mn||1)*h).toFixed(1)).join(' ');return'<svg class="spark" viewBox="0 0 '+w+' '+h+'"><polyline fill="none" stroke="'+(a[a.length-1]>=a[0]?'#26a69a':'#ef5350')+'" stroke-width="1.5" points="'+p+'"/></svg>'}
 function renderCrypto(){$('#crypto').innerHTML='<table><tr><th>Coin</th><th>Fiyat</th><th>24s %</th><th>7g</th><th>Hacim $</th></tr>'+S.crypto.map(c=>'<tr class="row" onclick="selectSym(\''+c.name+'\',\'crypto\')"><td class="sym">'+c.name+'</td><td>'+nf(c.close,c.close<1?4:2)+'</td><td class="'+cls(c.change)+'">'+pct(c.change)+'</td><td>'+sparkSvg(c.spark)+'</td><td>'+big(c.volume)+'</td></tr>').join('')+'</table>'}
 function curQuote(){return S.mode==='crypto'?S.cmap[S.sym]:S.quotes[S.sym]}
@@ -792,7 +798,7 @@ async function loadCandles(){
  if(msg)msg.textContent='yükleniyor';
  try{
   let cs=[];
-  if(S.mode==='crypto'){const iv=TFS.filter(t=>t[0]===S.tf)[0][2];const kl=await (await fetch('https://api.binance.com/api/v3/klines?symbol='+S.sym+'USDT&interval='+iv+'&limit=400')).json();cs=kl.map(r=>({time:r[0]/1000,open:+r[1],high:+r[2],low:+r[3],close:+r[4],volume:+r[5]}))}
+  if(S.mode==='crypto'){const iv=TFS.filter(t=>t[0]===S.tf)[0][2];const kl=await (await fetch(BINANCE_BASE+'/api/v3/klines?symbol='+S.sym+'USDT&interval='+iv+'&limit=400')).json();cs=kl.map(r=>({time:r[0]/1000,open:+r[1],high:+r[2],low:+r[3],close:+r[4],volume:+r[5]}))}
   else{cs=await getBars(S.sym,S.tf);if(S.tf==='15min'){S.wsig[S.sym]=analyze(cs,S.sym);mark('watch')}}
   if(my!==seq)return;
   S.candles=cs;S.ccache[k]={t:Date.now(),d:cs};S.vp=S.mode==='bist'?volumeProfiles(cs):null;
