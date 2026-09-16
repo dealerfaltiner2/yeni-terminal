@@ -4,8 +4,8 @@ Trading Terminal, tarayıcıda çalışan tek sayfalı bir piyasa terminalidir. 
 
 ## Gereksinimler
 
-- Node.js 18+
-- npm 9+
+- Node.js 20.19+
+- npm 10+
 
 ## Kurulum
 
