@@ -20,7 +20,7 @@
       "destination": "/env-config.js"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!.*\\.).*)",
       "destination": "/index.html"
     }
   ]

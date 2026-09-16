@@ -73,17 +73,46 @@ jobs:
 
       - name: Load runtime endpoint variables
         run: |
-          if [ -f .vercel/.env.production.local ]; then
-            set -a
-            . .vercel/.env.production.local
-            set +a
-          fi
-          for key in WORKER_URL TRADINGVIEW_SCANNER_BASE TWELVE_DATA_BASE BINANCE_BASE COINGECKO_BASE; do
-            value="${!key}"
-            if [ -n "$value" ]; then
-              echo "$key=$value" >> "$GITHUB_ENV"
-            fi
-          done
+          node <<'NODE'
+          const fs = require('node:fs');
+          const allowed = new Set([
+            'WORKER_URL',
+            'TRADINGVIEW_SCANNER_BASE',
+            'TWELVE_DATA_BASE',
+            'BINANCE_BASE',
+            'COINGECKO_BASE'
+          ]);
+
+          const envFilePath = '.vercel/.env.production.local';
+          if (!fs.existsSync(envFilePath)) process.exit(0);
+
+          const output = [];
+          const lines = fs.readFileSync(envFilePath, 'utf8').split(/\r?\n/);
+          for (const rawLine of lines) {
+            const line = rawLine.trim();
+            if (!line || line.startsWith('#')) continue;
+
+            const separator = line.indexOf('=');
+            if (separator <= 0) continue;
+
+            const key = line.slice(0, separator).trim().replace(/^export\s+/, '');
+            if (!allowed.has(key)) continue;
+
+            let value = line.slice(separator + 1).trim();
+            if (
+              (value.startsWith('\"') && value.endsWith('\"')) ||
+              (value.startsWith(\"'\") && value.endsWith(\"'\"))
+            ) {
+              value = value.slice(1, -1);
+            }
+
+            output.push(`${key}=${value}`);
+          }
+
+          if (output.length) {
+            fs.appendFileSync(process.env.GITHUB_ENV, `${output.join('\\n')}\\n`);
+          }
+          NODE
 
       - name: Deploy to production
         run: npm run deploy:ci
