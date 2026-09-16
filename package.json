@@ -1,14 +1,16 @@
 {
   "name": "trading-terminal",
   "version": "1.0.0",
+  "private": true,
   "description": "Professional Trading Terminal Application",
-  "main": "index.html",
   "type": "module",
   "scripts": {
-    "start": "npx --yes http-server@14.1.1 . -p 8000 -c-1",
-    "dev": "npx --yes http-server@14.1.1 . -p 8000 -c-1 -o",
+    "start": "concurrently -k \"npm:mock-api\" \"npm:dev\"",
+    "dev": "vite",
+    "mock-api": "node server.js",
     "build": "node ./scripts/build.mjs",
-    "test": "node --test ./test/**/*.test.mjs",
+    "preview": "npx --yes http-server@14.1.1 ./dist -p 4173 -c-1 -o",
+    "test": "node --test",
     "deploy": "npx --yes vercel@59.18.0 pull --yes --environment=production && npm run build && npx --yes vercel@59.18.0 deploy --prod --yes ./dist",
     "deploy:ci": "npm run build && npx --yes vercel@59.18.0 deploy --prod --yes ./dist"
   },
@@ -24,9 +26,12 @@
   "dependencies": {
     "chart.js": "^3.9.1"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "vite": "^7.1.5"
+  },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=20.19.0"
   },
   "repository": {
     "type": "git",
@@ -35,5 +40,5 @@
   "bugs": {
     "url": "https://github.com/dealerfaltiner2/yeni-terminal/issues"
   },
-  "homepage": "https://github.com/dealerfaltiner2/yeni-terminal#readme"
+  "homepage": "https://dealerfaltiner2.github.io/yeni-terminal/"
 }

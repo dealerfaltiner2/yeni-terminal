@@ -22,11 +22,15 @@ await mkdir(outputDir, { recursive: true });
 await cp(vercelConfigPath, path.join(outputDir, 'vercel.json'));
 
 const sourceHtml = await readFile(indexPath, 'utf8');
+if (!sourceHtml.includes('<base href="./">')) {
+  throw new Error('index.html must define a relative <base href="./"> for subpath hosting');
+}
 if (!sourceHtml.includes('<script src="./env-config.js"></script>')) {
   throw new Error('index.html must load ./env-config.js before the application script');
 }
 
 await writeFile(path.join(outputDir, 'index.html'), sourceHtml, 'utf8');
+await writeFile(path.join(outputDir, '.nojekyll'), '', 'utf8');
 await writeFile(
   envConfigPath,
   `window.TRADING_TERMINAL_CONFIG = Object.freeze(${JSON.stringify(appConfig, null, 2)});\n`,

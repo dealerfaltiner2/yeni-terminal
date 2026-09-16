@@ -1,28 +1,33 @@
 # yeni-terminal
 
-Trading Terminal uygulaması Vercel'e static olarak deploy edilecek şekilde ayarlandı. Uygulama production'da HTTPS üzerinden açılır ve mobil tarayıcılarda kullanılabilir.
+Trading Terminal statik olarak yayınlanır ve mobil tarayıcıda doğrudan açılabilir. Repository hem sıfır kimlik bilgisi gerektiren GitHub Pages deploy'unu hem de isteğe bağlı Vercel pipeline'ını içerir.
 
-## Gerekli environment variables
+## Canlı URL
 
-Uygulama build/deploy sırasında aşağıdaki değişkenleri kullanır:
+- Birincil yayın: `https://dealerfaltiner2.github.io/yeni-terminal/`
+- İkincil yayın: Vercel workflow'u yalnızca gerekli `VERCEL_*` secrets tanımlıysa deploy çalıştırır.
 
-- `TRADING_TERMINAL_WORKER_URL`: BIST worker endpoint'i
-- `TRADING_TERMINAL_DEFAULT_DATA_SOURCE`: varsayılan veri kaynağı (`yahoo` veya `twelvedata`)
-- `VERCEL_TOKEN`: Vercel CLI token'ı
-- `VERCEL_ORG_ID`: Vercel organization/team id
-- `VERCEL_PROJECT_ID`: Vercel project id
-
-Örnek değerler için `.env.example` dosyasını kullanın.
-
-## Local production build
+## Local development
 
 ```bash
 npm install
-npm test
-npm run build
+npm start
 ```
 
-Build çıktısı `dist/` altında oluşur ve deploy için sadece gerekli dosyaları içerir:
+`npm start` şunları birlikte başlatır:
+
+- `server.js` mock API (`http://127.0.0.1:3001`)
+- Vite development server (`http://127.0.0.1:5173`)
+
+## Production build
+
+```bash
+npm test
+npm run build
+npm run preview
+```
+
+`npm run build`, `dist/` altında şu yayın paketini üretir:
 
 - `index.html`
 - `env-config.js`
@@ -30,53 +35,23 @@ Build çıktısı `dist/` altında oluşur ve deploy için sadece gerekli dosyal
 - `src/`
 - `styles/`
 - `backup-restore-v2.js`
+- `.nojekyll`
 
-## Vercel deploy
+Bundle göreli asset yolları kullandığı için GitHub Pages alt yolunda (`/yeni-terminal/`) ve Vercel root deploy'unda çalışır.
 
-İlk kullanımda projeyi Vercel hesabınıza bağlayın:
+## Ortam değişkenleri
 
-```bash
-npx vercel link
-```
+İsteğe bağlı build/deploy ayarları:
 
-Ardından production deploy alın:
-
-```bash
-npm run deploy
-```
-
-Deploy sonrası live link şu formatta olur:
-
-```text
-https://<vercel-proje-adiniz>.vercel.app
-```
-
-## GitHub Actions otomatik deploy
-
-`.github/workflows/ci-cd.yml` workflow'u:
-
-1. `npm test` ile build konfigürasyonunu doğrular
-2. `npm run build` ile fallback/default değerlerle production bundle mekanizmasını doğrular
-3. `main` branch'ine push geldiğinde Vercel'e production deploy yapar
-
-Not: Asıl production environment values yalnızca deploy job'unda secrets/variables üzerinden enjekte edilir.
-
-GitHub repository secrets/variables olarak şunları ekleyin:
-
+- `TRADING_TERMINAL_WORKER_URL`
+- `TRADING_TERMINAL_DEFAULT_DATA_SOURCE`
 - `VERCEL_TOKEN`
 - `VERCEL_ORG_ID`
 - `VERCEL_PROJECT_ID`
-- `TRADING_TERMINAL_WORKER_URL`
-- repository variable: `TRADING_TERMINAL_DEFAULT_DATA_SOURCE`
 
-`Twelve Data` anahtarını Vercel bundle içine gömmeyin; uygulamadaki alan artık yalnızca aktif oturum için kullanılır.
+Örnek değerler için `.env.example` dosyasını kullanın.
 
-## HTTPS / SSL
+## GitHub Actions deploy akışı
 
-Vercel production deployment'ları varsayılan olarak HTTPS ile yayınlanır. Deploy tamamlandıktan sonra aşağıdaki komutla doğrulayabilirsiniz:
-
-```bash
-curl -I https://<vercel-proje-adiniz>.vercel.app
-```
-
-Yanıtta `strict-transport-security` header'ı görünmelidir; bu ayar `vercel.json` içinde tanımlıdır.
+- `.github/workflows/ci-cd.yml`: `npm test` + `npm run build` doğrulaması yapar; `main` push'larında Vercel credentials varsa Vercel deploy çalıştırır.
+- `.github/workflows/github-pages.yml`: `main` push'larında aynı `dist/` bundle'ını build edip GitHub Pages'e deploy eder.

@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 const execFileAsync = promisify(execFile);
 const repoDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-test('build generates deployable Vercel bundle with env config', async () => {
+test('build generates deployable static bundle for Vercel and GitHub Pages', async () => {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), 'yeni-terminal-build-'));
 
   await execFileAsync('node', ['./scripts/build.mjs'], {
@@ -27,11 +27,13 @@ test('build generates deployable Vercel bundle with env config', async () => {
     readFile(path.join(tempDir, 'index.html'), 'utf8'),
     readFile(path.join(tempDir, 'env-config.js'), 'utf8'),
     readFile(path.join(tempDir, 'vercel.json'), 'utf8'),
+    stat(path.join(tempDir, '.nojekyll')),
     stat(path.join(tempDir, 'src')),
     stat(path.join(tempDir, 'styles')),
     stat(path.join(tempDir, 'backup-restore-v2.js'))
   ]);
 
+  assert.match(html, /<base href="\.\/">/);
   assert.match(html, /<script src="\.\/env-config\.js"><\/script>\s*<script>/);
   assert.doesNotMatch(html, /LS\.set\('tdkey'/);
   assert.doesNotMatch(html, /b\.tdkey/);
