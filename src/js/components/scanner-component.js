@@ -47,7 +47,7 @@ class ScannerComponent {
     this.searchInput = document.getElementById(options.searchInputId);
     this.minVolumeSelect = document.getElementById(options.minVolumeSelectId);
     this.countElement = document.getElementById(options.countElementId);
-    this.limit = options.limit || 250;
+    this.limit = options.limit ?? 250;
     this.stocks = [];
     this.filteredStocks = [];
 
@@ -106,7 +106,7 @@ class ScannerComponent {
 
     try {
       const result = await this.api.scanTurkeyStocks({
-        limit: options.limit || this.limit
+        limit: options.limit ?? this.limit
       });
       const stocks = Array.isArray(result) ? result : [];
 

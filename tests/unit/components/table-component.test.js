@@ -46,4 +46,21 @@ describe('TableComponent', () => {
     document.querySelectorAll('th')[0].click();
     expect(document.querySelector('tbody tr td').textContent).toBe('ASELS');
   });
+
+  test('renders node content from custom renderer', () => {
+    const badge = document.createElement('strong');
+    badge.textContent = 'Pozitif';
+
+    const table = new TableComponent('table', [
+      {
+        key: 'signal',
+        label: 'Sinyal',
+        render: () => badge
+      }
+    ]);
+
+    table.setData([{ signal: 'AL' }]);
+
+    expect(document.querySelector('tbody strong').textContent).toBe('Pozitif');
+  });
 });

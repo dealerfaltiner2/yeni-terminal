@@ -85,4 +85,24 @@ describe('ScannerComponent', () => {
     expect(document.querySelectorAll('tbody tr')).toHaveLength(1);
     expect(document.querySelector('tbody tr td').textContent).toBe('THYAO');
   });
+
+  test('renders error state and rethrows load failures', async () => {
+    const scanner = new ScannerComponent({
+      api: {
+        scanTurkeyStocks: jest.fn().mockRejectedValue(new Error('Tarama başarısız'))
+      },
+      tableContainerId: 'scanner-table',
+      sectorSelectId: 'sector',
+      searchInputId: 'query',
+      minVolumeSelectId: 'min-volume',
+      countElementId: 'count'
+    });
+
+    scanner.init();
+
+    await expect(scanner.loadStocks()).rejects.toThrow('Tarama başarısız');
+    expect(document.getElementById('scanner-table').textContent).toContain(
+      'Tarama başarısız'
+    );
+  });
 });
