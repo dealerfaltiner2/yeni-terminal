@@ -50,14 +50,10 @@ jobs:
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: npm
 
       - name: Download verified dist artifact
         uses: actions/download-artifact@v4
@@ -72,4 +68,4 @@ jobs:
           test -n "$VERCEL_PROJECT_ID" || (echo "Missing VERCEL_PROJECT_ID secret" && exit 1)
 
       - name: Deploy to production
-        run: npm run deploy:ci
+        run: npx vercel deploy ./dist --prod --yes

@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { cp, mkdir, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import process from 'node:process';
@@ -6,6 +6,8 @@ import process from 'node:process';
 const rootDir = process.cwd();
 const distDir = path.join(rootDir, 'dist');
 const distRuntimeConfigPath = path.join(distDir, 'env-config.js');
+const vercelConfigPath = path.join(rootDir, 'vercel.json');
+const distVercelConfigPath = path.join(distDir, 'vercel.json');
 
 const run = (command, args) =>
   new Promise((resolve, reject) => {
@@ -36,5 +38,6 @@ await writeFile(
   distRuntimeConfigPath,
   `window.__APP_CONFIG__ = Object.assign({}, window.__APP_CONFIG__ || {}, ${JSON.stringify(runtimeConfig, null, 2)});\n`
 );
+await cp(vercelConfigPath, distVercelConfigPath);
 
 console.log(`✅ Production bundle is ready in ${distDir}`);

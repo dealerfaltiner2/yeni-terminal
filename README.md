@@ -99,7 +99,7 @@ Repository Secrets olarak aşağıdakileri ekleyin:
 - `VERCEL_ORG_ID`
 - `VERCEL_PROJECT_ID`
 
-Runtime endpoint ayarları `env-config.js` üzerinden yönetilir ve build sırasında `dist/env-config.js` içine taşınır.
+Runtime endpoint ayarları build sırasında `WORKER_URL`, `TRADINGVIEW_SCANNER_BASE`, `TWELVE_DATA_BASE`, `BINANCE_BASE`, `COINGECKO_BASE` değişkenlerinden `dist/env-config.js` içine yazılır. Bu değişkenler verilmezse repository kökündeki `env-config.js` ile uyumlu default endpoint değerleri kullanılır.
 
 ## Başlatma doğrulaması
 
