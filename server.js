@@ -10,8 +10,6 @@ const apiBaseUrl = normalizeBasePath(process.env.API_BASE_URL);
 const port = Number(process.env.MOCK_API_PORT || 3001);
 const requestOrigin = 'http://127.0.0.1';
 const defaultSymbols = ['THYAO', 'ASELS', 'KCHOL', 'GARAN', 'TUPRS', 'EREGL', 'SISE', 'BIMAS'];
-const watchlist = new Set(defaultSymbols);
-const orders = [];
 
 const symbolCatalog = {
   THYAO: { symbol: 'THYAO', name: 'Turkish Airlines', sector: 'Transportation' },
@@ -116,7 +114,12 @@ const buildNews = (symbol) => {
   ];
 };
 
-const createMockServer = () => createServer(async (req, res) => {
+const createMockServer = () => {
+  const watchlist = new Set(defaultSymbols);
+  const orders = [];
+  let nextOrderId = 1;
+
+  return createServer(async (req, res) => {
   if (!req.url) {
     json(res, 400, { error: 'Missing request URL' });
     return;
@@ -202,7 +205,7 @@ const createMockServer = () => createServer(async (req, res) => {
     if (pathname === `${apiBaseUrl}/orders` && req.method === 'POST') {
       const body = await readBody(req);
       const order = {
-        id: orders.length + 1,
+        id: nextOrderId++,
         status: 'filled',
         createdAt: new Date().toISOString(),
         ...body
@@ -253,7 +256,8 @@ const createMockServer = () => createServer(async (req, res) => {
   } catch (error) {
     json(res, 500, { error: error.message || 'Unexpected server error' });
   }
-});
+  });
+};
 
 const startMockServer = ({ host = '127.0.0.1', listenPort = port } = {}) => {
   const server = createMockServer();

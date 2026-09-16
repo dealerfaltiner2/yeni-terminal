@@ -66,3 +66,42 @@ test('order delete reports success and not-found states accurately', async (t) =
   assert.equal(response.status, 404);
   assert.deepEqual(await response.json(), { success: false, orderId: 999 });
 });
+
+test('order IDs remain unique across create and delete cycles', async (t) => {
+  const server = await startServer();
+  t.after(() => stopServer(server));
+
+  const { port } = server.address();
+  const baseUrl = `http://127.0.0.1:${port}${apiBaseUrl}`;
+
+  const firstResponse = await fetch(`${baseUrl}/orders`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ symbol: 'THYAO', side: 'BUY', quantity: 1 })
+  });
+  assert.equal(firstResponse.status, 201);
+  const firstOrder = await firstResponse.json();
+
+  const secondResponse = await fetch(`${baseUrl}/orders`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ symbol: 'ASELS', side: 'BUY', quantity: 2 })
+  });
+  assert.equal(secondResponse.status, 201);
+  const secondOrder = await secondResponse.json();
+
+  await fetch(`${baseUrl}/orders/${firstOrder.id}`, { method: 'DELETE' });
+
+  const thirdResponse = await fetch(`${baseUrl}/orders`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ symbol: 'GARAN', side: 'BUY', quantity: 3 })
+  });
+  assert.equal(thirdResponse.status, 201);
+  const thirdOrder = await thirdResponse.json();
+
+  assert.deepEqual(
+    [firstOrder.id, secondOrder.id, thirdOrder.id],
+    [1, 2, 3]
+  );
+});
