@@ -1,203 +1,98 @@
 /**
  * Chart Component
- * TradingView Lightweight Charts wrapper
+ * Interactive financial charts with Chart.js
  */
 
 import { appLogger } from '../utils/logger.js';
 
 class ChartComponent {
   constructor(containerId, options = {}) {
+    this.containerId = containerId;
     this.container = document.getElementById(containerId);
-    if (!this.container) {
-      throw new Error(`Container ${containerId} not found`);
-    }
-
+    this.chart = null;
     this.options = {
-      layout: {
-        textColor: '#d1d5db',
-        background: { type: 'solid', color: '#1f2937' },
-        ...options.layout
+      type: 'line',
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false
+        }
       },
-      timeScale: {
-        timeVisible: true,
-        secondsVisible: false,
-        rightOffset: 12,
-        ...options.timeScale
+      scales: {
+        y: {
+          beginAtZero: false,
+          grid: {
+            color: 'rgba(0,0,0,0.1)'
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          }
+        }
       },
       ...options
     };
-
-    this.chart = null;
-    this.series = new Map();
-    this.markers = [];
   }
 
   /**
    * Initialize chart
    */
-  init() {
+  init(data) {
+    if (!this.container) {
+      appLogger.error('Chart container not found', { containerId: this.containerId });
+      return;
+    }
+
     try {
-      // Dynamically load TradingView charts library
-      if (!window.LightweightCharts) {
-        appLogger.warn('TradingView Lightweight Charts not loaded');
-        return;
+      if (!window.Chart) {
+        throw new Error('Chart.js library not loaded');
       }
 
-      const { createChart } = window.LightweightCharts;
-      this.chart = createChart(this.container, {
-        width: this.container.clientWidth,
-        height: this.container.clientHeight,
-        ...this.options
+      const ctx = this.container.getContext('2d');
+      this.chart = new window.Chart(ctx, {
+        ...this.options,
+        data
       });
 
-      // Handle resize
-      window.addEventListener('resize', () => this.resize());
-
-      appLogger.info('Chart initialized', { container: this.container.id });
+      appLogger.debug('Chart initialized', { containerId: this.containerId });
     } catch (error) {
       appLogger.error('Failed to initialize chart', { error: error.message });
     }
   }
 
   /**
-   * Add candlestick series
+   * Update chart data
    */
-  addCandlestickSeries(data, options = {}) {
+  updateData(data) {
     if (!this.chart) {
       appLogger.warn('Chart not initialized');
-      return null;
+      return;
     }
 
-    try {
-      const series = this.chart.addCandlestickSeries({
-        upColor: '#10b981',
-        downColor: '#ef4444',
-        borderUpColor: '#10b981',
-        borderDownColor: '#ef4444',
-        wickUpColor: '#10b981',
-        wickDownColor: '#ef4444',
-        ...options
-      });
-
-      series.setData(data);
-      this.series.set('candlestick', series);
-
-      appLogger.debug('Candlestick series added', { dataPoints: data.length });
-      return series;
-    } catch (error) {
-      appLogger.error('Failed to add candlestick series', { error: error.message });
-      return null;
-    }
+    this.chart.data = data;
+    this.chart.update();
+    appLogger.debug('Chart data updated');
   }
 
   /**
-   * Add line series
+   * Update chart options
    */
-  addLineSeries(data, options = {}) {
+  updateOptions(options) {
     if (!this.chart) {
-      return null;
+      appLogger.warn('Chart not initialized');
+      return;
     }
 
-    try {
-      const series = this.chart.addLineSeries({
-        color: '#3b82f6',
-        lineWidth: 2,
-        ...options
-      });
-
-      series.setData(data);
-      this.series.set('line', series);
-
-      return series;
-    } catch (error) {
-      appLogger.error('Failed to add line series', { error: error.message });
-      return null;
-    }
-  }
-
-  /**
-   * Add area series
-   */
-  addAreaSeries(data, options = {}) {
-    if (!this.chart) {
-      return null;
-    }
-
-    try {
-      const series = this.chart.addAreaSeries({
-        lineColor: '#8b5cf6',
-        topColor: 'rgba(139, 92, 246, 0.2)',
-        bottomColor: 'rgba(139, 92, 246, 0)',
-        lineWidth: 2,
-        ...options
-      });
-
-      series.setData(data);
-      this.series.set('area', series);
-
-      return series;
-    } catch (error) {
-      appLogger.error('Failed to add area series', { error: error.message });
-      return null;
-    }
-  }
-
-  /**
-   * Add marker
-   */
-  addMarker(time, position, options = {}) {
-    try {
-      const marker = {
-        time,
-        position,
-        color: '#f59e0b',
-        shape: 'circle',
-        text: '',
-        ...options
-      };
-
-      const series = this.series.get('candlestick') || this.series.get('line');
-      if (series) {
-        series.setMarkers([...this.markers, marker]);
-        this.markers.push(marker);
-      }
-    } catch (error) {
-      appLogger.error('Failed to add marker', { error: error.message });
-    }
-  }
-
-  /**
-   * Fit content
-   */
-  fitContent() {
-    if (this.chart) {
-      this.chart.timeScale().fitContent();
-    }
-  }
-
-  /**
-   * Resize chart
-   */
-  resize() {
-    if (this.chart && this.container) {
-      this.chart.applyOptions({
-        width: this.container.clientWidth,
-        height: this.container.clientHeight
-      });
-    }
-  }
-
-  /**
-   * Clear all series
-   */
-  clear() {
-    if (this.chart) {
-      this.series.forEach((series) => {
-        this.chart.removeSeries(series);
-      });
-      this.series.clear();
-      this.markers = [];
-    }
+    Object.assign(this.chart.options, options);
+    this.chart.update();
+    appLogger.debug('Chart options updated');
   }
 
   /**
@@ -205,18 +100,128 @@ class ChartComponent {
    */
   destroy() {
     if (this.chart) {
-      this.chart.remove();
+      this.chart.destroy();
       this.chart = null;
-      this.series.clear();
-      appLogger.info('Chart destroyed');
+      appLogger.debug('Chart destroyed');
     }
   }
 
   /**
-   * Get chart instance
+   * Create candlestick data
    */
-  getChart() {
-    return this.chart;
+  createCandlestickData(candlesticks) {
+    const labels = [];
+    const opens = [];
+    const highs = [];
+    const lows = [];
+    const closes = [];
+
+    candlesticks.forEach(candle => {
+      labels.push(new Date(candle.time).toLocaleDateString());
+      opens.push(candle.open);
+      highs.push(candle.high);
+      lows.push(candle.low);
+      closes.push(candle.close);
+    });
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'High',
+          data: highs,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          borderWidth: 1,
+          tension: 0.4
+        },
+        {
+          label: 'Low',
+          data: lows,
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          borderWidth: 1,
+          tension: 0.4
+        },
+        {
+          label: 'Close',
+          data: closes,
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderWidth: 2,
+          tension: 0.4
+        }
+      ]
+    };
+  }
+
+  /**
+   * Create line chart data
+   */
+  createLineData(label, data, color = '#3b82f6') {
+    return {
+      labels: data.map((item, index) => index),
+      datasets: [
+        {
+          label,
+          data,
+          borderColor: color,
+          backgroundColor: `${color}20`,
+          borderWidth: 2,
+          tension: 0.4,
+          fill: true
+        }
+      ]
+    };
+  }
+
+  /**
+   * Create bar chart data
+   */
+  createBarData(labels, values, color = '#3b82f6') {
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Value',
+          data: values,
+          backgroundColor: color,
+          borderColor: color,
+          borderWidth: 1
+        }
+      ]
+    };
+  }
+
+  /**
+   * Set chart type
+   */
+  setChartType(type) {
+    if (this.chart) {
+      this.chart.config.type = type;
+      this.chart.update();
+      appLogger.debug('Chart type changed', { type });
+    }
+  }
+
+  /**
+   * Export as image
+   */
+  exportAsImage(filename = 'chart.png') {
+    if (!this.chart) {
+      appLogger.warn('Chart not initialized');
+      return;
+    }
+
+    try {
+      const link = document.createElement('a');
+      link.href = this.chart.canvas.toDataURL();
+      link.download = filename;
+      link.click();
+      appLogger.info('Chart exported', { filename });
+    } catch (error) {
+      appLogger.error('Failed to export chart', { error: error.message });
+    }
   }
 }
 
