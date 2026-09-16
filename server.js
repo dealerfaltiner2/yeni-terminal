@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { fileURLToPath } from 'node:url';
 
 const normalizeBasePath = (value) => {
   if (!value || value === '/') return '/api';
@@ -7,6 +8,7 @@ const normalizeBasePath = (value) => {
 
 const apiBaseUrl = normalizeBasePath(process.env.API_BASE_URL);
 const port = Number(process.env.MOCK_API_PORT || 3001);
+const requestOrigin = 'http://127.0.0.1';
 const defaultSymbols = ['THYAO', 'ASELS', 'KCHOL', 'GARAN', 'TUPRS', 'EREGL', 'SISE', 'BIMAS'];
 const watchlist = new Set(defaultSymbols);
 const orders = [];
@@ -114,7 +116,7 @@ const buildNews = (symbol) => {
   ];
 };
 
-const server = createServer(async (req, res) => {
+const createMockServer = () => createServer(async (req, res) => {
   if (!req.url) {
     json(res, 400, { error: 'Missing request URL' });
     return;
@@ -125,7 +127,7 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  const url = new URL(req.url, `http://${req.headers.host || '127.0.0.1'}`);
+  const url = new URL(req.url, requestOrigin);
   const pathname = url.pathname;
 
   try {
@@ -253,6 +255,19 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(port, '127.0.0.1', () => {
-  console.log(`Mock API listening on http://127.0.0.1:${port}${apiBaseUrl}`);
-});
+const startMockServer = ({ host = '127.0.0.1', listenPort = port } = {}) => {
+  const server = createMockServer();
+
+  return new Promise((resolve) => {
+    server.listen(listenPort, host, () => {
+      console.log(`Mock API listening on http://${host}:${listenPort}${apiBaseUrl}`);
+      resolve(server);
+    });
+  });
+};
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  await startMockServer();
+}
+
+export { apiBaseUrl, createMockServer, startMockServer };

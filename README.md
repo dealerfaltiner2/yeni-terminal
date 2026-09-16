@@ -62,6 +62,7 @@ PORT=5173
 ```bash
 npm run dev       # Sadece Vite development server
 npm run mock-api  # Sadece mock API server
+npm test          # Mock API kontrat testleri
 npm run build     # Production build
 npm run preview   # Build çıktısını yerelde önizle
 ```
@@ -79,4 +80,4 @@ Kurulumdan sonra aşağıdaki kontroller beklenir:
 ## Notlar
 
 - Ana uygulama halen `index.html` içindeki mevcut arayüzü kullanır.
-- Mock API geliştirme ve entegrasyon testleri için yerel, deterministik veri sağlar.
+- Mock API geliştirme ve hafif API kontrat testleri için yerel, deterministik veri sağlar.

@@ -10,7 +10,7 @@
     "mock-api": "node server.js",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "echo \"No tests configured\""
+    "test": "node --test"
   },
   "keywords": [
     "trading",
