@@ -213,7 +213,7 @@ form.tx input{width:84px}
     <b>MUM VERİSİ</b>
     <select id="srcsel" onchange="setSrc()"><option value="yahoo">Yahoo (kendi proxy'n)</option><option value="td">Twelve Data</option></select>
     <select id="barlim" onchange="setBarLim()"><option value="short">Grafik geçmişi: kısa (hızlı)</option><option value="long">Grafik geçmişi: uzun</option></select>
-    <input id="tdkey" placeholder="Twelve Data apikey (opsiyonel)"><button class="g" onclick="saveKey()">Anahtarı kaydet</button>
+    <input id="tdkey" placeholder="Twelve Data apikey (opsiyonel, oturumluk)"><button class="g" onclick="saveKey()">Anahtarı kaydet</button>
     <button class="g" onclick="testSrc()">Veri kaynağını test et</button>
     <div id="srcmsg" class="note"></div>
     <b>SERMAYE</b>
@@ -250,7 +250,6 @@ form.tx input{width:84px}
 <script>
 const APP_CONFIG=Object.freeze(window.TRADING_TERMINAL_CONFIG||{});
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-try{localStorage.removeItem('tdkey')}catch(e){}
 const $=s=>document.querySelector(s);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const nf=(n,d=2)=>(n==null||isNaN(n))?'-':Number(n).toLocaleString('tr-TR',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -265,7 +264,7 @@ const saveWL=()=>LS.set('wl',WL);
 
 const S={sym:LS.get('sym','THYAO'),mode:LS.get('mode','bist'),tf:LS.get('tf','15min'),ct:'candle',
  ind:LS.get('ind',{ema20:1,ema50:1,ema200:0,vwap:0,bb:0,poc:1}),lower:'rsi',
-tx:LS.get('tx',[]),jr:LS.get('jr',[]),key:APP_CONFIG.twelveDataApiKey||'',src:LS.get('src',APP_CONFIG.defaultDataSource||'yahoo'),blim:LS.get('blim','short'),
+tx:LS.get('tx',[]),jr:LS.get('jr',[]),key:'',src:LS.get('src',APP_CONFIG.defaultDataSource||'yahoo'),blim:LS.get('blim','short'),
  cap:LS.get('cap',100000),rskp:LS.get('rskp',1),alarms:LS.get('alarms',[]),
  uni:[],umap:{},sectors:new Set(),quotes:{},crypto:[],cmap:{},candles:[],ccache:{},wsig:{},vp:null,deep:{},
  sort:{k:'market_cap_basic',d:-1},mov:'gain',box:null,plines:[],tab:'op',limit:100,dirty:{},

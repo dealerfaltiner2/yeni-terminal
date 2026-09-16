@@ -7,7 +7,6 @@ Trading Terminal uygulaması Vercel'e static olarak deploy edilecek şekilde aya
 Uygulama build/deploy sırasında aşağıdaki değişkenleri kullanır:
 
 - `TRADING_TERMINAL_WORKER_URL`: BIST worker endpoint'i
-- `TRADING_TERMINAL_TWELVEDATA_API_KEY`: opsiyonel Twelve Data API anahtarı
 - `TRADING_TERMINAL_DEFAULT_DATA_SOURCE`: varsayılan veri kaynağı (`yahoo` veya `twelvedata`)
 - `VERCEL_TOKEN`: Vercel CLI token'ı
 - `VERCEL_ORG_ID`: Vercel organization/team id
@@ -65,8 +64,9 @@ GitHub repository secrets/variables olarak şunları ekleyin:
 - `VERCEL_ORG_ID`
 - `VERCEL_PROJECT_ID`
 - `TRADING_TERMINAL_WORKER_URL`
-- `TRADING_TERMINAL_TWELVEDATA_API_KEY`
 - repository variable: `TRADING_TERMINAL_DEFAULT_DATA_SOURCE`
+
+`Twelve Data` anahtarını Vercel bundle içine gömmeyin; uygulamadaki alan artık yalnızca aktif oturum için kullanılır.
 
 ## HTTPS / SSL
 

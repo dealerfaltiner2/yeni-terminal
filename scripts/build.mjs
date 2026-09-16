@@ -12,7 +12,6 @@ const appConfig = {
   workerUrl:
     process.env.TRADING_TERMINAL_WORKER_URL ||
     'https://bist.c8jmvhdm8c.workers.dev/',
-  twelveDataApiKey: process.env.TRADING_TERMINAL_TWELVEDATA_API_KEY || '',
   defaultDataSource: process.env.TRADING_TERMINAL_DEFAULT_DATA_SOURCE || 'yahoo'
 };
 
