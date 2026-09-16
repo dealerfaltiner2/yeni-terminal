@@ -92,7 +92,7 @@ Bu proje Vercel'de `dist/` çıktısı ile deploy edilir.
 
 `.github/workflows/ci-cd.yml` pipeline'ı:
 - PR ve `main` push'larında test + build doğrulaması yapar
-- `main` push'unda Vercel production deploy çalıştırır
+- `main` push'unda doğrulanmış `dist/` artifact'ını Vercel production'a deploy eder
 
 Repository Secrets olarak aşağıdakileri ekleyin:
 - `VERCEL_TOKEN`

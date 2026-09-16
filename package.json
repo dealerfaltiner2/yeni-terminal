@@ -12,8 +12,8 @@
     "build:vite": "vite build",
     "preview": "vite preview",
     "test": "node --test",
-    "deploy": "npx vercel deploy --prod --yes",
-    "deploy:ci": "npx vercel deploy --prod --yes --token \"$VERCEL_TOKEN\""
+    "deploy": "npm run build && npx vercel deploy ./dist --prod --yes",
+    "deploy:ci": "npx vercel deploy ./dist --prod --yes --token \"$VERCEL_TOKEN\""
   },
   "keywords": [
     "trading",
