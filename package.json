@@ -12,8 +12,8 @@
     "build:vite": "vite build",
     "preview": "vite preview",
     "test": "node --test",
-    "deploy": "npm run build && npx vercel deploy ./dist --prod --yes",
-    "deploy:ci": "npx vercel deploy ./dist --prod --yes"
+    "deploy": "npm run build && vercel deploy ./dist --prod --yes",
+    "deploy:ci": "vercel deploy ./dist --prod --yes"
   },
   "keywords": [
     "trading",
@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
+    "vercel": "^59.18.0",
     "vite": "^7.1.5"
   },
   "engines": {
