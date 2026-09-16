@@ -9,7 +9,8 @@
     "dev": "npx --yes http-server@14.1.1 . -p 8000 -c-1 -o",
     "build": "node ./scripts/build.mjs",
     "test": "node --test ./test/**/*.test.mjs",
-    "deploy": "npx --yes vercel@59.18.0 pull --yes --environment=production && npm run build && npx --yes vercel@59.18.0 deploy --prod --yes ./dist"
+    "deploy": "npx --yes vercel@59.18.0 pull --yes --environment=production && npm run build && npx --yes vercel@59.18.0 deploy --prod --yes ./dist",
+    "deploy:ci": "npm run build && npx --yes vercel@59.18.0 deploy --prod --yes ./dist"
   },
   "keywords": [
     "trading",

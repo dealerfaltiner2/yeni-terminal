@@ -27,6 +27,9 @@ Build çıktısı `dist/` altında oluşur ve deploy için sadece gerekli dosyal
 - `index.html`
 - `env-config.js`
 - `vercel.json`
+- `src/`
+- `styles/`
+- `backup-restore-v2.js`
 
 ## Vercel deploy
 
