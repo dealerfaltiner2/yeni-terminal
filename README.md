@@ -100,7 +100,6 @@ Repository Secrets olarak aşağıdakileri ekleyin:
 - `VERCEL_PROJECT_ID`
 
 Runtime endpoint ayarları `env-config.js` üzerinden yönetilir ve build sırasında `dist/env-config.js` içine taşınır.
-İsterseniz Vercel Environment Variables ile şu anahtarları override edebilirsiniz: `WORKER_URL`, `TRADINGVIEW_SCANNER_BASE`, `TWELVE_DATA_BASE`, `BINANCE_BASE`, `COINGECKO_BASE`.
 
 ## Başlatma doğrulaması
 
