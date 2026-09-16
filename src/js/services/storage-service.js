@@ -1,256 +1,193 @@
 /**
  * Storage Service
- * Abstraction for LocalStorage and IndexedDB
+ * Unified storage abstraction for localStorage and sessionStorage
  */
 
 import { serviceLogger } from '../utils/logger.js';
-import { StorageError } from '../utils/error-handler.js';
 
 class StorageService {
-  constructor() {
-    this.localStorage = window.localStorage;
-    this.storeName = 'bist-terminal';
-    this.dbVersion = 1;
-    this.db = null;
-    this.initPromise = this.initIndexedDB();
+  constructor(type = 'local') {
+    this.type = type;
+    this.storage = type === 'local' ? localStorage : sessionStorage;
+    this.prefix = 'app_';
+    this.listeners = new Map();
   }
 
   /**
-   * Initialize IndexedDB
+   * Get storage key
    */
-  initIndexedDB() {
-    return new Promise((resolve, reject) => {
-      try {
-        const request = indexedDB.open(this.storeName, this.dbVersion);
-
-        request.onerror = () => {
-          serviceLogger.warn('IndexedDB init failed, using localStorage only');
-          resolve(null);
-        };
-
-        request.onsuccess = () => {
-          this.db = request.result;
-          serviceLogger.info('IndexedDB initialized');
-          resolve(this.db);
-        };
-
-        request.onupgradeneeded = (event) => {
-          const db = event.target.result;
-
-          // Create object stores
-          if (!db.objectStoreNames.contains('trades')) {
-            db.createObjectStore('trades', { keyPath: 'id', autoIncrement: true });
-          }
-
-          if (!db.objectStoreNames.contains('journal')) {
-            db.createObjectStore('journal', { keyPath: 'id', autoIncrement: true });
-          }
-
-          if (!db.objectStoreNames.contains('cache')) {
-            db.createObjectStore('cache', { keyPath: 'key' });
-          }
-
-          serviceLogger.info('IndexedDB schema updated');
-        };
-      } catch (error) {
-        serviceLogger.warn('IndexedDB not available');
-        resolve(null);
-      }
-    });
+  getKey(key) {
+    return `${this.prefix}${key}`;
   }
 
   /**
-   * Set item in localStorage
+   * Set value
    */
-  setItem(key, value) {
+  set(key, value) {
     try {
-      this.localStorage.setItem(key, JSON.stringify(value));
-      serviceLogger.debug('LocalStorage item set', { key });
+      const storageKey = this.getKey(key);
+      const serialized = JSON.stringify({
+        value,
+        timestamp: Date.now()
+      });
+      this.storage.setItem(storageKey, serialized);
+      this.notifyListeners(key, value);
+      serviceLogger.debug('Value stored', { key, type: this.type });
     } catch (error) {
-      throw new StorageError('LocalStorage yazma hatası', 'WRITE', { key, error: error.message });
+      serviceLogger.error('Failed to store value', { key, error: error.message });
+      throw error;
     }
   }
 
   /**
-   * Get item from localStorage
+   * Get value
    */
-  getItem(key, defaultValue = null) {
+  get(key, defaultValue = null) {
     try {
-      const item = this.localStorage.getItem(key);
-      if (item === null) {
+      const storageKey = this.getKey(key);
+      const item = this.storage.getItem(storageKey);
+
+      if (!item) {
         return defaultValue;
       }
-      return JSON.parse(item);
+
+      const parsed = JSON.parse(item);
+      return parsed.value;
     } catch (error) {
-      serviceLogger.warn('Failed to parse localStorage item', { key });
+      serviceLogger.warn('Failed to retrieve value', { key, error: error.message });
       return defaultValue;
     }
   }
 
   /**
-   * Remove item from localStorage
+   * Remove value
    */
-  removeItem(key) {
+  remove(key) {
     try {
-      this.localStorage.removeItem(key);
-      serviceLogger.debug('LocalStorage item removed', { key });
+      const storageKey = this.getKey(key);
+      this.storage.removeItem(storageKey);
+      this.notifyListeners(key, null);
+      serviceLogger.debug('Value removed', { key });
     } catch (error) {
-      throw new StorageError('LocalStorage silme hatası', 'DELETE', { key });
+      serviceLogger.error('Failed to remove value', { key, error: error.message });
+      throw error;
     }
   }
 
   /**
-   * Clear all localStorage
+   * Clear all storage
    */
   clear() {
     try {
-      this.localStorage.clear();
-      serviceLogger.info('LocalStorage cleared');
+      const keys = Object.keys(this.storage)
+        .filter(k => k.startsWith(this.prefix))
+        .map(k => k.replace(this.prefix, ''));
+
+      keys.forEach(key => this.remove(key));
+      serviceLogger.info('Storage cleared');
     } catch (error) {
-      throw new StorageError('LocalStorage temizleme hatası', 'CLEAR', {});
+      serviceLogger.error('Failed to clear storage', { error: error.message });
+      throw error;
     }
   }
 
   /**
-   * Add item to IndexedDB
+   * Get all keys
    */
-  async addToIDB(storeName, value) {
-    await this.initPromise;
-
-    if (!this.db) {
-      throw new StorageError('IndexedDB kullanılamıyor', 'ADD', { storeName });
-    }
-
-    return new Promise((resolve, reject) => {
-      try {
-        const transaction = this.db.transaction([storeName], 'readwrite');
-        const store = transaction.objectStore(storeName);
-        const request = store.add(value);
-
-        request.onsuccess = () => {
-          serviceLogger.debug('IndexedDB item added', { storeName, id: request.result });
-          resolve(request.result);
-        };
-
-        request.onerror = () => {
-          reject(new StorageError('IndexedDB yazma hatası', 'ADD', { storeName }));
-        };
-      } catch (error) {
-        reject(new StorageError('IndexedDB işlem hatası', 'ADD', { storeName, error: error.message }));
+  keys() {
+    const keys = [];
+    for (let i = 0; i < this.storage.length; i++) {
+      const key = this.storage.key(i);
+      if (key && key.startsWith(this.prefix)) {
+        keys.push(key.replace(this.prefix, ''));
       }
+    }
+    return keys;
+  }
+
+  /**
+   * Get all values
+   */
+  entries() {
+    const entries = {};
+    this.keys().forEach(key => {
+      entries[key] = this.get(key);
     });
+    return entries;
   }
 
   /**
-   * Get all items from IndexedDB
+   * Has key
    */
-  async getAllFromIDB(storeName) {
-    await this.initPromise;
-
-    if (!this.db) {
-      return [];
-    }
-
-    return new Promise((resolve, reject) => {
-      try {
-        const transaction = this.db.transaction([storeName], 'readonly');
-        const store = transaction.objectStore(storeName);
-        const request = store.getAll();
-
-        request.onsuccess = () => {
-          serviceLogger.debug('IndexedDB items retrieved', { storeName, count: request.result.length });
-          resolve(request.result);
-        };
-
-        request.onerror = () => {
-          reject(new StorageError('IndexedDB okuma hatası', 'GET_ALL', { storeName }));
-        };
-      } catch (error) {
-        reject(new StorageError('IndexedDB işlem hatası', 'GET_ALL', { storeName }));
-      }
-    });
+  has(key) {
+    return this.get(key) !== null;
   }
 
   /**
-   * Clear IndexedDB store
+   * Watch value changes
    */
-  async clearIDBStore(storeName) {
-    await this.initPromise;
-
-    if (!this.db) {
-      return;
+  watch(key, listener) {
+    if (!this.listeners.has(key)) {
+      this.listeners.set(key, []);
     }
+    this.listeners.get(key).push(listener);
 
-    return new Promise((resolve, reject) => {
-      try {
-        const transaction = this.db.transaction([storeName], 'readwrite');
-        const store = transaction.objectStore(storeName);
-        const request = store.clear();
-
-        request.onsuccess = () => {
-          serviceLogger.info('IndexedDB store cleared', { storeName });
-          resolve();
-        };
-
-        request.onerror = () => {
-          reject(new StorageError('IndexedDB temizleme hatası', 'CLEAR', { storeName }));
-        };
-      } catch (error) {
-        reject(new StorageError('IndexedDB işlem hatası', 'CLEAR', { storeName }));
-      }
-    });
-  }
-
-  /**
-   * Export all data
-   */
-  async exportData() {
-    const data = {
-      localStorage: {},
-      indexedDB: {}
-    };
-
-    // Export localStorage
-    for (let i = 0; i < this.localStorage.length; i++) {
-      const key = this.localStorage.key(i);
-      data.localStorage[key] = this.getItem(key);
-    }
-
-    // Export IndexedDB if available
-    if (this.db) {
-      data.indexedDB.trades = await this.getAllFromIDB('trades');
-      data.indexedDB.journal = await this.getAllFromIDB('journal');
-    }
-
-    return data;
-  }
-
-  /**
-   * Import data
-   */
-  async importData(data) {
-    // Import localStorage
-    if (data.localStorage) {
-      Object.entries(data.localStorage).forEach(([key, value]) => {
-        this.setItem(key, value);
-      });
-    }
-
-    // Import IndexedDB if available
-    if (data.indexedDB && this.db) {
-      if (data.indexedDB.trades) {
-        await this.clearIDBStore('trades');
-        for (const trade of data.indexedDB.trades) {
-          await this.addToIDB('trades', trade);
+    return () => {
+      const listeners = this.listeners.get(key);
+      if (listeners) {
+        const index = listeners.indexOf(listener);
+        if (index > -1) {
+          listeners.splice(index, 1);
         }
       }
+    };
+  }
+
+  /**
+   * Notify listeners
+   */
+  notifyListeners(key, value) {
+    const listeners = this.listeners.get(key);
+    if (listeners) {
+      listeners.forEach(listener => {
+        try {
+          listener(value);
+        } catch (error) {
+          serviceLogger.error('Error in storage listener', { key, error: error.message });
+        }
+      });
+    }
+  }
+
+  /**
+   * Set with expiry
+   */
+  setWithExpiry(key, value, expiryMs) {
+    const item = {
+      value,
+      expiry: Date.now() + expiryMs
+    };
+    this.set(key, item);
+  }
+
+  /**
+   * Get with expiry check
+   */
+  getWithExpiry(key, defaultValue = null) {
+    const item = this.get(key);
+    if (!item) return defaultValue;
+
+    if (item.expiry && Date.now() > item.expiry) {
+      this.remove(key);
+      return defaultValue;
     }
 
-    serviceLogger.info('Data imported successfully');
+    return item.value;
   }
 }
 
-// Singleton instance
-const storageService = new StorageService();
+// Global storage instances
+const storageService = new StorageService('local');
+const sessionStorageService = new StorageService('session');
 
-export { StorageService, storageService };
+export { StorageService, storageService, sessionStorageService };
