@@ -15,6 +15,21 @@ const numberFormatter = new Intl.NumberFormat('tr-TR', {
 const wholeNumberFormatter = new Intl.NumberFormat('tr-TR', {
   maximumFractionDigits: 0
 });
+const decimalFormatters = new Map();
+
+function getNumberFormatter(digits) {
+  if (!decimalFormatters.has(digits)) {
+    decimalFormatters.set(
+      digits,
+      new Intl.NumberFormat('tr-TR', {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      })
+    );
+  }
+
+  return decimalFormatters.get(digits);
+}
 
 class ScannerComponent {
   constructor(options = {}) {
@@ -90,9 +105,10 @@ class ScannerComponent {
     this.table.setLoading(true);
 
     try {
-      const stocks = await this.api.scanTurkeyStocks({
+      const result = await this.api.scanTurkeyStocks({
         limit: options.limit || this.limit
       });
+      const stocks = Array.isArray(result) ? result : [];
 
       this.stocks = stocks.map((stock) => this.normalizeStock(stock));
       this.updateSectorOptions();
@@ -183,10 +199,7 @@ class ScannerComponent {
       return '-';
     }
 
-    return new Intl.NumberFormat('tr-TR', {
-      minimumFractionDigits: digits,
-      maximumFractionDigits: digits
-    }).format(Number(value));
+    return getNumberFormatter(digits).format(Number(value));
   }
 
   formatWholeNumber(value) {

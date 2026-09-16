@@ -78,6 +78,7 @@ describe('ScannerComponent', () => {
     await scanner.loadStocks();
 
     document.getElementById('query').value = 'thy';
+    document.getElementById('query').dispatchEvent(new Event('input'));
     document.getElementById('min-volume').value = '100000000';
     document.getElementById('min-volume').dispatchEvent(new Event('change'));
 

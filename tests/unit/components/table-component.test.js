@@ -38,7 +38,12 @@ describe('TableComponent', () => {
     ]);
 
     document.querySelectorAll('th')[1].click();
-
     expect(document.querySelector('tbody tr td').textContent).toBe('THYAO');
+
+    document.querySelectorAll('th')[1].click();
+    expect(document.querySelector('tbody tr td').textContent).toBe('ASELS');
+
+    document.querySelectorAll('th')[0].click();
+    expect(document.querySelector('tbody tr td').textContent).toBe('ASELS');
   });
 });
