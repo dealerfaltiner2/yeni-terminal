@@ -1,129 +1,120 @@
 /**
  * Logger Utility
- * Centralized logging for the application
+ * Application logging system
  */
 
 const LogLevel = {
   DEBUG: 0,
   INFO: 1,
   WARN: 2,
-  ERROR: 3,
-  SILENT: 4
+  ERROR: 3
 };
 
 class Logger {
-  constructor(name, level = LogLevel.INFO) {
-    this.name = name;
-    this.level = level;
+  constructor(options = {}) {
+    this.name = options.name || 'App';
+    this.level = options.level || LogLevel.INFO;
+    this.enabled = options.enabled !== false;
+    this.storage = options.storage || false;
+    this.maxLogs = options.maxLogs || 100;
     this.logs = [];
-    this.maxLogs = 1000;
   }
 
   /**
-   * Get log level name
+   * Check if level is enabled
    */
-  getLevelName(level) {
-    const names = {
-      [LogLevel.DEBUG]: 'DEBUG',
-      [LogLevel.INFO]: 'INFO',
-      [LogLevel.WARN]: 'WARN',
-      [LogLevel.ERROR]: 'ERROR'
-    };
-    return names[level] || 'UNKNOWN';
-  }
-
-  /**
-   * Get color for log level
-   */
-  getColor(level) {
-    const colors = {
-      [LogLevel.DEBUG]: '#6b7280',
-      [LogLevel.INFO]: '#3b82f6',
-      [LogLevel.WARN]: '#f59e0b',
-      [LogLevel.ERROR]: '#ef4444'
-    };
-    return colors[level] || '#000000';
+  isLevelEnabled(level) {
+    return this.enabled && level >= this.level;
   }
 
   /**
    * Format log message
    */
-  formatMessage(level, message, data) {
+  formatMessage(level, message, data = {}) {
     const timestamp = new Date().toISOString();
-    const levelName = this.getLevelName(level);
-    const dataStr = data ? ` | ${JSON.stringify(data)}` : '';
-    return `[${timestamp}] [${this.name}] ${levelName}: ${message}${dataStr}`;
+    const levelName = Object.keys(LogLevel).find(key => LogLevel[key] === level);
+    const dataStr = Object.keys(data).length > 0 ? JSON.stringify(data) : '';
+    return `[${timestamp}] [${this.name}] [${levelName}] ${message} ${dataStr}`;
+  }
+
+  /**
+   * Store log
+   */
+  storeLog(level, message, data) {
+    if (!this.storage) return;
+
+    this.logs.push({
+      timestamp: new Date(),
+      level,
+      message,
+      data
+    });
+
+    // Keep only recent logs
+    if (this.logs.length > this.maxLogs) {
+      this.logs.shift();
+    }
   }
 
   /**
    * Log message
    */
-  log(level, message, data = null) {
-    if (level < this.level) {
-      return;
-    }
+  log(level, message, data = {}) {
+    if (!this.isLevelEnabled(level)) return;
 
     const formatted = this.formatMessage(level, message, data);
-    const color = this.getColor(level);
 
-    // Console output
-    const style = `color: ${color}; font-weight: bold;`;
-    console.log(`%c${formatted}`, style);
-
-    // Store log
-    this.logs.push({
-      timestamp: new Date(),
-      level,
-      message,
-      data,
-      formatted
-    });
-
-    // Trim logs if too many
-    if (this.logs.length > this.maxLogs) {
-      this.logs.shift();
+    switch (level) {
+      case LogLevel.DEBUG:
+        console.debug(formatted);
+        break;
+      case LogLevel.INFO:
+        console.info(formatted);
+        break;
+      case LogLevel.WARN:
+        console.warn(formatted);
+        break;
+      case LogLevel.ERROR:
+        console.error(formatted);
+        break;
     }
 
-    // Send to server (optional)
-    this.sendToServer(level, message, data);
+    this.storeLog(level, message, data);
   }
 
   /**
-   * Debug log
+   * Debug
    */
-  debug(message, data = null) {
+  debug(message, data = {}) {
     this.log(LogLevel.DEBUG, message, data);
   }
 
   /**
-   * Info log
+   * Info
    */
-  info(message, data = null) {
+  info(message, data = {}) {
     this.log(LogLevel.INFO, message, data);
   }
 
   /**
-   * Warn log
+   * Warn
    */
-  warn(message, data = null) {
+  warn(message, data = {}) {
     this.log(LogLevel.WARN, message, data);
   }
 
   /**
-   * Error log
+   * Error
    */
-  error(message, data = null) {
+  error(message, data = {}) {
     this.log(LogLevel.ERROR, message, data);
   }
 
   /**
-   * Get all logs
+   * Get logs
    */
-  getLogs(level = null) {
-    if (level === null) {
-      return this.logs;
-    }
-    return this.logs.filter(log => log.level === level);
+  getLogs() {
+    return [...this.logs];
   }
 
   /**
@@ -137,33 +128,24 @@ class Logger {
    * Export logs
    */
   exportLogs() {
-    const csv = this.logs
-      .map(log => `"${log.timestamp.toISOString()}","${this.getLevelName(log.level)}","${log.message}","${JSON.stringify(log.data)}"`)
-      .join('\n');
-
-    const headers = 'Timestamp,Level,Message,Data\n';
-    return headers + csv;
+    return JSON.stringify(this.logs, null, 2);
   }
 
   /**
-   * Send logs to server (optional)
-   */
-  async sendToServer(level, message, data) {
-    // Override in subclass or configure via options
-    // Example: POST to /api/logs with { level, message, data }
-  }
-
-  /**
-   * Set log level
+   * Set level
    */
   setLevel(level) {
     this.level = level;
   }
 }
 
-// Application logger instances
-const appLogger = new Logger('APP', LogLevel.DEBUG);
-const serviceLogger = new Logger('SERVICE', LogLevel.DEBUG);
-const apiLogger = new Logger('API', LogLevel.DEBUG);
+// Create global logger instance
+const appLogger = new Logger({
+  name: 'TradingTerminal',
+  level: LogLevel.INFO,
+  enabled: true,
+  storage: true,
+  maxLogs: 100
+});
 
-export { Logger, LogLevel, appLogger, serviceLogger, apiLogger };
+export { Logger, LogLevel, appLogger };

@@ -1,157 +1,91 @@
 /**
  * Data Service
- * Business logic and data management
+ * API communication and data handling
  */
 
-import { apiService } from './api-service.js';
-import { serviceLogger } from '../utils/logger.js';
-import { ValidationError } from '../utils/error-handler.js';
-
 class DataService {
-  constructor() {
+  constructor(options = {}) {
+    this.baseUrl = options.baseUrl || '/api';
+    this.timeout = options.timeout || 10000;
     this.cache = new Map();
-    this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
+    this.cacheExpiry = options.cacheExpiry || 60000; // 1 minute
   }
 
   /**
-   * Set cache
+   * Make API request
    */
-  setCache(key, value, timeout = this.cacheTimeout) {
-    this.cache.set(key, {
-      value,
-      timestamp: Date.now(),
-      timeout
-    });
-  }
+  async request(endpoint, options = {}) {
+    const url = `${this.baseUrl}${endpoint}`;
+    const config = {
+      method: options.method || 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+      },
+      timeout: this.timeout
+    };
 
-  /**
-   * Get cache
-   */
-  getCache(key) {
-    const cached = this.cache.get(key);
-    if (!cached) return null;
-
-    if (Date.now() - cached.timestamp > cached.timeout) {
-      this.cache.delete(key);
-      return null;
+    if (options.body) {
+      config.body = JSON.stringify(options.body);
     }
 
-    return cached.value;
+    try {
+      const response = await fetch(url, config);
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get from cache or fetch
+   */
+  async getCachedOrFetch(key, fetcher) {
+    const cached = this.cache.get(key);
+    if (cached && Date.now() - cached.timestamp < this.cacheExpiry) {
+      return cached.data;
+    }
+
+    const data = await fetcher();
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now()
+    });
+
+    return data;
   }
 
   /**
    * Clear cache
    */
-  clearCache(key = null) {
-    if (key) {
-      this.cache.delete(key);
-    } else {
-      this.cache.clear();
-    }
+  clearCache() {
+    this.cache.clear();
   }
 
   /**
-   * Fetch Turkey stocks
+   * Fetch symbol data
    */
-  async fetchTurkeyStocks() {
-    const cacheKey = 'turkey_stocks';
-    const cached = this.getCache(cacheKey);
-    if (cached) return cached;
-
-    try {
-      const data = await apiService.get('/stocks/turkey');
-      this.setCache(cacheKey, data);
-      serviceLogger.info('Turkey stocks fetched', { count: data.length });
-      return data;
-    } catch (error) {
-      serviceLogger.error('Failed to fetch Turkey stocks', { error: error.message });
-      throw error;
-    }
-  }
-
-  /**
-   * Fetch cryptos
-   */
-  async fetchCryptos() {
-    const cacheKey = 'cryptos';
-    const cached = this.getCache(cacheKey);
-    if (cached) return cached;
-
-    try {
-      const data = await apiService.get('/crypto');
-      this.setCache(cacheKey, data);
-      serviceLogger.info('Cryptos fetched', { count: data.length });
-      return data;
-    } catch (error) {
-      serviceLogger.error('Failed to fetch cryptos', { error: error.message });
-      throw error;
-    }
-  }
-
-  /**
-   * Fetch global symbols
-   */
-  async fetchGlobalSymbols() {
-    const cacheKey = 'global_symbols';
-    const cached = this.getCache(cacheKey);
-    if (cached) return cached;
-
-    try {
-      const data = await apiService.get('/symbols/global');
-      this.setCache(cacheKey, data);
-      serviceLogger.info('Global symbols fetched', { count: data.length });
-      return data;
-    } catch (error) {
-      serviceLogger.error('Failed to fetch global symbols', { error: error.message });
-      throw error;
-    }
-  }
-
-  /**
-   * Fetch candlestick data
-   */
-  async fetchCandlestickData(symbol, interval = '1d', limit = 500) {
-    if (!symbol) {
-      throw new ValidationError('Symbol is required');
-    }
-
-    const cacheKey = `candlestick_${symbol}_${interval}`;
-    const cached = this.getCache(cacheKey);
-    if (cached) return cached;
-
-    try {
-      const data = await apiService.get(
-        `/candlestick/${symbol}?interval=${interval}&limit=${limit}`
-      );
-      this.setCache(cacheKey, data);
-      serviceLogger.debug('Candlestick data fetched', { symbol, interval, count: data.length });
-      return data;
-    } catch (error) {
-      serviceLogger.error('Failed to fetch candlestick data', { symbol, error: error.message });
-      throw error;
-    }
-  }
-
-  /**
-   * Fetch symbol details
-   */
-  async fetchSymbolDetails(symbol) {
-    if (!symbol) {
-      throw new ValidationError('Symbol is required');
-    }
-
+  async fetchSymbolData(symbol) {
     const cacheKey = `symbol_${symbol}`;
-    const cached = this.getCache(cacheKey);
-    if (cached) return cached;
+    return this.getCachedOrFetch(cacheKey, async () => {
+      return this.request(`/symbols/${symbol}`);
+    });
+  }
 
-    try {
-      const data = await apiService.get(`/symbol/${symbol}`);
-      this.setCache(cacheKey, data);
-      return data;
-    } catch (error) {
-      serviceLogger.error('Failed to fetch symbol details', { symbol, error: error.message });
-      throw error;
-    }
+  /**
+   * Fetch chart data
+   */
+  async fetchChartData(symbol, timeframe = '1d') {
+    const cacheKey = `chart_${symbol}_${timeframe}`;
+    return this.getCachedOrFetch(cacheKey, async () => {
+      return this.request(`/charts/${symbol}?timeframe=${timeframe}`);
+    });
   }
 
   /**
@@ -159,122 +93,116 @@ class DataService {
    */
   async searchSymbols(query) {
     if (!query || query.length < 2) {
-      throw new ValidationError('Query must be at least 2 characters');
+      return [];
     }
 
-    try {
-      const data = await apiService.get(`/search?q=${encodeURIComponent(query)}`);
-      return data;
-    } catch (error) {
-      serviceLogger.error('Failed to search symbols', { query, error: error.message });
-      throw error;
-    }
+    const cacheKey = `search_${query}`;
+    return this.getCachedOrFetch(cacheKey, async () => {
+      return this.request(`/search?q=${encodeURIComponent(query)}`);
+    });
   }
 
   /**
    * Fetch watchlist
    */
   async fetchWatchlist() {
-    try {
-      const data = await apiService.get('/watchlist');
-      return data;
-    } catch (error) {
-      serviceLogger.error('Failed to fetch watchlist', { error: error.message });
-      throw error;
-    }
+    return this.request('/watchlist');
   }
 
   /**
    * Add to watchlist
    */
   async addToWatchlist(symbol) {
-    if (!symbol) {
-      throw new ValidationError('Symbol is required');
-    }
-
-    try {
-      const data = await apiService.post('/watchlist', { symbol });
-      this.clearCache('watchlist');
-      serviceLogger.info('Symbol added to watchlist', { symbol });
-      return data;
-    } catch (error) {
-      serviceLogger.error('Failed to add to watchlist', { symbol, error: error.message });
-      throw error;
-    }
+    this.clearCache();
+    return this.request('/watchlist', {
+      method: 'POST',
+      body: { symbol }
+    });
   }
 
   /**
    * Remove from watchlist
    */
   async removeFromWatchlist(symbol) {
-    if (!symbol) {
-      throw new ValidationError('Symbol is required');
-    }
-
-    try {
-      const data = await apiService.delete(`/watchlist/${symbol}`);
-      this.clearCache('watchlist');
-      serviceLogger.info('Symbol removed from watchlist', { symbol });
-      return data;
-    } catch (error) {
-      serviceLogger.error('Failed to remove from watchlist', { symbol, error: error.message });
-      throw error;
-    }
+    this.clearCache();
+    return this.request(`/watchlist/${symbol}`, {
+      method: 'DELETE'
+    });
   }
 
   /**
-   * Fetch alerts
+   * Fetch market data
    */
-  async fetchAlerts() {
-    try {
-      const data = await apiService.get('/alerts');
-      return data;
-    } catch (error) {
-      serviceLogger.error('Failed to fetch alerts', { error: error.message });
-      throw error;
-    }
+  async fetchMarketData() {
+    const cacheKey = 'market_data';
+    return this.getCachedOrFetch(cacheKey, async () => {
+      return this.request('/market');
+    });
   }
 
   /**
-   * Create alert
+   * Fetch trending symbols
    */
-  async createAlert(alertData) {
-    if (!alertData.symbol || !alertData.price) {
-      throw new ValidationError('Symbol and price are required');
-    }
-
-    try {
-      const data = await apiService.post('/alerts', alertData);
-      this.clearCache('alerts');
-      serviceLogger.info('Alert created', { symbol: alertData.symbol });
-      return data;
-    } catch (error) {
-      serviceLogger.error('Failed to create alert', { error: error.message });
-      throw error;
-    }
+  async fetchTrendingSymbols() {
+    const cacheKey = 'trending_symbols';
+    return this.getCachedOrFetch(cacheKey, async () => {
+      return this.request('/trending');
+    });
   }
 
   /**
-   * Delete alert
+   * Fetch news
    */
-  async deleteAlert(alertId) {
-    if (!alertId) {
-      throw new ValidationError('Alert ID is required');
-    }
+  async fetchNews(symbol = null) {
+    const endpoint = symbol ? `/news?symbol=${symbol}` : '/news';
+    return this.request(endpoint);
+  }
 
-    try {
-      const data = await apiService.delete(`/alerts/${alertId}`);
-      this.clearCache('alerts');
-      serviceLogger.info('Alert deleted', { alertId });
-      return data;
-    } catch (error) {
-      serviceLogger.error('Failed to delete alert', { alertId, error: error.message });
-      throw error;
-    }
+  /**
+   * Place order
+   */
+  async placeOrder(orderData) {
+    return this.request('/orders', {
+      method: 'POST',
+      body: orderData
+    });
+  }
+
+  /**
+   * Fetch orders
+   */
+  async fetchOrders() {
+    return this.request('/orders');
+  }
+
+  /**
+   * Cancel order
+   */
+  async cancelOrder(orderId) {
+    return this.request(`/orders/${orderId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  /**
+   * Fetch account info
+   */
+  async fetchAccountInfo() {
+    return this.request('/account');
+  }
+
+  /**
+   * Fetch portfolio
+   */
+  async fetchPortfolio() {
+    return this.request('/portfolio');
   }
 }
 
-// Global data service instance
-const dataService = new DataService();
+// Create global instance
+const dataService = new DataService({
+  baseUrl: process.env.API_BASE_URL || '/api',
+  cacheExpiry: 60000
+});
 
 export { DataService, dataService };
