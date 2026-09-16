@@ -1,14 +1,14 @@
 /**
- * Logger Service
- * Centralized logging with levels (DEBUG, INFO, WARN, ERROR)
- * Supports both console and remote logging
+ * Logger Utility
+ * Centralized logging for the application
  */
 
 const LogLevel = {
   DEBUG: 0,
   INFO: 1,
   WARN: 2,
-  ERROR: 3
+  ERROR: 3,
+  SILENT: 4
 };
 
 class Logger {
@@ -20,91 +20,137 @@ class Logger {
   }
 
   /**
-   * Format log message with timestamp and context
+   * Get log level name
    */
-  format(level, message, data) {
-    const timestamp = new Date().toISOString();
-    const levelName = Object.keys(LogLevel).find(key => LogLevel[key] === level);
-    const prefix = `[${timestamp}] [${levelName}] [${this.name}]`;
-
-    return {
-      timestamp,
-      level: levelName,
-      context: this.name,
-      message,
-      data,
-      formatted: `${prefix} ${message}${data ? ' ' + JSON.stringify(data) : ''}`
+  getLevelName(level) {
+    const names = {
+      [LogLevel.DEBUG]: 'DEBUG',
+      [LogLevel.INFO]: 'INFO',
+      [LogLevel.WARN]: 'WARN',
+      [LogLevel.ERROR]: 'ERROR'
     };
+    return names[level] || 'UNKNOWN';
   }
 
   /**
-   * Store log in memory
+   * Get color for log level
    */
-  store(log) {
-    this.logs.push(log);
-    if (this.logs.length > this.maxLogs) {
-      this.logs.shift();
-    }
+  getColor(level) {
+    const colors = {
+      [LogLevel.DEBUG]: '#6b7280',
+      [LogLevel.INFO]: '#3b82f6',
+      [LogLevel.WARN]: '#f59e0b',
+      [LogLevel.ERROR]: '#ef4444'
+    };
+    return colors[level] || '#000000';
   }
 
   /**
-   * Output log to console
+   * Format log message
    */
-  output(log) {
-    if (log.level === 'ERROR') {
-      console.error(log.formatted, log.data || '');
-    } else if (log.level === 'WARN') {
-      console.warn(log.formatted, log.data || '');
-    } else if (log.level === 'DEBUG') {
-      console.debug(log.formatted, log.data || '');
-    } else {
-      console.log(log.formatted, log.data || '');
-    }
+  formatMessage(level, message, data) {
+    const timestamp = new Date().toISOString();
+    const levelName = this.getLevelName(level);
+    const dataStr = data ? ` | ${JSON.stringify(data)}` : '';
+    return `[${timestamp}] [${this.name}] ${levelName}: ${message}${dataStr}`;
   }
 
   /**
-   * Log with level check
+   * Log message
    */
-  log(level, message, data) {
+  log(level, message, data = null) {
     if (level < this.level) {
       return;
     }
 
-    const log = this.format(level, message, data);
-    this.store(log);
-    this.output(log);
+    const formatted = this.formatMessage(level, message, data);
+    const color = this.getColor(level);
 
-    return log;
-  }
+    // Console output
+    const style = `color: ${color}; font-weight: bold;`;
+    console.log(`%c${formatted}`, style);
 
-  debug(message, data) {
-    return this.log(LogLevel.DEBUG, message, data);
-  }
+    // Store log
+    this.logs.push({
+      timestamp: new Date(),
+      level,
+      message,
+      data,
+      formatted
+    });
 
-  info(message, data) {
-    return this.log(LogLevel.INFO, message, data);
-  }
+    // Trim logs if too many
+    if (this.logs.length > this.maxLogs) {
+      this.logs.shift();
+    }
 
-  warn(message, data) {
-    return this.log(LogLevel.WARN, message, data);
-  }
-
-  error(message, data) {
-    return this.log(LogLevel.ERROR, message, data);
+    // Send to server (optional)
+    this.sendToServer(level, message, data);
   }
 
   /**
-   * Get all stored logs
+   * Debug log
    */
-  getLogs() {
-    return [...this.logs];
+  debug(message, data = null) {
+    this.log(LogLevel.DEBUG, message, data);
   }
 
   /**
-   * Clear stored logs
+   * Info log
+   */
+  info(message, data = null) {
+    this.log(LogLevel.INFO, message, data);
+  }
+
+  /**
+   * Warn log
+   */
+  warn(message, data = null) {
+    this.log(LogLevel.WARN, message, data);
+  }
+
+  /**
+   * Error log
+   */
+  error(message, data = null) {
+    this.log(LogLevel.ERROR, message, data);
+  }
+
+  /**
+   * Get all logs
+   */
+  getLogs(level = null) {
+    if (level === null) {
+      return this.logs;
+    }
+    return this.logs.filter(log => log.level === level);
+  }
+
+  /**
+   * Clear logs
    */
   clearLogs() {
     this.logs = [];
+  }
+
+  /**
+   * Export logs
+   */
+  exportLogs() {
+    const csv = this.logs
+      .map(log => `"${log.timestamp.toISOString()}","${this.getLevelName(log.level)}","${log.message}","${JSON.stringify(log.data)}"`)
+      .join('\n');
+
+    const headers = 'Timestamp,Level,Message,Data\n';
+    return headers + csv;
+  }
+
+  /**
+   * Send logs to server (optional)
+   */
+  async sendToServer(level, message, data) {
+    // Override in subclass or configure via options
+    // Example: POST to /api/logs with { level, message, data }
   }
 
   /**
@@ -113,18 +159,11 @@ class Logger {
   setLevel(level) {
     this.level = level;
   }
-
-  /**
-   * Export logs as JSON
-   */
-  exportLogs() {
-    return JSON.stringify(this.logs, null, 2);
-  }
 }
 
-// Export singleton instances
-const appLogger = new Logger('BIST-APP', LogLevel.INFO);
-const apiLogger = new Logger('API', LogLevel.INFO);
-const serviceLogger = new Logger('SERVICE', LogLevel.INFO);
+// Application logger instances
+const appLogger = new Logger('APP', LogLevel.DEBUG);
+const serviceLogger = new Logger('SERVICE', LogLevel.DEBUG);
+const apiLogger = new Logger('API', LogLevel.DEBUG);
 
-export { Logger, LogLevel, appLogger, apiLogger, serviceLogger };
+export { Logger, LogLevel, appLogger, serviceLogger, apiLogger };
