@@ -62,4 +62,4 @@ jobs:
         run: npx --yes vercel@59.18.0 pull --yes --environment=production --token="$VERCEL_TOKEN"
 
       - name: Deploy production build
-        run: npm run deploy -- --token="$VERCEL_TOKEN"
+        run: npm run deploy

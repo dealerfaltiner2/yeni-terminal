@@ -54,8 +54,10 @@ https://<vercel-proje-adiniz>.vercel.app
 `.github/workflows/ci-cd.yml` workflow'u:
 
 1. `npm test` ile build konfigürasyonunu doğrular
-2. `npm run build` ile production bundle üretir
+2. `npm run build` ile fallback/default değerlerle production bundle mekanizmasını doğrular
 3. `main` branch'ine push geldiğinde Vercel'e production deploy yapar
+
+Not: Asıl production environment values yalnızca deploy job'unda secrets/variables üzerinden enjekte edilir.
 
 GitHub repository secrets/variables olarak şunları ekleyin:
 
