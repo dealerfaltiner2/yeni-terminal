@@ -102,7 +102,41 @@ describe('ScannerComponent', () => {
 
     await expect(scanner.loadStocks()).rejects.toThrow('Tarama başarısız');
     expect(document.getElementById('scanner-table').textContent).toContain(
-      'Tarama başarısız'
+      'Tarama verisi şu anda yüklenemiyor'
     );
+  });
+
+  test('normalizes raw API fields before filtering', async () => {
+    const scanner = new ScannerComponent({
+      api: {
+        scanTurkeyStocks: jest.fn().mockResolvedValue([
+          {
+            ticker: 'KCHOL',
+            name: 'Koç Holding',
+            close: 200,
+            change: 0.75,
+            volume: 1000000,
+            sector: 'Holding',
+            relative_volume_10d_calc: 2.4
+          }
+        ])
+      },
+      tableContainerId: 'scanner-table',
+      sectorSelectId: 'sector',
+      searchInputId: 'query',
+      minVolumeSelectId: 'min-volume',
+      countElementId: 'count'
+    });
+
+    scanner.init();
+    await scanner.loadStocks();
+
+    expect(scanner.filteredStocks[0].turnover).toBe(200000000);
+    expect(scanner.filteredStocks[0].relativeVolume).toBe(2.4);
+
+    document.getElementById('min-volume').value = '100000000';
+    document.getElementById('min-volume').dispatchEvent(new Event('change'));
+
+    expect(document.querySelectorAll('tbody tr')).toHaveLength(1);
   });
 });

@@ -100,7 +100,7 @@ class TableComponent {
 
     if (typeof column.render === 'function') {
       const rendered = column.render(value, row);
-      if (rendered instanceof Node) {
+      if (this.isDOMNode(rendered)) {
         cell.appendChild(rendered);
       } else {
         cell.textContent = rendered ?? '';
@@ -110,6 +110,15 @@ class TableComponent {
     }
 
     return cell;
+  }
+
+  isDOMNode(value) {
+    return Boolean(
+      value &&
+        typeof value === 'object' &&
+        typeof value.nodeType === 'number' &&
+        typeof value.nodeName === 'string'
+    );
   }
 
   renderState(message) {

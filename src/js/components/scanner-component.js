@@ -7,6 +7,7 @@ import { TradingViewAPI } from '../api/tradingview.js';
 import { TableComponent } from './table-component.js';
 import { appLogger } from '../utils/logger.js';
 
+const DEFAULT_ERROR_MESSAGE = 'Tarama verisi şu anda yüklenemiyor';
 const numberFormatter = new Intl.NumberFormat('tr-TR', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2
@@ -118,7 +119,7 @@ class ScannerComponent {
       return this.filteredStocks;
     } catch (error) {
       this.table.setLoading(false);
-      this.table.renderState(error.message || 'Tarama yüklenemedi');
+      this.table.renderState(DEFAULT_ERROR_MESSAGE);
       appLogger.error('Failed to load scanner stocks', { error: error.message });
       throw error;
     }
