@@ -34,7 +34,7 @@ await run('npx', ['vite', 'build']);
 await mkdir(distDir, { recursive: true });
 await writeFile(
   distRuntimeConfigPath,
-  `window.__APP_CONFIG__ = Object.assign(${JSON.stringify(runtimeConfig, null, 2)}, window.__APP_CONFIG__ || {});\n`
+  `window.__APP_CONFIG__ = Object.assign({}, window.__APP_CONFIG__ || {}, ${JSON.stringify(runtimeConfig, null, 2)});\n`
 );
 
 console.log(`✅ Production bundle is ready in ${distDir}`);
