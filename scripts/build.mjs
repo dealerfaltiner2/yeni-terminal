@@ -7,6 +7,7 @@ const outputDir = path.resolve(rootDir, process.env.BUILD_OUTPUT_DIR || 'dist');
 const indexPath = path.join(rootDir, 'index.html');
 const vercelConfigPath = path.join(rootDir, 'vercel.json');
 const envConfigPath = path.join(outputDir, 'env-config.js');
+const staticAssetPaths = ['src', 'styles', 'backup-restore-v2.js'];
 
 const appConfig = {
   workerUrl:
@@ -31,3 +32,9 @@ await writeFile(
   `window.TRADING_TERMINAL_CONFIG = Object.freeze(${JSON.stringify(appConfig, null, 2)});\n`,
   'utf8'
 );
+
+for (const assetPath of staticAssetPaths) {
+  const sourcePath = path.join(rootDir, assetPath);
+  const destinationPath = path.join(outputDir, assetPath);
+  await cp(sourcePath, destinationPath, { recursive: true });
+}

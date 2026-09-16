@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -26,7 +26,10 @@ test('build generates deployable Vercel bundle with env config', async () => {
   const [html, envConfig, vercelConfig] = await Promise.all([
     readFile(path.join(tempDir, 'index.html'), 'utf8'),
     readFile(path.join(tempDir, 'env-config.js'), 'utf8'),
-    readFile(path.join(tempDir, 'vercel.json'), 'utf8')
+    readFile(path.join(tempDir, 'vercel.json'), 'utf8'),
+    stat(path.join(tempDir, 'src')),
+    stat(path.join(tempDir, 'styles')),
+    stat(path.join(tempDir, 'backup-restore-v2.js'))
   ]);
 
   assert.match(html, /<script src="\.\/env-config\.js"><\/script>\s*<script>/);
