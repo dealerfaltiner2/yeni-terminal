@@ -57,8 +57,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Link Vercel project
-        run: npx --yes vercel@59.18.0 pull --yes --environment=production --token="$VERCEL_TOKEN"
-
       - name: Deploy production build
-        run: npx --yes vercel@59.18.0 deploy --prod --yes ./dist --token="$VERCEL_TOKEN"
+        run: npm run deploy

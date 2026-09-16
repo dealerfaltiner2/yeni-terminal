@@ -30,6 +30,9 @@ test('build generates deployable Vercel bundle with env config', async () => {
   ]);
 
   assert.match(html, /<script src="\.\/env-config\.js"><\/script>\s*<script>/);
+  assert.doesNotMatch(html, /LS\.set\('tdkey'/);
+  assert.doesNotMatch(html, /b\.tdkey/);
+  assert.match(html, /opsiyonel, oturumluk/);
   assert.match(envConfig, /https:\/\/example-worker\.vercel\.app\//);
   assert.match(envConfig, /twelvedata/);
   assert.match(vercelConfig, /Strict-Transport-Security/);
