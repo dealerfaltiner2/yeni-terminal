@@ -108,6 +108,12 @@ describe('ScannerComponent', () => {
       'Tarama verisi şu anda yüklenemiyor'
     );
     expect(document.getElementById('count').textContent).toBe('0 kayıt');
+
+    document.getElementById('query').value = 'old';
+    document.getElementById('query').dispatchEvent(new Event('input'));
+    expect(document.getElementById('scanner-table').textContent).toContain(
+      'Veri bulunamadı'
+    );
   });
 
   test('normalizes raw API fields before filtering', async () => {

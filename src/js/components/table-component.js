@@ -40,9 +40,12 @@ class TableComponent {
     this.render();
   }
 
-  setLoading(isLoading) {
+  setLoading(isLoading, options = {}) {
+    const { render = true } = options;
     this.loading = Boolean(isLoading);
-    this.render();
+    if (render) {
+      this.render();
+    }
   }
 
   sortBy(key) {

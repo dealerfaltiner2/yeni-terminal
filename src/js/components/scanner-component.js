@@ -118,8 +118,9 @@ class ScannerComponent {
       appLogger.info('Scanner stocks loaded', { count: this.stocks.length });
       return this.filteredStocks;
     } catch (error) {
-      this.table.loading = false;
+      this.stocks = [];
       this.filteredStocks = [];
+      this.table.setLoading(false, { render: false });
       this.updateCount();
       this.table.renderState(DEFAULT_ERROR_MESSAGE);
       appLogger.error('Failed to load scanner stocks', { error: error.message });
@@ -185,7 +186,7 @@ class ScannerComponent {
       return matchesSector && matchesQuery && matchesVolume;
     });
 
-    this.table.loading = false;
+    this.table.setLoading(false, { render: false });
     this.table.setData(this.filteredStocks);
     this.updateCount();
     return this.filteredStocks;
