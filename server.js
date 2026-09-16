@@ -9,6 +9,7 @@ const normalizeBasePath = (value) => {
 const apiBaseUrl = normalizeBasePath(process.env.API_BASE_URL);
 const port = Number(process.env.MOCK_API_PORT || 3001);
 const requestOrigin = 'http://127.0.0.1';
+const maxBodySize = 1024 * 1024;
 const defaultSymbols = ['THYAO', 'ASELS', 'KCHOL', 'GARAN', 'TUPRS', 'EREGL', 'SISE', 'BIMAS'];
 
 const symbolCatalog = {
@@ -37,10 +38,40 @@ const json = (res, statusCode, payload) => {
 const readBody = (req) =>
   new Promise((resolve, reject) => {
     let body = '';
+    let size = 0;
+    let settled = false;
+
+    const fail = (error) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      reject(error);
+      req.resume();
+    };
+
     req.on('data', (chunk) => {
+      if (settled) {
+        return;
+      }
+
+      size += chunk.length;
+      if (size > maxBodySize) {
+        const error = new Error('Request body too large');
+        error.statusCode = 413;
+        fail(error);
+        return;
+      }
+
       body += chunk;
     });
     req.on('end', () => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
       if (!body) {
         resolve({});
         return;
@@ -52,7 +83,9 @@ const readBody = (req) =>
         reject(error);
       }
     });
-    req.on('error', reject);
+    req.on('error', (error) => {
+      fail(error);
+    });
   });
 
 const symbolSeed = (symbol) =>
@@ -254,7 +287,7 @@ const createMockServer = () => {
 
     json(res, 404, { error: 'Not found', path: pathname });
   } catch (error) {
-    json(res, 500, { error: error.message || 'Unexpected server error' });
+    json(res, error.statusCode || 500, { error: error.message || 'Unexpected server error' });
   }
   });
 };
@@ -262,9 +295,18 @@ const createMockServer = () => {
 const startMockServer = ({ host = '127.0.0.1', listenPort = port } = {}) => {
   const server = createMockServer();
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    const handleError = (error) => {
+      server.off('error', handleError);
+      reject(error);
+    };
+
+    server.once('error', handleError);
     server.listen(listenPort, host, () => {
-      console.log(`Mock API listening on http://${host}:${listenPort}${apiBaseUrl}`);
+      server.off('error', handleError);
+      const address = server.address();
+      const activePort = typeof address === 'object' && address ? address.port : listenPort;
+      console.log(`Mock API listening on http://${host}:${activePort}${apiBaseUrl}`);
       resolve(server);
     });
   });

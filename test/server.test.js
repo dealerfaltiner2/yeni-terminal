@@ -105,3 +105,20 @@ test('order IDs remain unique across create and delete cycles', async (t) => {
     [1, 2, 3]
   );
 });
+
+test('orders endpoint rejects oversized request bodies', async (t) => {
+  const server = await startServer();
+  t.after(() => stopServer(server));
+
+  const { port } = server.address();
+  const baseUrl = `http://127.0.0.1:${port}${apiBaseUrl}`;
+
+  const response = await fetch(`${baseUrl}/orders`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ payload: 'x'.repeat(1024 * 1024 + 1) })
+  });
+
+  assert.equal(response.status, 413);
+  assert.deepEqual(await response.json(), { error: 'Request body too large' });
+});
