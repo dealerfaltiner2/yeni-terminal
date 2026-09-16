@@ -246,7 +246,9 @@ form.tx input{width:84px}
 </div>
 <div id="pal" onclick="if(event.target.id==='pal')closePal()"><div id="palbox"><input id="palin" placeholder="Hisse veya kripto ara" autocomplete="off"><div id="pallist"></div></div></div>
 
+<script src="./env-config.js"></script>
 <script>
+const APP_CONFIG=Object.freeze(window.TRADING_TERMINAL_CONFIG||{});
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const $=s=>document.querySelector(s);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -262,7 +264,7 @@ const saveWL=()=>LS.set('wl',WL);
 
 const S={sym:LS.get('sym','THYAO'),mode:LS.get('mode','bist'),tf:LS.get('tf','15min'),ct:'candle',
  ind:LS.get('ind',{ema20:1,ema50:1,ema200:0,vwap:0,bb:0,poc:1}),lower:'rsi',
- tx:LS.get('tx',[]),jr:LS.get('jr',[]),key:LS.get('tdkey',''),src:LS.get('src','yahoo'),blim:LS.get('blim','short'),
+tx:LS.get('tx',[]),jr:LS.get('jr',[]),key:LS.get('tdkey',APP_CONFIG.twelveDataApiKey||''),src:LS.get('src',APP_CONFIG.defaultDataSource||'yahoo'),blim:LS.get('blim','short'),
  cap:LS.get('cap',100000),rskp:LS.get('rskp',1),alarms:LS.get('alarms',[]),
  uni:[],umap:{},sectors:new Set(),quotes:{},crypto:[],cmap:{},candles:[],ccache:{},wsig:{},vp:null,deep:{},
  sort:{k:'market_cap_basic',d:-1},mov:'gain',box:null,plines:[],tab:'op',limit:100,dirty:{},
@@ -473,7 +475,7 @@ async function deepScan(){
 }
 
 /* ================= mum verisi ================= */
-const WORKER='https://bist.c8jmvhdm8c.workers.dev/';
+const WORKER=APP_CONFIG.workerUrl||'https://bist.c8jmvhdm8c.workers.dev/';
 const YFS={'1min':['1m','5d'],'5min':['5m','20d'],'15min':['15m','20d'],'1h':['60m','180d'],'4h':['60m','360d'],'1day':['1d','1y'],'1week':['1wk','3y'],'1month':['1mo','8y']};
 const YFL={'1min':['1m','7d'],'5min':['5m','60d'],'15min':['15m','60d'],'1h':['60m','730d'],'4h':['60m','730d'],'1day':['1d','5y'],'1week':['1wk','10y'],'1month':['1mo','20y']};
 async function pfetch(sym,iv,rg,ms=12000){
