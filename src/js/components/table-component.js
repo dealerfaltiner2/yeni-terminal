@@ -94,7 +94,8 @@ class TableComponent {
     const value = row?.[column.key];
 
     if (column.className) {
-      cell.className = typeof column.className === 'function' ? column.className(value, row) : column.className;
+      cell.className =
+        typeof column.className === 'function' ? column.className(value, row) : column.className;
     }
 
     if (typeof column.render === 'function') {

@@ -1,3 +1,7 @@
+/** @jest-environment jsdom */
+
+import { jest } from '@jest/globals';
+
 jest.unstable_mockModule('../../../src/js/api/tradingview.js', () => ({
   TradingViewAPI: class {
     async scanTurkeyStocks() {

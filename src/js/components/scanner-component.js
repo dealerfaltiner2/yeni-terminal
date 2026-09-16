@@ -19,11 +19,13 @@ const wholeNumberFormatter = new Intl.NumberFormat('tr-TR', {
 class ScannerComponent {
   constructor(options = {}) {
     this.api = options.api || new TradingViewAPI();
-    this.table = options.table || new TableComponent(options.tableContainerId, [], {
-      defaultSortKey: 'marketCap',
-      defaultSortDirection: 'desc',
-      onRowClick: options.onRowClick
-    });
+    this.table =
+      options.table ||
+      new TableComponent(options.tableContainerId, [], {
+        defaultSortKey: 'marketCap',
+        defaultSortDirection: 'desc',
+        onRowClick: options.onRowClick
+      });
 
     this.tableContainerId = options.tableContainerId;
     this.sectorSelect = document.getElementById(options.sectorSelectId);
@@ -123,8 +125,8 @@ class ScannerComponent {
     }
 
     const currentValue = this.sectorSelect.value;
-    const sectors = [...new Set(this.stocks.map((stock) => stock.sector).filter(Boolean))].sort((a, b) =>
-      a.localeCompare(b, 'tr', { sensitivity: 'base' })
+    const sectors = [...new Set(this.stocks.map((stock) => stock.sector).filter(Boolean))].sort(
+      (a, b) => a.localeCompare(b, 'tr', { sensitivity: 'base' })
     );
 
     this.sectorSelect.innerHTML = '';

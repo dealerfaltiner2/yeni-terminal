@@ -1,3 +1,5 @@
+/** @jest-environment jsdom */
+
 import { TableComponent } from '../../../src/js/components/table-component.js';
 
 describe('TableComponent', () => {
