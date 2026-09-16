@@ -6,6 +6,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   verify:
     name: Test and Build
@@ -67,6 +70,20 @@ jobs:
 
       - name: Pull Vercel environment
         run: npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+
+      - name: Load runtime endpoint variables
+        run: |
+          if [ -f .vercel/.env.production.local ]; then
+            set -a
+            . .vercel/.env.production.local
+            set +a
+          fi
+          for key in WORKER_URL TRADINGVIEW_SCANNER_BASE TWELVE_DATA_BASE BINANCE_BASE COINGECKO_BASE; do
+            value="${!key}"
+            if [ -n "$value" ]; then
+              echo "$key=$value" >> "$GITHUB_ENV"
+            fi
+          done
 
       - name: Deploy to production
         run: npm run deploy:ci

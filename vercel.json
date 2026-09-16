@@ -16,6 +16,10 @@
   ],
   "rewrites": [
     {
+      "source": "/env-config.js",
+      "destination": "/env-config.js"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
