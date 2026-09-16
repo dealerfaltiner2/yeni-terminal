@@ -172,8 +172,8 @@ const server = createServer(async (req, res) => {
 
     if (pathname.startsWith(`${apiBaseUrl}/watchlist/`) && req.method === 'DELETE') {
       const symbol = pathname.slice(`${apiBaseUrl}/watchlist/`.length).toUpperCase();
-      watchlist.delete(symbol);
-      json(res, 200, { success: true, symbol });
+      const deleted = watchlist.delete(symbol);
+      json(res, deleted ? 200 : 404, { success: deleted, symbol });
       return;
     }
 
@@ -213,9 +213,12 @@ const server = createServer(async (req, res) => {
     if (pathname.startsWith(`${apiBaseUrl}/orders/`) && req.method === 'DELETE') {
       const orderId = Number(pathname.slice(`${apiBaseUrl}/orders/`.length));
       const index = orders.findIndex((order) => order.id === orderId);
-      if (index >= 0) {
-        orders.splice(index, 1);
+      if (index < 0) {
+        json(res, 404, { success: false, orderId });
+        return;
       }
+
+      orders.splice(index, 1);
       json(res, 200, { success: true, orderId });
       return;
     }
