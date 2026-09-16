@@ -118,7 +118,9 @@ class ScannerComponent {
       appLogger.info('Scanner stocks loaded', { count: this.stocks.length });
       return this.filteredStocks;
     } catch (error) {
-      this.table.setLoading(false);
+      this.table.loading = false;
+      this.filteredStocks = [];
+      this.updateCount();
       this.table.renderState(DEFAULT_ERROR_MESSAGE);
       appLogger.error('Failed to load scanner stocks', { error: error.message });
       throw error;
@@ -183,7 +185,7 @@ class ScannerComponent {
       return matchesSector && matchesQuery && matchesVolume;
     });
 
-    this.table.setLoading(false);
+    this.table.loading = false;
     this.table.setData(this.filteredStocks);
     this.updateCount();
     return this.filteredStocks;
@@ -191,7 +193,9 @@ class ScannerComponent {
 
   updateCount() {
     if (this.countElement) {
-      this.countElement.textContent = `${this.filteredStocks.length} kayıt`;
+      this.countElement.textContent = this.filteredStocks.length
+        ? `${this.filteredStocks.length} kayıt`
+        : '0 kayıt';
     }
   }
 

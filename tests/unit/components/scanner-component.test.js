@@ -100,11 +100,14 @@ describe('ScannerComponent', () => {
     });
 
     scanner.init();
+    scanner.filteredStocks = [{ ticker: 'OLD' }];
+    document.getElementById('count').textContent = '1 kayıt';
 
     await expect(scanner.loadStocks()).rejects.toThrow('Tarama başarısız');
     expect(document.getElementById('scanner-table').textContent).toContain(
       'Tarama verisi şu anda yüklenemiyor'
     );
+    expect(document.getElementById('count').textContent).toBe('0 kayıt');
   });
 
   test('normalizes raw API fields before filtering', async () => {
@@ -139,5 +142,34 @@ describe('ScannerComponent', () => {
     document.getElementById('min-volume').dispatchEvent(new Event('change'));
 
     expect(document.querySelectorAll('tbody tr')).toHaveLength(1);
+  });
+
+  test('preserves existing relative volume values', async () => {
+    const scanner = new ScannerComponent({
+      api: {
+        scanTurkeyStocks: jest.fn().mockResolvedValue([
+          {
+            ticker: 'SISE',
+            name: 'Şişecam',
+            close: 45,
+            change: 0.2,
+            volume: 500000,
+            sector: 'Sanayi',
+            relativeVolume: 1.1,
+            relative_volume_10d_calc: 2.5
+          }
+        ])
+      },
+      tableContainerId: 'scanner-table',
+      sectorSelectId: 'sector',
+      searchInputId: 'query',
+      minVolumeSelectId: 'min-volume',
+      countElementId: 'count'
+    });
+
+    scanner.init();
+    await scanner.loadStocks();
+
+    expect(scanner.filteredStocks[0].relativeVolume).toBe(1.1);
   });
 });
