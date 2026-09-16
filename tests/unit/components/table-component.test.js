@@ -59,8 +59,13 @@ describe('TableComponent', () => {
       }
     ]);
 
-    table.setData([{ signal: 'AL' }]);
+    table.setData([{ signal: 'AL' }, { signal: 'SAT' }]);
 
-    expect(document.querySelector('tbody strong').textContent).toBe('Pozitif');
+    expect(document.querySelectorAll('tbody strong')).toHaveLength(2);
+    expect(
+      Array.from(document.querySelectorAll('tbody strong')).every(
+        (node) => node.textContent === 'Pozitif'
+      )
+    ).toBe(true);
   });
 });

@@ -101,7 +101,7 @@ class TableComponent {
     if (typeof column.render === 'function') {
       const rendered = column.render(value, row);
       if (this.isDOMNode(rendered)) {
-        cell.appendChild(rendered);
+        cell.appendChild(rendered.cloneNode(true));
       } else {
         cell.textContent = rendered ?? '';
       }
