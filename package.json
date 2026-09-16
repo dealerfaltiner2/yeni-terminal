@@ -1,8 +1,3 @@
-/**
- * Package.json
- * Project dependencies and scripts
- */
-
 {
   "name": "trading-terminal",
   "version": "1.0.0",
@@ -10,10 +5,12 @@
   "main": "index.html",
   "type": "module",
   "scripts": {
-    "start": "http-server -p 8000 -c-1",
-    "dev": "http-server -p 8000 -c-1 -o",
-    "build": "echo 'Build script placeholder'",
-    "test": "echo 'Test script placeholder'"
+    "start": "npx --yes http-server@14.1.1 . -p 8000 -c-1",
+    "dev": "npx --yes http-server@14.1.1 . -p 8000 -c-1 -o",
+    "build": "node ./scripts/build.mjs",
+    "test": "node --test ./test/**/*.test.mjs",
+    "deploy": "npx --yes vercel@59.18.0 pull --yes --environment=production && npm run build && npx --yes vercel@59.18.0 deploy --prod --yes ./dist",
+    "deploy:ci": "npm run build && npx --yes vercel@59.18.0 deploy --prod --yes ./dist"
   },
   "keywords": [
     "trading",

@@ -213,7 +213,7 @@ form.tx input{width:84px}
     <b>MUM VERİSİ</b>
     <select id="srcsel" onchange="setSrc()"><option value="yahoo">Yahoo (kendi proxy'n)</option><option value="td">Twelve Data</option></select>
     <select id="barlim" onchange="setBarLim()"><option value="short">Grafik geçmişi: kısa (hızlı)</option><option value="long">Grafik geçmişi: uzun</option></select>
-    <input id="tdkey" placeholder="Twelve Data apikey (opsiyonel)"><button class="g" onclick="saveKey()">Anahtarı kaydet</button>
+    <input id="tdkey" placeholder="Twelve Data apikey (opsiyonel, oturumluk)"><button class="g" onclick="saveKey()">Anahtarı kaydet</button>
     <button class="g" onclick="testSrc()">Veri kaynağını test et</button>
     <div id="srcmsg" class="note"></div>
     <b>SERMAYE</b>
@@ -246,7 +246,9 @@ form.tx input{width:84px}
 </div>
 <div id="pal" onclick="if(event.target.id==='pal')closePal()"><div id="palbox"><input id="palin" placeholder="Hisse veya kripto ara" autocomplete="off"><div id="pallist"></div></div></div>
 
+<script src="./env-config.js"></script>
 <script>
+const APP_CONFIG=Object.freeze(window.TRADING_TERMINAL_CONFIG||{});
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const $=s=>document.querySelector(s);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -262,13 +264,13 @@ const saveWL=()=>LS.set('wl',WL);
 
 const S={sym:LS.get('sym','THYAO'),mode:LS.get('mode','bist'),tf:LS.get('tf','15min'),ct:'candle',
  ind:LS.get('ind',{ema20:1,ema50:1,ema200:0,vwap:0,bb:0,poc:1}),lower:'rsi',
- tx:LS.get('tx',[]),jr:LS.get('jr',[]),key:LS.get('tdkey',''),src:LS.get('src','yahoo'),blim:LS.get('blim','short'),
+tx:LS.get('tx',[]),jr:LS.get('jr',[]),key:'',src:LS.get('src',APP_CONFIG.defaultDataSource||'yahoo'),blim:LS.get('blim','short'),
  cap:LS.get('cap',100000),rskp:LS.get('rskp',1),alarms:LS.get('alarms',[]),
  uni:[],umap:{},sectors:new Set(),quotes:{},crypto:[],cmap:{},candles:[],ccache:{},wsig:{},vp:null,deep:{},
  sort:{k:'market_cap_basic',d:-1},mov:'gain',box:null,plines:[],tab:'op',limit:100,dirty:{},
  setup:'all',dir:'AL',reg:null,scanning:false,seenA:LS.get('seenA',[])};
 $('#tdkey').value=S.key;$('#srcsel').value=S.src;$('#barlim').value=S.blim;$('#cap').value=S.cap;$('#rsk').value=S.rskp;
-function saveKey(){S.key=$('#tdkey').value.trim();LS.set('tdkey',S.key);S.ccache={};loadCandles();alert('Kaydedildi')}
+function saveKey(){S.key=$('#tdkey').value.trim();S.ccache={};loadCandles();alert('Bu oturum için kaydedildi')}
 function setSrc(){S.src=$('#srcsel').value;LS.set('src',S.src);S.ccache={};loadCandles()}
 function setBarLim(){S.blim=$('#barlim').value;LS.set('blim',S.blim);S.ccache={};loadCandles()}
 function saveCap(){S.cap=+$('#cap').value||0;S.rskp=+$('#rsk').value||1;LS.set('cap',S.cap);LS.set('rskp',S.rskp);renderRisk();alert('Kaydedildi')}
@@ -277,8 +279,8 @@ async function testSrc(){const m=$('#srcmsg');m.textContent='test...';try{const 
 function mark(t){if(S.tab===t)draw(t);else S.dirty[t]=1}
 function draw(t){S.dirty[t]=0;const f={op:renderOps,reg:renderReg,watch:renderWatch,scr:renderScreener,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,crypto:renderCrypto,jr:renderJr,risk:renderRisk}[t];if(f)f()}
 
-function backup(){const b={wl:WL,alarms:S.alarms,tx:S.tx,jr:S.jr,tdkey:S.key,src:S.src,cap:S.cap,rskp:S.rskp,sym:S.sym,tf:S.tf,ind:S.ind,v:7};const t='BISTT:'+btoa(unescape(encodeURIComponent(JSON.stringify(b))));$('#bktext').value=t;if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>alert('Panoya kopyalandi')).catch(()=>alert('Kutudaki metni elle kopyala'));else alert('Kutudaki metni elle kopyala')}
-function restore(){try{const t=$('#bktext').value.trim();if(!t.startsWith('BISTT:'))throw 0;const b=JSON.parse(decodeURIComponent(escape(atob(t.slice(6)))));['wl','alarms','tx','jr','sym','tf','ind','cap','rskp'].forEach(k=>{if(b[k]!==undefined)LS.set(k,b[k])});if(b.tdkey)LS.set('tdkey',b.tdkey);if(b.src)LS.set('src',b.src);alert('Geri yuklendi');location.reload()}catch(e){alert('Yedek metni taninmadi')}}
+function backup(){const b={wl:WL,alarms:S.alarms,tx:S.tx,jr:S.jr,src:S.src,cap:S.cap,rskp:S.rskp,sym:S.sym,tf:S.tf,ind:S.ind,v:7};const t='BISTT:'+btoa(unescape(encodeURIComponent(JSON.stringify(b))));$('#bktext').value=t;if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>alert('Panoya kopyalandi')).catch(()=>alert('Kutudaki metni elle kopyala'));else alert('Kutudaki metni elle kopyala')}
+function restore(){try{const t=$('#bktext').value.trim();if(!t.startsWith('BISTT:'))throw 0;const b=JSON.parse(decodeURIComponent(escape(atob(t.slice(6)))));['wl','alarms','tx','jr','sym','tf','ind','cap','rskp'].forEach(k=>{if(b[k]!==undefined)LS.set(k,b[k])});if(b.src)LS.set('src',b.src);alert('Geri yuklendi');location.reload()}catch(e){alert('Yedek metni taninmadi')}}
 
 /* ================= TradingView ================= */
 const BASE=['name','description','close','change','change_abs','open','high','low','volume','market_cap_basic','price_earnings_ttm','sector','relative_volume_10d_calc','average_volume_10d_calc','price_52_week_high','price_52_week_low','Recommend.All','update_mode','Volatility.D','ATR','RSI','EMA20','EMA50','EMA200','ADX','Perf.W','Perf.1M'];
@@ -473,7 +475,7 @@ async function deepScan(){
 }
 
 /* ================= mum verisi ================= */
-const WORKER='https://bist.c8jmvhdm8c.workers.dev/';
+const WORKER=APP_CONFIG.workerUrl||'https://bist.c8jmvhdm8c.workers.dev/';
 const YFS={'1min':['1m','5d'],'5min':['5m','20d'],'15min':['15m','20d'],'1h':['60m','180d'],'4h':['60m','360d'],'1day':['1d','1y'],'1week':['1wk','3y'],'1month':['1mo','8y']};
 const YFL={'1min':['1m','7d'],'5min':['5m','60d'],'15min':['15m','60d'],'1h':['60m','730d'],'4h':['60m','730d'],'1day':['1d','5y'],'1week':['1wk','10y'],'1month':['1mo','20y']};
 async function pfetch(sym,iv,rg,ms=12000){
