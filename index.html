@@ -151,6 +151,27 @@ form.tx button{background:var(--acc);color:#0a0d12;font-weight:700;border-color:
 .planbtn{background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);font-size:9px;padding:3px 9px;border-radius:5px;font-family:var(--mono);margin-top:6px}
 .newtag{background:var(--acc);color:#0a0d12;font-size:8.5px;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:5px}
 .rise{color:var(--up);font-size:9px;margin-left:4px}
+
+.sheet{display:none;background:var(--panel);border-bottom:1px solid var(--line);padding:6px 8px 9px}
+.sheet.on{display:block}
+.frow{display:flex;align-items:center;gap:8px;padding:4px 0}
+.frow label{width:74px;color:var(--dim);font-size:10px;flex:0 0 auto;letter-spacing:.3px}
+.frow select,.frow input{flex:1;background:var(--panel2);border:1px solid var(--line2);color:var(--txt);padding:6px 8px;font-family:var(--mono);font-size:11px;border-radius:6px}
+.frow .seg{flex:0 0 auto}
+#tabs button{position:relative;color:var(--dim)}
+#tabs button.on{color:var(--tc,#ffb020);border-top-color:var(--tc,#ffb020);background:linear-gradient(180deg,rgba(255,255,255,.06),transparent)}
+#tabs button.on i{filter:drop-shadow(0 0 6px var(--tc,#ffb020))}
+.cal-day{background:var(--panel);padding:6px 11px;font-size:10px;color:var(--acc);letter-spacing:1px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:3}
+.cal-row{display:flex;gap:9px;padding:9px 11px;border-bottom:1px solid var(--line);align-items:flex-start}
+.cal-row.hi{background:linear-gradient(90deg,rgba(255,77,94,.06),transparent)}
+.cal-t{width:40px;flex:0 0 auto;color:var(--txt2);font-size:11px;font-weight:700}
+.cal-m{flex:1;min-width:0}
+.cal-n{font-size:11.5px;color:#fff;line-height:1.35}
+.cal-s{font-size:9.5px;color:var(--dim);margin-top:3px}
+.imp{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.imp3{background:var(--dn)}.imp2{background:var(--acc)}.imp1{background:var(--line2)}
+.cal-v{text-align:right;font-size:10px;flex:0 0 auto;line-height:1.5}
+.cal-v b{color:#fff}
 .align{display:inline-block;font-size:9px;padding:2px 7px;border-radius:5px;margin-left:5px;font-weight:700}
 .mtf span.d{color:var(--dn);border-color:rgba(255,77,94,.3);background:var(--dnbg)}
 </style>
@@ -170,15 +191,30 @@ form.tx button{background:var(--acc);color:#0a0d12;font-weight:700;border-color:
    <div class="bar">
     <div class="seg" id="tfseg"></div>
     <div class="seg" id="dirseg"><button data-d="AL" class="on">AL</button><button data-d="SAT">SAT</button></div>
-    <select id="opvol"><option value="10000000">≥10 Mn</option><option value="30000000" selected>≥30 Mn</option><option value="80000000">≥80 Mn</option></select>
-    <button id="deepbtn" onclick="deepScan()">⚡ Derin</button>
+    <button class="ic" onclick="toggleFilt()" id="filtbtn">⚙</button>
     <button class="ic" onclick="toggleInfo()">ⓘ</button>
+    <button id="deepbtn" onclick="deepScan()">⚡</button>
+    <span style="flex:1"></span>
+    <span id="opcnt" style="color:var(--dim);font-size:9.5px"></span>
+   </div>
+   <div class="sheet" id="filtsheet">
+    <div class="frow"><label>Görünüm</label><div class="seg" id="viewseg"><button data-v="card" class="on">Kart</button><button data-v="table">Tablo</button></div></div>
+    <div class="frow"><label>Min hacim</label><select id="opvol"><option value="5000000">≥5 Mn ₺</option><option value="10000000">≥10 Mn ₺</option><option value="30000000" selected>≥30 Mn ₺</option><option value="80000000">≥80 Mn ₺</option><option value="200000000">≥200 Mn ₺</option></select></div>
+    <div class="frow"><label>Sektör</label><select id="secsel"><option value="">Tümü</option></select></div>
+    <div class="frow"><label>Ara</label><input id="scrq" placeholder="sembol veya şirket"></div>
+    <div class="frow"><label>Min hiza</label><select id="minal"><option value="-4">Sınırsız</option><option value="1">+1 ve üstü</option><option value="2" >+2 ve üstü</option><option value="3">+3 ve üstü</option><option value="4">Tam hizalı (+4)</option></select></div>
+    <div class="frow"><label>Min puan</label><select id="minsc"><option value="0">Sınırsız</option><option value="30">30+</option><option value="50">50+</option><option value="70">70+</option></select></div>
    </div>
    <div class="bar" id="setbar"></div>
    <div class="prog" id="dprog"></div>
    <div class="info" id="infobox"></div>
    <div id="oplist"></div>
    <div class="note" id="opnote"></div>
+  </div>
+
+  <div class="tab" id="t-cal">
+   <div class="bar"><div class="seg" id="calseg"><button data-c="TR" class="on">Türkiye</button><button data-c="US">ABD</button><button data-c="TR,US,EU">Hepsi</button></div><button onclick="loadCal()">↻ Yenile</button><span id="calmsg" style="color:var(--dim);font-size:9.5px"></span></div>
+   <div id="calbody"></div>
   </div>
 
   <div class="tab" id="t-reg"><div id="regbody"></div></div>
@@ -205,11 +241,6 @@ form.tx button{background:var(--acc);color:#0a0d12;font-weight:700;border-color:
   <div class="tab" id="t-watch">
    <div class="bar"><select id="wlsel"></select><button onclick="newList()">+ Liste</button><button onclick="delList()">Sil</button><button onclick="addWatch()">★ Ekle</button><button onclick="rmWatch()">− Çıkar</button><span id="wmsg" style="color:var(--dim);font-size:9.5px"></span></div>
    <div id="watch"></div>
-  </div>
-
-  <div class="tab" id="t-scr">
-   <div class="bar"><select id="secsel"><option value="">Tüm sektörler</option></select><input id="scrq" placeholder="ara" style="width:66px"><select id="minvol"><option value="0">Hepsi</option><option value="10000000">≥10 Mn</option><option value="50000000">≥50 Mn</option></select><span id="scrcnt" style="color:var(--dim)"></span></div>
-   <div id="scr"></div>
   </div>
 
   <div class="tab" id="t-mov"><div class="bar" id="movbar"></div><div id="mov"></div></div>
@@ -257,19 +288,19 @@ form.tx button{background:var(--acc);color:#0a0d12;font-weight:700;border-color:
  </div>
 
  <div id="tabs">
-  <button data-t="op" class="on"><i>◎</i>Fırsat</button>
-  <button data-t="reg"><i>◍</i>Piyasa</button>
-  <button data-t="chart"><i>◫</i>Grafik</button>
-  <button data-t="watch"><i>★</i>İzleme</button>
-  <button data-t="scr"><i>⌗</i>Tarayıcı</button>
-  <button data-t="mov"><i>↕</i>Hareket</button>
-  <button data-t="heat"><i>▦</i>Isı</button>
-  <button data-t="alarm"><i>◔</i>Alarm</button>
-  <button data-t="jr"><i>✎</i>Günlük</button>
-  <button data-t="risk"><i>%</i>Risk</button>
-  <button data-t="crypto"><i>₿</i>Kripto</button>
-  <button data-t="port"><i>∑</i>Portföy</button>
-  <button data-t="set"><i>⚙</i>Ayarlar</button>
+  <button data-t="op" class="on" style="--tc:#ffb020"><i>◎</i>Fırsat</button>
+  <button data-t="reg" style="--tc:#38bdf8"><i>◍</i>Piyasa</button>
+  <button data-t="chart" style="--tc:#00c48c"><i>◫</i>Grafik</button>
+  <button data-t="watch" style="--tc:#fbbf24"><i>★</i>İzleme</button>
+  <button data-t="cal" style="--tc:#f472b6"><i>▤</i>Takvim</button>
+  <button data-t="mov" style="--tc:#a78bfa"><i>↕</i>Hareket</button>
+  <button data-t="heat" style="--tc:#fb923c"><i>▦</i>Isı</button>
+  <button data-t="alarm" style="--tc:#ff4d5e"><i>◔</i>Alarm</button>
+  <button data-t="jr" style="--tc:#4ade80"><i>✎</i>Günlük</button>
+  <button data-t="risk" style="--tc:#22d3ee"><i>%</i>Risk</button>
+  <button data-t="crypto" style="--tc:#f59e0b"><i>₿</i>Kripto</button>
+  <button data-t="port" style="--tc:#818cf8"><i>∑</i>Portföy</button>
+  <button data-t="set" style="--tc:#94a3b8"><i>⚙</i>Ayarlar</button>
  </div>
 </div>
 <div id="pal" onclick="if(event.target.id==='pal')closePal()"><div id="palbox"><input id="palin" placeholder="Hisse veya kripto ara" autocomplete="off"><div id="pallist"></div></div></div>
@@ -294,7 +325,7 @@ const S={sym:LS.get('sym','THYAO'),mode:LS.get('mode','bist'),tf:LS.get('tf','15
  cap:LS.get('cap',100000),rskp:LS.get('rskp',1),alarms:LS.get('alarms',[]),
  uni:[],umap:{},sectors:new Set(),quotes:{},crypto:[],cmap:{},candles:[],ccache:{},wsig:{},vp:null,deep:{},
  sort:{k:'market_cap_basic',d:-1},mov:'gain',box:null,plines:[],tab:'op',limit:100,dirty:{},
- setup:'all',dir:'AL',stf:LS.get('stf','15'),reg:null,scanning:false,infoOn:false,seenA:LS.get('seenA',[])};
+ setup:'all',dir:'AL',stf:LS.get('stf','15'),view:LS.get('view','card'),cal:[],calC:'TR',reg:null,scanning:false,infoOn:false,seenA:LS.get('seenA',[])};
 $('#tdkey').value=S.key;$('#srcsel').value=S.src;$('#barlim').value=S.blim;$('#cap').value=S.cap;$('#rsk').value=S.rskp;
 function saveKey(){S.key=$('#tdkey').value.trim();LS.set('tdkey',S.key);S.ccache={};loadCandles();alert('Kaydedildi')}
 function setSrc(){S.src=$('#srcsel').value;LS.set('src',S.src);S.ccache={};loadCandles()}
@@ -302,7 +333,7 @@ function setBarLim(){S.blim=$('#barlim').value;LS.set('blim',S.blim);S.ccache={}
 function saveCap(){S.cap=+$('#cap').value||0;S.rskp=+$('#rsk').value||1;LS.set('cap',S.cap);LS.set('rskp',S.rskp);renderRisk();alert('Kaydedildi')}
 async function testSrc(){const m=$('#srcmsg');m.textContent='test...';try{const cs=await getBars('THYAO','15min');m.innerHTML='<b class="up">Çalışıyor</b> — '+cs.length+' mum'}catch(e){m.innerHTML='<b class="dn">Başarısız</b> — '+e.message}}
 function mark(t){if(S.tab===t)draw(t);else S.dirty[t]=1}
-function draw(t){S.dirty[t]=0;const f={op:renderOps,reg:renderReg,watch:renderWatch,scr:renderScreener,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,crypto:renderCrypto,jr:renderJr,risk:renderRisk}[t];if(f)f()}
+function draw(t){S.dirty[t]=0;const f={op:renderOps,reg:renderReg,watch:renderWatch,cal:calTab,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,crypto:renderCrypto,jr:renderJr,risk:renderRisk}[t];if(f)f()}
 function backup(){const b={wl:WL,alarms:S.alarms,tx:S.tx,jr:S.jr,tdkey:S.key,src:S.src,cap:S.cap,rskp:S.rskp,sym:S.sym,tf:S.tf,ind:S.ind,v:8};const t='BISTT:'+btoa(unescape(encodeURIComponent(JSON.stringify(b))));$('#bktext').value=t;if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>alert('Panoya kopyalandı')).catch(()=>alert('Kutudaki metni elle kopyala'));else alert('Kutudaki metni elle kopyala')}
 function restore(){try{const t=$('#bktext').value.trim();if(!t.startsWith('BISTT:'))throw 0;const b=JSON.parse(decodeURIComponent(escape(atob(t.slice(6)))));['wl','alarms','tx','jr','sym','tf','ind','cap','rskp'].forEach(k=>{if(b[k]!==undefined)LS.set(k,b[k])});if(b.tdkey)LS.set('tdkey',b.tdkey);if(b.src)LS.set('src',b.src);alert('Geri yüklendi');location.reload()}catch(e){alert('Yedek metni tanınmadı')}}
 
@@ -337,7 +368,7 @@ async function loadUniverse(){
    S.uni=j.data.map(r=>rowObj(r,COLS));S.umap={};S.sectors=new Set();
    S.uni.forEach(o=>{o.voltl=o.volume*o.close;o.tfm={};TFDEF.forEach(t=>o.tfm[t.id]=metricsOf(o,t));S.umap[o.name]=o;if(o.sector)S.sectors.add(o.sector);S.quotes[o.name]=o});
    const sel=$('#secsel'),cur=sel.value;sel.innerHTML='<option value="">Tüm sektörler</option>'+[...S.sectors].sort().map(s=>'<option '+(s===cur?'selected':'')+'>'+s+'</option>').join('');
-   buildPercentiles();computeRegime();renderPx();['op','reg','scr','mov','heat','watch'].forEach(mark);checkAlarms();return;
+   buildPercentiles();computeRegime();renderPx();['op','reg','mov','heat','watch'].forEach(mark);checkAlarms();return;
   }catch(e){if(a===0)COLS=BASE.concat(tfCols('|15',true));else $('#regbadge').textContent='TV hata'}
  }
 }
@@ -591,21 +622,29 @@ function renderInfo(){
   '<p>'+i.p+'</p><ul>'+i.l.map(x=>'<li>'+x+'</li>').join('')+'</ul><div class="warn">⚠ '+i.w+'</div>';
 }
 function opData(){
- const mv=+$('#opvol').value,dir=S.dir,tf=S.stf;
+ const mv=+($('#opvol')||{value:30000000}).value,dir=S.dir,tf=S.stf;
+ const sec=($('#secsel')||{value:''}).value,q=(($('#scrq')||{value:''}).value||'').toUpperCase().trim();
+ const mal=+($('#minal')||{value:-4}).value,msc=+($('#minsc')||{value:0}).value;
+ const sign=dir==='AL'?1:-1;
  let d=[];
  S.uni.forEach(o=>{
   if(o.voltl<mv)return;
+  if(sec&&o.sector!==sec)return;
+  if(q&&o.name.indexOf(q)<0&&(o.description||'').toUpperCase().indexOf(q)<0)return;
   const ss=setupsOf(o,tf)[dir];
-  const dp=S.deep[o.name];
-  const hasPoc=dp&&dp.poc&&dp.dir===dir;
+  const dp=S.deep[o.name],hasPoc=dp&&dp.poc&&dp.dir===dir;
   if(!ss.length&&!hasPoc)return;
   if(S.setup!=='all'&&ss.indexOf(S.setup)<0&&!(S.setup==='poc'&&hasPoc))return;
+  const al=alignOf(o).sum;
+  if(mal>-4&&sign*al<mal)return;
   o._ss=ss;o._sc=scoreOf(o,dir,tf,ss)+(dp&&dp.dir===dir?dp.bonus:0);
+  if(msc&&o._sc<msc)return;
   d.push(o);
  });
  d.sort((a,b)=>b._sc-a._sc);
  return d;
 }
+function calTab(){if(!S.cal||!S.cal.length)loadCal();else renderCal()}
 function prBadge(lab,v,good){
  if(v==null)return '';
  const c=good==null?'':(v>=75?'hi':v<=25?'lo':'');
@@ -617,7 +656,9 @@ function renderOps(){
  const prev=S.prevOps||{};
  const cur={};d.forEach(o=>cur[o.name]=o._sc);
  $('#opnote').innerHTML=S.reg?('<b style="color:var(--txt2)">'+S.reg.mode+'</b> rejimi · '+d.length+' fırsat · '+TFMAP[tf].lab+' taraması, '+TFMAP[tf].htfLab+' teyidi · eşikler o anki piyasa dağılımından hesaplanır (yüzdelik). ⚡ Derin, ilk 25 adayı mum bazında doğrular.'):'';
- if(!d.length){$('#oplist').innerHTML='<div class="note">Bu koşullarda fırsat yok. Zaman dilimini, kurulumu veya yönü değiştir; hacim eşiğini düşür.</div>';S.prevOps=cur;return}
+ $('#opcnt').textContent=d.length+' fırsat';
+ if(!d.length){$('#oplist').innerHTML='<div class="note">Bu koşullarda fırsat yok. Zaman dilimini, kurulumu veya yönü değiştir; ⚙ filtreden hacim ya da hiza eşiğini gevşet.</div>';S.prevOps=cur;return}
+ if(S.view==='table'){$('#oplist').innerHTML=renderOpTable(d);S.prevOps=cur;return}
  $('#oplist').innerHTML=d.slice(0,50).map((o,ix)=>{
   const dp=S.deep[o.name],dpm=dp&&dp.dir===dir,pr=o.pr||{},al=alignOf(o),m=o.tfm[tf]||{};
   const isNew=prev[o.name]===undefined&&Object.keys(prev).length>0;
@@ -827,16 +868,59 @@ function renderWatch(){
 }
 function addWatch(){if(S.mode!=='bist')return;if(!W().includes(S.sym)){W().push(S.sym);saveWL();renderWatch()}}
 function rmWatch(){WL.lists[WL.cur]=W().filter(s=>s!==S.sym);saveWL();renderWatch()}
-const SCOLS=[['name','Sembol'],['close','Son'],['change','%'],['voltl','Hacim ₺'],['relative_volume_10d_calc','RVOL'],['RSI','RSI'],['ADX','ADX'],['Perf.W','1H%'],['market_cap_basic','PD'],['price_earnings_ttm','F/K'],['sector','Sektör']];
-function renderScreener(){
- const sec=$('#secsel').value,q=$('#scrq').value.toUpperCase(),mv=+$('#minvol').value;
- let d=S.uni.filter(o=>(!sec||o.sector===sec)&&(!q||o.name.includes(q)||(o.description||'').toUpperCase().includes(q))&&o.voltl>=mv);
- const k=S.sort.k,dir=S.sort.d;d.sort((a,b)=>{const x=a[k],y=b[k];if(x==null)return 1;if(y==null)return-1;return(x>y?1:x<y?-1:0)*dir});
- $('#scrcnt').textContent=d.length;
- $('#scr').innerHTML='<table><tr>'+SCOLS.map(c=>'<th onclick="sortBy(\''+c[0]+'\')" style="color:'+(k===c[0]?'var(--acc)':'var(--dim)')+'">'+c[1]+(k===c[0]?(dir>0?'▲':'▼'):'')+'</th>').join('')+'</tr>'+d.slice(0,S.limit).map(o=>'<tr class="row" onclick="selectSym(\''+o.name+'\',\'bist\')"><td class="sym">'+o.name+'</td><td>'+nf(o.close)+'</td><td class="'+cls(o.change)+'">'+pct(o.change)+'</td><td>'+big(o.voltl)+'</td><td>'+nf(o.relative_volume_10d_calc,1)+'</td><td>'+nf(o.RSI,0)+'</td><td>'+nf(o.ADX,0)+'</td><td class="'+cls(o['Perf.W'])+'">'+pct(o['Perf.W'])+'</td><td>'+big(o.market_cap_basic)+'</td><td>'+nf(o.price_earnings_ttm,1)+'</td><td style="color:var(--dim)">'+(o.sector||'').slice(0,12)+'</td></tr>').join('')+'</table>'+(d.length>S.limit?'<button class="more" onclick="S.limit+=100;renderScreener()">Daha fazla</button>':'');
+const SCOLS=[['name','Sembol'],['_sc','Puan'],['close','Son'],['change','%'],['voltl','Hacim ₺'],['_al','Hiza'],['_prv','Hac%'],['_prs','Güç%'],['sector','Sektör']];
+function renderOpTable(d){
+ const k=S.sort.k,dir=S.sort.d;
+ d.forEach(o=>{o._al=alignOf(o).sum;o._prv=(o.pr||{}).rv;o._prs=(o.pr||{}).rs});
+ const dd=d.slice().sort((a,b)=>{const x=a[k],y=b[k];if(x==null)return 1;if(y==null)return-1;return(x>y?1:x<y?-1:0)*dir});
+ return '<table><tr>'+SCOLS.map(c=>'<th onclick="sortBy(\''+c[0]+'\')" style="color:'+(k===c[0]?'var(--acc)':'var(--dim)')+'">'+c[1]+(k===c[0]?(dir>0?'▲':'▼'):'')+'</th>').join('')+'</tr>'+
+ dd.slice(0,120).map(o=>'<tr class="row" onclick="selectSym(\''+o.name+'\',\'bist\')"><td class="sym">'+o.name+'</td><td style="color:var(--acc)">'+Math.round(o._sc)+'</td><td>'+nf(o.close)+'</td><td class="'+cls(o.change)+'">'+pct(o.change)+'</td><td>'+big(o.voltl)+'</td><td class="'+(o._al>0?'up':o._al<0?'dn':'')+'">'+(o._al>0?'+':'')+o._al+'</td><td>'+(o._prv!=null?o._prv:'-')+'</td><td>'+(o._prs!=null?o._prs:'-')+'</td><td style="color:var(--dim)">'+(o.sector||'').slice(0,12)+'</td></tr>').join('')+'</table>';
 }
-function sortBy(k){if(S.sort.k===k)S.sort.d*=-1;else S.sort={k,d:k==='name'||k==='sector'?1:-1};S.limit=100;renderScreener()}
-['secsel','scrq','minvol'].forEach(id=>$('#'+id).addEventListener('input',()=>{S.limit=100;renderScreener()}));
+function sortBy(k){if(S.sort.k===k)S.sort.d*=-1;else S.sort={k,d:k==='name'||k==='sector'?1:-1};renderOps()}
+function toggleFilt(){const e=$('#filtsheet');e.classList.toggle('on');$('#filtbtn').classList.toggle('on',e.classList.contains('on'))}
+['opvol','secsel','scrq','minal','minsc'].forEach(id=>{const e=$('#'+id);if(e)e.addEventListener('input',renderOps)});
+$('#viewseg').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;S.view=b.dataset.v;LS.set('view',S.view);[...$('#viewseg').children].forEach(x=>x.classList.toggle('on',x===b));renderOps()};
+
+/* ---------- ekonomik takvim ---------- */
+const CALNAME={};
+async function loadCal(){
+ const m=$('#calmsg');m.textContent='yükleniyor...';
+ const now=new Date(),from=new Date(now.getTime()-6*3600e3),to=new Date(now.getTime()+7*864e5);
+ const url='https://economic-calendar.tradingview.com/events?from='+from.toISOString()+'&to='+to.toISOString()+'&countries='+S.calC;
+ try{
+  const r=await fetch(url);
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const j=await r.json();
+  S.cal=(j.result||j.data||[]).filter(x=>x.title);
+  m.textContent=S.cal.length+' olay';
+  renderCal();
+ }catch(e){
+  m.textContent='';
+  $('#calbody').innerHTML='<div class="note">Takvim verisi alınamadı ('+String(e.message).slice(0,40)+'). Bu kaynak tarayıcıdan doğrudan erişime her zaman izin vermiyor; birkaç dakika sonra ↻ ile tekrar dene.<br><br>Not: TÜİK enflasyon verisi her ayın 3\'ünde 10:00, TCMB faiz kararları önceden ilan edilen takvimde açıklanır — bunlar BIST açılışını doğrudan etkiler.</div>';
+ }
+}
+function renderCal(){
+ const d=S.cal||[];
+ if(!d.length){$('#calbody').innerHTML='<div class="note">Bu aralıkta olay yok.</div>';return}
+ const by={};
+ d.forEach(x=>{const dt=new Date(x.date);const k=dt.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});(by[k]=by[k]||[]).push(x)});
+ let h='';
+ Object.keys(by).forEach(k=>{
+  h+='<div class="cal-day">'+k.toUpperCase()+'</div>';
+  by[k].sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(x=>{
+   const dt=new Date(x.date),imp=(x.importance!=null?x.importance:0)+1;
+   const hi=x.importance>=1;
+   h+='<div class="cal-row'+(hi?' hi':'')+'"><div class="cal-t">'+dt.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})+'</div>'+
+    '<div class="cal-m"><div class="cal-n"><span class="imp imp'+Math.min(3,Math.max(1,imp))+'"></span>'+(x.title||'')+'</div>'+
+    '<div class="cal-s">'+(x.country||'')+(x.period?' · '+x.period:'')+(x.unit?' · '+x.unit:'')+'</div></div>'+
+    '<div class="cal-v">'+(x.actual!=null?'<b>'+x.actual+'</b>':'<span style="color:var(--dim)">—</span>')+
+    '<br><span style="color:var(--dim)">bek '+(x.forecast!=null?x.forecast:'—')+' · önc '+(x.previous!=null?x.previous:'—')+'</span></div></div>';
+  });
+ });
+ $('#calbody').innerHTML=h;
+}
+$('#calseg').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;S.calC=b.dataset.c;[...$('#calseg').children].forEach(x=>x.classList.toggle('on',x===b));loadCal()};
+
 const MOVS=[['gain','Yükselen'],['lose','Düşen'],['relvol','Hacim'],['gap','Gap'],['hi52','52h zirve'],['lo52','52h dip']];
 $('#movbar').innerHTML=MOVS.map(m=>'<button data-m="'+m[0]+'" class="'+(m[0]===S.mov?'on':'')+'">'+m[1]+'</button>').join('');
 $('#movbar').onclick=e=>{const b=e.target.closest('[data-m]');if(!b)return;S.mov=b.dataset.m;[...$('#movbar').children].forEach(x=>x.classList.toggle('on',x===b));renderMov()};
@@ -1029,6 +1113,7 @@ window.addEventListener('resize',()=>{if(S.tab==='heat')renderHeat()});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadUniverse();refreshTick()}});
 (async()=>{
  buildSetBar();renderWLSel();renderWatch();renderJr();renderRisk();
+ [...$('#viewseg').children].forEach(x=>x.classList.toggle('on',x.dataset.v===S.view));
  await loadUniverse();
  const q=S.umap[S.sym];$('#symbtn').innerHTML=S.sym+'<small>'+((q&&q.description)||'BIST').slice(0,20)+'</small>';
  renderPx();renderOps();
