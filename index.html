@@ -393,10 +393,10 @@ async function loadUniverse(){
  try{
   COLS=cols;S.colLevel=lvl;S.err='';
   S.uni=data.map(r=>rowObj(r,cols));S.umap={};S.sectors=new Set();
-  S.uni.forEach(o=>{o.voltl=o.volume*o.close;o.tfm={};TFDEF.forEach(t=>o.tfm[t.id]=metricsOf(o,t));S.umap[o.name]=o;if(o.sector)S.sectors.add(o.sector);S.quotes[o.name]=o});
+  S.uni.forEach(o=>{o.voltl=o.volume*o.close;o.tfm=null;S.umap[o.name]=o;if(o.sector)S.sectors.add(o.sector);S.quotes[o.name]=o});
   const sel=$('#secsel'),cur=sel?sel.value:'';
   if(sel)sel.innerHTML='<option value="">Tümü</option>'+[...S.sectors].sort().map(x=>'<option '+(x===cur?'selected':'')+'>'+x+'</option>').join('');
-  buildPercentiles();computeRegime();renderPx();
+  S.uni.forEach(o=>o.tfm=null);buildPercentiles();computeRegime();renderPx();
   ['op','reg','mov','heat','watch'].forEach(mark);checkAlarms();
  }catch(err){S.err='işleme hatası: '+String(err.message||err);try{mark('op')}catch(x){}}
 }
@@ -405,9 +405,9 @@ function metricsOf(o,t){
  const s=t.sfx;
  const c=o['close'+s],e20=o['EMA20'+s],e50=o['EMA50'+s],e200=o['EMA200'+s],rsi=o['RSI'+s],adx=o['ADX'+s],
   atr=o['ATR'+s],bu=o['BB.upper'+s],bl=o['BB.lower'+s],vw=t.vwap?o['VWAP'+s]:null,
-  hc=o['close'+t.htf],he=o['EMA20'+t.htf];
+  hc=o['close'+t.htf],he=o['EMA20'+t.htf],
+  mac=o['MACD.macd'+s],msg=o['MACD.signal'+s],sk=o['Stoch.K'+s],sd=o['Stoch.D'+s];
  if(c==null||e20==null)return null;
- const has=v=>v!=null;
  return{c,e20,e50,e200,rsi,adx,atr,bu,bl,vw,mac,msg,sk,sd,
   hist:(mac!=null&&msg!=null)?mac-msg:null,
   histN:(mac!=null&&msg!=null&&c)?(mac-msg)/c*100:null,
@@ -420,6 +420,12 @@ function metricsOf(o,t){
   rv:o.relative_volume_10d_calc,
   h52:o.price_52_week_high?(o.close/o.price_52_week_high-1)*100:null,
   l52:o.price_52_week_low?(o.close/o.price_52_week_low-1)*100:null};
+}
+function tfmOf(o,id){
+ if(!o)return null;
+ if(!o.tfm){o.tfm={};try{TFDEF.forEach(t=>{o.tfm[t.id]=metricsOf(o,t)})}catch(e){}}
+ var t=o.tfm;
+ return (t&&t[id])||null;
 }
 const SETUPS=[
  {id:'vwap',n:'VWAP dönüşü',c:'t1',need:'vwap'},
@@ -457,7 +463,7 @@ const INFO={
  poc:{t:'POC / Değer alanı',s:'HACİM PROFİLİ · DERİN TARAMA',p:'Dünkü seansın en çok işlem gören fiyatı (POC) ve %70 değer alanı hesaplanır. Fiyatın bu referanslara dönüp tutması güçlü destek/direnç işaretidir.',l:['⚡ Derin tara ile hesaplanır, mum verisi gerekir','AL: fiyat POC veya VAL\'e %0,6\'dan yakın','EMA50 ve VWAP\'ın doğru tarafında'],w:'Yalnız başına kullanma; EMA veya VWAP kurulumuyla üst üste geldiğinde değerlidir.'}
 };
 function setupsOf(o,tfId){
- const m=o.tfm[tfId],t=TFMAP[tfId],out={AL:[],SAT:[]};
+ const m=tfmOf(o,tfId),t=TFMAP[tfId],out={AL:[],SAT:[]};
  if(!m)return out;
  const pr=o.pr||{};
  const intraday=tfId==='15'||tfId==='60';
@@ -491,7 +497,7 @@ function setupsOf(o,tfId){
  return out;
 }
 function warnsOf(o,dir,tfId){
- const m=o.tfm[tfId]||{},pr=o.pr||{},w=[];
+ const m=tfmOf(o,tfId)||{},pr=o.pr||{},w=[];
  const sign=dir==='AL'?1:-1;
  if(m.h52!=null&&dir==='AL'&&m.h52>=-1&&pr.rv!=null&&pr.rv<50)w.push(['w','Zirveye yakın ama hacim piyasa ortalamasının altında — kırılım zayıf']);
  if(o.secAvg!=null&&sign*o.secAvg<0)w.push(['w','Sektörü ters yönde ('+pct(o.secAvg)+') — akıntıya karşı']);
@@ -510,7 +516,7 @@ function warnsOf(o,dir,tfId){
  return w;
 }
 function scoreOf(o,dir,tfId,ss){
- const m=o.tfm[tfId];if(!m)return 0;
+ const m=tfmOf(o,tfId);if(!m)return 0;
  const pr=o.pr||{},sign=dir==='AL'?1:-1;
  let s=ss.length*10;
  const al=alignOf(o);s+=sign*al.sum*5;
@@ -530,7 +536,7 @@ function scoreOf(o,dir,tfId,ss){
  return s;
 }
 function planOf(o,dir,tfId){
- const m=o.tfm[tfId];if(!m)return null;
+ const m=tfmOf(o,tfId);if(!m)return null;
  const px=o.close,atr=m.atr||(o.ATR||px*0.02),dp=S.deep[o.name];
  const lv=[];
  if(m.vw)lv.push({n:'VWAP',v:m.vw});
@@ -558,13 +564,13 @@ function planOf(o,dir,tfId){
  return{entry,stop,tgt,stopRef,tgtRef,risk,rr,lots,share,sup,res,riskPct:risk/px*100};
 }
 function mtfStrip(o){
- return '<div class="mtf">'+TFDEF.map(t=>{const m=o.tfm[t.id];
+ return '<div class="mtf">'+TFDEF.map(t=>{const m=tfmOf(o,t.id);
   if(!m)return '<span>'+t.lab+'</span>';
   const up=m.c>m.e20&&m.stack>=0,dn=m.c<m.e20&&m.stack<=0;
   return '<span class="'+(up?'u':dn?'d':'')+'">'+t.lab+' '+(up?'↑':dn?'↓':'·')+'</span>'}).join('')+'</div>';
 }
 function whyText(o,tfId){
- const m=o.tfm[tfId];if(!m)return '';
+ const m=tfmOf(o,tfId);if(!m)return '';
  const b=[];
  if(m.vd!=null)b.push('<b>VWAP</b> '+pct(m.vd));
  if(m.ed!=null)b.push('<b>EMA20</b> '+pct(m.ed));
@@ -585,7 +591,7 @@ function buildPercentiles(){
  const idxCh=S.idxCh||0;
  const keys={rv:[],atrp:[],adx:[],rs:[],perfW:[],vol:[],bw:[],hp:[]};
  liq.forEach(o=>{
-  const m=o.tfm[S.stf]||o.tfm['D']||{};
+  const m=tfmOf(o,S.stf)||tfmOf(o,'D')||{};
   o._rs=(o.change||0)-idxCh;
   if(m.rv!=null)keys.rv.push(m.rv);
   if(m.atrp!=null)keys.atrp.push(m.atrp);
@@ -599,7 +605,7 @@ function buildPercentiles(){
  Object.keys(keys).forEach(k=>keys[k].sort((a,b)=>a-b));
  S.pctArr=keys;
  liq.forEach(o=>{
-  const m=o.tfm[S.stf]||o.tfm['D']||{};
+  const m=tfmOf(o,S.stf)||tfmOf(o,'D')||{};
   o.pr={rv:pctRank(keys.rv,m.rv),atrp:pctRank(keys.atrp,m.atrp),adx:pctRank(keys.adx,m.adx),
    rs:pctRank(keys.rs,o._rs),perfW:pctRank(keys.perfW,o['Perf.W']),vol:pctRank(keys.vol,o.voltl),bw:pctRank(keys.bw,m.bw),
    hp:(m.histN!=null&&m.histN>0)?pctRank(keys.hp,m.histN):null};
@@ -615,7 +621,7 @@ function buildPercentiles(){
 }
 function alignOf(o){
  let sum=0,det=[];
- TFDEF.forEach(t=>{const m=o.tfm[t.id];if(!m){det.push(0);return}
+ TFDEF.forEach(t=>{const m=tfmOf(o,t.id);if(!m){det.push(0);return}
   const v=(m.c>m.e20&&m.stack>=0)?1:(m.c<m.e20&&m.stack<=0)?-1:0;sum+=v;det.push(v)});
  return{sum,det};
 }
@@ -717,7 +723,7 @@ function renderOps(){
  if(!d.length){$('#oplist').innerHTML='<div class="note">Bu koşullarda fırsat yok. Zaman dilimini, kurulumu veya yönü değiştir; ⚙ filtreden hacim ya da hiza eşiğini gevşet.</div>';S.prevOps=cur;return}
  if(S.view==='table'){$('#oplist').innerHTML=renderOpTable(d);S.prevOps=cur;return}
  $('#oplist').innerHTML=d.slice(0,50).map((o,ix)=>{
-  const dp=S.deep[o.name],dpm=dp&&dp.dir===dir,pr=o.pr||{},al=alignOf(o),m=o.tfm[tf]||{};
+  const dp=S.deep[o.name],dpm=dp&&dp.dir===dir,pr=o.pr||{},al=alignOf(o),m=tfmOf(o,tf)||{};
   const isNew=prev[o.name]===undefined&&Object.keys(prev).length>0;
   const rise=prev[o.name]!==undefined&&o._sc-prev[o.name]>=6;
   const tags=o._ss.map(x=>'<span class="tag '+SCOL[x]+'">'+SNAME[x]+'</span>').join('')+
@@ -760,7 +766,7 @@ async function deepScan(){
  if(DEEPSET[S.setup]){
   const mv=+($('#opvol')||{value:30000000}).value;
   const sign=S.dir==='AL'?1:-1;
-  list=S.uni.filter(o=>o.voltl>=mv).map(o=>{const m=o.tfm[S.stf]||{};o._pool=(o.pr&&o.pr.rv||0)+(sign*alignOf(o).sum)*8+((m.htf===sign)?20:0);return o})
+  list=S.uni.filter(o=>o.voltl>=mv).map(o=>{const m=tfmOf(o,S.stf)||{};o._pool=(o.pr&&o.pr.rv||0)+(sign*alignOf(o).sum)*8+((m.htf===sign)?20:0);return o})
     .sort((a,b)=>b._pool-a._pool).slice(0,30);
  }else list=opData().slice(0,25);
  if(!list.length)return;
@@ -866,7 +872,7 @@ function analyze(cs,sym){
  const side=dir!=='-'?dir:(px>e50[n]?'AL':'SAT');
  const gate=side==='AL'?(px>e50[n]&&vwUp&&atrPct>=0.30):(px<e50[n]&&!vwUp&&atrPct>=0.30);
  let p=0;
- const o=S.umap[sym],ss=o?setupsOf(o,'15')[side]:[];
+ const o=S.umap[sym];let ss=[];try{if(o)ss=setupsOf(o,'15')[side]||[]}catch(e){}
  if(side==='AL'){
   if(e9[n]>e21[n]&&e21[n]>e50[n])p++;if(dir==='AL'&&bars<=3)p++;if(vr>=1.2)p++;
   if(ref&&(Math.abs(pocD)<=0.6||Math.abs(valD)<=0.6))p++;if(vwD>=0&&vwD<=1.5)p++;
@@ -941,7 +947,7 @@ async function refreshFast(){
  if(document.hidden)return;
  const t=[...new Set([S.sym,...W(),...S.alarms.filter(a=>!a.hit).map(a=>a.s)])].map(s=>'BIST:'+s);
  if(!t.length)return;
- try{const j=await tvScan('global',{symbols:{tickers:t},columns:COLS});j.data.forEach(r=>{const o=rowObj(r,COLS);o.voltl=o.volume*o.close;o.tfm={};TFDEF.forEach(x=>o.tfm[x.id]=metricsOf(o,x));S.quotes[o.name]=o});renderPx();['watch','alarm'].forEach(mark);checkAlarms()}catch(e){}
+ try{const j=await tvScan('global',{symbols:{tickers:t},columns:COLS});j.data.forEach(r=>{const o=rowObj(r,COLS);o.voltl=o.volume*o.close;o.tfm=null;S.quotes[o.name]=o});renderPx();['watch','alarm'].forEach(mark);checkAlarms()}catch(e){}
 }
 async function refreshTick(){
  if(document.hidden)return;
