@@ -335,7 +335,7 @@ function setBarLim(){S.blim=$('#barlim').value;LS.set('blim',S.blim);S.ccache={}
 function saveCap(){S.cap=+$('#cap').value||0;S.rskp=+$('#rsk').value||1;LS.set('cap',S.cap);LS.set('rskp',S.rskp);renderRisk();alert('Kaydedildi')}
 async function testSrc(){const m=$('#srcmsg');m.textContent='test...';try{const cs=await getBars('THYAO','15min');m.innerHTML='<b class="up">Çalışıyor</b> — '+cs.length+' mum'}catch(e){m.innerHTML='<b class="dn">Başarısız</b> — '+e.message}}
 function mark(t){if(S.tab===t)draw(t);else S.dirty[t]=1}
-function draw(t){S.dirty[t]=0;const f={op:renderOps,reg:renderReg,watch:renderWatch,cal:calTab,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,crypto:renderCrypto,jr:renderJr,risk:renderRisk}[t];if(f)f()}
+function draw(t){S.dirty[t]=0;const f={op:function(){try{renderOps()}catch(e){$('#oplist').innerHTML='<div class="note"><b class="dn">Ekran hatası:</b> '+String(e.message||e)+'</div>'}},reg:renderReg,watch:renderWatch,cal:calTab,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,crypto:renderCrypto,jr:renderJr,risk:renderRisk}[t];if(f)f()}
 function backup(){const b={wl:WL,alarms:S.alarms,tx:S.tx,jr:S.jr,tdkey:S.key,src:S.src,cap:S.cap,rskp:S.rskp,sym:S.sym,tf:S.tf,ind:S.ind,v:8};const t='BISTT:'+btoa(unescape(encodeURIComponent(JSON.stringify(b))));$('#bktext').value=t;if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>alert('Panoya kopyalandı')).catch(()=>alert('Kutudaki metni elle kopyala'));else alert('Kutudaki metni elle kopyala')}
 function restore(){try{const t=$('#bktext').value.trim();if(!t.startsWith('BISTT:'))throw 0;const b=JSON.parse(decodeURIComponent(escape(atob(t.slice(6)))));['wl','alarms','tx','jr','sym','tf','ind','cap','rskp'].forEach(k=>{if(b[k]!==undefined)LS.set(k,b[k])});if(b.tdkey)LS.set('tdkey',b.tdkey);if(b.src)LS.set('src',b.src);alert('Geri yüklendi');location.reload()}catch(e){alert('Yedek metni tanınmadı')}}
 
@@ -369,27 +369,36 @@ function colsFor(stf,safe){
 }
 let COLS=colsFor(LS.get('stf','15'));
 const FILT=[{left:'type',operation:'equal',right:'stock'},{left:'subtype',operation:'in_range',right:['common','foreign-issuer']}];
-async function tvScan(ep,body){const r=await fetch('https://scanner.tradingview.com/'+ep+'/scan',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});if(!r.ok)throw new Error('TV '+r.status);return r.json()}
+async function tvScan(ep,body){
+ const r=await fetch('https://scanner.tradingview.com/'+ep+'/scan',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
+ if(!r.ok){let t='';try{t=(await r.text()).slice(0,90)}catch(e){}throw new Error('HTTP '+r.status+(t?' · '+t:''))}
+ return r.json()}
 const rowObj=(row,cols)=>{const o={ticker:row.s};cols.forEach((c,i)=>o[c]=row.d[i]);return o};
 async function loadUniverse(){
  if(document.hidden)return;
- const tries=[colsFor(S.stf),colsFor(S.stf,true),BASE.concat(SAFE.map(x=>x+'|15')).concat(['VWAP|15']),BASE];
- let lastErr='';
- for(let i=0;i<tries.length;i++){
-  const cols=tries[i];
-  try{
-   const j=await tvScan('turkey',{filter:FILT,options:{lang:'tr'},markets:['turkey'],symbols:{query:{types:[]},tickers:[]},columns:cols,sort:{sortBy:'market_cap_basic',sortOrder:'desc'},range:[0,900]});
-   if(!j.data||!j.data.length)throw new Error('bos yanit');
-   COLS=cols;S.colLevel=i;
-   S.uni=j.data.map(r=>rowObj(r,cols));S.umap={};S.sectors=new Set();
-   S.uni.forEach(o=>{o.voltl=o.volume*o.close;o.tfm={};TFDEF.forEach(t=>o.tfm[t.id]=metricsOf(o,t));S.umap[o.name]=o;if(o.sector)S.sectors.add(o.sector);S.quotes[o.name]=o});
-   const sel=$('#secsel'),cur=sel?sel.value:'';
-   if(sel)sel.innerHTML='<option value="">Tümü</option>'+[...S.sectors].sort().map(x=>'<option '+(x===cur?'selected':'')+'>'+x+'</option>').join('');
-   S.err='';buildPercentiles();computeRegime();renderPx();['op','reg','mov','heat','watch'].forEach(mark);checkAlarms();return;
-  }catch(e){lastErr=String(e.message||e)}
+ const sets=[colsFor(S.stf),colsFor(S.stf,true),BASE.concat(SAFE.map(x=>x+'|15')).concat(['VWAP|15']),BASE];
+ const eps=['turkey','global'];
+ let data=null,cols=null,lvl=0,log=[];
+ for(let e=0;e<eps.length&&!data;e++){
+  for(let i=0;i<sets.length&&!data;i++){
+   try{
+    const body={filter:FILT,options:{lang:'tr'},markets:['turkey'],symbols:{query:{types:[]},tickers:[]},columns:sets[i],sort:{sortBy:'market_cap_basic',sortOrder:'desc'},range:[0,900]};
+    const j=await tvScan(eps[e],body);
+    if(!j||!j.data||!j.data.length)throw new Error('boş yanıt');
+    data=j.data;cols=sets[i];lvl=i;S.epUsed=eps[e];
+   }catch(err){log.push(eps[e]+'/'+i+': '+String(err.message||err))}
+  }
  }
- S.err=lastErr;$('#regbadge').innerHTML='<span class="dn">VERİ YOK</span>';
- mark('op');
+ if(!data){S.err=log.slice(-2).join(' | ');$('#regbadge').innerHTML='<span class="dn">VERİ YOK</span>';try{mark('op')}catch(x){}return}
+ try{
+  COLS=cols;S.colLevel=lvl;S.err='';
+  S.uni=data.map(r=>rowObj(r,cols));S.umap={};S.sectors=new Set();
+  S.uni.forEach(o=>{o.voltl=o.volume*o.close;o.tfm={};TFDEF.forEach(t=>o.tfm[t.id]=metricsOf(o,t));S.umap[o.name]=o;if(o.sector)S.sectors.add(o.sector);S.quotes[o.name]=o});
+  const sel=$('#secsel'),cur=sel?sel.value:'';
+  if(sel)sel.innerHTML='<option value="">Tümü</option>'+[...S.sectors].sort().map(x=>'<option '+(x===cur?'selected':'')+'>'+x+'</option>').join('');
+  buildPercentiles();computeRegime();renderPx();
+  ['op','reg','mov','heat','watch'].forEach(mark);checkAlarms();
+ }catch(err){S.err='işleme hatası: '+String(err.message||err);try{mark('op')}catch(x){}}
 }
 /* ================= metrikler + kurulumlar ================= */
 function metricsOf(o,t){
@@ -695,12 +704,15 @@ function prBadge(lab,v,good){
 }
 function togglePlan(n){const e=document.getElementById('pl_'+n);if(e)e.classList.toggle('on');event.stopPropagation()}
 function renderOps(){
+ if(!S.uni.length){
+  $('#oplist').innerHTML='<div class="note"><b class="dn">Piyasa verisi alınamadı.</b><br>'+(S.err?('<span style="color:var(--acc)">'+S.err+'</span><br>'):'')+'Otomatik olarak 30 saniyede bir yeniden denenir. Sürerse bu satırı bana ilet.</div>';
+  $('#opnote').innerHTML='';$('#opcnt').textContent='';return;
+ }
  const d=opData(),dir=S.dir,tf=S.stf;
  const prev=S.prevOps||{};
  const cur={};d.forEach(o=>cur[o.name]=o._sc);
  $('#opnote').innerHTML=S.reg?('<b style="color:var(--txt2)">'+S.reg.mode+'</b> rejimi · '+d.length+' fırsat · '+TFMAP[tf].lab+' taraması, '+TFMAP[tf].htfLab+' teyidi · eşikler o anki piyasa dağılımından yüzdelik olarak hesaplanır.'+(S.colLevel>0?' <span class="dn">Sınırlı veri seviyesi '+S.colLevel+' — MACD/Stochastic kurulumları devre dışı.</span>':'')+' ⚡ Derin, adayları mum bazında doğrular.'):'';
  $('#opcnt').textContent=d.length+' fırsat';
- if(!S.uni.length){$('#oplist').innerHTML='<div class="note"><b class="dn">Piyasa verisi alınamadı.</b><br>'+(S.err?('Hata: '+S.err+'<br>'):'')+'TradingView tarayıcı isteği yanıt vermedi. Birkaç saniye içinde otomatik tekrar denenir; sürerse zaman dilimini değiştirip geri al ya da sayfayı yenile.</div>';return}
  if(DEEPSET[S.setup]&&!d.length&&!S.scanning){$('#oplist').innerHTML='<div class="note"><b style="color:var(--acc)">⚡ '+SNAME[S.setup]+'</b> mum verisi gerektirir. Üstteki <b>⚡</b> düğmesine bas — en likit 30 aday taranır, sonuçlar burada listelenir. Yaklaşık 15 saniye sürer.</div>';S.prevOps=cur;return}
  if(!d.length){$('#oplist').innerHTML='<div class="note">Bu koşullarda fırsat yok. Zaman dilimini, kurulumu veya yönü değiştir; ⚙ filtreden hacim ya da hiza eşiğini gevşet.</div>';S.prevOps=cur;return}
  if(S.view==='table'){$('#oplist').innerHTML=renderOpTable(d);S.prevOps=cur;return}
