@@ -353,28 +353,44 @@ function tfCols(sfx,vwap){
  if(vwap)c.push('VWAP'+sfx);
  return c;
 }
-let COLS=(function(){
- let s=BASE.slice();
- TFDEF.forEach(t=>{tfCols(t.sfx,t.vwap).forEach(c=>{if(s.indexOf(c)<0)s.push(c)})});
- ['close|1W','EMA20|1W'].forEach(c=>{if(s.indexOf(c)<0)s.push(c)});
- return s;
-})();
+const MINI=['close','EMA20','EMA50','EMA200'];
+const SAFE=['close','EMA20','EMA50','EMA200','RSI','ADX','ATR','BB.upper','BB.lower'];
+function colsFor(stf,safe){
+ let a=BASE.slice();
+ const add=c=>{if(a.indexOf(c)<0)a.push(c)};
+ TFDEF.forEach(t=>{
+  if(t.id===stf){
+   const set=safe?SAFE.map(x=>x+t.sfx).concat(t.vwap?['VWAP'+t.sfx]:[]):tfCols(t.sfx,t.vwap);
+   set.forEach(add);
+  }else MINI.map(x=>x+t.sfx).forEach(add);
+ });
+ add('close|1W');add('EMA20|1W');
+ return a;
+}
+let COLS=colsFor(LS.get('stf','15'));
 const FILT=[{left:'type',operation:'equal',right:'stock'},{left:'subtype',operation:'in_range',right:['common','foreign-issuer']}];
 async function tvScan(ep,body){const r=await fetch('https://scanner.tradingview.com/'+ep+'/scan',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});if(!r.ok)throw new Error('TV '+r.status);return r.json()}
 const rowObj=(row,cols)=>{const o={ticker:row.s};cols.forEach((c,i)=>o[c]=row.d[i]);return o};
 async function loadUniverse(){
  if(document.hidden)return;
- for(let a=0;a<2;a++){
+ const tries=[colsFor(S.stf),colsFor(S.stf,true),BASE.concat(SAFE.map(x=>x+'|15')).concat(['VWAP|15']),BASE];
+ let lastErr='';
+ for(let i=0;i<tries.length;i++){
+  const cols=tries[i];
   try{
-   const j=await tvScan('turkey',{filter:FILT,options:{lang:'tr'},markets:['turkey'],symbols:{query:{types:[]},tickers:[]},columns:COLS,sort:{sortBy:'market_cap_basic',sortOrder:'desc'},range:[0,900]});
-   S.uni=j.data.map(r=>rowObj(r,COLS));S.umap={};S.sectors=new Set();
+   const j=await tvScan('turkey',{filter:FILT,options:{lang:'tr'},markets:['turkey'],symbols:{query:{types:[]},tickers:[]},columns:cols,sort:{sortBy:'market_cap_basic',sortOrder:'desc'},range:[0,900]});
+   if(!j.data||!j.data.length)throw new Error('bos yanit');
+   COLS=cols;S.colLevel=i;
+   S.uni=j.data.map(r=>rowObj(r,cols));S.umap={};S.sectors=new Set();
    S.uni.forEach(o=>{o.voltl=o.volume*o.close;o.tfm={};TFDEF.forEach(t=>o.tfm[t.id]=metricsOf(o,t));S.umap[o.name]=o;if(o.sector)S.sectors.add(o.sector);S.quotes[o.name]=o});
-   const sel=$('#secsel'),cur=sel.value;sel.innerHTML='<option value="">Tüm sektörler</option>'+[...S.sectors].sort().map(s=>'<option '+(s===cur?'selected':'')+'>'+s+'</option>').join('');
-   buildPercentiles();computeRegime();renderPx();['op','reg','mov','heat','watch'].forEach(mark);checkAlarms();return;
-  }catch(e){if(a===0)COLS=BASE.concat(tfCols('|15',true));else $('#regbadge').textContent='TV hata'}
+   const sel=$('#secsel'),cur=sel?sel.value:'';
+   if(sel)sel.innerHTML='<option value="">Tümü</option>'+[...S.sectors].sort().map(x=>'<option '+(x===cur?'selected':'')+'>'+x+'</option>').join('');
+   S.err='';buildPercentiles();computeRegime();renderPx();['op','reg','mov','heat','watch'].forEach(mark);checkAlarms();return;
+  }catch(e){lastErr=String(e.message||e)}
  }
+ S.err=lastErr;$('#regbadge').innerHTML='<span class="dn">VERİ YOK</span>';
+ mark('op');
 }
-
 /* ================= metrikler + kurulumlar ================= */
 function metricsOf(o,t){
  const s=t.sfx;
@@ -382,6 +398,7 @@ function metricsOf(o,t){
   atr=o['ATR'+s],bu=o['BB.upper'+s],bl=o['BB.lower'+s],vw=t.vwap?o['VWAP'+s]:null,
   hc=o['close'+t.htf],he=o['EMA20'+t.htf];
  if(c==null||e20==null)return null;
+ const has=v=>v!=null;
  return{c,e20,e50,e200,rsi,adx,atr,bu,bl,vw,mac,msg,sk,sd,
   hist:(mac!=null&&msg!=null)?mac-msg:null,
   histN:(mac!=null&&msg!=null&&c)?(mac-msg)/c*100:null,
@@ -449,7 +466,7 @@ function setupsOf(o,tfId){
  if(volHot&&o.change>0&&m.htf===1)out.AL.push('hac');
  if(m.h52!=null&&m.h52>=-2&&volOk)out.AL.push('h52');
  if(m.rsi<=28&&o.EMA200&&o.close>o.EMA200)out.AL.push('tep');
- if(m.stack===1&&m.hist!=null&&m.hist>0&&m.mac>m.msg&&volOk&&m.htf===1)out.AL.push('trm');
+ if(m.hist!=null&&m.stack===1&&m.hist>0&&m.mac>m.msg&&volOk&&m.htf===1)out.AL.push('trm');
  if(m.hist!=null&&m.hist>0&&pr.hp!=null&&pr.hp<=40&&m.c>m.e20&&m.htf===1)out.AL.push('fbrk');
  if(m.sk!=null&&m.sd!=null&&m.sk>m.sd&&m.sk<38&&m.rsi<48&&o.EMA200&&o.close>o.EMA200)out.AL.push('dip');
  if(m.vd!=null&&m.vd<=0&&m.vd>=-1.2&&m.e20<m.e50&&m.htf===-1&&volOk)out.SAT.push('vwap');
@@ -629,7 +646,7 @@ function renderReg(){
 
 /* ================= fırsat ================= */
 $('#tfseg').innerHTML=TFDEF.map(t=>'<button data-tf="'+t.id+'" class="'+(t.id===S.stf?'on':'')+'">'+t.lab+'</button>').join('');
-$('#tfseg').onclick=e=>{const b=e.target.closest('[data-tf]');if(!b)return;S.stf=b.dataset.tf;LS.set('stf',S.stf);[...$('#tfseg').children].forEach(x=>x.classList.toggle('on',x===b));buildPercentiles();buildSetBar();renderOps();renderInfo()};
+$('#tfseg').onclick=e=>{const b=e.target.closest('[data-tf]');if(!b)return;S.stf=b.dataset.tf;LS.set('stf',S.stf);[...$('#tfseg').children].forEach(x=>x.classList.toggle('on',x===b));buildSetBar();renderInfo();$('#opnote').innerHTML='<span style="color:var(--acc)">'+TFMAP[S.stf].lab+' verisi çekiliyor...</span>';loadUniverse()};
 $('#dirseg').onclick=e=>{const b=e.target.closest('[data-d]');if(!b)return;S.dir=b.dataset.d;[...$('#dirseg').children].forEach(x=>x.classList.toggle('on',x===b));renderOps()};
 $('#opvol').addEventListener('input',renderOps);
 function buildSetBar(){
@@ -681,8 +698,9 @@ function renderOps(){
  const d=opData(),dir=S.dir,tf=S.stf;
  const prev=S.prevOps||{};
  const cur={};d.forEach(o=>cur[o.name]=o._sc);
- $('#opnote').innerHTML=S.reg?('<b style="color:var(--txt2)">'+S.reg.mode+'</b> rejimi · '+d.length+' fırsat · '+TFMAP[tf].lab+' taraması, '+TFMAP[tf].htfLab+' teyidi · eşikler o anki piyasa dağılımından hesaplanır (yüzdelik). ⚡ Derin, ilk 25 adayı mum bazında doğrular.'):'';
+ $('#opnote').innerHTML=S.reg?('<b style="color:var(--txt2)">'+S.reg.mode+'</b> rejimi · '+d.length+' fırsat · '+TFMAP[tf].lab+' taraması, '+TFMAP[tf].htfLab+' teyidi · eşikler o anki piyasa dağılımından yüzdelik olarak hesaplanır.'+(S.colLevel>0?' <span class="dn">Sınırlı veri seviyesi '+S.colLevel+' — MACD/Stochastic kurulumları devre dışı.</span>':'')+' ⚡ Derin, adayları mum bazında doğrular.'):'';
  $('#opcnt').textContent=d.length+' fırsat';
+ if(!S.uni.length){$('#oplist').innerHTML='<div class="note"><b class="dn">Piyasa verisi alınamadı.</b><br>'+(S.err?('Hata: '+S.err+'<br>'):'')+'TradingView tarayıcı isteği yanıt vermedi. Birkaç saniye içinde otomatik tekrar denenir; sürerse zaman dilimini değiştirip geri al ya da sayfayı yenile.</div>';return}
  if(DEEPSET[S.setup]&&!d.length&&!S.scanning){$('#oplist').innerHTML='<div class="note"><b style="color:var(--acc)">⚡ '+SNAME[S.setup]+'</b> mum verisi gerektirir. Üstteki <b>⚡</b> düğmesine bas — en likit 30 aday taranır, sonuçlar burada listelenir. Yaklaşık 15 saniye sürer.</div>';S.prevOps=cur;return}
  if(!d.length){$('#oplist').innerHTML='<div class="note">Bu koşullarda fırsat yok. Zaman dilimini, kurulumu veya yönü değiştir; ⚙ filtreden hacim ya da hiza eşiğini gevşet.</div>';S.prevOps=cur;return}
  if(S.view==='table'){$('#oplist').innerHTML=renderOpTable(d);S.prevOps=cur;return}
