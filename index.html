@@ -46,6 +46,8 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--mo
 .bar.wrap{flex-wrap:wrap;overflow:visible;white-space:normal}
 .bar button,.bar select,.bar input{flex:0 0 auto;background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);padding:5px 9px;font-family:var(--mono);font-size:10.5px;border-radius:6px}
 .bar button.on{background:var(--acc);border-color:var(--acc);color:#0a0d12;font-weight:700}
+.bar button.deep{border-color:rgba(167,139,250,.5);color:#c4b5fd}
+.bar button.deep.on{background:#a78bfa;border-color:#a78bfa;color:#140d24}
 .bar button.gAL{border-color:var(--up);color:var(--up)}.bar button.gAL.on{background:var(--up);color:#04140e}
 .bar button.gSAT{border-color:var(--dn);color:var(--dn)}.bar button.gSAT.on{background:var(--dn);color:#fff}
 .seg{display:flex;background:var(--panel2);border:1px solid var(--line2);border-radius:7px;overflow:hidden;flex:0 0 auto}
@@ -347,7 +349,7 @@ const TFDEF=[
 const TFMAP={};TFDEF.forEach(t=>TFMAP[t.id]=t);
 const BASE=['name','description','close','change','change_abs','open','high','low','volume','market_cap_basic','price_earnings_ttm','sector','relative_volume_10d_calc','price_52_week_high','price_52_week_low','update_mode','Perf.W','Perf.1M','EMA20','EMA200'];
 function tfCols(sfx,vwap){
- const c=['close','EMA20','EMA50','EMA200','RSI','ADX','ATR','BB.upper','BB.lower'].map(x=>x+sfx);
+ const c=['close','EMA20','EMA50','EMA200','RSI','ADX','ATR','BB.upper','BB.lower','MACD.macd','MACD.signal','Stoch.K','Stoch.D'].map(x=>x+sfx);
  if(vwap)c.push('VWAP'+sfx);
  return c;
 }
@@ -380,7 +382,9 @@ function metricsOf(o,t){
   atr=o['ATR'+s],bu=o['BB.upper'+s],bl=o['BB.lower'+s],vw=t.vwap?o['VWAP'+s]:null,
   hc=o['close'+t.htf],he=o['EMA20'+t.htf];
  if(c==null||e20==null)return null;
- return{c,e20,e50,e200,rsi,adx,atr,bu,bl,vw,
+ return{c,e20,e50,e200,rsi,adx,atr,bu,bl,vw,mac,msg,sk,sd,
+  hist:(mac!=null&&msg!=null)?mac-msg:null,
+  histN:(mac!=null&&msg!=null&&c)?(mac-msg)/c*100:null,
   vd:vw?(c-vw)/vw*100:null,
   ed:e20?(c-e20)/e20*100:null,
   bw:(bu&&bl&&c)?(bu-bl)/c*100:null,
@@ -394,13 +398,20 @@ function metricsOf(o,t){
 const SETUPS=[
  {id:'vwap',n:'VWAP dönüşü',c:'t1',need:'vwap'},
  {id:'ema',n:'EMA yaslanma',c:'t4'},
+ {id:'trm',n:'Trend+Momentum',c:'t4'},
+ {id:'fbrk',n:'Taze kırılım',c:'t2'},
+ {id:'dip',n:'Dipten dönüş',c:'t1'},
  {id:'brk',n:'Kırılım',c:'t2'},
  {id:'sik',n:'Sıkışma',c:'t3'},
  {id:'hac',n:'Hacim patlaması',c:'t4'},
  {id:'h52',n:'52h uç',c:'t5'},
  {id:'tep',n:'Aşırı tepki',c:'t1'},
+ {id:'vcp',n:'VCP',c:'t2',deep:true},
+ {id:'pull',n:'Geri çekilme',c:'t4',deep:true},
+ {id:'kvw',n:'Keskin VWAP',c:'t1',deep:true},
  {id:'poc',n:'POC/VA',c:'t3',deep:true}
 ];
+const DEEPSET={vcp:1,pull:1,kvw:1,poc:1};
 const SNAME={},SCOL={};SETUPS.forEach(s=>{SNAME[s.id]=s.n;SCOL[s.id]=s.c});
 const INFO={
  all:{t:'Tüm kurulumlar',s:'GENEL BAKIŞ',p:'Seçili zaman diliminde en az bir kurulumu tetikleyen tüm hisseler. Puan; kaç kurulumun aynı anda uyduğu, trend uyumu, hacim, ADX ve piyasa rejimi ile hesaplanır. Aynı hissede birden fazla etiket varsa sinyal daha güçlüdür.',l:['Eşikler sabit değil: hacim, trend gücü ve oynaklık o anki 625 hisselik dağılımdan yüzdelik olarak ölçülür','Rozetlerdeki sayı yüzdeliktir — hacim 92 demek, piyasanın %92\'sinden hareketli demek','hiza +4: dört zaman dilimi de aynı yönde; 0: dilimler çelişiyor','✓ yeşil satırlar lehte, ⚠ kırmızı satırlar aleyhte bulgulardır','▾ işlem planı: giriş, stop, hedef, R/Ö, lot ve doldurulabilirlik'],w:'Puan yüksek diye giriş yapma; grafiğe bakmadan işlem açma.'},
@@ -411,6 +422,12 @@ const INFO={
  hac:{t:'Hacim patlaması',s:'MOMENTUM · OLAĞANDIŞI İLGİ',p:'Normalin iki katından fazla hacimle hareket eden hisseler. Haber, bilanço veya kurumsal giriş işareti olabilir.',l:['Göreli hacim ≥ 2x','Fiyat yönü hacimle aynı','Üst zaman dilimi trendi aynı yönde'],w:'Hacmin sebebini bilmiyorsan pozisyonu küçült. Manipülasyon ve tek seferlik blok işlemler burada sık görülür.'},
  h52:{t:'52 hafta ucu',s:'TREND GÜCÜ · YENİ ZİRVE/DİP',p:'Fiyat 52 haftalık zirveye (AL) veya dibe (SAT) çok yakın. Yeni zirveler momentum stratejilerinin klasik av alanıdır.',l:['AL: zirveye %2\'den yakın','Göreli hacim ≥ 1,2x'],w:'Zirvede satış baskısı da yoğundur. Kırılım teyidi olmadan alma; dipte "ucuzladı" diye alma.'},
  tep:{t:'Aşırı tepki',s:'ORTALAMAYA DÖNÜŞ · KARŞI YÖN',p:'RSI aşırı satım/alım bölgesinde ama uzun vadeli trend hâlâ sağlam. Panik satışı sonrası toparlanma arar.',l:['AL: RSI ≤ 28 ve fiyat günlük EMA200 üstünde','SAT: RSI ≥ 72 ve fiyat günlük EMA200 altında'],w:'Trende karşı işlemdir, en riskli kurulumdur. Pozisyonu küçült, hedefi kısa tut, stopu sıkı koy.'},
+ trm:{t:'Trend + Momentum',s:'TREND TAKİBİ · ANLIK',p:'EMA şeridi düzgün dizilmiş, MACD sinyalin üstünde ve histogram pozitif, hacim piyasa ortalamasının üstünde. Confluence projesinin klasik ön ayarı; trend sürerken devam hareketi arar.',l:['EMA20 > EMA50 > EMA200','MACD > sinyal ve histogram pozitif','Hacim yüzdeliği ≥ 70','Üst zaman dilimi aynı yönde'],w:'Hareket başladıktan sonra tetiklenir; geç giriş riski taşır. Canlı testlerde saf momentum girişleri komisyonla birlikte negatif R vermişti — bu yüzden Geri çekilme sürümü genelde daha iyidir.'},
+ fbrk:{t:'Taze kırılım',s:'MOMENTUM · YENİ KESİŞİM',p:'MACD histogramı yeni pozitife dönmüş — kesişim taze. Histogramın büyüklüğü, o anda pozitif histogramı olan tüm hisseler arasında alt dilimde; yani hareket henüz yeni başlamış.',l:['Histogram pozitif ama piyasadaki pozitiflerin alt %40\'ında','Fiyat EMA20 üstünde','Üst zaman dilimi yukarı'],w:'Tazelik, doğruluk garantisi değil. Yatay piyasada MACD sürekli sıfır etrafında kesişir; rejim YATAY ise bu kurulumu atla.'},
+ dip:{t:'Dipten dönüş',s:'ORTALAMAYA DÖNÜŞ · STOCHASTIC',p:'Stochastic %K, %D\'yi aşağıdan kesmiş ve hâlâ düşük bölgede; RSI da toparlanma başlangıcında. Uzun vadeli trend korunuyorsa (fiyat günlük EMA200 üstünde) tepki alımı arar.',l:['%K > %D ve %K < 38','RSI < 48','Fiyat günlük EMA200 üstünde'],w:'Düşen trendde bu kurulum sürekli erken sinyal verir. EMA200 şartı tam da bunu engellemek için var; şartı gevşetme.'},
+ vcp:{t:'VCP — Volatilite daralması',s:'HAZIRLIK · ⚡ DERİN TARAMA',p:'Minervini/O\'Neil tarzı: fiyat ardışık daralan bacaklar çiziyor, her düzeltme bir öncekinden sığ, hacim kuruyor. Arz tükeniyor demektir; pivot kırılımı geldiğinde hareket sert olur. Birlikte geliştirdiğimiz VCP indikatörünün terminal sürümü.',l:['Son 3 bacakta toplam daralma ≥ %25','Son 8 barın hacmi ortalamanın altında (kuruma)','Fiyat pivot zirvesinin %2,5 yakınında ya da kırmış','Kart etiketinde bacak sayısı, daralma yüzdesi ve KIRDI bilgisi görünür'],w:'Kırılım gelmeden alma — "KIRDI" etiketi yoksa bu bir izleme kurulumudur. SASA örneğinde işe yaramıştı ama tek örnek istatistik değildir.'},
+ pull:{t:'Geri çekilme (v2)',s:'TREND TAKİBİ · ⚡ DERİN TARAMA',p:'Confluence v2 chart indikatörünün giriş mantığı: yükselen dizilimde fiyat EMA20\'ye geri çekilmiş ve son barlarda tekrar üstüne çıkmış. Durum değil, olay yakalar — bu yüzden mum verisi gerekir.',l:['EMA 9 > 21 > 50 dizilimi','Son 6 barda EMA20 yukarı kesilmiş (geri alma olayı)','EMA20\'den uzaklık %2,2\'den az (aşırı uzama guard\'ı)','Kart etiketinde kaç bar önce geri alındığı yazar'],w:'Bu, momentum kırılımının negatif R vermesi üzerine geliştirilen sürümdü. Geri alma 5-6 bardan eskiyse tazelik kaybolmuştur.'},
+ kvw:{t:'Keskin VWAP',s:'ORTALAMAYA DÖNÜŞ · ⚡ DERİN TARAMA',p:'VWAP web tarayıcısı projesinden: fiyat VWAP\'ı test edip geri dönmüş ve üst üste 3 bar doğru tarafta kapanmış. Volatilite filtresi ölü hisseleri eler.',l:['Son 8 barda VWAP\'a dokunma (retest)','Ardından 3 bar üst üste doğru tarafta kapanış','ATR% ≥ 0,30 (yeterli oynaklık)','Sıkışma varsa etikette belirtilir'],w:'3 bar teyit gecikme demektir; hızlı scalp\'te girişi kaçırabilirsin. Buna karşılık yanlış sinyali belirgin azaltır — backtestte AL tarafında kazanma oranını %56\'dan %61\'e çıkarmıştı.'},
  poc:{t:'POC / Değer alanı',s:'HACİM PROFİLİ · DERİN TARAMA',p:'Dünkü seansın en çok işlem gören fiyatı (POC) ve %70 değer alanı hesaplanır. Fiyatın bu referanslara dönüp tutması güçlü destek/direnç işaretidir.',l:['⚡ Derin tara ile hesaplanır, mum verisi gerekir','AL: fiyat POC veya VAL\'e %0,6\'dan yakın','EMA50 ve VWAP\'ın doğru tarafında'],w:'Yalnız başına kullanma; EMA veya VWAP kurulumuyla üst üste geldiğinde değerlidir.'}
 };
 function setupsOf(o,tfId){
@@ -432,6 +449,9 @@ function setupsOf(o,tfId){
  if(volHot&&o.change>0&&m.htf===1)out.AL.push('hac');
  if(m.h52!=null&&m.h52>=-2&&volOk)out.AL.push('h52');
  if(m.rsi<=28&&o.EMA200&&o.close>o.EMA200)out.AL.push('tep');
+ if(m.stack===1&&m.hist!=null&&m.hist>0&&m.mac>m.msg&&volOk&&m.htf===1)out.AL.push('trm');
+ if(m.hist!=null&&m.hist>0&&pr.hp!=null&&pr.hp<=40&&m.c>m.e20&&m.htf===1)out.AL.push('fbrk');
+ if(m.sk!=null&&m.sd!=null&&m.sk>m.sd&&m.sk<38&&m.rsi<48&&o.EMA200&&o.close>o.EMA200)out.AL.push('dip');
  if(m.vd!=null&&m.vd<=0&&m.vd>=-1.2&&m.e20<m.e50&&m.htf===-1&&volOk)out.SAT.push('vwap');
  if(m.stack===-1&&m.ed<=0.2&&m.ed>=-1&&m.htf===-1&&adxOk)out.SAT.push('ema');
  if(m.bl&&m.c<m.bl&&volHot&&m.htf===-1)out.SAT.push('brk');
@@ -439,6 +459,9 @@ function setupsOf(o,tfId){
  if(volHot&&o.change<0&&m.htf===-1)out.SAT.push('hac');
  if(m.l52!=null&&m.l52<=2&&volOk)out.SAT.push('h52');
  if(m.rsi>=72&&o.EMA200&&o.close<o.EMA200)out.SAT.push('tep');
+ if(m.stack===-1&&m.hist!=null&&m.hist<0&&m.mac<m.msg&&volOk&&m.htf===-1)out.SAT.push('trm');
+ if(m.hist!=null&&m.hist<0&&m.c<m.e20&&m.htf===-1)out.SAT.push('fbrk');
+ if(m.sk!=null&&m.sd!=null&&m.sk<m.sd&&m.sk>62&&m.rsi>52&&o.EMA200&&o.close<o.EMA200)out.SAT.push('dip');
  return out;
 }
 function warnsOf(o,dir,tfId){
@@ -534,7 +557,7 @@ function buildPercentiles(){
  const liq=S.uni.filter(o=>o.voltl>=5e6);
  if(liq.length<20)return;
  const idxCh=S.idxCh||0;
- const keys={rv:[],atrp:[],adx:[],rs:[],perfW:[],vol:[],bw:[]};
+ const keys={rv:[],atrp:[],adx:[],rs:[],perfW:[],vol:[],bw:[],hp:[]};
  liq.forEach(o=>{
   const m=o.tfm[S.stf]||o.tfm['D']||{};
   o._rs=(o.change||0)-idxCh;
@@ -545,13 +568,15 @@ function buildPercentiles(){
   if(o['Perf.W']!=null)keys.perfW.push(o['Perf.W']);
   keys.vol.push(o.voltl);
   if(m.bw!=null)keys.bw.push(m.bw);
+  if(m.histN!=null&&m.histN>0)keys.hp.push(m.histN);
  });
  Object.keys(keys).forEach(k=>keys[k].sort((a,b)=>a-b));
  S.pctArr=keys;
  liq.forEach(o=>{
   const m=o.tfm[S.stf]||o.tfm['D']||{};
   o.pr={rv:pctRank(keys.rv,m.rv),atrp:pctRank(keys.atrp,m.atrp),adx:pctRank(keys.adx,m.adx),
-   rs:pctRank(keys.rs,o._rs),perfW:pctRank(keys.perfW,o['Perf.W']),vol:pctRank(keys.vol,o.voltl),bw:pctRank(keys.bw,m.bw)};
+   rs:pctRank(keys.rs,o._rs),perfW:pctRank(keys.perfW,o['Perf.W']),vol:pctRank(keys.vol,o.voltl),bw:pctRank(keys.bw,m.bw),
+   hp:(m.histN!=null&&m.histN>0)?pctRank(keys.hp,m.histN):null};
  });
  S.uni.forEach(o=>{if(!o.pr)o.pr={}});
  // sektor ici siralama
@@ -611,7 +636,7 @@ function buildSetBar(){
  const t=TFMAP[S.stf];
  const av=SETUPS.filter(s=>!(s.need==='vwap'&&!t.vwap));
  if(av.map(s=>s.id).indexOf(S.setup)<0&&S.setup!=='all')S.setup='all';
- $('#setbar').innerHTML='<button data-s="all" class="'+(S.setup==='all'?'on':'')+'">Hepsi</button>'+av.map(s=>'<button data-s="'+s.id+'" class="'+(S.setup===s.id?'on':'')+'">'+s.n+'</button>').join('');
+ $('#setbar').innerHTML='<button data-s="all" class="'+(S.setup==='all'?'on':'')+'">Hepsi</button>'+av.map(s=>'<button data-s="'+s.id+'" class="'+(S.setup===s.id?'on':'')+(s.deep?' deep':'')+'">'+(s.deep?'⚡':'')+s.n+'</button>').join('');
 }
 $('#setbar').onclick=e=>{const b=e.target.closest('[data-s]');if(!b)return;S.setup=b.dataset.s;[...$('#setbar').children].forEach(x=>x.classList.toggle('on',x===b));renderOps();renderInfo()};
 function toggleInfo(){S.infoOn=!S.infoOn;$('#infobox').classList.toggle('on',S.infoOn);renderInfo()}
@@ -632,9 +657,10 @@ function opData(){
   if(sec&&o.sector!==sec)return;
   if(q&&o.name.indexOf(q)<0&&(o.description||'').toUpperCase().indexOf(q)<0)return;
   const ss=setupsOf(o,tf)[dir];
-  const dp=S.deep[o.name],hasPoc=dp&&dp.poc&&dp.dir===dir;
-  if(!ss.length&&!hasPoc)return;
-  if(S.setup!=='all'&&ss.indexOf(S.setup)<0&&!(S.setup==='poc'&&hasPoc))return;
+  const dp=S.deep[o.name],fl=(dp&&dp.dir===dir&&dp.fl)?dp.fl:{};
+  const dkeys=Object.keys(fl);
+  if(!ss.length&&!dkeys.length)return;
+  if(S.setup!=='all'&&ss.indexOf(S.setup)<0&&!fl[S.setup])return;
   const al=alignOf(o).sum;
   if(mal>-4&&sign*al<mal)return;
   o._ss=ss;o._sc=scoreOf(o,dir,tf,ss)+(dp&&dp.dir===dir?dp.bonus:0);
@@ -657,6 +683,7 @@ function renderOps(){
  const cur={};d.forEach(o=>cur[o.name]=o._sc);
  $('#opnote').innerHTML=S.reg?('<b style="color:var(--txt2)">'+S.reg.mode+'</b> rejimi · '+d.length+' fırsat · '+TFMAP[tf].lab+' taraması, '+TFMAP[tf].htfLab+' teyidi · eşikler o anki piyasa dağılımından hesaplanır (yüzdelik). ⚡ Derin, ilk 25 adayı mum bazında doğrular.'):'';
  $('#opcnt').textContent=d.length+' fırsat';
+ if(DEEPSET[S.setup]&&!d.length&&!S.scanning){$('#oplist').innerHTML='<div class="note"><b style="color:var(--acc)">⚡ '+SNAME[S.setup]+'</b> mum verisi gerektirir. Üstteki <b>⚡</b> düğmesine bas — en likit 30 aday taranır, sonuçlar burada listelenir. Yaklaşık 15 saniye sürer.</div>';S.prevOps=cur;return}
  if(!d.length){$('#oplist').innerHTML='<div class="note">Bu koşullarda fırsat yok. Zaman dilimini, kurulumu veya yönü değiştir; ⚙ filtreden hacim ya da hiza eşiğini gevşet.</div>';S.prevOps=cur;return}
  if(S.view==='table'){$('#oplist').innerHTML=renderOpTable(d);S.prevOps=cur;return}
  $('#oplist').innerHTML=d.slice(0,50).map((o,ix)=>{
@@ -665,7 +692,10 @@ function renderOps(){
   const rise=prev[o.name]!==undefined&&o._sc-prev[o.name]>=6;
   const tags=o._ss.map(x=>'<span class="tag '+SCOL[x]+'">'+SNAME[x]+'</span>').join('')+
    (dpm&&dp.poc?'<span class="tag t3">POC '+nf(dp.pocD,2)+'%</span>':'')+
-   (dpm&&dp.cross&&dp.cross!=='-'?'<span class="tag">9/21 '+dp.cross+'·'+dp.bars+'b</span>':'');
+   (dpm&&dp.cross&&dp.cross!=='-'?'<span class="tag">9/21 '+dp.cross+'·'+dp.bars+'b</span>':'')+
+   (dpm&&dp.fl&&dp.fl.vcp?'<span class="tag t2">⚡VCP '+dp.fl.vcp.legs+' bacak · daralma %'+nf(dp.fl.vcp.shrink,0)+(dp.fl.vcp.brk?' · KIRDI':'')+'</span>':'')+
+   (dpm&&dp.fl&&dp.fl.pull?'<span class="tag t4">⚡Geri çekilme · '+dp.fl.pull.bars+'b önce EMA20 geri alındı</span>':'')+
+   (dpm&&dp.fl&&dp.fl.kvw?'<span class="tag t1">⚡Keskin VWAP · '+dp.fl.kvw.conf+' bar teyit'+(dp.fl.kvw.sq?' · sıkışma':'')+'</span>':'');
   const badge=dpm?'<span class="sc sc'+(dp.grade==='A'?(dir==='AL'?'A':'As'):dp.grade)+'">'+dp.grade+'</span>':'<span class="sc scC">'+Math.round(o._sc)+'</span>';
   const alc=(dir==='AL'?al.sum:-al.sum);
   const alb='<span class="align" style="background:'+(alc>=3?'var(--upbg);color:var(--up)':alc<=0?'var(--dnbg);color:var(--dn)':'var(--panel2);color:var(--dim)')+'">hiza '+(al.sum>0?'+':'')+al.sum+'</span>';
@@ -696,7 +726,14 @@ function renderOps(){
 /* ================= derin tarama ================= */
 async function deepScan(){
  if(S.scanning){S.scanning=false;$('#deepbtn').textContent='⚡ Derin';return}
- const list=opData().slice(0,25);if(!list.length)return;
+ let list;
+ if(DEEPSET[S.setup]){
+  const mv=+($('#opvol')||{value:30000000}).value;
+  const sign=S.dir==='AL'?1:-1;
+  list=S.uni.filter(o=>o.voltl>=mv).map(o=>{const m=o.tfm[S.stf]||{};o._pool=(o.pr&&o.pr.rv||0)+(sign*alignOf(o).sum)*8+((m.htf===sign)?20:0);return o})
+    .sort((a,b)=>b._pool-a._pool).slice(0,30);
+ }else list=opData().slice(0,25);
+ if(!list.length)return;
  S.scanning=true;$('#deepbtn').textContent='⏹ Durdur';
  let done=0,newA=[];
  for(const o of list){
@@ -713,7 +750,12 @@ async function deepScan(){
     if(a.sq)bonus+=6;
     if(S.dir==='AL'&&!a.above50)bonus-=15;
     if(S.dir==='SAT'&&a.above50)bonus-=15;
-    S.deep[o.name]={grade:a.grade,bonus,poc,pocD:a.pocD,pocLv:a.ref?a.ref.poc:null,cross:a.dir,bars:a.bars,dir:S.dir,t:Date.now()};
+    const fl={};
+    if(poc)fl.poc=1;
+    if(a.vcp&&S.dir==='AL'){fl.vcp=a.vcp;bonus+=14}
+    if(a.pull&&S.dir==='AL'){fl.pull=a.pull;bonus+=12}
+    if(a.kvw&&a.kvw.side===S.dir){fl.kvw=a.kvw;bonus+=10}
+    S.deep[o.name]={grade:a.grade,bonus,poc,pocD:a.pocD,pocLv:a.ref?a.ref.poc:null,cross:a.dir,bars:a.bars,dir:S.dir,fl,t:Date.now()};
     if(a.grade==='A'&&S.seenA.indexOf(o.name+S.dir)<0){newA.push(o.name);S.seenA.push(o.name+S.dir)}
    }
   }catch(e){}
@@ -803,7 +845,52 @@ function analyze(cs,sym){
   if(ref&&(Math.abs(pocD)<=0.6||Math.abs(vahD)<=0.6))p++;if(vwD<=0&&vwD>=-1.5)p++;
  }
  if(ss.length>=2)p++;
- return{dir,bars,side,grade:!gate?'C':p>=5?'A':p>=3?'B':'C',pts:p,zone,pocD,valD,vahD,ref,vr,vwUp,vwD,atrPct,sq,above50:px>e50[n],px,t:Date.now()};
+ // --- VCP: ardisik daralan bacaklar + hacim kurumasi ---
+ let vcp=null;
+ (function(){
+  const L=5,hi=[],lo=[];
+  for(let i=L;i<cs.length-L;i++){
+   let ih=true,il=true;
+   for(let k=1;k<=L;k++){if(cs[i].high<=cs[i-k].high||cs[i].high<=cs[i+k].high)ih=false;if(cs[i].low>=cs[i-k].low||cs[i].low>=cs[i+k].low)il=false}
+   if(ih)hi.push({i,v:cs[i].high});if(il)lo.push({i,v:cs[i].low});
+  }
+  if(hi.length<2||lo.length<2)return;
+  const piv=hi.concat(lo).sort((a,b)=>a.i-b.i).slice(-7);
+  const legs=[];
+  for(let i=1;i<piv.length;i++){const d=Math.abs(piv[i].v-piv[i-1].v)/piv[i-1].v*100;if(d>0.3)legs.push(d)}
+  if(legs.length<3)return;
+  const L3=legs.slice(-3),shrink=(L3[0]-L3[L3.length-1])/L3[0]*100;
+  const vAvg=ve[n]||1,lastV=cs.slice(-8).reduce((a,x)=>a+x.volume,0)/8;
+  const dry=lastV<vAvg*0.9;
+  const pivHi=Math.max.apply(null,hi.slice(-3).map(x=>x.v));
+  const nearBrk=(px/pivHi-1)*100;
+  if(shrink>=25&&dry&&nearBrk>=-2.5)vcp={legs:L3.length+1,shrink,dry,pivHi,nearBrk,brk:px>pivHi};
+ })();
+ // --- Geri cekilme (v2 mantigi): EMA20'yi geri alma olayi ---
+ let pull=null;
+ (function(){
+  if(!(e9[n]>e21[n]&&e21[n]>e50[n]))return;
+  let rb=-1;
+  for(let i=n;i>n-6&&i>0;i--){if(c[i]>e21[i]&&c[i-1]<=e21[i-1]){rb=n-i;break}}
+  if(rb<0)return;
+  const ext=(px-e21[n])/e21[n]*100;
+  if(ext>2.2)return;
+  const stopD=Math.max(at[n]*0.8,Math.abs(px-e50[n]));
+  pull={bars:rb,ext,stopD};
+ })();
+ // --- Keskin VWAP: retest + 3 bar teyit + ATR filtresi ---
+ let kvw=null;
+ (function(){
+  if(vw[n]==null||atrPct<0.30)return;
+  const above=px>vw[n];
+  let conf=0;for(let i=n;i>n-3&&i>=0;i--){if(above?c[i]>vw[i]:c[i]<vw[i])conf++}
+  if(conf<3)return;
+  let touch=false;
+  for(let i=n-1;i>n-8&&i>0;i--){if(above?(cs[i].low<=vw[i]):(cs[i].high>=vw[i])){touch=true;break}}
+  if(!touch)return;
+  kvw={side:above?'AL':'SAT',d:vwD,conf,sq};
+ })();
+ return{dir,bars,side,grade:!gate?'C':p>=5?'A':p>=3?'B':'C',pts:p,zone,pocD,valD,vahD,ref,vr,vwUp,vwD,atrPct,sq,vcp,pull,kvw,above50:px>e50[n],px,t:Date.now()};
 }
 async function watchLoop(){
  while(true){
