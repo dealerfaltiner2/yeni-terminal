@@ -19,14 +19,14 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--mono);font-size:12px;overflow:hidden;-webkit-font-smoothing:antialiased}
 #app{display:flex;flex-direction:column;height:100%;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
-#top{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--panel);border-bottom:1px solid var(--line)}
-#symbtn{flex:1;background:var(--panel2);border:1px solid var(--line2);color:#fff;padding:6px 10px;font-family:var(--mono);font-size:13px;font-weight:700;border-radius:7px;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-#symbtn small{color:var(--dim);font-weight:400;margin-left:6px;font-size:9.5px}
-#px{text-align:right;font-size:13px;font-weight:700;color:#fff;white-space:nowrap;line-height:1.25}
-#px small{display:block;font-size:10px;font-weight:600}
-#regbadge{font-size:9px;padding:4px 7px;border-radius:5px;white-space:nowrap;background:var(--panel2);border:1px solid var(--line2);font-weight:700}
-#tick{overflow:hidden;background:var(--panel);border-bottom:1px solid var(--line);height:22px;position:relative}
-#tickrun{display:flex;gap:18px;white-space:nowrap;position:absolute;left:0;height:22px;align-items:center;padding-left:8px;animation:mv 42s linear infinite;font-size:10.5px;color:var(--txt2)}
+#top{display:flex;align-items:center;gap:8px;padding:9px 10px;background:var(--panel);border-bottom:2px solid var(--line2)}
+#symbtn{flex:1;min-width:0;background:var(--panel2);border:1px solid var(--line2);color:#fff;padding:9px 12px;font-family:var(--mono);font-size:15px;font-weight:700;border-radius:8px;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;letter-spacing:.5px}
+#symbtn small{color:var(--dim);font-weight:400;margin-left:8px;font-size:10px}
+#px{text-align:right;font-size:17px;font-weight:700;color:#fff;white-space:nowrap;line-height:1.2;flex:0 0 auto}
+#px small{display:block;font-size:11.5px;font-weight:700;margin-top:2px}
+#regbadge{font-size:10px;padding:7px 9px;border-radius:6px;white-space:nowrap;background:var(--panel2);border:1px solid var(--line2);font-weight:700;flex:0 0 auto}
+#tick{overflow:hidden;background:#0a0e14;border-bottom:1px solid var(--line2);height:28px;position:relative}
+#tickrun{display:flex;gap:26px;white-space:nowrap;position:absolute;left:0;height:28px;align-items:center;padding-left:10px;animation:mv 46s linear infinite;font-size:12px;color:var(--txt2)}
 #tick:active #tickrun{animation-play-state:paused}
 @keyframes mv{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 #tickrun b{color:#fff;margin-right:4px;font-weight:700}
@@ -41,33 +41,36 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--mo
 #tabs button{flex:0 0 auto;width:66px;background:none;border:0;color:var(--dim);padding:7px 2px 6px;font-family:var(--mono);font-size:9px;border-top:2px solid transparent;display:flex;flex-direction:column;align-items:center;gap:3px}
 #tabs button i{font-style:normal;font-size:14px;line-height:1}
 #tabs button.on{color:var(--acc);border-top-color:var(--acc);background:var(--panel2)}
-.bar{display:flex;gap:4px;padding:5px 6px;border-bottom:1px solid var(--line);align-items:center;background:var(--panel);overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+.bar{display:flex;gap:6px;padding:8px;border-bottom:1px solid var(--line2);align-items:center;background:var(--panel);overflow-x:auto;white-space:nowrap;scrollbar-width:none;min-height:46px}
 .bar::-webkit-scrollbar{display:none}
+.bar#setbar{background:#0a0e14;border-bottom:2px solid var(--line2);padding:7px 8px;min-height:44px}
 .bar.wrap{flex-wrap:wrap;overflow:visible;white-space:normal}
-.bar button,.bar select,.bar input{flex:0 0 auto;background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);padding:5px 9px;font-family:var(--mono);font-size:10.5px;border-radius:6px}
+.bar button,.bar select,.bar input{flex:0 0 auto;background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);padding:8px 13px;font-family:var(--mono);font-size:12px;border-radius:7px;font-weight:600}
 .bar button.on{background:var(--acc);border-color:var(--acc);color:#0a0d12;font-weight:700}
 .bar button.deep{border-color:rgba(167,139,250,.5);color:#c4b5fd}
 .bar button.deep.on{background:#a78bfa;border-color:#a78bfa;color:#140d24}
 .bar button.gAL{border-color:var(--up);color:var(--up)}.bar button.gAL.on{background:var(--up);color:#04140e}
 .bar button.gSAT{border-color:var(--dn);color:var(--dn)}.bar button.gSAT.on{background:var(--dn);color:#fff}
-.seg{display:flex;background:var(--panel2);border:1px solid var(--line2);border-radius:7px;overflow:hidden;flex:0 0 auto}
-.seg button{border:0!important;border-radius:0!important;background:none!important;padding:5px 11px!important;color:var(--dim)!important}
+.seg{display:flex;background:var(--panel2);border:1px solid var(--line2);border-radius:8px;overflow:hidden;flex:0 0 auto}
+.seg button{border:0!important;border-radius:0!important;background:none!important;padding:8px 14px!important;color:var(--dim)!important;font-size:12px!important}
 .seg button.on{background:var(--line2)!important;color:#fff!important;font-weight:700}
-.ic{width:32px;text-align:center;font-size:13px;padding:5px 0!important}
+.ic{width:42px;text-align:center;font-size:16px;padding:7px 0!important}
 #panel{display:none}#panel.on{display:block}
 #chart{flex:1;min-height:200px;position:relative}
 #chart2{height:88px;border-top:1px solid var(--line)}
 #legend{position:absolute;top:4px;left:6px;z-index:5;font-size:9.5px;line-height:1.6;pointer-events:none;text-shadow:0 1px 4px #000}
 #legend .k{color:var(--dim)}
 .up{color:var(--up)}.dn{color:var(--dn)}
-table{width:100%;border-collapse:collapse;font-size:10.5px}
-th,td{padding:6px 6px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:9px 9px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap;font-variant-numeric:tabular-nums}
+tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+tr:nth-child(even) td:first-child{background:#0b0f15}
 th:first-child,td:first-child{text-align:left;position:sticky;left:0;z-index:2}
 th:first-child{background:var(--panel);z-index:4}
 td:first-child{background:var(--bg)}
-th{color:var(--dim);font-weight:400;position:sticky;top:0;background:var(--panel);z-index:3;font-size:9.5px;letter-spacing:.3px}
+th{color:var(--txt2);font-weight:700;position:sticky;top:0;background:#0a0e14;z-index:3;font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;border-bottom:2px solid var(--line2);padding:10px 9px}
 tr.row:active td{background:var(--panel2)}
-td.sym{color:#fff;font-weight:700;font-size:11.5px}
+td.sym{color:#fff;font-weight:700;font-size:13px;letter-spacing:.4px}
 .card{border-bottom:1px solid var(--line);padding:8px 10px;position:relative}
 .card:active{background:var(--panel2)}
 .card.top{background:linear-gradient(90deg,rgba(255,176,32,.05),transparent)}
@@ -176,6 +179,41 @@ form.tx button{background:var(--acc);color:#0a0d12;font-weight:700;border-color:
 .cal-v b{color:#fff}
 .align{display:inline-block;font-size:9px;padding:2px 7px;border-radius:5px;margin-left:5px;font-weight:700}
 .mtf span.d{color:var(--dn);border-color:rgba(255,77,94,.3);background:var(--dnbg)}
+
+/* --- yerlesim duzeltmeleri --- */
+.tab>*{flex:0 0 auto}
+#chart{flex:1 1 auto}#heat{flex:1 1 auto}
+#top{padding:8px 10px;gap:9px;flex:0 0 auto;min-height:48px}
+#symbtn{font-size:14.5px;padding:9px 12px;letter-spacing:.3px}
+#symbtn small{font-size:10px}
+#px{font-size:16px;min-width:82px;line-height:1.2}
+#px small{font-size:11px;margin-top:2px}
+#regbadge{font-size:10.5px;padding:6px 9px;letter-spacing:.5px}
+#tick{height:28px;flex:0 0 auto}
+#tickrun{height:28px;font-size:12px;gap:24px}
+.bar{min-height:46px;padding:7px;gap:6px;flex:0 0 auto;border-bottom:1px solid var(--line2)}
+.bar button,.bar select,.bar input{padding:8px 13px;font-size:12.5px;border-radius:8px;min-height:34px}
+.seg{border-radius:9px}
+.seg button{padding:8px 15px!important;font-size:12.5px!important;min-height:34px}
+.ic{width:42px!important;font-size:16px!important;padding:8px 0!important}
+#setbar{background:#0a0e14;min-height:44px;background:var(--bg);border-bottom:2px solid var(--line2)}
+#setbar button{font-size:12px;padding:7px 13px;min-height:32px}
+#tabs button{width:78px;padding:9px 2px 8px;font-size:10px}
+#tabs button i{font-size:16px}
+/* --- Bloomberg tarzi tablo --- */
+table{font-size:12px}
+th{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--acc);background:#0a0e14;padding:9px 8px;border-bottom:2px solid var(--line2)}
+th:first-child{background:#0a0e14}
+td{padding:9px 8px;border-bottom:1px solid #141b24}
+tr:nth-child(even) td{background:#0a0e14}
+tr:nth-child(even) td:first-child{background:#0a0e14}
+td.sym{font-size:13px;letter-spacing:.5px}
+.frow label{width:82px;font-size:11px}
+.frow select,.frow input{padding:8px 10px;font-size:12px}
+.sheet{padding:8px 10px 11px}
+.note{font-size:11px;padding:11px}
+.cal-day{font-size:11px;padding:8px 12px}
+.cal-n{font-size:12.5px}.cal-t{font-size:12px;width:46px}
 </style>
 </head>
 <body>
@@ -193,14 +231,16 @@ form.tx button{background:var(--acc);color:#0a0d12;font-weight:700;border-color:
    <div class="bar">
     <div class="seg" id="tfseg"></div>
     <div class="seg" id="dirseg"><button data-d="AL" class="on">AL</button><button data-d="SAT">SAT</button></div>
+    <span style="flex:1"></span>
+    <span id="opcnt" style="color:var(--dim);font-size:11px;font-weight:700"></span>
+   </div>
+   <div class="bar">
     <button class="ic" onclick="toggleFilt()" id="filtbtn">⚙</button>
     <button class="ic" onclick="toggleInfo()">ⓘ</button>
-    <button id="deepbtn" onclick="deepScan()">⚡</button>
-    <span style="flex:1"></span>
-    <span id="opcnt" style="color:var(--dim);font-size:9.5px"></span>
+    <button id="deepbtn" onclick="deepScan()">⚡ Derin tara</button>
+    <div class="seg" id="viewseg2"><button data-v="card" class="on">Kart</button><button data-v="table">Tablo</button></div>
    </div>
    <div class="sheet" id="filtsheet">
-    <div class="frow"><label>Görünüm</label><div class="seg" id="viewseg"><button data-v="card" class="on">Kart</button><button data-v="table">Tablo</button></div></div>
     <div class="frow"><label>Min hacim</label><select id="opvol"><option value="5000000">≥5 Mn ₺</option><option value="10000000">≥10 Mn ₺</option><option value="30000000" selected>≥30 Mn ₺</option><option value="80000000">≥80 Mn ₺</option><option value="200000000">≥200 Mn ₺</option></select></div>
     <div class="frow"><label>Sektör</label><select id="secsel"><option value="">Tümü</option></select></div>
     <div class="frow"><label>Ara</label><input id="scrq" placeholder="sembol veya şirket"></div>
@@ -991,18 +1031,18 @@ function renderWatch(){
 }
 function addWatch(){if(S.mode!=='bist')return;if(!W().includes(S.sym)){W().push(S.sym);saveWL();renderWatch()}}
 function rmWatch(){WL.lists[WL.cur]=W().filter(s=>s!==S.sym);saveWL();renderWatch()}
-const SCOLS=[['name','Sembol'],['_sc','Puan'],['close','Son'],['change','%'],['voltl','Hacim ₺'],['_al','Hiza'],['_prv','Hac%'],['_prs','Güç%'],['sector','Sektör']];
+const SCOLS=[['name','SEMBOL'],['_sc','PUAN'],['close','SON'],['change','DEĞ%'],['voltl','HACİM'],['_al','HİZA'],['_prv','HAC%'],['_prs','GÜÇ%'],['_rsk','ATR%']];
 function renderOpTable(d){
  const k=S.sort.k,dir=S.sort.d;
- d.forEach(o=>{o._al=alignOf(o).sum;o._prv=(o.pr||{}).rv;o._prs=(o.pr||{}).rs});
+ d.forEach(o=>{o._al=alignOf(o).sum;o._prv=(o.pr||{}).rv;o._prs=(o.pr||{}).rs;const mm=tfmOf(o,S.stf)||{};o._rsk=mm.atrp});
  const dd=d.slice().sort((a,b)=>{const x=a[k],y=b[k];if(x==null)return 1;if(y==null)return-1;return(x>y?1:x<y?-1:0)*dir});
  return '<table><tr>'+SCOLS.map(c=>'<th onclick="sortBy(\''+c[0]+'\')" style="color:'+(k===c[0]?'var(--acc)':'var(--dim)')+'">'+c[1]+(k===c[0]?(dir>0?'▲':'▼'):'')+'</th>').join('')+'</tr>'+
- dd.slice(0,120).map(o=>'<tr class="row" onclick="selectSym(\''+o.name+'\',\'bist\')"><td class="sym">'+o.name+'</td><td style="color:var(--acc)">'+Math.round(o._sc)+'</td><td>'+nf(o.close)+'</td><td class="'+cls(o.change)+'">'+pct(o.change)+'</td><td>'+big(o.voltl)+'</td><td class="'+(o._al>0?'up':o._al<0?'dn':'')+'">'+(o._al>0?'+':'')+o._al+'</td><td>'+(o._prv!=null?o._prv:'-')+'</td><td>'+(o._prs!=null?o._prs:'-')+'</td><td style="color:var(--dim)">'+(o.sector||'').slice(0,12)+'</td></tr>').join('')+'</table>';
+ dd.slice(0,120).map(o=>'<tr class="row" onclick="selectSym(\''+o.name+'\',\'bist\')"><td class="sym">'+o.name+'</td><td style="color:'+(o._sc>=70?'var(--up)':o._sc>=40?'var(--acc)':'var(--dim)')+';font-weight:700">'+Math.round(o._sc)+'</td><td>'+nf(o.close)+'</td><td class="'+cls(o.change)+'">'+pct(o.change)+'</td><td>'+big(o.voltl)+'</td><td class="'+(o._al>0?'up':o._al<0?'dn':'')+'">'+(o._al>0?'+':'')+o._al+'</td><td>'+(o._prv!=null?o._prv:'-')+'</td><td>'+(o._prs!=null?o._prs:'-')+'</td><td style="color:var(--dim)">'+(o._rsk!=null?nf(o._rsk,2):'-')+'</td></tr>').join('')+'</table>';
 }
 function sortBy(k){if(S.sort.k===k)S.sort.d*=-1;else S.sort={k,d:k==='name'||k==='sector'?1:-1};renderOps()}
 function toggleFilt(){const e=$('#filtsheet');e.classList.toggle('on');$('#filtbtn').classList.toggle('on',e.classList.contains('on'))}
 ['opvol','secsel','scrq','minal','minsc'].forEach(id=>{const e=$('#'+id);if(e)e.addEventListener('input',renderOps)});
-$('#viewseg').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;S.view=b.dataset.v;LS.set('view',S.view);[...$('#viewseg').children].forEach(x=>x.classList.toggle('on',x===b));renderOps()};
+$('#viewseg2').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;S.view=b.dataset.v;LS.set('view',S.view);[...$('#viewseg2').children].forEach(x=>x.classList.toggle('on',x===b));renderOps()};
 
 /* ---------- ekonomik takvim ---------- */
 const CALNAME={};
@@ -1236,7 +1276,7 @@ window.addEventListener('resize',()=>{if(S.tab==='heat')renderHeat()});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadUniverse();refreshTick()}});
 (async()=>{
  buildSetBar();renderWLSel();renderWatch();renderJr();renderRisk();
- [...$('#viewseg').children].forEach(x=>x.classList.toggle('on',x.dataset.v===S.view));
+ [...$('#viewseg2').children].forEach(x=>x.classList.toggle('on',x.dataset.v===S.view));
  await loadUniverse();
  const q=S.umap[S.sym];$('#symbtn').innerHTML=S.sym+'<small>'+((q&&q.description)||'BIST').slice(0,20)+'</small>';
  renderPx();renderOps();
