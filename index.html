@@ -383,6 +383,78 @@ $('#tgtok').value=S.tgTok;$('#tgchat').value=S.tgChat;$('#tgmin').value=S.tgMin;
 function saveKey(){S.key=$('#tdkey').value.trim();LS.set('tdkey',S.key);S.ccache={};loadCandles();alert('Kaydedildi')}
 function setSrc(){S.src=$('#srcsel').value;LS.set('src',S.src);S.ccache={};loadCandles()}
 function setBarLim(){S.blim=$('#barlim').value;LS.set('blim',S.blim);S.ccache={};loadCandles()}
+function saveTg(){S.tgTok=$('#tgtok').value.trim();S.tgChat=$('#tgchat').value.trim();S.tgMin=+$('#tgmin').value;LS.set('tgTok',S.tgTok);LS.set('tgChat',S.tgChat);LS.set('tgMin',S.tgMin);alert('Kaydedildi')}
+$('#autoseg').onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;S.autoOn=+b.dataset.a;LS.set('autoOn',S.autoOn);[...$('#autoseg').children].forEach(x=>x.classList.toggle('on',x===b));$('#tgmsg').textContent=S.autoOn?'Otomatik tarama açık. Sayfa açık kaldığı sürece hafta içi 10:00–18:10 arası 15 dakikada bir çalışır.':''};
+async function tgSend(text){
+ if(!S.tgTok||!S.tgChat)throw new Error('Token/Chat ID girilmemiş');
+ const r=await fetch('https://api.telegram.org/bot'+S.tgTok+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:S.tgChat,text,parse_mode:'HTML',disable_web_page_preview:true})});
+ const j=await r.json();
+ if(!j.ok)throw new Error(j.description||'Telegram hatası');
+ return j;
+}
+async function tgTest(){
+ const m=$('#tgmsg');m.textContent='gönderiliyor...';
+ try{await tgSend('✅ BIST Terminal bağlantı testi — '+new Date().toLocaleTimeString('tr-TR'));m.innerHTML='<b class="up">Gönderildi.</b> Telegram\'ı kontrol et.'}
+ catch(e){m.innerHTML='<b class="dn">Başarısız:</b> '+e.message}
+}
+function withinMarketHours(){
+ const d=new Date(),day=d.getDay();
+ if(day===0||day===6)return false;
+ const mins=d.getHours()*60+d.getMinutes();
+ return mins>=600&&mins<=1090; // 10:00–18:10
+}
+function sigKey(sym,dir,grade){return sym+'|'+dir+'|'+grade+'|'+new Date().toISOString().slice(0,10)}
+async function autoRun(manual){
+ const m=$('#tgmsg');
+ if(!manual&&!withinMarketHours()){return}
+ if(!S.tgTok||!S.tgChat){if(manual)m.innerHTML='<span class="dn">Önce Telegram token ve Chat ID gir.</span>';return}
+ if(manual)m.textContent='taranıyor...';
+ try{
+  await loadUniverse();
+  const dirs=['AL','SAT'];let sent=0;
+  for(const dir of dirs){
+   const sign=dir==='AL'?1:-1;
+   let cand=S.uni.filter(o=>o.voltl>=3e7).map(o=>{
+    const ss=setupsOf(o,'15')[dir];
+    if(!ss.length)return null;
+    const sc=scoreOf(o,dir,'15',ss);
+    return{o,ss,sc};
+   }).filter(x=>x&&x.sc>=S.tgMin);
+   cand.sort((a,b)=>b.sc-a.sc);
+   cand=cand.slice(0,10);
+   for(const c of cand){
+    try{
+     const k='b:'+c.o.name+':15min';
+     const cs=await getBars(c.o.name,'15min',true);
+     S.ccache[k]={t:Date.now(),d:cs};
+     const a=analyze(cs,c.o.name);
+     if(a.err)continue;
+     if(dir==='AL'&&!a.above50)continue;
+     if(dir==='SAT'&&a.above50)continue;
+     if(a.grade==='C')continue;
+     const key=sigKey(c.o.name,dir,a.grade);
+     if(S.sentSig.indexOf(key)>=0)continue;
+     const m4=tfmOf(c.o,'240');
+     const htfOk=m4&&m4.htf===sign;
+     if(!htfOk)continue;
+     const txt='<b>'+(dir==='AL'?'🟢 AL':'🔴 SAT')+'</b> · <b>'+c.o.name+'</b> · Not '+a.grade+'\n'+
+      (c.o.description||'')+'\n'+
+      'Fiyat: '+nf(c.o.close)+' ('+pct(c.o.change)+')\n'+
+      'Kurulum: '+c.ss.map(x=>SNAME[x]).join(', ')+'\n'+
+      '4S teyit: '+(htfOk?'✓ uyumlu':'✗')+' · Puan: '+Math.round(c.sc)+'\n'+
+      (a.ref?('POC '+nf(a.ref.poc)+' · VAH '+nf(a.ref.vah)+' · VAL '+nf(a.ref.val)+'\n'):'')+
+      '#'+c.o.name+' #'+dir;
+     await tgSend(txt);
+     S.sentSig.push(key);sent++;
+     await sleep(1200);
+    }catch(e){}
+   }
+  }
+  S.sentSig=S.sentSig.slice(-300);LS.set('sentSig',S.sentSig);
+  if(manual)m.innerHTML=sent?('<b class="up">'+sent+' sinyal gönderildi.</b>'):'Bu taramada eşiği geçen yeni sinyal yok.';
+ }catch(e){if(manual)m.innerHTML='<span class="dn">Hata: '+e.message+'</span>'}
+}
+setInterval(()=>{if(S.autoOn)autoRun(false)},15*60*1000);
 function saveCap(){S.cap=+$('#cap').value||0;S.rskp=+$('#rsk').value||1;LS.set('cap',S.cap);LS.set('rskp',S.rskp);renderRisk();alert('Kaydedildi')}
 async function testSrc(){const m=$('#srcmsg');m.textContent='test...';try{const cs=await getBars('THYAO','15min');m.innerHTML='<b class="up">Çalışıyor</b> — '+cs.length+' mum'}catch(e){m.innerHTML='<b class="dn">Başarısız</b> — '+e.message}}
 function mark(t){if(S.tab===t)draw(t);else S.dirty[t]=1}
@@ -1288,6 +1360,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadUnive
 (async()=>{
  buildSetBar();renderWLSel();renderWatch();renderJr();renderRisk();
  [...$('#viewseg2').children].forEach(x=>x.classList.toggle('on',x.dataset.v===S.view));
+ [...$('#autoseg').children].forEach(x=>x.classList.toggle('on',+x.dataset.a===S.autoOn));
  await loadUniverse();
  const q=S.umap[S.sym];$('#symbtn').innerHTML=S.sym+'<small>'+((q&&q.description)||'BIST').slice(0,20)+'</small>';
  renderPx();renderOps();
