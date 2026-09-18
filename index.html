@@ -377,7 +377,7 @@ const S={sym:LS.get('sym','THYAO'),mode:LS.get('mode','bist'),tf:LS.get('tf','15
  cap:LS.get('cap',100000),rskp:LS.get('rskp',1),alarms:LS.get('alarms',[]),
  uni:[],umap:{},sectors:new Set(),quotes:{},crypto:[],cmap:{},candles:[],ccache:{},wsig:{},vp:null,deep:{},
  sort:{k:'market_cap_basic',d:-1},mov:'gain',box:null,plines:[],tab:'op',limit:100,dirty:{},
- setup:'all',dir:'AL',stf:LS.get('stf','15'),view:LS.get('view','card'),cal:[],calC:'TR',reg:null,scanning:false,infoOn:false,seenA:LS.get('seenA',[]),tgTok:LS.get('tgTok',''),tgChat:LS.get('tgChat',''),tgMin:LS.get('tgMin',55),autoOn:LS.get('autoOn',0),sentSig:LS.get('sentSig',[]),autoLog:[]};
+ setup:'all',dir:'AL',stf:LS.get('stf','15'),view:LS.get('view','card'),cal:[],calC:'TR',reg:null,scanning:false,infoOn:false,seenA:LS.get('seenA',[]),tgTok:LS.get('tgTok',''),tgChat:LS.get('tgChat',''),tgMin:LS.get('tgMin',55),autoOn:LS.get('autoOn',0),sentSig:LS.get('sentSig',[]),autoLog:[],breadthLog:LS.get('breadthLog',[])};
 $('#tdkey').value=S.key;$('#srcsel').value=S.src;$('#barlim').value=S.blim;$('#cap').value=S.cap;$('#rsk').value=S.rskp;
 $('#tgtok').value=S.tgTok;$('#tgchat').value=S.tgChat;$('#tgmin').value=S.tgMin;
 function saveKey(){S.key=$('#tdkey').value.trim();LS.set('tdkey',S.key);S.ccache={};loadCandles();alert('Kaydedildi')}
@@ -579,7 +579,8 @@ const SETUPS=[
  {id:'vcp',n:'VCP',c:'t2',deep:true},
  {id:'pull',n:'Geri çekilme',c:'t4',deep:true},
  {id:'kvw',n:'Keskin VWAP',c:'t1',deep:true},
- {id:'poc',n:'POC/VA',c:'t3',deep:true}
+ {id:'poc',n:'POC/VA',c:'t3',deep:true},
+ {id:'tuk',n:'Tükeniş mumu',c:'t1'}
 ];
 const DEEPSET={vcp:1,pull:1,kvw:1,poc:1};
 const SNAME={},SCOL={};SETUPS.forEach(s=>{SNAME[s.id]=s.n;SCOL[s.id]=s.c});
@@ -597,6 +598,7 @@ const INFO={
  dip:{t:'Dipten dönüş',s:'ORTALAMAYA DÖNÜŞ · STOCHASTIC',p:'Stochastic %K, %D\'yi aşağıdan kesmiş ve hâlâ düşük bölgede; RSI da toparlanma başlangıcında. Uzun vadeli trend korunuyorsa (fiyat günlük EMA200 üstünde) tepki alımı arar.',l:['%K > %D ve %K < 38','RSI < 48','Fiyat günlük EMA200 üstünde'],w:'Düşen trendde bu kurulum sürekli erken sinyal verir. EMA200 şartı tam da bunu engellemek için var; şartı gevşetme.'},
  vcp:{t:'VCP — Volatilite daralması',s:'HAZIRLIK · ⚡ DERİN TARAMA',p:'Minervini/O\'Neil tarzı: fiyat ardışık daralan bacaklar çiziyor, her düzeltme bir öncekinden sığ, hacim kuruyor. Arz tükeniyor demektir; pivot kırılımı geldiğinde hareket sert olur. Birlikte geliştirdiğimiz VCP indikatörünün terminal sürümü.',l:['Son 3 bacakta toplam daralma ≥ %25','Son 8 barın hacmi ortalamanın altında (kuruma)','Fiyat pivot zirvesinin %2,5 yakınında ya da kırmış','Kart etiketinde bacak sayısı, daralma yüzdesi ve KIRDI bilgisi görünür'],w:'Kırılım gelmeden alma — "KIRDI" etiketi yoksa bu bir izleme kurulumudur. SASA örneğinde işe yaramıştı ama tek örnek istatistik değildir.'},
  pull:{t:'Geri çekilme (v2)',s:'TREND TAKİBİ · ⚡ DERİN TARAMA',p:'Confluence v2 chart indikatörünün giriş mantığı: yükselen dizilimde fiyat EMA20\'ye geri çekilmiş ve son barlarda tekrar üstüne çıkmış. Durum değil, olay yakalar — bu yüzden mum verisi gerekir.',l:['EMA 9 > 21 > 50 dizilimi','Son 6 barda EMA20 yukarı kesilmiş (geri alma olayı)','EMA20\'den uzaklık %2,2\'den az (aşırı uzama guard\'ı)','Kart etiketinde kaç bar önce geri alındığı yazar'],w:'Bu, momentum kırılımının negatif R vermesi üzerine geliştirilen sürümdü. Geri alma 5-6 bardan eskiyse tazelik kaybolmuştur.'},
+ tuk:{t:'Tükeniş mumu',s:'GÜN İÇİ · ANLIK · DÖNÜŞ',p:'RSI gibi göstergeler birden çok mumun ortalamasına bakar; bu kurulum tek bir günün karakterine bakar. Gün içinde anormal geniş bir aralıkta, anormal yüksek hacimle hareket etmiş ama kapanışı günün ucundan uzakta kalmış hisseleri yakalar — "çılgınlığın tükendiği" anı.',l:['Günlük aralık (yüksek−düşük), piyasadaki hisselerin üst %25\'inde','Hacim, piyasanın üst %25\'inde','AL: kapanış günün alt %38\'inden yukarıda (satıcı tükenişi, güçlü toparlanma)','SAT: kapanış günün üst %38\'inden aşağıda (alıcı tükenişi, günü zayıf kapatma)'],w:'Güçlü trend sırasında bu mumlar birkaç gün üst üste tekrarlanabilir; tek görülmesi dönüş garantisi değildir, ertesi gün teyit iste.'},
  kvw:{t:'Keskin VWAP',s:'ORTALAMAYA DÖNÜŞ · ⚡ DERİN TARAMA',p:'VWAP web tarayıcısı projesinden: fiyat VWAP\'ı test edip geri dönmüş ve üst üste 3 bar doğru tarafta kapanmış. Volatilite filtresi ölü hisseleri eler.',l:['Son 8 barda VWAP\'a dokunma (retest)','Ardından 3 bar üst üste doğru tarafta kapanış','ATR% ≥ 0,30 (yeterli oynaklık)','Sıkışma varsa etikette belirtilir'],w:'3 bar teyit gecikme demektir; hızlı scalp\'te girişi kaçırabilirsin. Buna karşılık yanlış sinyali belirgin azaltır — backtestte AL tarafında kazanma oranını %56\'dan %61\'e çıkarmıştı.'},
  poc:{t:'POC / Değer alanı',s:'HACİM PROFİLİ · DERİN TARAMA',p:'Dünkü seansın en çok işlem gören fiyatı (POC) ve %70 değer alanı hesaplanır. Fiyatın bu referanslara dönüp tutması güçlü destek/direnç işaretidir.',l:['⚡ Derin tara ile hesaplanır, mum verisi gerekir','AL: fiyat POC veya VAL\'e %0,6\'dan yakın','EMA50 ve VWAP\'ın doğru tarafında'],w:'Yalnız başına kullanma; EMA veya VWAP kurulumuyla üst üste geldiğinde değerlidir.'}
 };
@@ -619,6 +621,10 @@ function setupsOf(o,tfId){
  if(volHot&&o.change>0&&m.htf===1)out.AL.push('hac');
  if(m.h52!=null&&m.h52>=-2&&volOk)out.AL.push('h52');
  if(m.rsi<=28&&o.EMA200&&o.close>o.EMA200)out.AL.push('tep');
+ if(o.high>o.low&&pr.rng!=null&&pr.rng>=75&&pr.vol!=null&&pr.vol>=75){
+  const cp=(o.close-o.low)/(o.high-o.low);
+  if(cp>=0.62)out.AL.push('tuk');
+ }
  if(m.hist!=null&&m.stack===1&&m.hist>0&&m.mac>m.msg&&volOk&&m.htf===1)out.AL.push('trm');
  if(m.hist!=null&&m.hist>0&&pr.hp!=null&&pr.hp<=40&&m.c>m.e20&&m.htf===1)out.AL.push('fbrk');
  if(m.sk!=null&&m.sd!=null&&m.sk>m.sd&&m.sk<38&&m.rsi<48&&o.EMA200&&o.close>o.EMA200)out.AL.push('dip');
@@ -629,6 +635,10 @@ function setupsOf(o,tfId){
  if(volHot&&o.change<0&&m.htf===-1)out.SAT.push('hac');
  if(m.l52!=null&&m.l52<=2&&volOk)out.SAT.push('h52');
  if(m.rsi>=72&&o.EMA200&&o.close<o.EMA200)out.SAT.push('tep');
+ if(o.high>o.low&&pr.rng!=null&&pr.rng>=75&&pr.vol!=null&&pr.vol>=75){
+  const cp=(o.close-o.low)/(o.high-o.low);
+  if(cp<=0.38)out.SAT.push('tuk');
+ }
  if(m.stack===-1&&m.hist!=null&&m.hist<0&&m.mac<m.msg&&volOk&&m.htf===-1)out.SAT.push('trm');
  if(m.hist!=null&&m.hist<0&&m.c<m.e20&&m.htf===-1)out.SAT.push('fbrk');
  if(m.sk!=null&&m.sd!=null&&m.sk<m.sd&&m.sk>62&&m.rsi>52&&o.EMA200&&o.close<o.EMA200)out.SAT.push('dip');
@@ -718,6 +728,10 @@ function whyText(o,tfId){
  if(m.adx!=null)b.push('<b>ADX</b> '+nf(m.adx,0));
  if(m.atrp!=null)b.push('<b>ATR</b> '+nf(m.atrp,2)+'%');
  if(m.bw!=null)b.push('<b>bant</b> '+nf(m.bw,2)+'%');
+ if(o.high>o.low&&o.pr&&o.pr.rng!=null&&o.pr.rng>=75){
+  const cp=(o.close-o.low)/(o.high-o.low)*100;
+  b.push('<b>gün içi konum</b> %'+nf(cp,0));
+ }
  return b.map(x=>'<span>'+x+'</span>').join('');
 }
 
@@ -739,6 +753,7 @@ function buildPercentiles(){
   keys.vol.push(o.voltl);
   if(m.bw!=null)keys.bw.push(m.bw);
   if(m.histN!=null&&m.histN>0)keys.hp.push(m.histN);
+  if(o.high>o.low&&o.close)keys.rng.push((o.high-o.low)/o.close*100);
  });
  Object.keys(keys).forEach(k=>keys[k].sort((a,b)=>a-b));
  S.pctArr=keys;
@@ -746,7 +761,8 @@ function buildPercentiles(){
   const m=tfmOf(o,S.stf)||tfmOf(o,'D')||{};
   o.pr={rv:pctRank(keys.rv,m.rv),atrp:pctRank(keys.atrp,m.atrp),adx:pctRank(keys.adx,m.adx),
    rs:pctRank(keys.rs,o._rs),perfW:pctRank(keys.perfW,o['Perf.W']),vol:pctRank(keys.vol,o.voltl),bw:pctRank(keys.bw,m.bw),
-   hp:(m.histN!=null&&m.histN>0)?pctRank(keys.hp,m.histN):null};
+   hp:(m.histN!=null&&m.histN>0)?pctRank(keys.hp,m.histN):null,
+   rng:(o.high>o.low&&o.close)?pctRank(keys.rng,(o.high-o.low)/o.close*100):null};
  });
  S.uni.forEach(o=>{if(!o.pr)o.pr={}});
  // sektor ici siralama
@@ -763,6 +779,25 @@ function alignOf(o){
   const v=(m.c>m.e20&&m.stack>=0)?1:(m.c<m.e20&&m.stack<=0)?-1:0;sum+=v;det.push(v)});
  return{sum,det};
 }
+function todayStr(){return new Date().toISOString().slice(0,10)}
+function recordBreadthDay(liq,breadth){
+ const tv=liq.reduce((a,o)=>a+o.voltl,0),d=todayStr();
+ let log=S.breadthLog.slice();
+ const li=log.length-1;
+ if(li>=0&&log[li].d===d){log[li].b=breadth;log[li].v=tv}
+ else log.push({d,b:breadth,v:tv});
+ log=log.slice(-40);
+ // siniflandirma: bir onceki KAYITLI gune gore
+ for(let i=1;i<log.length;i++){
+  const p=log[i-1],c=log[i];
+  if(c.v>p.v*1.05&&c.b>=55)c.t='acc';
+  else if(c.v>p.v*1.05&&c.b<=45)c.t='dist';
+  else c.t='neu';
+ }
+ S.breadthLog=log;LS.set('breadthLog',log);
+ const closed=log.slice(0,-1).slice(-25); // bugun haric, son 25 tamamlanmis gun
+ S.distStats={acc:closed.filter(x=>x.t==='acc').length,dist:closed.filter(x=>x.t==='dist').length,n:closed.length,today:log[log.length-1].t||'neu'};
+}
 function computeRegime(){
  const liq=S.uni.filter(o=>o.voltl>=1e7);
  if(!liq.length)return;
@@ -774,6 +809,7 @@ function computeRegime(){
  if(above>=58&&breadth>=52){mode='TREND';desc='Piyasa geniş tabanlı yukarıda. Geri çekilme kurulumları (VWAP dönüşü, EMA yaslanma, POC) öne çıkar; kırılım peşinde koşmaya gerek yok.'}
  else if(above<=38&&breadth<=45){mode='ZAYIF';desc='Hisselerin çoğu EMA20 altında. AL sinyallerini küçült, SAT tarafı ve nakit daha mantıklı; dip alma denemeleri düşük başarı verir.'}
  else{mode='YATAY';desc='Yön belirsiz, hisseler karışık. Sıkışma ve kırılım kurulumları öncelikli; trend takibi yanıltıcıdır, hedefleri kısa tut.'}
+ recordBreadthDay(liq,breadth);
  S.reg={mode,desc,breadth,above,secList};
  const c=mode==='TREND'?'var(--up)':mode==='ZAYIF'?'var(--dn)':'var(--acc)';
  $('#regbadge').innerHTML='<span style="color:'+c+'">'+mode+'</span> <span style="color:var(--dim)">'+nf(breadth,0)+'%</span>';
@@ -783,6 +819,12 @@ function regimeBonus(ss,dir){
  if(S.reg.mode==='TREND'){b+=dir==='AL'?6:-8;if(ss.indexOf('vwap')>=0||ss.indexOf('ema')>=0||ss.indexOf('poc')>=0)b+=6}
  else if(S.reg.mode==='ZAYIF'){b+=dir==='SAT'?6:-8}
  else{if(ss.indexOf('sik')>=0||ss.indexOf('brk')>=0)b+=7}
+ if(ss.indexOf('tuk')>=0)b+=8;
+ const ds=S.distStats;
+ if(ds&&ds.n>=8){
+  if(ds.dist>=5)b+=dir==='AL'?-10:6;
+  else if(ds.acc>=6)b+=dir==='AL'?6:-6;
+ }
  return b;
 }
 function renderReg(){
@@ -790,8 +832,19 @@ function renderReg(){
  const c=r.mode==='TREND'?'var(--up)':r.mode==='ZAYIF'?'var(--dn)':'var(--acc)';
  let h='<div class="bigreg"><h2 style="color:'+c+'">'+r.mode+' rejimi</h2><p>'+r.desc+'</p>'+
  '<div class="brd"><i style="background:var(--up);width:'+nf(r.breadth,0)+'%"></i><i style="background:var(--dn);width:'+nf(100-r.breadth,0)+'%"></i></div>'+
- '<p>Yükselen: <b style="color:#fff">'+nf(r.breadth,0)+'%</b> · EMA20 üstü: <b style="color:#fff">'+nf(r.above,0)+'%</b></p></div>'+
- '<div class="note" style="padding-bottom:0;letter-spacing:.5px">SEKTÖR ROTASYONU</div><table><tr><th>Sektör</th><th>Adet</th><th>Bugün</th><th>1 Hafta</th></tr>'+
+ '<p>Yükselen: <b style="color:#fff">'+nf(r.breadth,0)+'%</b> · EMA20 üstü: <b style="color:#fff">'+nf(r.above,0)+'%</b></p></div>';
+ const ds=S.distStats;
+ if(ds){
+  const warn=ds.n>=8&&ds.dist>=5,acc=ds.n>=8&&ds.acc>=6;
+  const tc=warn?'var(--dn)':acc?'var(--up)':'var(--txt2)';
+  h+='<div class="bigreg" style="padding-top:0"><div class="note" style="padding:0 0 6px;letter-spacing:.5px">PİYASA SAĞLIĞI · SON '+ds.n+' GÜN</div>'+
+   '<p style="color:'+tc+'"><b>'+ds.acc+'</b> birikim günü · <b>'+ds.dist+'</b> dağıtım günü'+(ds.n<25?' <span style="color:var(--dim)">(veri birikiyor: '+ds.n+'/25 gün)</span>':'')+'</p>'+
+   (warn?'<p style="color:var(--dn)">⚠ Dağıtım günü sayısı yüksek — kurumsal satış baskısı işareti. AL sinyallerine daha temkinli yaklaş, sistemin AL puanları bunu otomatik düşürüyor.</p>':
+    acc?'<p style="color:var(--up)">✓ Birikim günleri baskın — kurumsal alım işareti. AL sinyalleri sistemde bir miktar öne çıkarılıyor.</p>':
+    '<p style="color:var(--dim)">Belirgin bir birikim/dağıtım eğilimi yok, sinyaller nötr puanlanıyor.</p>')+
+   '<div class="note">Birikim günü: piyasa toplam hacminin önceki güne göre ≥%5 arttığı ve hisselerin ≥%55\'inin yükseldiği gün. Dağıtım günü: aynı hacim artışıyla hisselerin ≤%45\'i yükseldiği gün. William O\'Neil\'ın CAN SLIM yönteminden — kısa sürede biriken dağıtım günleri genelde düzeltme öncesi gelir. Terminali her açtığında bir gün daha kaydedilir, geçmişe gidip veri çekmiyoruz.</div></div>';
+ }
+ h+='<div class="note" style="padding-bottom:0;letter-spacing:.5px">SEKTÖR ROTASYONU</div><table><tr><th>Sektör</th><th>Adet</th><th>Bugün</th><th>1 Hafta</th></tr>'+
  r.secList.map(x=>'<tr><td>'+x.s.slice(0,18)+'</td><td>'+x.n+'</td><td class="'+cls(x.d)+'">'+pct(x.d)+'</td><td class="'+cls(x.w)+'">'+pct(x.w)+'</td></tr>').join('')+'</table>'+
  '<div class="note">Rejim, likit hisselerin (≥10 Mn ₺) kaçının yükseldiğine ve kaçının günlük EMA20 üstünde olduğuna bakar. Fırsat listesi bu rejime göre puanlanır.</div>';
  $('#regbody').innerHTML=h;
