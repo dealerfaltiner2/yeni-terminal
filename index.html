@@ -319,9 +319,9 @@ td.sym{font-size:13px;letter-spacing:.5px}
     <button class="g" onclick="testSrc()">Veri kaynağını test et</button><div id="srcmsg" class="note"></div>
     <b>OTOMATİK TARAMA + TELEGRAM</b>
     <div class="frow" style="padding:2px 0"><label>Durum</label><div class="seg" id="autoseg"><button data-a="0" class="on">Kapalı</button><button data-a="1">Açık</button></div></div>
-    <input id="tgtok" placeholder="Telegram bot token">
-    <input id="tgchat" placeholder="Chat ID">
-    <div class="frow" style="padding:2px 0"><label>Min puan</label><select id="tgmin"><option value="40">40</option><option value="55" selected>55</option><option value="70">70</option></select></div>
+    <input id="tgtok" placeholder="Telegram bot token" oninput="saveTg(true)">
+    <input id="tgchat" placeholder="Chat ID" oninput="saveTg(true)">
+    <div class="frow" style="padding:2px 0"><label>Min puan</label><select id="tgmin" onchange="saveTg(true)"><option value="40">40</option><option value="55" selected>55</option><option value="70">70</option></select></div>
     <button class="g" onclick="saveTg()">Kaydet</button>
     <button class="g" onclick="tgTest()">Test mesajı gönder</button>
     <button class="g" onclick="autoRun(true)">Şimdi tara ve gönder</button>
@@ -383,7 +383,22 @@ $('#tgtok').value=S.tgTok;$('#tgchat').value=S.tgChat;$('#tgmin').value=S.tgMin;
 function saveKey(){S.key=$('#tdkey').value.trim();LS.set('tdkey',S.key);S.ccache={};loadCandles();alert('Kaydedildi')}
 function setSrc(){S.src=$('#srcsel').value;LS.set('src',S.src);S.ccache={};loadCandles()}
 function setBarLim(){S.blim=$('#barlim').value;LS.set('blim',S.blim);S.ccache={};loadCandles()}
-function saveTg(){S.tgTok=$('#tgtok').value.trim();S.tgChat=$('#tgchat').value.trim();S.tgMin=+$('#tgmin').value;LS.set('tgTok',S.tgTok);LS.set('tgChat',S.tgChat);LS.set('tgMin',S.tgMin);alert('Kaydedildi')}
+function saveTg(silent){
+ try{
+  S.tgTok=$('#tgtok').value.trim();S.tgChat=$('#tgchat').value.trim();S.tgMin=+$('#tgmin').value;
+  LS.set('tgTok',S.tgTok);LS.set('tgChat',S.tgChat);LS.set('tgMin',S.tgMin);
+  const m=$('#tgmsg');
+  if(m)m.innerHTML='<b class="up">'+(silent?'Otomatik kaydedildi':'Kaydedildi')+'.</b> Token '+(S.tgTok?S.tgTok.slice(0,10)+'…':'boş')+' · Chat ID '+(S.tgChat||'boş');
+ }catch(e){const m=$('#tgmsg');if(m)m.innerHTML='<b class="dn">Kaydetme hatası:</b> '+e.message}
+}
+window.addEventListener('error',function(e){
+ try{
+  const box=document.createElement('div');
+  box.style.cssText='position:fixed;left:8px;right:8px;bottom:60px;background:#3a0d12;color:#ffb4bb;border:1px solid #ff4d5e;padding:8px 10px;border-radius:8px;font-family:monospace;font-size:11px;z-index:999;max-height:30vh;overflow:auto';
+  box.innerHTML='<b>Sayfa hatası:</b> '+e.message+' ('+ (e.filename||'') +':'+e.lineno+')<br><button onclick="this.parentNode.remove()" style="margin-top:6px;background:#fff;color:#3a0d12;border:0;padding:4px 10px;border-radius:5px">Kapat</button>';
+  document.body.appendChild(box);
+ }catch(x){}
+});
 $('#autoseg').onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;S.autoOn=+b.dataset.a;LS.set('autoOn',S.autoOn);[...$('#autoseg').children].forEach(x=>x.classList.toggle('on',x===b));$('#tgmsg').textContent=S.autoOn?'Otomatik tarama açık. Sayfa açık kaldığı sürece hafta içi 10:00–18:10 arası 15 dakikada bir çalışır.':''};
 async function tgSend(text){
  if(!S.tgTok||!S.tgChat)throw new Error('Token/Chat ID girilmemiş');
