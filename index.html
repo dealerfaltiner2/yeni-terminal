@@ -317,6 +317,16 @@ td.sym{font-size:13px;letter-spacing:.5px}
     <select id="barlim" onchange="setBarLim()"><option value="short">Grafik geçmişi: kısa (hızlı)</option><option value="long">Grafik geçmişi: uzun</option></select>
     <input id="tdkey" placeholder="Twelve Data apikey"><button class="g" onclick="saveKey()">Anahtarı kaydet</button>
     <button class="g" onclick="testSrc()">Veri kaynağını test et</button><div id="srcmsg" class="note"></div>
+    <b>OTOMATİK TARAMA + TELEGRAM</b>
+    <div class="frow" style="padding:2px 0"><label>Durum</label><div class="seg" id="autoseg"><button data-a="0" class="on">Kapalı</button><button data-a="1">Açık</button></div></div>
+    <input id="tgtok" placeholder="Telegram bot token">
+    <input id="tgchat" placeholder="Chat ID">
+    <div class="frow" style="padding:2px 0"><label>Min puan</label><select id="tgmin"><option value="40">40</option><option value="55" selected>55</option><option value="70">70</option></select></div>
+    <button class="g" onclick="saveTg()">Kaydet</button>
+    <button class="g" onclick="tgTest()">Test mesajı gönder</button>
+    <button class="g" onclick="autoRun(true)">Şimdi tara ve gönder</button>
+    <div id="tgmsg" class="note"></div>
+    <div class="note">Bot oluşturma: Telegram'da <b>@BotFather</b> → /newbot → gelen token'ı yukarı yapıştır. Chat ID için botuna bir mesaj at, sonra <b>@userinfobot</b>'a yaz — sana ID'ni verir.<br><br>Tarama 15dk kurulumlarını üretir, 4 saatlik trend teyidini arar, ilk 10 adayı mum bazında doğrular ve sadece daha önce gönderilmemiş sinyalleri yollar. Yalnızca hafta içi 10:00–18:10 arasında çalışır. <b>Sayfa açık kalmalıdır</b> — iPhone arka plandaki sayfayı dondurur.</div>
     <b>SERMAYE</b>
     <input id="cap" type="number" placeholder="Sermaye ₺"><input id="rsk" type="number" step="any" placeholder="İşlem riski %"><button class="g" onclick="saveCap()">Kaydet</button>
     <b>YEDEK</b>
@@ -367,8 +377,9 @@ const S={sym:LS.get('sym','THYAO'),mode:LS.get('mode','bist'),tf:LS.get('tf','15
  cap:LS.get('cap',100000),rskp:LS.get('rskp',1),alarms:LS.get('alarms',[]),
  uni:[],umap:{},sectors:new Set(),quotes:{},crypto:[],cmap:{},candles:[],ccache:{},wsig:{},vp:null,deep:{},
  sort:{k:'market_cap_basic',d:-1},mov:'gain',box:null,plines:[],tab:'op',limit:100,dirty:{},
- setup:'all',dir:'AL',stf:LS.get('stf','15'),view:LS.get('view','card'),cal:[],calC:'TR',reg:null,scanning:false,infoOn:false,seenA:LS.get('seenA',[])};
+ setup:'all',dir:'AL',stf:LS.get('stf','15'),view:LS.get('view','card'),cal:[],calC:'TR',reg:null,scanning:false,infoOn:false,seenA:LS.get('seenA',[]),tgTok:LS.get('tgTok',''),tgChat:LS.get('tgChat',''),tgMin:LS.get('tgMin',55),autoOn:LS.get('autoOn',0),sentSig:LS.get('sentSig',[]),autoLog:[]};
 $('#tdkey').value=S.key;$('#srcsel').value=S.src;$('#barlim').value=S.blim;$('#cap').value=S.cap;$('#rsk').value=S.rskp;
+$('#tgtok').value=S.tgTok;$('#tgchat').value=S.tgChat;$('#tgmin').value=S.tgMin;
 function saveKey(){S.key=$('#tdkey').value.trim();LS.set('tdkey',S.key);S.ccache={};loadCandles();alert('Kaydedildi')}
 function setSrc(){S.src=$('#srcsel').value;LS.set('src',S.src);S.ccache={};loadCandles()}
 function setBarLim(){S.blim=$('#barlim').value;LS.set('blim',S.blim);S.ccache={};loadCandles()}
