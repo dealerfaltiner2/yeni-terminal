@@ -964,6 +964,7 @@ function renderOps(){
 }
 function cardHtml(o,ix){const dir=S.dir,tf=S.stf;
   const dp=S.deep[o.name],dpm=dp&&dp.dir===dir,pr=o.pr||{},al=alignOf(o),m=tfmOf(o,tf)||{};
+  const prev=S.prevOps||{};
   const isNew=prev[o.name]===undefined&&Object.keys(prev).length>0;
   const rise=prev[o.name]!==undefined&&o._sc-prev[o.name]>=6;
   const tags=o._ss.map(x=>'<span class="tag '+SCOL[x]+'">'+SNAME[x]+'</span>').join('')+
