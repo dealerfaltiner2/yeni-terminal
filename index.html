@@ -16,7 +16,7 @@
 --bg:#080b10;--panel:#0f141c;--panel2:#151c26;--line:#1e2833;--line2:#2a3646;
 --txt:#dce3ec;--txt2:#9aa7b6;--dim:#64717f;
 --up:#00c48c;--upbg:rgba(0,196,140,.12);--dn:#ff4d5e;--dnbg:rgba(255,77,94,.12);
---acc:#ffb020;--accbg:rgba(255,176,32,.12);
+--acc:#ffb020;--accbg:rgba(255,176,32,.12);--warn:#ffb020;
 --c1:#38bdf8;--c2:#a78bfa;--c3:#fb923c;--c4:#4ade80;--c5:#f472b6;
 --mono:ui-monospace,SFMono-Regular,Menlo,monospace}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -125,7 +125,9 @@ form.tx button{background:var(--acc);color:#0a0d12;font-weight:700;border-color:
 .sett button.g{background:var(--panel2);color:var(--txt2);border:1px solid var(--line2)}
 .sett b{font-size:10px;color:var(--dim);letter-spacing:1px;margin-top:6px}
 .xbtn{background:none;border:0;color:var(--dn);font-size:13px}
-.prog{height:2px;background:var(--acc);width:0;transition:width .3s}
+.prog{height:6px;background:var(--panel2);border-radius:3px;overflow:hidden;transition:width .3s}
+.prog div{height:100%;background:var(--acc);transition:width .3s}
+.btn{background:var(--acc);border:0;color:#0a0d12;padding:10px 14px;font-weight:700;border-radius:7px;font-family:var(--mono);font-size:11.5px;display:inline-block;margin:6px 0}
 .info{background:var(--panel);border-bottom:1px solid var(--line);padding:11px 12px;display:none}
 .info.on{display:block}
 .info h3{font-size:13px;color:#fff;margin-bottom:3px}
@@ -353,8 +355,11 @@ td.sym{font-size:13px;letter-spacing:.5px}
     <input id="cap" type="number" placeholder="Sermaye ₺"><input id="rsk" type="number" step="any" placeholder="İşlem riski %"><button class="g" onclick="saveCap()">Kaydet</button>
     <b>YEDEK</b>
     <button class="g" onclick="backup()">Yedeği kopyala</button>
+    <button class="g" onclick="backupToFile()">Yedeği dosyaya indir</button>
     <textarea id="bktext" placeholder="Yedek metnini yapıştır"></textarea>
     <button class="g" onclick="restore()">Geri yükle</button>
+    <input type="file" id="bkfile" accept=".txt" style="display:none" onchange="restoreFromFile(this)">
+    <button class="g" onclick="document.getElementById('bkfile').click()">Dosyadan geri yükle</button>
     <div class="note">Tarama verisi TradingView'dan ~15 dk gecikmeli; derin tarama ve grafik mumları kendi Cloudflare proxy'nden Yahoo'ya gider. Kurulum eşikleri geçmiş test edilmemiştir. Yatırım tavsiyesi değildir.</div>
     <button class="g" onclick="if(confirm('Tüm yerel veriler silinsin mi?')){localStorage.clear();location.reload()}">Yerel verileri sıfırla</button>
    </div>
@@ -424,6 +429,7 @@ window.addEventListener('error',function(e){
  }catch(x){}
 });
 $('#autoseg').onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;S.autoOn=+b.dataset.a;LS.set('autoOn',S.autoOn);[...$('#autoseg').children].forEach(x=>x.classList.toggle('on',x===b));$('#tgmsg').textContent=S.autoOn?'Otomatik tarama açık. Sayfa açık kaldığı sürece hafta içi 10:00–18:10 arası 15 dakikada bir çalışır.':''};
+function htmlEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 async function tgSend(text){
  if(!S.tgTok||!S.tgChat)throw new Error('Token/Chat ID girilmemiş');
  const r=await fetch('https://api.telegram.org/bot'+S.tgTok+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:S.tgChat,text,parse_mode:'HTML',disable_web_page_preview:true})});
@@ -442,7 +448,7 @@ function withinMarketHours(){
  const mins=d.getHours()*60+d.getMinutes();
  return mins>=600&&mins<=1090; // 10:00–18:10
 }
-function sigKey(sym,dir,grade){return sym+'|'+dir+'|'+grade+'|'+new Date().toISOString().slice(0,10)}
+function sigKey(sym,dir){return sym+'|'+dir+'|'+new Date().toISOString().slice(0,10)}
 async function autoRun(manual){
  const m=$('#tgmsg');
  if(!manual&&!withinMarketHours()){return}
@@ -471,22 +477,22 @@ async function autoRun(manual){
      if(dir==='AL'&&!a.above50)continue;
      if(dir==='SAT'&&a.above50)continue;
      if(a.grade==='C')continue;
-     const key=sigKey(c.o.name,dir,a.grade);
+     const key=sigKey(c.o.name,dir);
      if(S.sentSig.indexOf(key)>=0)continue;
      const m4=tfmOf(c.o,'240');
      const htfOk=m4&&m4.htf===sign;
      if(!htfOk)continue;
-     const txt='<b>'+(dir==='AL'?'🟢 AL':'🔴 SAT')+'</b> · <b>'+c.o.name+'</b> · Not '+a.grade+'\n'+
-      (c.o.description||'')+'\n'+
+     const txt='<b>'+(dir==='AL'?'🟢 AL':'🔴 SAT')+'</b> · <b>'+htmlEsc(c.o.name)+'</b> · Not '+a.grade+'\n'+
+      htmlEsc(c.o.description||'')+'\n'+
       'Fiyat: '+nf(c.o.close)+' ('+pct(c.o.change)+')\n'+
-      'Kurulum: '+c.ss.map(x=>SNAME[x]).join(', ')+'\n'+
+      'Kurulum: '+c.ss.map(x=>htmlEsc(SNAME[x])).join(', ')+'\n'+
       '4S teyit: '+(htfOk?'✓ uyumlu':'✗')+' · Puan: '+Math.round(c.sc)+'\n'+
       (a.ref?('POC '+nf(a.ref.poc)+' · VAH '+nf(a.ref.vah)+' · VAL '+nf(a.ref.val)+'\n'):'')+
       '#'+c.o.name+' #'+dir;
      await tgSend(txt);
      S.sentSig.push(key);sent++;
      await sleep(1200);
-    }catch(e){}
+    }catch(e){console.warn('telegram '+c.o.name+': '+(e.message||e))}
    }
   }
   S.sentSig=S.sentSig.slice(-300);LS.set('sentSig',S.sentSig);
@@ -498,8 +504,56 @@ function saveCap(){S.cap=+$('#cap').value||0;S.rskp=+$('#rsk').value||1;LS.set('
 async function testSrc(){const m=$('#srcmsg');m.textContent='test...';try{const cs=await getBars('THYAO','15min');m.innerHTML='<b class="up">Çalışıyor</b> — '+cs.length+' mum'}catch(e){m.innerHTML='<b class="dn">Başarısız</b> — '+e.message}}
 function mark(t){if(S.tab===t)draw(t);else S.dirty[t]=1}
 function draw(t){S.dirty[t]=0;const f={op:function(){try{renderOps()}catch(e){$('#oplist').innerHTML='<div class="note"><b class="dn">Ekran hatası:</b> '+String(e.message||e)+'</div>'}},reg:renderReg,brief:renderBrief,lab:renderLab,watch:renderWatch,cal:calTab,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,crypto:renderCrypto,jr:renderJr,risk:renderRisk}[t];if(f)f()}
-function backup(){const b={wl:WL,alarms:S.alarms,tx:S.tx,jr:S.jr,tdkey:S.key,src:S.src,cap:S.cap,rskp:S.rskp,sym:S.sym,tf:S.tf,ind:S.ind,ext:S.ext,sigHist:S.sigHist,tgTok:S.tgTok,tgChat:S.tgChat,tgMin:S.tgMin,autoOn:S.autoOn,v:11};const t='BISTT:'+btoa(unescape(encodeURIComponent(JSON.stringify(b))));$('#bktext').value=t;if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>alert('Panoya kopyalandı')).catch(()=>alert('Kutudaki metni elle kopyala'));else alert('Kutudaki metni elle kopyala')}
-function restore(){try{const t=$('#bktext').value.trim();if(!t.startsWith('BISTT:'))throw 0;const b=JSON.parse(decodeURIComponent(escape(atob(t.slice(6)))));['wl','alarms','tx','jr','sym','tf','ind','cap','rskp','ext','sigHist','tgTok','tgChat','tgMin','autoOn'].forEach(k=>{if(b[k]!==undefined)LS.set(k,b[k])});if(b.tdkey)LS.set('tdkey',b.tdkey);if(b.src)LS.set('src',b.src);alert('Geri yüklendi');location.reload()}catch(e){alert('Yedek metni tanınmadı')}}
+const BACKUP_VER=12;
+function backupObj(){
+ return {wl:WL,alarms:S.alarms,tx:S.tx,jr:S.jr,tdkey:S.key,src:S.src,cap:S.cap,rskp:S.rskp,
+  sym:S.sym,mode:S.mode,tf:S.tf,ind:S.ind,ext:S.ext,sigHist:S.sigHist,
+  tgTok:S.tgTok,tgChat:S.tgChat,tgMin:S.tgMin,
+  breadthLog:S.breadthLog,sentSig:S.sentSig,stf:S.stf,view:S.view,blim:S.blim,seenA:S.seenA,
+  savedAt:new Date().toISOString(),v:BACKUP_VER};
+}
+function backup(){
+ const t='BISTT:'+btoa(unescape(encodeURIComponent(JSON.stringify(backupObj()))));
+ $('#bktext').value=t;
+ if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>alert('Panoya kopyalandı')).catch(()=>alert('Kutudaki metni elle kopyala'));
+ else alert('Kutudaki metni elle kopyala');
+}
+function backupToFile(){
+ const t='BISTT:'+btoa(unescape(encodeURIComponent(JSON.stringify(backupObj()))));
+ const blob=new Blob([t],{type:'text/plain'});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement('a');
+ a.href=url;a.download='bist-terminal-yedek-'+new Date().toISOString().slice(0,10)+'.txt';
+ document.body.appendChild(a);a.click();document.body.removeChild(a);
+ setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+function restoreFromFile(input){
+ const f=input.files&&input.files[0];if(!f)return;
+ const r=new FileReader();
+ r.onload=()=>{$('#bktext').value=String(r.result||'').trim();restore()};
+ r.onerror=()=>alert('Dosya okunamadı');
+ r.readAsText(f);
+ input.value='';
+}
+function restore(){
+ const t=$('#bktext').value.trim();
+ if(!t.startsWith('BISTT:')){alert('Yedek metni tanınmadı: \'BISTT:\' ile başlamıyor.');return}
+ let b;
+ try{b=JSON.parse(decodeURIComponent(escape(atob(t.slice(6)))))}
+ catch(e){alert('Yedek metni bozuk — çözülemedi ('+e.message+').');return}
+ if(typeof b!=='object'||b===null){alert('Yedek içeriği geçersiz (nesne değil).');return}
+ const ALL_KEYS=['wl','alarms','tx','jr','tdkey','src','cap','rskp','sym','mode','tf','ind','ext','sigHist','tgTok','tgChat','tgMin','breadthLog','sentSig','stf','view','blim','seenA'];
+ ALL_KEYS.forEach(k=>{
+  if(k==='tdkey'){LS.set('tdkey',b.tdkey||'');return}
+  if(b[k]!==undefined)LS.set(k,b[k]);
+  else if(['breadthLog','sentSig','seenA'].indexOf(k)>=0)LS.set(k,[]);
+ });
+ if(b.src)LS.set('src',b.src);
+ LS.set('autoOn',0); // iki cihazda cift Telegram sinyali gitmesin diye yeniden acman gerekir
+ const when=b.savedAt?new Date(b.savedAt).toLocaleString('tr-TR'):'tarih bilgisi yok (eski yedek)';
+ alert('Geri yüklendi ('+when+', sürüm '+(b.v||'?')+'). Otomatik tarama güvenlik için kapatıldı, istersen Ayarlar\'dan tekrar aç.');
+ location.reload();
+}
 
 /* ================= zaman dilimleri ================= */
 const TFDEF=[
@@ -509,7 +563,7 @@ const TFDEF=[
  {id:'D',lab:'Günlük',sfx:'',htf:'|1W',htfLab:'Hafta',vwap:false}
 ];
 const TFMAP={};TFDEF.forEach(t=>TFMAP[t.id]=t);
-const BASE=['name','description','close','change','change_abs','open','high','low','volume','market_cap_basic','price_earnings_ttm','price_book_fundamental','dividends_yield_current','sector','relative_volume_10d_calc','price_52_week_high','price_52_week_low','update_mode','Perf.W','Perf.1M','EMA20','EMA200'];
+const BASE=['name','description','close','change','change_abs','open','high','low','volume','market_cap_basic','price_earnings_ttm','price_book_fundamental','dividends_yield_current','sector','relative_volume_10d_calc','relative_volume_intraday|5','price_52_week_high','price_52_week_low','update_mode','Perf.W','Perf.1M','EMA20','EMA200'];
 function tfCols(sfx,vwap){
  const c=['close','EMA20','EMA50','EMA200','RSI','ADX','ATR','BB.upper','BB.lower','MACD.macd','MACD.signal','Stoch.K','Stoch.D'].map(x=>x+sfx);
  if(vwap)c.push('VWAP'+sfx);
@@ -530,6 +584,7 @@ function colsFor(stf,safe){
  return a;
 }
 let COLS=colsFor(LS.get('stf','15'));
+function rvolOf(o){const v=o['relative_volume_intraday|5'];return(v!=null&&isFinite(v)&&v>0)?v:o.relative_volume_10d_calc}
 const FILT=[{left:'type',operation:'equal',right:'stock'},{left:'subtype',operation:'in_range',right:['common','foreign-issuer']}];
 async function tvScan(ep,body){
  const r=await fetch('https://scanner.tradingview.com/'+ep+'/scan',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
@@ -555,7 +610,10 @@ async function loadUniverse(){
  try{
   COLS=cols;S.colLevel=lvl;S.err='';
   S.uni=data.map(r=>rowObj(r,cols));S.umap={};S.sectors=new Set();
-  S.uni.forEach(o=>{o.voltl=o.volume*o.close;o.tfm=null;S.umap[o.name]=o;if(o.sector)S.sectors.add(o.sector);S.quotes[o.name]=o});
+  S.uni.forEach(o=>{o.voltl=o.volume*o.close;o.tfm=null;
+   const prevQ=S.quotes[o.name];
+   if(prevQ&&prevQ._midasLive&&Date.now()-prevQ._midasLive<15000){o.close=prevQ.close;o.change=prevQ.change;o.bid=prevQ.bid;o.ask=prevQ.ask;o.upperLimit=prevQ.upperLimit;o.lowerLimit=prevQ.lowerLimit;o._midasLive=prevQ._midasLive;o.voltl=o.volume*o.close}
+   S.umap[o.name]=o;if(o.sector)S.sectors.add(o.sector);S.quotes[o.name]=o});
   const sel=$('#secsel'),cur=sel?sel.value:'';
   if(sel)sel.innerHTML='<option value="">Tümü</option>'+[...S.sectors].sort().map(x=>'<option '+(x===cur?'selected':'')+'>'+x+'</option>').join('');
   S.uni.forEach(o=>o.tfm=null);buildPercentiles();computeRegime();renderPx();
@@ -579,7 +637,7 @@ function metricsOf(o,t){
   atrp:(atr&&c)?atr/c*100:null,
   stack:(e20>e50&&e50>e200)?1:(e20<e50&&e50<e200)?-1:0,
   htf:(hc!=null&&he!=null)?(hc>he?1:-1):0,
-  rv:o.relative_volume_10d_calc,
+  rv:rvolOf(o),
   h52:o.price_52_week_high?(o.close/o.price_52_week_high-1)*100:null,
   l52:o.price_52_week_low?(o.close/o.price_52_week_low-1)*100:null};
 }
@@ -608,6 +666,7 @@ const SETUPS=[
 ];
 const DEEPSET={vcp:1,pull:1,kvw:1,poc:1};
 const SNAME={},SCOL={};SETUPS.forEach(s=>{SNAME[s.id]=s.n;SCOL[s.id]=s.c});
+SNAME.manual='Elle (kurulum yok)';
 const INFO={
  all:{t:'Tüm kurulumlar',s:'GENEL BAKIŞ',p:'Seçili zaman diliminde en az bir kurulumu tetikleyen tüm hisseler. Puan; kaç kurulumun aynı anda uyduğu, trend uyumu, hacim, ADX ve piyasa rejimi ile hesaplanır. Aynı hissede birden fazla etiket varsa sinyal daha güçlüdür.',l:['Eşikler sabit değil: hacim, trend gücü ve oynaklık o anki 625 hisselik dağılımdan yüzdelik olarak ölçülür','Rozetlerdeki sayı yüzdeliktir — hacim 92 demek, piyasanın %92\'sinden hareketli demek','hiza +4: dört zaman dilimi de aynı yönde; 0: dilimler çelişiyor','✓ yeşil satırlar lehte, ⚠ kırmızı satırlar aleyhte bulgulardır','▾ işlem planı: giriş, stop, hedef, R/Ö, lot ve doldurulabilirlik'],w:'Puan yüksek diye giriş yapma; grafiğe bakmadan işlem açma.'},
  vwap:{t:'VWAP dönüşü',s:'ORTALAMAYA DÖNÜŞ · GÜN İÇİ',p:'Fiyat, günün hacim ağırlıklı ortalamasının (VWAP) doğru tarafında ama ondan henüz uzaklaşmamış. Kurumsal emirlerin referans aldığı seviyeden dönüş yakalamayı hedefler.',l:['AL: fiyat VWAP üstünde, uzaklık %0–1,2','EMA20 > EMA50 (kısa vade yukarı)','Üst zaman dilimi trendi aynı yönde','Göreli hacim ≥ 1,2x'],w:'VWAP\'tan %2\'den fazla uzaklaşmışsa geç kalınmıştır; bu kurulum orada çalışmaz. Yalnızca 15dk ve 1 saatte anlamlıdır.'},
@@ -664,14 +723,14 @@ function setupsOf(o,tfId){
   if(cp<=0.38)out.SAT.push('tuk');
  }
  if(m.stack===-1&&m.hist!=null&&m.hist<0&&m.mac<m.msg&&volOk&&m.htf===-1)out.SAT.push('trm');
- if(m.hist!=null&&m.hist<0&&m.c<m.e20&&m.htf===-1)out.SAT.push('fbrk');
+ if(m.hist!=null&&m.hist<0&&pr.hpn!=null&&pr.hpn<=40&&m.c<m.e20&&m.htf===-1)out.SAT.push('fbrk');
  if(m.sk!=null&&m.sd!=null&&m.sk<m.sd&&m.sk>62&&m.rsi>52&&o.EMA200&&o.close<o.EMA200)out.SAT.push('dip');
  return out;
 }
 function warnsOf(o,dir,tfId){
  const m=tfmOf(o,tfId)||{},pr=o.pr||{},w=[];
  if(S.ext&&S.ext.bil&&S.ext.bil[o.name]){const d=Math.ceil((new Date(S.ext.bil[o.name])-Date.now())/864e5);if(d>=0&&d<=3)w.push(['w','Bilanço '+d+' gün — sürpriz riski'])}
- if(Math.abs(o.change||0)>=5)w.push(['w','Hareket büyük ölçüde tamamlandı (+%'+nf(o.change,1)+') — kovalama, kırılım sonrası geri çekilme bekle']);
+ if(Math.abs(o.change||0)>=5)w.push(['w','Hareket büyük ölçüde tamamlandı ('+pct(o.change)+') — kovalama, kırılım sonrası geri çekilme bekle']);
  const sign=dir==='AL'?1:-1;
  if(m.h52!=null&&dir==='AL'&&m.h52>=-1&&pr.rv!=null&&pr.rv<50)w.push(['w','Zirveye yakın ama hacim piyasa ortalamasının altında — kırılım zayıf']);
  if(o.secAvg!=null&&sign*o.secAvg<0)w.push(['w','Sektörü ters yönde ('+pct(o.secAvg)+') — akıntıya karşı']);
@@ -774,7 +833,7 @@ function buildPercentiles(){
  const liq=S.uni.filter(o=>o.voltl>=5e6);
  if(liq.length<20)return;
  const idxCh=S.idxCh||0;
- const keys={rv:[],atrp:[],adx:[],rs:[],perfW:[],vol:[],bw:[],hp:[],rng:[]};
+ const keys={rv:[],atrp:[],adx:[],rs:[],perfW:[],vol:[],bw:[],hp:[],hpn:[],rng:[]};
  liq.forEach(o=>{
   const m=tfmOf(o,S.stf)||tfmOf(o,'D')||{};
   o._rs=(o.change||0)-idxCh;
@@ -786,6 +845,7 @@ function buildPercentiles(){
   keys.vol.push(o.voltl);
   if(m.bw!=null)keys.bw.push(m.bw);
   if(m.histN!=null&&m.histN>0)keys.hp.push(m.histN);
+  if(m.histN!=null&&m.histN<0)keys.hpn.push(-m.histN);
   if(o.high>o.low&&o.close)keys.rng.push((o.high-o.low)/o.close*100);
  });
  Object.keys(keys).forEach(k=>keys[k].sort((a,b)=>a-b));
@@ -795,6 +855,7 @@ function buildPercentiles(){
   o.pr={rv:pctRank(keys.rv,m.rv),atrp:pctRank(keys.atrp,m.atrp),adx:pctRank(keys.adx,m.adx),
    rs:pctRank(keys.rs,o._rs),perfW:pctRank(keys.perfW,o['Perf.W']),vol:pctRank(keys.vol,o.voltl),bw:pctRank(keys.bw,m.bw),
    hp:(m.histN!=null&&m.histN>0)?pctRank(keys.hp,m.histN):null,
+   hpn:(m.histN!=null&&m.histN<0)?pctRank(keys.hpn,-m.histN):null,
    rng:(o.high>o.low&&o.close)?pctRank(keys.rng,(o.high-o.low)/o.close*100):null};
  });
  S.uni.forEach(o=>{if(!o.pr)o.pr={}});
@@ -817,19 +878,49 @@ function recordBreadthDay(liq,breadth){
  const tv=liq.reduce((a,o)=>a+o.voltl,0),d=todayStr();
  let log=S.breadthLog.slice();
  const li=log.length-1;
- if(li>=0&&log[li].d===d){log[li].b=breadth;log[li].v=tv}
- else log.push({d,b:breadth,v:tv});
+ if(li>=0&&log[li].d===d){log[li].b=breadth;log[li].v=tv;log[li].src='live'}
+ else log.push({d,b:breadth,v:tv,src:'live'});
  log=log.slice(-40);
- // siniflandirma: bir onceki KAYITLI gune gore
+ // siniflandirma: sadece ayni kaynaktan (canli-canli) ardisik gunler kiyaslanir.
+ // endeks-bazli (idx) gunler kendi icinde geriye donuk taramada zaten siniflandirildi,
+ // hacim birimleri (ciro TL vs endeks lot hacmi) farkli oldugu icin burada tekrar dokunulmaz.
  for(let i=1;i<log.length;i++){
   const p=log[i-1],c=log[i];
+  if(c.src!=='live')continue;
+  if(p.src!=='live'){c.t=c.t||'neu';continue}
   if(c.v>p.v*1.05&&c.b>=55)c.t='acc';
   else if(c.v>p.v*1.05&&c.b<=45)c.t='dist';
   else c.t='neu';
  }
  S.breadthLog=log;LS.set('breadthLog',log);
  const closed=log.slice(0,-1).slice(-25); // bugun haric, son 25 tamamlanmis gun
- S.distStats={acc:closed.filter(x=>x.t==='acc').length,dist:closed.filter(x=>x.t==='dist').length,n:closed.length,today:log[log.length-1].t||'neu'};
+ S.distStats={acc:closed.filter(x=>x.t==='acc').length,dist:closed.filter(x=>x.t==='dist').length,n:closed.length,today:log[log.length-1].t||'neu',mixed:closed.some(x=>x.src==='idx')};
+}
+let S_breadthBackfilled=false;
+async function backfillBreadthFromIndex(){
+ if(S_breadthBackfilled)return;S_breadthBackfilled=true;
+ try{
+  const cs=await getBars('XU100','1day');
+  if(!cs||cs.length<10)return;
+  const have={};S.breadthLog.forEach(x=>have[x.d]=true);
+  const fresh=[];
+  for(let i=1;i<cs.length;i++){
+   const d=typeof cs[i].time==='string'?cs[i].time:new Date(cs[i].time*1000).toISOString().slice(0,10);
+   if(have[d])continue; // canli kayit varsa dokunma, o daha zengin (tum piyasa genisligi)
+   const up=cs[i].close>cs[i-1].close;
+   const volUp=cs[i-1].volume?cs[i].volume>cs[i-1].volume*1.05:false;
+   fresh.push({d,b:up?60:40,v:cs[i].volume||0,t:volUp?(up?'acc':'dist'):'neu',src:'idx'});
+  }
+  if(!fresh.length)return;
+  let log=S.breadthLog.concat(fresh).sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:0);
+  const seen={};log=log.filter(x=>{if(seen[x.d])return false;seen[x.d]=true;return true});
+  log=log.slice(-60);
+  S.breadthLog=log;LS.set('breadthLog',log);
+  const closed=log.slice(0,-1).slice(-25);
+  S.distStats={acc:closed.filter(x=>x.t==='acc').length,dist:closed.filter(x=>x.t==='dist').length,n:closed.length,today:(log[log.length-1]||{}).t||'neu',mixed:closed.some(x=>x.src==='idx')};
+  if(S.tab==='reg')renderReg();
+  if(S.tab==='op')renderOps();
+ }catch(e){console.warn('birikim/dagitim gecmisi: '+(e.message||e))}
 }
 function computeRegime(){
  const liq=S.uni.filter(o=>o.voltl>=1e7);
@@ -875,7 +966,7 @@ function renderReg(){
    (warn?'<p style="color:var(--dn)">⚠ Dağıtım günü sayısı yüksek — kurumsal satış baskısı işareti. AL sinyallerine daha temkinli yaklaş, sistemin AL puanları bunu otomatik düşürüyor.</p>':
     acc?'<p style="color:var(--up)">✓ Birikim günleri baskın — kurumsal alım işareti. AL sinyalleri sistemde bir miktar öne çıkarılıyor.</p>':
     '<p style="color:var(--dim)">Belirgin bir birikim/dağıtım eğilimi yok, sinyaller nötr puanlanıyor.</p>')+
-   '<div class="note">Birikim günü: piyasa toplam hacminin önceki güne göre ≥%5 arttığı ve hisselerin ≥%55\'inin yükseldiği gün. Dağıtım günü: aynı hacim artışıyla hisselerin ≤%45\'i yükseldiği gün. William O\'Neil\'ın CAN SLIM yönteminden — kısa sürede biriken dağıtım günleri genelde düzeltme öncesi gelir. Terminali her açtığında bir gün daha kaydedilir, geçmişe gidip veri çekmiyoruz.</div></div>';
+   '<div class="note">Birikim günü: piyasa toplam hacminin önceki güne göre ≥%5 arttığı ve hisselerin ≥%55\'inin yükseldiği gün. Dağıtım günü: aynı hacim artışıyla hisselerin ≤%45\'i yükseldiği gün. William O\'Neil\'ın CAN SLIM yönteminden — kısa sürede biriken dağıtım günleri genelde düzeltme öncesi gelir.'+(ds.mixed?' Geçmiş günler XU100\'ün kendi fiyat/hacim hareketinden geriye dönük tahmin edilmiştir (endeks yönü, gerçek piyasa genişliği değil); terminali her açtığında o günün gerçek genişlik verisi bunun yerini alır.':' Terminali her açtığında bir gün daha canlı kaydedilir.')+'</div></div>';
  }
  h+='<div class="note" style="padding-bottom:0;letter-spacing:.5px">SEKTÖR ROTASYONU</div><table><tr><th>Sektör</th><th>Adet</th><th>Bugün</th><th>1 Hafta</th></tr>'+
  r.secList.map(x=>'<tr><td>'+x.s.slice(0,18)+'</td><td>'+x.n+'</td><td class="'+cls(x.d)+'">'+pct(x.d)+'</td><td class="'+cls(x.w)+'">'+pct(x.w)+'</td></tr>').join('')+'</table>'+
@@ -1036,8 +1127,9 @@ async function deepScan(){
      if(a.vcp&&S.dir==='AL'){fl.vcp=a.vcp;bonus+=14}
      if(a.pull&&S.dir==='AL'){fl.pull=a.pull;bonus+=12}
      if(a.kvw&&a.kvw.side===S.dir){fl.kvw=a.kvw;bonus+=10}
-     S.deep[o.name]={grade:a.grade,bonus,poc,pocD:a.pocD,pocLv:a.ref?a.ref.poc:null,cross:a.dir,bars:a.bars,dir:S.dir,fl,t:Date.now()};
-     if(a.grade==='A'&&S.seenA.indexOf(o.name+S.dir)<0){newA.push(o.name);S.seenA.push(o.name+S.dir);sigRecord(o.name,S.dir,a)}
+     const sideMatch=a.side===S.dir;
+    S.deep[o.name]={grade:sideMatch?a.grade:'C',sideMismatch:!sideMatch,bonus,poc,pocD:a.pocD,pocLv:a.ref?a.ref.poc:null,cross:a.dir,bars:a.bars,dir:S.dir,fl,t:Date.now()};
+     if(sideMatch&&a.grade==='A'&&S.seenA.indexOf(o.name+S.dir)<0){newA.push(o.name);S.seenA.push(o.name+S.dir);sigRecord(o.name,S.dir,a)}
     }
    }catch(e){console.warn('derin tarama '+o.name+': '+(e.message||e))}
    done++;$('#dprog').style.width=(done/list.length*100)+'%';
@@ -1226,7 +1318,18 @@ async function yahooBars(sym,tf,short){
  if(!res)throw new Error('veri yok');
  const t=res.timestamp||[],q=res.indicators.quote[0];
  let cs=t.map((s,i)=>({time:s,open:q.open[i],high:q.high[i],low:q.low[i],close:q.close[i],volume:q.volume[i]||0})).filter(c=>c.close!=null);
- if(tf==='4h'){const o=[];for(let i=0;i<cs.length;i+=4){const g=cs.slice(i,i+4);if(!g.length)break;o.push({time:g[0].time,open:g[0].open,high:Math.max.apply(null,g.map(x=>x.high)),low:Math.min.apply(null,g.map(x=>x.low)),close:g[g.length-1].close,volume:g.reduce((a,x)=>a+x.volume,0)})}cs=o}
+ if(tf==='4h'){
+  const days={};cs.forEach(c=>{const k=dayKey(c.time);(days[k]=days[k]||[]).push(c)});
+  const o=[];
+  Object.keys(days).sort().forEach(k=>{
+   const bars=days[k];
+   for(let i=0;i<bars.length;i+=4){
+    const g=bars.slice(i,i+4);if(!g.length)break;
+    o.push({time:g[0].time,open:g[0].open,high:Math.max.apply(null,g.map(x=>x.high)),low:Math.min.apply(null,g.map(x=>x.low)),close:g[g.length-1].close,volume:g.reduce((a,x)=>a+x.volume,0)});
+   }
+  });
+  cs=o;
+ }
  if(isDaily(tf))cs=cs.map(c=>({time:new Date(c.time*1000).toISOString().slice(0,10),open:c.open,high:c.high,low:c.low,close:c.close,volume:c.volume}));
  if(!cs.length)throw new Error('boş seri');
  return cs;
@@ -1350,7 +1453,10 @@ async function refreshFast(){
  if(document.hidden)return;
  const t=[...new Set([S.sym,...W(),...S.alarms.filter(a=>!a.hit).map(a=>a.s)])].map(s=>'BIST:'+s);
  if(!t.length)return;
- try{const j=await tvScan('global',{symbols:{tickers:t},columns:COLS});j.data.forEach(r=>{const o=rowObj(r,COLS);o.voltl=o.volume*o.close;o.tfm=null;S.quotes[o.name]=o});renderPx();['watch','alarm'].forEach(mark);checkAlarms()}catch(e){}
+ try{const j=await tvScan('global',{symbols:{tickers:t},columns:COLS});j.data.forEach(r=>{const o=rowObj(r,COLS);o.voltl=o.volume*o.close;o.tfm=null;
+  const prevQ=S.quotes[o.name];
+  if(prevQ&&prevQ._midasLive&&Date.now()-prevQ._midasLive<15000){o.close=prevQ.close;o.change=prevQ.change;o.bid=prevQ.bid;o.ask=prevQ.ask;o.upperLimit=prevQ.upperLimit;o.lowerLimit=prevQ.lowerLimit;o._midasLive=prevQ._midasLive}
+  S.quotes[o.name]=o});renderPx();['watch','alarm'].forEach(mark);checkAlarms()}catch(e){}
 }
 async function refreshTick(){
  if(document.hidden)return;
@@ -1525,7 +1631,7 @@ function sigRecord(sym,dir,a){
  const key=sym+'|'+dir+'|'+new Date().toISOString().slice(0,10);
  if(S.sigHist.some(r=>r.k===key))return;
  const o=S.umap[sym]||{};
- S.sigHist.unshift({k:key,sym:sym,dir:dir,ts:Date.now(),close:o.close||null,atrP:(a&&a.ref)?a.ref.atrP:null,setups:Object.keys((S.deep[sym]&&S.deep[sym].fl)||{}),regime:S.reg?S.reg.mode:'-'});
+ S.sigHist.unshift({k:key,sym:sym,dir:dir,ts:Date.now(),close:o.close||null,atrP:(a&&a.atrPct!=null)?a.atrPct:null,setups:Object.keys((S.deep[sym]&&S.deep[sym].fl)||{}),regime:S.reg?S.reg.mode:'-',grade:a?a.grade:null});
  if(S.sigHist.length>200)S.sigHist.length=200;
  LS.set('sigHist',S.sigHist);
 }
@@ -1551,6 +1657,7 @@ function healthStats(records){
  if(st.overall&&st.overall.n>=10)st.tips.push('Genel sağlık: %'+nf(st.overall.win,0)+' kazanma · '+nf(st.overall.exp,2)+'R beklenti ('+st.overall.n+' sinyal).');
  return st;
 }
+function dayMs(t){return typeof t==='string'?new Date(t+'T12:00:00Z').getTime():t*1000}
 async function refreshHealth(){
  const need=S.sigHist.filter(r=>!r.fwd&&Date.now()-r.ts>2*864e5).slice(0,40);
  let i=0;
@@ -1559,11 +1666,12 @@ async function refreshHealth(){
    const r=need[i++],dir=r.dir==='AL'?1:-1;
    try{
     const cs=await getBars(r.sym,'1day');
-    const at=cs.find(c=>c.time>=r.ts-864e5);
+    const at=cs.find(c=>dayMs(c.time)>=r.ts-864e5);
     const base=(at&&at.close)?at.close:r.close;
     if(!base){r.fwd={err:1};LS.set('sigHist',S.sigHist);continue}
+    const atrP=(r.atrP!=null&&r.atrP>0)?r.atrP:1.5;
     const f={};
-    [1,3,5].forEach(dd=>{const b=cs.find(c=>c.time>=r.ts+dd*864e5);if(b&&base)f['d'+dd]=((b.close/base-1)*100*dir)/(r.atrP||1.5)});
+    [1,3,5].forEach(dd=>{const b=cs.find(c=>dayMs(c.time)>=r.ts+dd*864e5);if(b&&base)f['d'+dd]=((b.close/base-1)*100*dir)/atrP});
     r.fwd=f;LS.set('sigHist',S.sigHist);
    }catch(e){console.warn('sağlık '+r.sym+': '+(e.message||e))}
   }
@@ -1609,20 +1717,26 @@ function btSignals(i,cs,E,dir){
  }
  return out;
 }
+const BT_COMM_PCT=0.0015; // gidis+donus toplam komisyon+kayma yaklasik %0,15
 function btRun(cs,dir,hold,slA,tpA){
  const E=btIndicators(cs),trades=[],s=dir==='AL'?1:-1;
- for(let i=61;i<cs.length-hold-1;i++){
+ let cooldownUntil=-1;
+ for(let i=61;i<cs.length-hold-2;i++){
   const ss=btSignals(i,cs,E,dir);if(!ss.length)continue;
+  if(i<cooldownUntil)continue; // ayni hareket ust uste tetiklerse tekrar sayma
   const a=E.atr[i];if(!a)continue;
-  const entry=cs[i].close,sl=entry-s*slA*a,tp=entry+s*tpA*a;
-  let exit=null;
-  for(let j=i+1;j<=Math.min(i+hold,cs.length-1);j++){
-   const b=cs[j];
+  const entryBar=cs[i+1];if(!entryBar)continue;
+  const entry=entryBar.open,sl=entry-s*slA*a,tp=entry+s*tpA*a;
+  let exit=null,exitI=i+1;
+  for(let j=i+1;j<=Math.min(i+1+hold,cs.length-1);j++){
+   const b=cs[j];exitI=j;
    if(s>0){if(b.low<=sl){exit=sl;break}if(b.high>=tp){exit=tp;break}}
    else{if(b.high>=sl){exit=sl;break}if(b.low<=tp){exit=tp;break}}
   }
-  if(exit==null)exit=cs[Math.min(i+hold,cs.length-1)].close;
-  trades.push({i:i,d:new Date(cs[i].time).toISOString().slice(0,10),sym:'',ss:ss,r:(exit-entry)/a*s,win:(exit-entry)*s>0});
+  if(exit==null){exitI=Math.min(i+1+hold,cs.length-1);exit=cs[exitI].close}
+  const commR=(entry*BT_COMM_PCT)/a; // komisyonu R birimine cevir
+  trades.push({i:i,d:new Date(cs[i].time).toISOString().slice(0,10),sym:'',ss:ss,r:(exit-entry)/a*s-commR,win:((exit-entry)*s-entry*BT_COMM_PCT)>0});
+  cooldownUntil=exitI+1;
  }
  return trades;
 }
@@ -1637,7 +1751,7 @@ async function runBacktest(){
  if(S.btBusy||!S.uni.length)return;
  const dir=S.btDir,tf=S.btTf,hold=+S.btHold,months=+S.btM,N=Math.max(20,Math.min(400,+S.btN)),slA=+S.btSL,tpA=+S.btTP;
  S.btBusy=1;S.btProg=0;S.btResult=null;renderLab();
- const list=S.uni.slice(0,N),res={};let done=0;
+ const list=S.uni.filter(o=>o.voltl>0).slice().sort((a,b)=>b.voltl-a.voltl).slice(0,N),res={},allTrades=[];let done=0;
  async function w(){
   while(S.btBusy&&done<list.length){
    const o=list[done++],sym=o.name;
@@ -1646,7 +1760,7 @@ async function runBacktest(){
     if(tf==='1day')cs=cs.slice(-months*22);
     if(cs.length<90)continue;
     const tr=btRun(cs,dir,hold,slA,tpA);
-    tr.forEach(t=>{t.sym=sym;t.ss.forEach(k=>{(res[k]=res[k]||[]).push(t)})});
+    tr.forEach(t=>{t.sym=sym;allTrades.push(t);t.ss.forEach(k=>{(res[k]=res[k]||[]).push(t)})});
    }catch(e){}
    S.btProg=Math.round(done/list.length*100);
    if(S.tab==='lab'&&done%4===0)renderLab();
@@ -1654,7 +1768,7 @@ async function runBacktest(){
  }
  await Promise.all([w(),w(),w(),w(),w()]);
  S.btBusy=0;
- S.btResult={dir:dir,tf:tf,months:months,stats:Object.keys(res).map(k=>Object.assign({k:k},btStats(res[k]))).sort((a,b)=>b.avgR-a.avgR),total:btStats(Object.keys(res).reduce((a,k)=>a.concat(res[k]),[]))};
+ S.btResult={dir:dir,tf:tf,months:months,stats:Object.keys(res).map(k=>Object.assign({k:k},btStats(res[k]))).sort((a,b)=>b.avgR-a.avgR),total:btStats(allTrades)};
  renderLab();
 }
 function extText(k){const o=(S.ext||{})[k]||{};return Object.keys(o).map(n=>n+' '+o[n]).join('\n')}
@@ -1678,6 +1792,7 @@ function renderLab(){
  h+='<label>Süre (ay, günlükte)<select onchange="S.btM=this.value">'+[3,6,12].map(t=>'<option'+(String(S.btM)===String(t)?' selected':'')+'>'+t+'</option>').join('')+'</select></label>';
  h+='<label>Evren (en likit N)<select onchange="S.btN=this.value">'+[50,100,200,400].map(t=>'<option'+(String(S.btN)===String(t)?' selected':'')+'>'+t+'</option>').join('')+'</select></label></div>';
  h+='<button class="btn" onclick="runBacktest()">▶ Testi Çalıştır</button>';
+ h+='<div class="note">Bu test, canlı sistemin kurulum tanımlarına yaklaşık (mutlak eşikli) bir sürümünü kullanır — canlı sistemdeki yüzdelik eşikler o anki 625 hisselik piyasaya göre hesaplandığı için, geçmişe dönük tek hisse verisiyle birebir tekrarlanamaz. Aynı tetik ardışık barlarda tekrar sayılmaz, giriş bir sonraki mumun açılışından yapılır, ~%0,15 komisyon+kayma düşülür. Yön/kurulum karışıklığı ve iki kuruluma birden uyan işlemlerin çift sayılması düzeltildi.</div>';
  if(S.btBusy)h+='<div class="prog" style="margin:8px 0"><div style="width:'+(S.btProg||0)+'%"></div></div><div class="note">Test çalışıyor... %'+(S.btProg||0)+'</div>';
  if(S.btResult){
   const r=S.btResult;
@@ -1739,19 +1854,20 @@ function renderMov(){
  const liq=o=>o.voltl>=1e7,m=S.mov;let d=[],ex=()=>'',eh='';
  if(m==='gain')d=S.uni.filter(liq).sort((a,b)=>b.change-a.change);
  else if(m==='lose')d=S.uni.filter(liq).sort((a,b)=>a.change-b.change);
- else if(m==='relvol'){d=S.uni.filter(o=>liq(o)&&o.relative_volume_10d_calc>=1.5).sort((a,b)=>b.relative_volume_10d_calc-a.relative_volume_10d_calc);eh='RVOL';ex=o=>nf(o.relative_volume_10d_calc,1)+'x'}
+ else if(m==='relvol'){d=S.uni.filter(o=>liq(o)&&rvolOf(o)>=1.5).sort((a,b)=>rvolOf(b)-rvolOf(a));eh='RVOL';ex=o=>nf(rvolOf(o),1)+'x'}
  else if(m==='gap'){S.uni.forEach(o=>{const pc=o.close-o.change_abs;o.gap=pc&&o.open?(o.open/pc-1)*100:null});d=S.uni.filter(o=>liq(o)&&o.gap!=null&&Math.abs(o.gap)>=1).sort((a,b)=>Math.abs(b.gap)-Math.abs(a.gap));eh='Gap';ex=o=>'<span class="'+cls(o.gap)+'">'+pct(o.gap)+'</span>'}
  else if(m==='hi52'){S.uni.forEach(o=>o.d52=o.price_52_week_high?(o.close/o.price_52_week_high-1)*100:null);d=S.uni.filter(o=>o.d52!=null&&o.d52>=-2&&o.voltl>=1e6).sort((a,b)=>b.d52-a.d52);eh='Zirveye';ex=o=>pct(o.d52)}
  else{S.uni.forEach(o=>o.d52=o.price_52_week_low?(o.close/o.price_52_week_low-1)*100:null);d=S.uni.filter(o=>o.d52!=null&&o.d52<=2&&o.voltl>=1e6).sort((a,b)=>a.d52-b.d52);eh='Dibe';ex=o=>pct(o.d52)}
- $('#mov').innerHTML='<table><tr><th>Sembol</th><th>Son</th><th>%</th><th>Hacim ₺</th><th>RVOL</th>'+(eh?'<th>'+eh+'</th>':'')+'</tr>'+d.slice(0,50).map(o=>'<tr class="row" onclick="selectSym(\''+o.name+'\',\'bist\')"><td class="sym">'+o.name+'</td><td>'+nf(o.close)+'</td><td class="'+cls(o.change)+'">'+pct(o.change)+'</td><td>'+big(o.voltl)+'</td><td>'+nf(o.relative_volume_10d_calc,1)+'</td>'+(eh?'<td>'+ex(o)+'</td>':'')+'</tr>').join('')+'</table>';
+ $('#mov').innerHTML='<table><tr><th>Sembol</th><th>Son</th><th>%</th><th>Hacim ₺</th><th>RVOL</th>'+(eh?'<th>'+eh+'</th>':'')+'</tr>'+d.slice(0,50).map(o=>'<tr class="row" onclick="selectSym(\''+o.name+'\',\'bist\')"><td class="sym">'+o.name+'</td><td>'+nf(o.close)+'</td><td class="'+cls(o.change)+'">'+pct(o.change)+'</td><td>'+big(o.voltl)+'</td><td>'+nf(rvolOf(o),1)+'</td>'+(eh?'<td>'+ex(o)+'</td>':'')+'</tr>').join('')+'</table>';
 }
 let actx=null;function beep(){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=880;o.connect(g);g.connect(actx.destination);g.gain.setValueAtTime(.3,actx.currentTime);g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+.6);o.start();o.stop(actx.currentTime+.6)}catch(e){}}
 function askNotif(){if(!('Notification' in window)){alert('Bildirim desteklenmiyor');return}Notification.requestPermission().then(p=>alert('Bildirim: '+p))}
 function addAlarm(e){e.preventDefault();const s=$('#als').value.trim().toUpperCase(),l=+$('#all').value;if(!s||!l)return;const q=S.quotes[s]||S.umap[s];S.alarms.push({s,l,dir:q&&q.close?(l>q.close?'up':'down'):'up',t:Date.now()});LS.set('alarms',S.alarms);e.target.reset();beep();renderAlarms()}
 function delAlarm(i){S.alarms.splice(i,1);LS.set('alarms',S.alarms);renderAlarms()}
+function rearmAlarm(i){const a=S.alarms[i];if(!a)return;a.hit=false;LS.set('alarms',S.alarms);renderAlarms();checkAlarms()}
 function renderAlarms(){$('#alarms').innerHTML=S.alarms.length?'<table><tr><th>Sembol</th><th>Seviye</th><th>Yön</th><th>Son</th><th>Durum</th><th></th></tr>'+S.alarms.map((a,i)=>{const q=S.quotes[a.s];return'<tr><td class="sym">'+a.s+'</td><td>'+nf(a.l)+'</td><td>'+(a.dir==='up'?'<span class="up">↑</span>':'<span class="dn">↓</span>')+'</td><td>'+(q?nf(q.close):'-')+'</td><td>'+(a.hit?'<b class="dn">GEÇTİ</b>':'bekliyor')+'</td><td><button class="xbtn" onclick="delAlarm('+i+')">✕</button></td></tr>'}).join('')+'</table>':'<div class="note">Alarm yok. Sembol ve seviye girip kur; sayfa açıkken ~15 dk gecikmeli fiyata göre kontrol edilir.</div>'}
 function checkAlarms(){let f=false;
- S.alarms.forEach(a=>{if(a.hit)return;const q=S.quotes[a.s];if(!q||!q.close)return;if((a.dir==='up'&&q.close>=a.l)||(a.dir==='down'&&q.close<=a.l)){a.hit=true;f=true;const m=a.s+' '+nf(q.close)+' → '+nf(a.l);$('#alerttxt').textContent=m;$('#alertbox').classList.add('on');beep();if(navigator.vibrate)navigator.vibrate([200,100,200]);if(window.Notification&&Notification.permission==='granted'){try{new Notification('BIST Alarm',{body:m})}catch(e){}}if(S.tgTok&&S.tgChat)tgSend('🔔 <b>ALARM</b> · '+a.s+' '+nf(q.close)+' → seviye '+nf(a.l)).catch(function(){});}});
+ S.alarms.forEach(a=>{if(a.hit)return;const q=S.quotes[a.s];if(!q||!q.close)return;if((a.dir==='up'&&q.close>=a.l)||(a.dir==='down'&&q.close<=a.l)){a.hit=true;f=true;const m=a.s+' '+nf(q.close)+' → '+nf(a.l);$('#alerttxt').textContent=m;$('#alertbox').classList.add('on');beep();if(navigator.vibrate)navigator.vibrate([200,100,200]);if(window.Notification&&Notification.permission==='granted'){try{new Notification('BIST Alarm',{body:m})}catch(e){}}if(S.tgTok&&S.tgChat)tgSend('🔔 <b>ALARM</b> · '+htmlEsc(a.s)+' '+nf(q.close)+' → seviye '+nf(a.l)).catch(function(e){console.warn('telegram alarm: '+(e.message||e))});}});
  if(f){LS.set('alarms',S.alarms);mark('alarm')}}
 function closeAlert(){$('#alertbox').classList.remove('on')}
 function heatColor(c){if(c==null)return'#2a3646';const v=Math.max(-5,Math.min(5,c))/5;return v>=0?'rgb('+Math.round(22-10*v)+','+Math.round(60+130*v)+','+Math.round(48+90*v)+')':'rgb('+Math.round(60+180*-v)+','+Math.round(40-10*-v)+','+Math.round(48-10*-v)+')'}
@@ -1784,7 +1900,13 @@ async function maeMfe(i){
 }
 function delJr(i){S.jr.splice(i,1);LS.set('jr',S.jr);renderJr()}
 function journalFromBox(){const b=S.box;if(!b){alert('Önce AL/SAT kutusu kur');return}
- S.jr.push({s:b.sym,d:b.dir,k:S.setup==='all'?'ema':S.setup,tf:S.stf,e:b.entry,l:b.sl,t:b.tp,dt:new Date().toISOString().slice(0,16).replace('T',' '),x:null,r:null});
+ let k=S.setup;
+ if(k==='all'){
+  const o=S.umap[b.sym];
+  const active=(o&&o._ss&&o._ss.length)?o._ss:null;
+  k=active?active[0]:'manual'; // birden fazla kurulum varsa ilkini etiket olarak kullanır
+ }
+ S.jr.push({s:b.sym,d:b.dir,k,tf:S.stf,e:b.entry,l:b.sl,t:b.tp,dt:new Date().toISOString().slice(0,16).replace('T',' '),x:null,r:null});
  LS.set('jr',S.jr);showTab('jr')}
 function renderJr(){
  const cl=S.jr.filter(j=>j.r!=null),by={},byt={};
@@ -1957,6 +2079,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadUnive
  refreshTick();loadCrypto();loadDom();watchLoop();loadCandles();algolabPollLoop();alBadge();
  if(S.al.connected)algolabRefreshSession();
  pollMidas();
+ backfillBreadthFromIndex();
  setInterval(refreshFast,4000);
  setInterval(refreshTick,12000);
  setInterval(loadUniverse,30000);
