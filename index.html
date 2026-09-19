@@ -498,8 +498,8 @@ function saveCap(){S.cap=+$('#cap').value||0;S.rskp=+$('#rsk').value||1;LS.set('
 async function testSrc(){const m=$('#srcmsg');m.textContent='test...';try{const cs=await getBars('THYAO','15min');m.innerHTML='<b class="up">Çalışıyor</b> — '+cs.length+' mum'}catch(e){m.innerHTML='<b class="dn">Başarısız</b> — '+e.message}}
 function mark(t){if(S.tab===t)draw(t);else S.dirty[t]=1}
 function draw(t){S.dirty[t]=0;const f={op:function(){try{renderOps()}catch(e){$('#oplist').innerHTML='<div class="note"><b class="dn">Ekran hatası:</b> '+String(e.message||e)+'</div>'}},reg:renderReg,brief:renderBrief,lab:renderLab,watch:renderWatch,cal:calTab,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,crypto:renderCrypto,jr:renderJr,risk:renderRisk}[t];if(f)f()}
-function backup(){const b={wl:WL,alarms:S.alarms,tx:S.tx,jr:S.jr,tdkey:S.key,src:S.src,cap:S.cap,rskp:S.rskp,sym:S.sym,tf:S.tf,ind:S.ind,ext:S.ext,sigHist:S.sigHist,v:10};const t='BISTT:'+btoa(unescape(encodeURIComponent(JSON.stringify(b))));$('#bktext').value=t;if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>alert('Panoya kopyalandı')).catch(()=>alert('Kutudaki metni elle kopyala'));else alert('Kutudaki metni elle kopyala')}
-function restore(){try{const t=$('#bktext').value.trim();if(!t.startsWith('BISTT:'))throw 0;const b=JSON.parse(decodeURIComponent(escape(atob(t.slice(6)))));['wl','alarms','tx','jr','sym','tf','ind','cap','rskp'].forEach(k=>{if(b[k]!==undefined)LS.set(k,b[k])});if(b.tdkey)LS.set('tdkey',b.tdkey);if(b.src)LS.set('src',b.src);alert('Geri yüklendi');location.reload()}catch(e){alert('Yedek metni tanınmadı')}}
+function backup(){const b={wl:WL,alarms:S.alarms,tx:S.tx,jr:S.jr,tdkey:S.key,src:S.src,cap:S.cap,rskp:S.rskp,sym:S.sym,tf:S.tf,ind:S.ind,ext:S.ext,sigHist:S.sigHist,tgTok:S.tgTok,tgChat:S.tgChat,tgMin:S.tgMin,autoOn:S.autoOn,v:11};const t='BISTT:'+btoa(unescape(encodeURIComponent(JSON.stringify(b))));$('#bktext').value=t;if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>alert('Panoya kopyalandı')).catch(()=>alert('Kutudaki metni elle kopyala'));else alert('Kutudaki metni elle kopyala')}
+function restore(){try{const t=$('#bktext').value.trim();if(!t.startsWith('BISTT:'))throw 0;const b=JSON.parse(decodeURIComponent(escape(atob(t.slice(6)))));['wl','alarms','tx','jr','sym','tf','ind','cap','rskp','ext','sigHist','tgTok','tgChat','tgMin','autoOn'].forEach(k=>{if(b[k]!==undefined)LS.set(k,b[k])});if(b.tdkey)LS.set('tdkey',b.tdkey);if(b.src)LS.set('src',b.src);alert('Geri yüklendi');location.reload()}catch(e){alert('Yedek metni tanınmadı')}}
 
 /* ================= zaman dilimleri ================= */
 const TFDEF=[
@@ -1055,7 +1055,7 @@ async function deepScan(){
 const WORKER='https://bist.c8jmvhdm8c.workers.dev/';
 const al0=LS.get('al',{apiKey:'',hash:'',hashAt:0});
 S.al=Object.assign({apiKey:'',hash:'',hashAt:0,loginToken:'',connected:false,queue:[],busy:false},al0);
-S.midas={ok:false,at:0,n:0,err:''};
+S.midas={ok:false,at:0,n:0,err:'',tries:0};
 const MIDAS_URL='https://www.getmidas.com/wp-json/midas-api/v1/midas_table_data?return=table';
 function midasParse(text){
  let data=JSON.parse(text);
@@ -1074,7 +1074,8 @@ async function fetchMidasRaw(){
  }
 }
 async function pollMidas(){
- if(document.hidden)return;
+ if(document.hidden){S.midas.err='sekme arka planda';renderMidasStatus();return}
+ S.midas.tries=(S.midas.tries||0)+1;
  try{
   const text=await fetchMidasRaw();
   const arr=midasParse(text);
@@ -1098,8 +1099,8 @@ async function pollMidas(){
 function renderMidasStatus(){
  const el=$('#midasmsg');if(!el)return;
  const m=S.midas;
- if(m.ok)el.innerHTML='<b class="up">● Bağlı</b> · '+m.n+' hisse · son güncelleme '+new Date(m.at).toLocaleTimeString('tr-TR');
- else el.innerHTML='<b class="dn">Bağlı değil</b>'+(m.err?(' · '+m.err):'')+' — TradingView verisiyle devam ediliyor.';
+ if(m.ok)el.innerHTML='<b class="up">● Bağlı</b> · '+m.n+' hisse · son güncelleme '+new Date(m.at).toLocaleTimeString('tr-TR')+' · deneme '+m.tries;
+ else el.innerHTML='<b class="dn">Bağlı değil</b>'+(m.err?(' · '+m.err):'')+' · deneme '+(m.tries||0)+' — TradingView verisiyle devam ediliyor.';
 }
 
 function alSetMsg(t,cls2){const m=$('#almsg');if(m)m.innerHTML=cls2?('<b class="'+cls2+'">'+t+'</b>'):t}
