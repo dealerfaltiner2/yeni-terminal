@@ -655,6 +655,7 @@ function setupsOf(o,tfId){
 function warnsOf(o,dir,tfId){
  const m=tfmOf(o,tfId)||{},pr=o.pr||{},w=[];
  if(S.ext&&S.ext.bil&&S.ext.bil[o.name]){const d=Math.ceil((new Date(S.ext.bil[o.name])-Date.now())/864e5);if(d>=0&&d<=3)w.push(['w','Bilanço '+d+' gün — sürpriz riski'])}
+ if(Math.abs(o.change||0)>=5)w.push(['w','Hareket büyük ölçüde tamamlandı (+%'+nf(o.change,1)+') — kovalama, kırılım sonrası geri çekilme bekle']);
  const sign=dir==='AL'?1:-1;
  if(m.h52!=null&&dir==='AL'&&m.h52>=-1&&pr.rv!=null&&pr.rv<50)w.push(['w','Zirveye yakın ama hacim piyasa ortalamasının altında — kırılım zayıf']);
  if(o.secAvg!=null&&sign*o.secAvg<0)w.push(['w','Sektörü ters yönde ('+pct(o.secAvg)+') — akıntıya karşı']);
@@ -684,6 +685,11 @@ function scoreOf(o,dir,tfId,ss){
  if(pr.adx!=null)s+=(pr.adx-50)/8;
  if(pr.atrp!=null&&pr.atrp<25)s-=10;
  if(pr.vol!=null&&pr.vol<30)s-=8;
+ if(ss.indexOf('sik')>=0)s+=8;
+ if(ss.indexOf('sik')>=0&&pr.rv!=null&&pr.rv<=40)s+=5;
+ const _ch=Math.abs(o.change||0);
+ if(_ch>=5)s-=14;else if(_ch>=3.5)s-=7;
+ if(sign*(m.ed||0)>2)s-=8;
  if(o.secRank&&o.secN>=5){const q=o.secRank/o.secN;s+=sign>0?(1-q)*8:q*8}
  if(o.secAvg!=null&&sign*o.secAvg>0)s+=5;
  if(m.vd!=null&&sign*m.vd>=0&&Math.abs(m.vd)<=1)s+=6;
@@ -1219,7 +1225,7 @@ function renderOpTable(d){
  d.forEach(o=>{o._al=alignOf(o).sum;o._prv=(o.pr||{}).rv;o._prs=(o.pr||{}).rs;const mm=tfmOf(o,S.stf)||{};o._rsk=mm.atrp});
  const dd=d.slice().sort((a,b)=>{const x=a[k],y=b[k];if(x==null)return 1;if(y==null)return-1;return(x>y?1:x<y?-1:0)*dir});
  return '<table><tr>'+SCOLS.map(c=>'<th onclick="sortBy(\''+c[0]+'\')" style="color:'+(k===c[0]?'var(--acc)':'var(--dim)')+'">'+c[1]+(k===c[0]?(dir>0?'▲':'▼'):'')+'</th>').join('')+'</tr>'+
- dd.slice(0,120).map(o=>'<tr class="row" onclick="selectSym(\''+o.name+'\',\'bist\')"><td class="sym">'+o.name+'</td><td style="color:'+(o._sc>=70?'var(--up)':o._sc>=40?'var(--acc)':'var(--dim)')+';font-weight:700">'+Math.round(o._sc)+'</td><td>'+nf(o.close)+'</td><td class="'+cls(o.change)+'">'+pct(o.change)+'</td><td>'+big(o.voltl)+'</td><td class="'+(o._al>0?'up':o._al<0?'dn':'')+'">'+(o._al>0?'+':'')+o._al+'</td><td>'+(o._prv!=null?o._prv:'-')+'</td><td>'+(o._prs!=null?o._prs:'-')+'</td><td style="color:var(--dim)">'+(o._rsk!=null?nf(o._rsk,2):'-')+'</td></tr>').join('')+'</table>';
+ dd.slice(0,120).map(o=>'<tr class="row" onclick="selectSym(\''+o.name+'\',\'bist\')"><td class="sym">'+o.name+(Math.abs(o.change||0)>=5?'<span style="color:var(--dn);font-size:8px;font-weight:800"> GEÇ</span>':'')+'</td><td style="color:'+(o._sc>=70?'var(--up)':o._sc>=40?'var(--acc)':'var(--dim)')+';font-weight:700">'+Math.round(o._sc)+'</td><td>'+nf(o.close)+'</td><td class="'+cls(o.change)+'">'+pct(o.change)+'</td><td>'+big(o.voltl)+'</td><td class="'+(o._al>0?'up':o._al<0?'dn':'')+'">'+(o._al>0?'+':'')+o._al+'</td><td>'+(o._prv!=null?o._prv:'-')+'</td><td>'+(o._prs!=null?o._prs:'-')+'</td><td style="color:var(--dim)">'+(o._rsk!=null?nf(o._rsk,2):'-')+'</td></tr>').join('')+'</table>';
 }
 function sortBy(k){if(S.sort.k===k)S.sort.d*=-1;else S.sort={k,d:k==='name'||k==='sector'?1:-1};renderOps()}
 function toggleFilt(){const e=$('#filtsheet');e.classList.toggle('on');$('#filtbtn').classList.toggle('on',e.classList.contains('on'))}
