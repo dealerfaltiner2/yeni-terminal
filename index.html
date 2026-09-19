@@ -323,6 +323,9 @@ td.sym{font-size:13px;letter-spacing:.5px}
     <select id="barlim" onchange="setBarLim()"><option value="short">Grafik geçmişi: kısa (hızlı)</option><option value="long">Grafik geçmişi: uzun</option></select>
     <input id="tdkey" placeholder="Twelve Data apikey"><button class="g" onclick="saveKey()">Anahtarı kaydet</button>
     <button class="g" onclick="testSrc()">Veri kaynağını test et</button><div id="srcmsg" class="note"></div>
+    <b>MİDAS CANLI VERİ</b>
+    <div id="midasmsg" class="note">Yükleniyor...</div>
+    <div class="note">Terminal, Midas'ın herkese açık genel veri ucundan tüm BIST hisselerinin fiyatını ~8 saniyede bir tazeler (fiyat, hacim, tavan/taban). Bu resmi/garantili bir API değil — Midas'ın kendi sitesini besleyen genel bir uç. Durursa terminal otomatik olarak TradingView'ın 15dk gecikmeli verisine döner, hiçbir şey bozulmaz.</div>
     <b>OTOMATİK TARAMA + TELEGRAM</b>
     <div class="frow" style="padding:2px 0"><label>Durum</label><div class="seg" id="autoseg"><button data-a="0" class="on">Kapalı</button><button data-a="1">Açık</button></div></div>
     <input id="tgtok" placeholder="Telegram bot token" oninput="saveTg(true)">
@@ -333,6 +336,19 @@ td.sym{font-size:13px;letter-spacing:.5px}
     <button class="g" onclick="autoRun(true)">Şimdi tara ve gönder</button>
     <div id="tgmsg" class="note"></div>
     <div class="note">Bot oluşturma: Telegram'da <b>@BotFather</b> → /newbot → gelen token'ı yukarı yapıştır. Chat ID için botuna bir mesaj at, sonra <b>@userinfobot</b>'a yaz — sana ID'ni verir.<br><br>Tarama 15dk kurulumlarını üretir, 4 saatlik trend teyidini arar, ilk 10 adayı mum bazında doğrular ve sadece daha önce gönderilmemiş sinyalleri yollar. Yalnızca hafta içi 10:00–18:10 arasında çalışır. <b>Sayfa açık kalmalıdır</b> — iPhone arka plandaki sayfayı dondurur. Kalıcı otomasyon için worker.js (bulut cron) sürümünü kullan.</div>
+    <b>ALGOLAB · ANLIK VERİ (BETA)</b>
+    <div id="albadge" class="note" style="padding-top:0">Bağlı değil</div>
+    <input id="alkey" placeholder="API Key (Algolab panelinden)">
+    <input id="altc" placeholder="TC Kimlik No" inputmode="numeric">
+    <input id="alpw" type="password" placeholder="Deniz Yatırım şifresi (kaydedilmez)">
+    <button class="g" onclick="algolabStep1()">1) Giriş yap (SMS gönder)</button>
+    <div id="alsmsbox" style="display:none">
+     <input id="alsms" placeholder="SMS kodu" inputmode="numeric">
+     <button class="g" onclick="algolabStep2()">2) Onayla ve bağlan</button>
+    </div>
+    <div id="almsg" class="note"></div>
+    <button class="g" onclick="algolabDisconnect()">Bağlantıyı kes</button>
+    <div class="note">Bağlandığında üstteki fiyat, İzleme listesi ve Alarm kontrolleri seçili semboller için <b>gerçek zamanlı</b> olur (625 hisselik Fırsat taraması hâlâ TradingView'dan ~15 dk gecikmeli gelir — AlgoLab'ın hız sınırı toplu taramaya uygun değil, sadece tek tek fiyat sorgusuna uygun).<br><br>Şifren ve TC kimlik no hiçbir yerde saklanmaz, sadece oturum açarken kullanılır. Oturum anahtarı (hash) telefonunda kalır. AlgoLab bazı hesaplarda her oturumda yeniden SMS isteyebilir — bağlantı koparsa buradan tekrar giriş yap.<br><br><b>Not:</b> Bu, henüz gerçek bir hesapla test edilmedi. İlk bağlantıda veri alanları uyuşmazsa (fiyat görünmezse) ham yanıtı konsoldan kontrol edip birlikte düzeltiriz.</div>
     <b>SERMAYE</b>
     <input id="cap" type="number" placeholder="Sermaye ₺"><input id="rsk" type="number" step="any" placeholder="İşlem riski %"><button class="g" onclick="saveCap()">Kaydet</button>
     <b>YEDEK</b>
@@ -671,6 +687,8 @@ function warnsOf(o,dir,tfId){
  const al=alignOf(o);
  if(sign*al.sum>=3)w.push(['ok','Tüm zaman dilimleri aynı yönde hizalı']);
  if(al.sum===0)w.push(['w','Zaman dilimleri çelişiyor — yön net değil']);
+ if(dir==='AL'&&o.upperLimit&&o.close&&(o.upperLimit-o.close)/o.upperLimit<0.006)w.push(['w','Tavana çok yakın — emir gerçekleşmeyebilir']);
+ if(dir==='SAT'&&o.lowerLimit&&o.close&&(o.close-o.lowerLimit)/o.lowerLimit<0.006)w.push(['w','Tabana çok yakın — emir gerçekleşmeyebilir']);
  return w;
 }
 function scoreOf(o,dir,tfId,ss){
@@ -1035,6 +1053,161 @@ async function deepScan(){
 
 /* ================= mum verisi ================= */
 const WORKER='https://bist.c8jmvhdm8c.workers.dev/';
+const al0=LS.get('al',{apiKey:'',hash:'',hashAt:0});
+S.al=Object.assign({apiKey:'',hash:'',hashAt:0,loginToken:'',connected:false,queue:[],busy:false},al0);
+S.midas={ok:false,at:0,n:0,err:''};
+const MIDAS_URL='https://www.getmidas.com/wp-json/midas-api/v1/midas_table_data?return=table';
+function midasParse(text){
+ let data=JSON.parse(text);
+ if(typeof data==='string')data=JSON.parse(data);
+ return Array.isArray(data)?data:[];
+}
+async function fetchMidasRaw(){
+ try{
+  const r=await fetch(MIDAS_URL);
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  return await r.text();
+ }catch(e){
+  const r2=await fetch(WORKER+'midas');
+  if(!r2.ok)throw new Error('yedek de başarısız: HTTP '+r2.status);
+  return await r2.text();
+ }
+}
+async function pollMidas(){
+ if(document.hidden)return;
+ try{
+  const text=await fetchMidasRaw();
+  const arr=midasParse(text);
+  if(!arr.length)throw new Error('boş liste');
+  const now=Date.now();let hit=0;
+  arr.forEach(m=>{
+   const code=m.Code;if(!code||m.Last==null)return;
+   const patch={close:+m.Last,change:m.DailyChangePercent!=null?+m.DailyChangePercent:undefined,
+    volume:m.TotalVolume!=null?+m.TotalVolume:undefined,voltl:m.TotalTurnover!=null?+m.TotalTurnover:undefined,
+    bid:m.Bid!=null?+m.Bid:undefined,ask:m.Ask!=null?+m.Ask:undefined,
+    upperLimit:m.UpperLimit!=null?+m.UpperLimit:undefined,lowerLimit:m.LowerLimit!=null?+m.LowerLimit:undefined,
+    _midasLive:now};
+   const o=S.umap[code];if(o){Object.assign(o,patch);hit++}
+   const q=S.quotes[code];if(q)Object.assign(q,patch);else if(o)S.quotes[code]=Object.assign({name:code},o);
+  });
+  S.midas={ok:true,at:now,n:hit,err:''};
+  if(hit){try{buildPercentiles()}catch(e){}renderPx();mark('watch');checkAlarms();mark('op')}
+ }catch(e){S.midas={ok:false,at:Date.now(),n:0,err:String(e.message||e)}}
+ renderMidasStatus();
+}
+function renderMidasStatus(){
+ const el=$('#midasmsg');if(!el)return;
+ const m=S.midas;
+ if(m.ok)el.innerHTML='<b class="up">● Bağlı</b> · '+m.n+' hisse · son güncelleme '+new Date(m.at).toLocaleTimeString('tr-TR');
+ else el.innerHTML='<b class="dn">Bağlı değil</b>'+(m.err?(' · '+m.err):'')+' — TradingView verisiyle devam ediliyor.';
+}
+
+function alSetMsg(t,cls2){const m=$('#almsg');if(m)m.innerHTML=cls2?('<b class="'+cls2+'">'+t+'</b>'):t}
+function alBadge(){
+ const b=$('#albadge');if(!b)return;
+ if(S.al.connected)b.innerHTML='<b class="up">● Bağlı</b> · son yenileme '+(S.al.hashAt?new Date(S.al.hashAt).toLocaleTimeString('tr-TR'):'-');
+ else b.innerHTML='Bağlı değil';
+}
+function b64ToBytes(b64){const bin=atob(b64);const a=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return a}
+function bytesToB64(a){let bin='';a.forEach(b=>bin+=String.fromCharCode(b));return btoa(bin)}
+function bytesToHex(a){return [...a].map(b=>b.toString(16).padStart(2,'0')).join('')}
+function alKeySource(){const raw=S.al.apiKey||'';const i=raw.indexOf('-');return i>=0?raw.slice(i+1):raw}
+async function alEncrypt(text){
+ const keyBytes=b64ToBytes(alKeySource());
+ const key=await crypto.subtle.importKey('raw',keyBytes,{name:'AES-CBC'},false,['encrypt']);
+ const iv=new Uint8Array(16);
+ const ct=await crypto.subtle.encrypt({name:'AES-CBC',iv},key,new TextEncoder().encode(text));
+ return bytesToB64(new Uint8Array(ct));
+}
+async function alChecker(checkerPath,payload){
+ const body=Object.keys(payload).length?JSON.stringify(payload).replace(/ /g,''):'';
+ const data=S.al.apiKey+'https://www.algolab.com.tr'+checkerPath+body;
+ const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(data));
+ return bytesToHex(new Uint8Array(h));
+}
+async function algolabPost(ep,payload,isLogin){
+ const reqPath='/api/api/'+ep,checkPath='/api/'+ep;
+ const headers={'Content-Type':'application/json','APIKEY':S.al.apiKey};
+ if(!isLogin){headers['Checker']=await alChecker(checkPath,payload);headers['Authorization']=S.al.hash}
+ const r=await fetch(WORKER+'algolab?path='+encodeURIComponent(reqPath),{method:'POST',headers,body:JSON.stringify(payload)});
+ if(!r.ok)throw new Error('HTTP '+r.status);
+ return r.json();
+}
+async function algolabStep1(){
+ const key=$('#alkey').value.trim(),tc=$('#altc').value.trim(),pw=$('#alpw').value;
+ if(!key||!tc||!pw){alSetMsg('API Key, TC kimlik no ve şifre gerekli','dn');return}
+ S.al.apiKey=key;
+ alSetMsg('giriş yapılıyor...');
+ try{
+  const u=await alEncrypt(tc),p=await alEncrypt(pw);
+  const j=await algolabPost('LoginUser',{Username:u,Password:p},true);
+  if(!j.Success)throw new Error(j.Message||'giriş başarısız');
+  S.al.loginToken=j.Content.token;
+  $('#alsmsbox').style.display='flex';
+  alSetMsg('SMS gönderildi. Telefonuna gelen kodu gir.','up');
+  $('#alpw').value='';
+ }catch(e){alSetMsg('Hata: '+e.message,'dn')}
+}
+async function algolabStep2(){
+ const sms=$('#alsms').value.trim();
+ if(!sms){alSetMsg('SMS kodunu gir','dn');return}
+ alSetMsg('doğrulanıyor...');
+ try{
+  const t=await alEncrypt(S.al.loginToken),s2=await alEncrypt(sms);
+  const j=await algolabPost('LoginUserControl',{Token:t,Password:s2},true);
+  if(!j.Success)throw new Error(j.Message||'doğrulama başarısız');
+  S.al.hash=j.Content.Hash||j.Content.hash;S.al.hashAt=Date.now();S.al.connected=true;
+  LS.set('al',{apiKey:S.al.apiKey,hash:S.al.hash,hashAt:S.al.hashAt});
+  $('#alsmsbox').style.display='none';$('#alsms').value='';
+  alSetMsg('Bağlandı.','up');alBadge();
+ }catch(e){alSetMsg('Hata: '+e.message,'dn')}
+}
+function algolabDisconnect(){
+ S.al={apiKey:'',hash:'',hashAt:0,loginToken:'',connected:false,queue:[],busy:false};
+ LS.set('al',{apiKey:'',hash:'',hashAt:0});alBadge();alSetMsg('Bağlantı kesildi.')
+}
+async function algolabRefreshSession(){
+ if(!S.al.connected)return;
+ try{
+  const j=await algolabPost('SessionRefresh',{});
+  if(!j.Success){S.al.connected=false;alBadge();alSetMsg('Oturum düştü, yeniden giriş gerekiyor.','dn')}
+  else{S.al.hashAt=Date.now();LS.set('al',{apiKey:S.al.apiKey,hash:S.al.hash,hashAt:S.al.hashAt});alBadge()}
+ }catch(e){}
+}
+function alParseQuote(j){
+ const c=j&&(j.Content||j.content);if(!c)return null;
+ const src=Array.isArray(c)?c[0]:c;if(!src)return null;
+ const pick=(...keys)=>{for(const k of keys)if(src[k]!=null)return +src[k];return null};
+ return{close:pick('lastprice','LastPrice','Last','ClosePrice','close','Close','price','Price'),
+  change:pick('dailychangepercentage','DailyChangePercentage','ChangePercentage','change','Change','PercentChange'),raw:src};
+}
+async function algolabGetQuote(sym){
+ const j=await algolabPost('GetEquityInfo',{symbol:sym});
+ if(!j.Success)throw new Error(j.Message||'sorgu başarısız');
+ return alParseQuote(j);
+}
+async function algolabPollLoop(){
+ while(true){
+  if(S.al.connected&&!document.hidden){
+   const syms=[...new Set([S.sym,...W(),...S.alarms.filter(a=>!a.hit).map(a=>a.s)])].filter(s=>S.mode==='bist'||s!==S.sym).slice(0,15);
+   for(const sym of syms){
+    if(!S.al.connected)break;
+    try{
+     const q=await algolabGetQuote(sym);
+     if(q&&q.close!=null){
+      const cur=S.quotes[sym]||{};
+      S.quotes[sym]=Object.assign({},cur,{name:sym,close:q.close,change:q.change!=null?q.change:cur.change,_live:Date.now()});
+      if(sym===S.sym)renderPx();
+      mark('watch');checkAlarms();
+     }
+    }catch(e){}
+    await sleep(1300);
+   }
+  }
+  await sleep(2000);
+ }
+}
+
 const YFS={'1min':['1m','5d'],'5min':['5m','20d'],'15min':['15m','20d'],'1h':['60m','180d'],'4h':['60m','360d'],'1day':['1d','1y'],'1week':['1wk','3y'],'1month':['1mo','8y']};
 const YFL={'1min':['1m','7d'],'5min':['5m','60d'],'15min':['15m','60d'],'1h':['60m','730d'],'4h':['60m','730d'],'1day':['1d','5y'],'1week':['1wk','10y'],'1month':['1mo','20y']};
 async function pfetch(sym,iv,rg,ms=12000){
@@ -1204,7 +1377,9 @@ async function loadDom(){if(document.hidden)return;try{const g=(await (await fet
 function sparkSvg(a){if(!a||a.length<2)return'';const mn=Math.min.apply(null,a),mx=Math.max.apply(null,a),w=60,h=18;const p=a.map((v,i)=>(i/(a.length-1)*w).toFixed(1)+','+(h-(v-mn)/(mx-mn||1)*h).toFixed(1)).join(' ');return'<svg class="spark" viewBox="0 0 '+w+' '+h+'"><polyline fill="none" stroke="'+(a[a.length-1]>=a[0]?'#00c48c':'#ff4d5e')+'" stroke-width="1.5" points="'+p+'"/></svg>'}
 function renderCrypto(){$('#crypto').innerHTML='<table><tr><th>Coin</th><th>Fiyat</th><th>24s</th><th>7g</th><th>Hacim $</th></tr>'+S.crypto.map(c=>'<tr class="row" onclick="selectSym(\''+c.name+'\',\'crypto\')"><td class="sym">'+c.name+'</td><td>'+nf(c.close,c.close<1?4:2)+'</td><td class="'+cls(c.change)+'">'+pct(c.change)+'</td><td>'+sparkSvg(c.spark)+'</td><td>'+big(c.volume)+'</td></tr>').join('')+'</table>'}
 function curQuote(){return S.mode==='crypto'?S.cmap[S.sym]:S.quotes[S.sym]}
-function renderPx(){const q=curQuote();if(!q){$('#px').innerHTML='-<small>-</small>';return}$('#px').innerHTML=nf(q.close,q.close<1?4:2)+'<small class="'+cls(q.change)+'">'+pct(q.change)+'</small>'}
+function renderPx(){const q=curQuote();if(!q){$('#px').innerHTML='-<small>-</small>';return}
+ const live=(q._live&&Date.now()-q._live<15000)||(q._midasLive&&Date.now()-q._midasLive<15000);
+ $('#px').innerHTML=nf(q.close,q.close<1?4:2)+'<small class="'+cls(q.change)+'">'+pct(q.change)+(live?' <span style="color:var(--up)">● CANLI</span>':'')+'</small>'}
 function renderWLSel(){$('#wlsel').innerHTML=Object.keys(WL.lists).map(n=>'<option '+(n===WL.cur?'selected':'')+'>'+n+'</option>').join('')}
 $('#wlsel').onchange=e=>{WL.cur=e.target.value;saveWL();renderWatch()};
 function newList(){const n=prompt('Liste adı:');if(!n||WL.lists[n])return;WL.lists[n]=[];WL.cur=n;saveWL();renderWLSel();renderWatch()}
@@ -1777,10 +1952,14 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadUnive
  await loadUniverse();
  const q=S.umap[S.sym];$('#symbtn').innerHTML=S.sym+'<small>'+((q&&q.description)||'BIST').slice(0,20)+'</small>';
  renderPx();renderOps();
- refreshTick();loadCrypto();loadDom();watchLoop();loadCandles();
+ refreshTick();loadCrypto();loadDom();watchLoop();loadCandles();algolabPollLoop();alBadge();
+ if(S.al.connected)algolabRefreshSession();
+ pollMidas();
  setInterval(refreshFast,4000);
  setInterval(refreshTick,12000);
  setInterval(loadUniverse,30000);
+ setInterval(algolabRefreshSession,9*60000);
+ setInterval(pollMidas,8000);
  setInterval(loadCrypto,25000);
  setInterval(loadDom,180000);
  setInterval(()=>{if(!document.hidden&&S.tab==='chart')loadCandles()},60000);
