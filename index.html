@@ -1091,9 +1091,9 @@ async function pollMidas(){
    const o=S.umap[code];if(o){Object.assign(o,patch);hit++}
    const q=S.quotes[code];if(q)Object.assign(q,patch);else if(o)S.quotes[code]=Object.assign({name:code},o);
   });
-  S.midas={ok:true,at:now,n:hit,err:''};
+  S.midas={ok:true,at:now,n:hit,err:'',tries:S.midas.tries};
   if(hit){try{buildPercentiles()}catch(e){}renderPx();mark('watch');checkAlarms();mark('op')}
- }catch(e){S.midas={ok:false,at:Date.now(),n:0,err:String(e.message||e)}}
+ }catch(e){S.midas={ok:false,at:Date.now(),n:0,err:String(e.message||e),tries:S.midas.tries}}
  renderMidasStatus();
 }
 function renderMidasStatus(){
