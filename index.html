@@ -257,6 +257,8 @@ td.sym{font-size:13px;letter-spacing:.5px}
    <div class="note" id="opnote"></div>
   </div>
 
+  <div class="tab" id="t-brief"><div id="briefbody"></div></div>
+
   <div class="tab" id="t-cal">
    <div class="bar"><div class="seg" id="calseg"><button data-c="TR" class="on">Türkiye</button><button data-c="US">ABD</button><button data-c="TR,US,EU">Hepsi</button></div><button onclick="loadCal()">↻ Yenile</button><span id="calmsg" style="color:var(--dim);font-size:9.5px"></span></div>
    <div id="calbody"></div>
@@ -344,6 +346,7 @@ td.sym{font-size:13px;letter-spacing:.5px}
 
  <div id="tabs">
   <button data-t="op" class="on" style="--tc:#ffb020"><i>◎</i>Fırsat</button>
+  <button data-t="brief" style="--tc:#fde047"><i>☀️</i>Özet</button>
   <button data-t="reg" style="--tc:#38bdf8"><i>◍</i>Piyasa</button>
   <button data-t="chart" style="--tc:#00c48c"><i>◫</i>Grafik</button>
   <button data-t="watch" style="--tc:#fbbf24"><i>★</i>İzleme</button>
@@ -476,7 +479,7 @@ setInterval(()=>{if(S.autoOn)autoRun(false)},15*60*1000);
 function saveCap(){S.cap=+$('#cap').value||0;S.rskp=+$('#rsk').value||1;LS.set('cap',S.cap);LS.set('rskp',S.rskp);renderRisk();alert('Kaydedildi')}
 async function testSrc(){const m=$('#srcmsg');m.textContent='test...';try{const cs=await getBars('THYAO','15min');m.innerHTML='<b class="up">Çalışıyor</b> — '+cs.length+' mum'}catch(e){m.innerHTML='<b class="dn">Başarısız</b> — '+e.message}}
 function mark(t){if(S.tab===t)draw(t);else S.dirty[t]=1}
-function draw(t){S.dirty[t]=0;const f={op:function(){try{renderOps()}catch(e){$('#oplist').innerHTML='<div class="note"><b class="dn">Ekran hatası:</b> '+String(e.message||e)+'</div>'}},reg:renderReg,watch:renderWatch,cal:calTab,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,crypto:renderCrypto,jr:renderJr,risk:renderRisk}[t];if(f)f()}
+function draw(t){S.dirty[t]=0;const f={op:function(){try{renderOps()}catch(e){$('#oplist').innerHTML='<div class="note"><b class="dn">Ekran hatası:</b> '+String(e.message||e)+'</div>'}},reg:renderReg,brief:renderBrief,watch:renderWatch,cal:calTab,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,crypto:renderCrypto,jr:renderJr,risk:renderRisk}[t];if(f)f()}
 function backup(){const b={wl:WL,alarms:S.alarms,tx:S.tx,jr:S.jr,tdkey:S.key,src:S.src,cap:S.cap,rskp:S.rskp,sym:S.sym,tf:S.tf,ind:S.ind,v:9};const t='BISTT:'+btoa(unescape(encodeURIComponent(JSON.stringify(b))));$('#bktext').value=t;if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>alert('Panoya kopyalandı')).catch(()=>alert('Kutudaki metni elle kopyala'));else alert('Kutudaki metni elle kopyala')}
 function restore(){try{const t=$('#bktext').value.trim();if(!t.startsWith('BISTT:'))throw 0;const b=JSON.parse(decodeURIComponent(escape(atob(t.slice(6)))));['wl','alarms','tx','jr','sym','tf','ind','cap','rskp'].forEach(k=>{if(b[k]!==undefined)LS.set(k,b[k])});if(b.tdkey)LS.set('tdkey',b.tdkey);if(b.src)LS.set('src',b.src);alert('Geri yüklendi');location.reload()}catch(e){alert('Yedek metni tanınmadı')}}
 
@@ -538,7 +541,7 @@ async function loadUniverse(){
   const sel=$('#secsel'),cur=sel?sel.value:'';
   if(sel)sel.innerHTML='<option value="">Tümü</option>'+[...S.sectors].sort().map(x=>'<option '+(x===cur?'selected':'')+'>'+x+'</option>').join('');
   S.uni.forEach(o=>o.tfm=null);buildPercentiles();computeRegime();renderPx();
-  ['op','reg','mov','heat','watch'].forEach(mark);checkAlarms();
+  ['op','reg','brief','mov','heat','watch'].forEach(mark);checkAlarms();
  }catch(err){S.err='işleme hatası: '+String(err.message||err);try{mark('op')}catch(x){}}
 }
 /* ================= metrikler + kurulumlar ================= */
@@ -1216,6 +1219,105 @@ function toggleFilt(){const e=$('#filtsheet');e.classList.toggle('on');$('#filtb
 ['opvol','secsel','scrq','minal','minsc'].forEach(id=>{const e=$('#'+id);if(e)e.addEventListener('input',renderOps)});
 $('#viewseg2').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;S.view=b.dataset.v;LS.set('view',S.view);[...$('#viewseg2').children].forEach(x=>x.classList.toggle('on',x===b));renderOps()};
 
+
+/* ================= gün özeti ================= */
+function briefData(){
+ const d=new Date(),out={date:d.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}),hr:d.getHours()};
+ const r=S.reg;
+ if(r)out.regime={mode:r.mode,breadth:r.breadth,above:r.above,desc:r.desc};
+ out.dist=S.distStats||null;
+ if(r&&r.secList&&r.secList.length){out.sectors=r.secList.slice(0,3).map(x=>({s:x.s,d:x.d,w:x.w}))}
+ // A sinyalleri: derin tarama notlari (son 8 saat)
+ out.signals=[];
+ try{
+  Object.keys(S.deep).forEach(n=>{const dp=S.deep[n];
+   if(!dp||dp.grade!=='A'||Date.now()-dp.t>288e5)return;
+   const o=S.umap[n];if(!o)return;
+   const x=[dp.dir+' notu'];
+   if(dp.fl){if(dp.fl.vcp)x.push('VCP'+(dp.fl.vcp.brk?' kırıldı':''));if(dp.fl.pull)x.push('geri çekilme');if(dp.fl.kvw)x.push('keskin VWAP');if(dp.fl.poc)x.push('POC dönüşü')}
+   out.signals.push({n:n,dir:dp.dir,close:o.close,change:o.change,note:x.join(' · '),t:dp.t})});
+  out.signals.sort((a,b)=>b.t-a.t);out.signals=out.signals.slice(0,6);
+ }catch(e){}
+ if(out.signals.length<3){
+  try{
+   opData().filter(o=>o._ss.length>=2).slice(0,6-out.signals.length)
+    .forEach(o=>out.signals.push({n:o.name,dir:S.dir,close:o.close,change:o.change,note:o._ss.map(k=>SNAME[k]).join(' + '),t:0,scan:1}));
+  }catch(e){}
+ }
+ // portfoy
+ const pos={};S.tx.forEach(x=>{const p=pos[x.s]=pos[x.s]||{q:0,avg:0};if(x.t==='AL'){p.avg=(p.avg*p.q+x.q*x.p)/(p.q+x.q||1);p.q+=x.q}else{p.q-=Math.min(x.q,p.q)}});
+ let openVal=0,openN=0,un=0;
+ Object.keys(pos).forEach(s=>{const p=pos[s];if(p.q<=0)return;openN++;const q=S.quotes[s];const px=q?q.close:null;const val=px?px*p.q:null;if(val)openVal+=val;if(px&&p.avg)un+=(px-p.avg)*p.q});
+ out.portfolio=S.tx.length?{openVal:openVal,openN:openN,usage:S.cap?openVal/S.cap*100:null,un:un}:null;
+ // yaklasan alarmlar
+ out.alarms=[];
+ S.alarms.forEach(a=>{if(a.hit)return;const q=S.quotes[a.s];if(!q||!q.close)return;const dd=Math.abs(q.close-a.l)/q.close*100;if(dd<=2.5)out.alarms.push({s:a.s,d:dd})});
+ // bugunku takvim
+ const td=new Date().toDateString();
+ out.today=[];
+ (S.cal||[]).forEach(x=>{try{if(new Date(x.date).toDateString()===td)out.today.push({t:new Date(x.date).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}),title:x.title||'',imp:x.importance||0,country:x.country||''})}catch(e){}});
+ if(!S.cal||!S.cal.length)out.calEmpty=1;
+ // gunluk istatistigi
+ const cl=S.jr.filter(j=>j.r!=null);
+ if(cl.length){
+  const by={};cl.forEach(j=>{(by[j.k]=by[j.k]||[]).push(j.r)});
+  let best=null,worst=null;
+  Object.keys(by).forEach(k=>{const a=by[k],e=a.reduce((s,v)=>s+v,0)/a.length;if(!best||e>best.e)best={k:k,e:e,n:a.length};if(!worst||e<worst.e)worst={k:k,e:e,n:a.length}});
+  out.journal={n:cl.length,win:cl.filter(j=>j.r>0).length/cl.length*100,totalR:cl.reduce((s,j)=>s+j.r,0),best:best,worst:worst};
+ }
+ const todayKey=new Date().toISOString().slice(0,10);
+ out.newSig=(S.sentSig||[]).filter(k=>k.slice(-10)===todayKey).map(k=>k.split('|')[0]);
+ return out;
+}
+function briefText(b){
+ const greet=b.hr<11?'Günaydın':b.hr<17?'İyi günler':b.hr<22?'İyi akşamlar':'İyi geceler';
+ let h='<div class="bigreg"><h2>☀️ '+greet+'</h2><p style="color:var(--dim)">'+b.date+' · BIST Terminal gün özeti</p></div>';
+ if(b.regime){
+  const c=b.regime.mode==='TREND'?'var(--up)':b.regime.mode==='ZAYIF'?'var(--dn)':'var(--acc)';
+  h+='<div class="bigreg" style="padding-top:0"><h2 style="color:'+c+'">'+b.regime.mode+'</h2><p>'+b.regime.desc+'</p>'+
+  '<p>Yükselen: <b style="color:#fff">'+nf(b.regime.breadth,0)+'%</b> · EMA20 üstü: <b style="color:#fff">'+nf(b.regime.above,0)+'%</b></p>';
+  if(b.dist&&b.dist.n>=8){
+   if(b.dist.dist>=5)h+='<p style="color:var(--dn)">⚠ Son '+b.dist.n+' günde '+b.dist.dist+' dağıtım günü — baskı yüksek, AL sinyallerinde temkinli ol.</p>';
+   else if(b.dist.acc>=6)h+='<p style="color:var(--up)">✓ '+b.dist.acc+' birikim günü baskın — kurumsal alım tarafında.</p>';
+  }
+  h+='</div>';
+ }else h+='<div class="bigreg"><p>Piyasa verisi henüz yüklenemedi — birazdan tekrar dene.</p></div>';
+ if(b.sectors&&b.sectors.length){
+  h+='<div class="note" style="padding-bottom:0;letter-spacing:.5px">SEKTÖR LİDERLERİ</div><table><tr><th>Sektör</th><th>Bugün</th><th>Hafta</th></tr>'+
+  b.sectors.map(x=>'<tr><td>'+x.s.slice(0,20)+'</td><td class="'+cls(x.d)+'">'+pct(x.d)+'</td><td class="'+cls(x.w)+'">'+pct(x.w)+'</td></tr>').join('')+'</table>';
+ }
+ if(b.signals&&b.signals.length){
+  h+='<div class="note" style="padding-bottom:0;letter-spacing:.5px">ÖNE ÇIKAN SİNYALLER</div><table><tr><th>Sembol</th><th>Yön</th><th>Son</th><th>Not</th></tr>'+
+  b.signals.map(x=>'<tr class="row" onclick="selectSym(\''+x.n+'\',\'bist\')"><td class="sym">'+x.n+'</td><td class="'+(x.dir==='AL'?'up':'dn')+'">'+x.dir+'</td><td>'+nf(x.close)+' <i class="'+cls(x.change)+'">'+pct(x.change)+'</i></td><td style="color:var(--dim);font-size:10px;white-space:normal">'+x.note+'</td></tr>').join('')+'</table>';
+ }else if(b.regime){h+='<div class="note">Şu an eşiği geçen öne çıkan sinyal yok.</div>'}
+ if(b.portfolio){
+  h+='<div class="bigreg" style="padding-top:0"><div class="note" style="padding:0 0 6px;letter-spacing:.5px">PORTFÖYÜN</div>'+
+  '<p>Açık: <b style="color:#fff">'+b.portfolio.openN+' pozisyon · '+nf(b.portfolio.openVal,0)+' ₺</b>'+
+  (b.portfolio.usage!=null?' (sermayenin %'+nf(b.portfolio.usage,0)+'\'i)':'')+
+  (b.portfolio.un?(' · K/Z <b class="'+cls(b.portfolio.un)+'">'+nf(b.portfolio.un,0)+' ₺</b>'):'')+'</p>';
+  if(b.alarms.length)h+='<p style="color:var(--acc)">◔ Yaklaşan alarm'+(b.alarms.length>1?'lar':'')+': '+b.alarms.map(a=>a.s+' %'+nf(a.d,1)+' kaldı').join(' · ')+'</p>';
+  h+='</div>';
+ }
+ if(b.today&&b.today.length){
+  h+='<div class="note" style="padding-bottom:0;letter-spacing:.5px">BUGÜNKÜ TAKVİM</div>'+
+  b.today.map(x=>'<div class="cal-row'+(x.imp>=1?' hi':'')+'"><div class="cal-t">'+x.t+'</div><div class="cal-m"><div class="cal-n"><span class="imp imp'+Math.min(3,x.imp+1)+'"></span>'+x.title+'</div><div class="cal-s">'+x.country+'</div></div></div>').join('');
+ }else if(b.calEmpty){h+='<div class="note">Takvim yüklenemedi — Takvim sekmesinden ↻ ile yenile.</div>'}
+ if(b.journal){
+  h+='<div class="bigreg" style="padding-top:0"><div class="note" style="padding:0 0 6px;letter-spacing:.5px">GÜNLÜĞÜNDEN</div>'+
+  '<p>'+b.journal.n+' kapanan işlem · kazanma %'+nf(b.journal.win,0)+' · toplam '+nf(b.journal.totalR,1)+'R'+
+  (b.journal.best?(' · en iyi: <b style="color:var(--up)">'+(SNAME[b.journal.best.k]||b.journal.best.k)+'</b> ('+nf(b.journal.best.e,2)+'R)'):'')+
+  (b.journal.worst&&b.journal.best&&b.journal.worst.k!==b.journal.best.k?(' · en kötü: <b style="color:var(--dn)">'+(SNAME[b.journal.worst.k]||b.journal.worst.k)+'</b> ('+nf(b.journal.worst.e,2)+'R)'):'')+'</p></div>';
+ }
+ if(b.newSig&&b.newSig.length)h+='<div class="note">📨 Bugün Telegram\'a '+b.newSig.length+' sinyal gönderildi: '+b.newSig.join(', ')+'</div>';
+ h+='<div class="note">Özet, sayfa açıkken güncel verilerle otomatik üretilir. Yatırım tavsiyesi değildir.</div>';
+ return h;
+}
+function renderBrief(){
+ try{
+  if(!S.cal||!S.cal.length)loadCal();
+  $('#briefbody').innerHTML=briefText(briefData());
+ }catch(e){$('#briefbody').innerHTML='<div class="note"><b class="dn">Özet hatası:</b> '+String(e.message||e)+'</div>'}
+}
 /* ---------- ekonomik takvim ---------- */
 const CALNAME={};
 async function loadCal(){
