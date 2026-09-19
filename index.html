@@ -1370,7 +1370,7 @@ async function getBarsTracked(s,tf,sh){
    const cs=src2==='td'?await tdBars(s,tf):await yahooBars(s,tf,sh);
    const lt=cs.length?cs[cs.length-1].time:null;
    const lagMs=lt==null?0:Date.now()-(typeof lt==='string'?new Date(lt+'T23:59:59').getTime():lt*1000);
-   SRCINFO={src:src2,lagMs:lagMs,stale:!isDaily(tf)&&lagMs>20*60000};
+   SRCINFO={src:src2,lagMs:lagMs,stale:!isDaily(tf)&&withinMarketHours()&&lagMs>20*60000}; // piyasa kapaliyken son mumun yasi gecikme sayilmaz
    return cs;
   }catch(e){lastErr=e;SRCINFO={src:src2+' (hata)',lagMs:0,stale:true}}
  }
@@ -1380,9 +1380,16 @@ const getBars=(s,tf,sh)=>getBarsTracked(s,tf,sh);
 function renderSrcStatus(){
  const m=$('#srcmsg');if(!m)return;
  const lagMin=SRCINFO.lagMs/60000;
- m.innerHTML='Aktif kaynak: <b>'+SRCINFO.src+'</b> · son mum ~'+nf(lagMin,0)+' dk önce · sıralama: '+(S.src==='td'?'Twelve Data → Yahoo':'Yahoo → Twelve Data')+
- (S.key?'':' · <span class="dn">tdkey boş — Twelve Data yedeği atlanıyor</span>')+
- (SRCINFO.stale?'<br><span class="dn">⚠ Gecikmeli veri — sinyal üretiminde kullanılmıyor.</span>':'<br><span class="up">✓ Veri taze</span>');
+ // 1) BIRINCI CANLI KAYNAK: MIDAS (~8 sn'de tum BIST)
+ const mid=S.midas||{};
+ const midOk=mid.ok&&Date.now()-mid.at<60000;
+ const midLine=midOk
+  ?'<span class="up">● Midas CANLI</span> · '+mid.n+' hisse · son güncelleme '+new Date(mid.at).toLocaleTimeString('tr-TR')
+  :'<span class="dn">○ Midas bağlı değil'+(mid.err?(' ('+mid.err+')'):'')+'</span> — canlı fiyatlar TradingView yedeğine düştü';
+ // 2) MUM VERISI: Yahoo -> Twelve Data (birincil basarisizsa yedek)
+ const mumLine='Mum verisi: <b>'+SRCINFO.src+'</b> · son mum ~'+nf(lagMin,0)+' dk önce · sıralama: '+(S.src==='td'?'Twelve Data → Yahoo':'Yahoo → Twelve Data')+(S.key?'':' · <span class="dn">tdkey boş — Twelve Data yedeği atlanıyor</span>');
+ m.innerHTML='<b style="letter-spacing:.5px">VERİ KAYNAĞI SIRASI</b><br>1) '+midLine+'<br>2) '+mumLine+
+ (SRCINFO.stale?'<br><span class="dn">⚠ Gecikmeli veri — sinyal üretiminde kullanılmıyor.</span>':'<br><span class="up">'+(withinMarketHours()?'✓ Mum verisi taze':'✓ Piyasa kapalı — son mum kapanış verisi (gecikme kontrolü seansta aktif)')+'</span>');
 }
 const dayKey=t=>typeof t==='string'?t:new Date(t*1000).toISOString().slice(0,10);
 function profileOf(bars,rows){
