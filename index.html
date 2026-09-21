@@ -1474,11 +1474,15 @@ function renderSrcStatus(){
  const mid=S.midas||{};
  const midOk=mid.ok&&Date.now()-mid.at<60000;
  const midLine=midOk
-  ?'<span class="up">● Midas CANLI</span> · '+mid.n+' hisse · son güncelleme '+new Date(mid.at).toLocaleTimeString('tr-TR')
-  :'<span class="dn">○ Midas bağlı değil'+(mid.err?(' ('+mid.err+')'):'')+'</span> — canlı fiyatlar TradingView yedeğine düştü';
+  ?'<span class="up">● Midas</span> · '+mid.n+' hisse · '+new Date(mid.at).toLocaleTimeString('tr-TR')
+  :'<span class="dn">○ Midas yok'+(mid.err?(' ('+mid.err+')'):'')+'</span>';
+ const tvOk=TVL.ok&&Date.now()-TVL.last<15000;
+ const tvLine=tvOk
+  ?'<span class="up">⚡ GERÇEK ANLIK</span> · '+Object.keys(TVL.syms).length+' sembol · ~1 sn'
+  :'<span class="dn">○ TV WebSocket bağlı değil</span> — fiyatlar Midas (15dk gecikmeli)';
  // 2) MUM VERISI: Yahoo -> Twelve Data (birincil basarisizsa yedek)
  const mumLine='Mum verisi: <b>'+SRCINFO.src+'</b> · son mum ~'+nf(lagMin,0)+' dk önce · sıralama: '+(S.src==='td'?'Twelve Data → Yahoo':'Yahoo → Twelve Data')+(S.key?'':' · <span class="dn">tdkey boş — Twelve Data yedeği atlanıyor</span>');
- m.innerHTML='<b style="letter-spacing:.5px">VERİ KAYNAĞI SIRASI</b><br>1) '+midLine+'<br>2) '+mumLine+
+ m.innerHTML='<b style="letter-spacing:.5px">VERİ KAYNAĞI SIRASI</b><br>0) '+tvLine+'<br>1) '+midLine+'<br>2) '+mumLine+
  (SRCINFO.stale?'<br><span class="dn">⚠ Gecikmeli veri — sinyal üretiminde kullanılmıyor.</span>':'<br><span class="up">'+(withinMarketHours()?'✓ Mum verisi taze':'✓ Piyasa kapalı — son mum kapanış verisi (gecikme kontrolü seansta aktif)')+'</span>');
 }
 const dayKey=t=>typeof t==='string'?t:new Date(t*1000).toISOString().slice(0,10);
@@ -2126,6 +2130,72 @@ function journalFromBox(){const b=S.box;if(!b){alert('Önce AL/SAT kutusu kur');
  }
  S.jr.push({s:b.sym,d:b.dir,k,type:'manuel',tf:S.stf,e:b.entry,l:b.sl,t:b.tp,tp2v:null,dt:new Date().toISOString().slice(0,16).replace('T',' '),x:null,r:null,pct:null,status:'açık',closeD:null});
  LS.set('jr',S.jr);showTab('jr')}
+/* ============ TRADINGVIEW WEBSOCKET — GERCEK ZAMANLI (~1 sn) ============ */
+let TVL={ws:null,ses:'qs_'+Math.random().toString(36).slice(2),buf:'',syms:{},ok:false,last:0,tries:0,throttle:0};
+const TVFLD=['lp','ch','chp','volume','high','low','open','bid','ask'];
+function tvSend(m,p){try{const s=JSON.stringify(p);TVL.ws.send('~m~'+s.length+'~m~'+s)}catch(e){}}
+function tvLiveStart(){
+ try{
+  if(TVL.ws&&(TVL.ws.readyState===0||TVL.ws.readyState===1))return;
+  const ws=new WebSocket('wss://data.tradingview.com/socket.io/websocket?from=symbols/BIST%2F&date='+Date.now());
+  TVL.ws=ws;
+  ws.onopen=()=>{TVL.tries=0;TVL.buf='';
+   tvSend('set_auth_token',['unauthorized_user_token']);
+   tvSend('quote_create_session',[TVL.ses]);
+   tvSend('quote_set_fields',[TVL.ses].concat(TVFLD));
+   tvLiveSubs()};
+  ws.onmessage=ev=>tvLiveOnMsg(ev.data);
+  ws.onclose=()=>{TVL.ok=false;setTimeout(tvLiveStart,Math.min(30000,4000*(++TVL.tries)))};
+  ws.onerror=()=>{try{ws.close()}catch(e){}};
+ }catch(e){setTimeout(tvLiveStart,6000)}
+}
+function tvLiveSubs(){
+ try{
+  if(!TVL.ws||TVL.ws.readyState!==1)return;
+  const want={};
+  if(S.mode==='bist'&&S.sym)want[S.sym]=1;
+  if(S.mode==='bist'&&typeof W==='function')(W()||[]).slice(0,40).forEach(s=>want[s]=1);
+  want['XU100']=1;
+  Object.keys(want).forEach(sym=>{
+   if(TVL.syms[sym])return;
+   TVL.syms[sym]=1;
+   tvSend('quote_add_symbols',[TVL.ses,'BIST:'+sym,{'flags':['force_permission']}]);
+  });
+ }catch(e){}
+}
+function tvLiveOnMsg(data){
+ TVL.buf+=data;
+ let guard=0;
+ while(guard++<200){
+  const i=TVL.buf.indexOf('~m~');
+  if(i<0){TVL.buf='';break}
+  const lenEnd=TVL.buf.indexOf('~m~',i+3);
+  if(lenEnd<0){TVL.buf=TVL.buf.slice(i);break}
+  const len=+TVL.buf.slice(i+3,lenEnd);
+  if(TVL.buf.length<lenEnd+2+len){TVL.buf=TVL.buf.slice(i);break}
+  const payload=TVL.buf.slice(lenEnd+2,lenEnd+2+len);
+  TVL.buf=TVL.buf.slice(lenEnd+2+len);
+  if(payload.charAt(0)==='~'){try{TVL.ws.send('~m~'+payload)}catch(e){}continue} // kalp atisi
+  let msg;try{msg=JSON.parse(payload)}catch(e){continue}
+  if(msg.m!=='qsd'||!msg.p||!msg.p[1])continue;
+  const v=msg.p[1].v||{};if(v.lp==null)continue;
+  const name=(v.name||'').split(':')[1];if(!name)continue;
+  const o=S.umap[name]||{};
+  o.close=v.lp;
+  if(v.chp!=null)o.change=v.chp;
+  if(v.ch!=null)o.change_abs=v.ch;
+  if(v.volume!=null)o.volume=v.volume;
+  if(v.high!=null)o.high=v.high;
+  if(v.low!=null)o.low=v.low;
+  if(v.open!=null)o.open=v.open;
+  o.update_mode='tv_live';
+  S.umap[name]=o;
+  if(S.quotes[name]){S.quotes[name].close=v.lp;if(v.chp!=null)S.quotes[name].change=v.chp;if(v.volume!=null)S.quotes[name].volume=v.volume}
+  TVL.ok=true;TVL.last=Date.now();
+  if(Date.now()-TVL.throttle>1500){TVL.throttle=Date.now();try{renderPx()}catch(e){}mark('watch');mark('alarm');mark('live');checkAlarms()}
+ }
+}
+
 /* ================= PERFORMANS PANELI ================= */
 function renderPerf(){
  const el=$('#perfbody');if(!el)return;
@@ -2394,6 +2464,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadUnive
  renderPx();renderOps();
  refreshTick();loadCrypto();loadDom();watchLoop();loadCandles();algolabPollLoop();alBadge();
  updateOpenSignals();setInterval(updateOpenSignals,60000);renderSrcStatus();setInterval(renderSrcStatus,30000);
+ setTimeout(tvLiveStart,2500);setInterval(tvLiveSubs,30000);
  if(S.al.connected)algolabRefreshSession();
  pollMidas();
  backfillBreadthFromIndex();
