@@ -205,6 +205,18 @@ form.tx button{background:var(--acc);color:#0a0d12;font-weight:700;border-color:
 #setbar button{font-size:12px;padding:7px 13px;min-height:32px}
 #tabs button{width:78px;padding:9px 2px 8px;font-size:10px}
 #tabs button i{font-size:16px}
+/* --- mobil dokunus duzeltmeleri --- */
+#setbar button{min-height:36px;font-size:12px;padding:8px 13px}
+#tabs button{width:72px;min-height:50px;padding:9px 2px 8px}
+#tabs button i{font-size:17px}
+.bar button,.bar select,.bar input{min-height:38px}
+.seg button{min-height:38px!important}
+.ic{width:44px!important;min-height:38px}
+#sett .sett input,.sett textarea,.sett select,.frow input,.frow select,.bar input,.bar select{font-size:16px} /* iOS odakta zoom yapmasin */
+.card{padding:10px 11px}
+.cal-row{padding:11px}
+td,th{padding:10px 8px}
+#live table td,#live table th{padding:10px 6px}
 /* --- Bloomberg tarzi tablo --- */
 table{font-size:12px}
 th{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--acc);background:#0a0e14;padding:9px 8px;border-bottom:2px solid var(--line2)}
@@ -259,6 +271,10 @@ td.sym{font-size:13px;letter-spacing:.5px}
    <div class="note" id="opnote"></div>
   </div>
 
+  <div class="tab" id="t-live">
+   <div class="bar" id="livebar"></div>
+   <div id="live"></div>
+  </div>
   <div class="tab" id="t-brief"><div id="briefbody"></div></div>
   <div class="tab" id="t-lab"><div id="labbody"></div></div>
 
@@ -368,6 +384,7 @@ td.sym{font-size:13px;letter-spacing:.5px}
 
  <div id="tabs">
   <button data-t="op" class="on" style="--tc:#ffb020"><i>◎</i>Fırsat</button>
+  <button data-t="live" style="--tc:#00e5a0"><i>◉</i>Canlı</button>
   <button data-t="brief" style="--tc:#fde047"><i>☀️</i>Özet</button>
   <button data-t="lab" style="--tc:#a78bfa"><i>🧪</i>Lab</button>
   <button data-t="reg" style="--tc:#38bdf8"><i>◍</i>Piyasa</button>
@@ -510,7 +527,7 @@ setInterval(()=>{if(S.autoOn)autoRun(false)},15*60*1000);
 function saveCap(){S.cap=+$('#cap').value||0;S.rskp=+$('#rsk').value||1;LS.set('cap',S.cap);LS.set('rskp',S.rskp);renderRisk();alert('Kaydedildi')}
 async function testSrc(){const m=$('#srcmsg');m.textContent='test...';try{const cs=await getBars('THYAO','15min');m.innerHTML='<b class="up">Çalışıyor</b> — '+cs.length+' mum'}catch(e){m.innerHTML='<b class="dn">Başarısız</b> — '+e.message}}
 function mark(t){if(S.tab===t)draw(t);else S.dirty[t]=1}
-function draw(t){S.dirty[t]=0;const f={op:function(){try{renderOps()}catch(e){$('#oplist').innerHTML='<div class="note"><b class="dn">Ekran hatası:</b> '+String(e.message||e)+'</div>'}},reg:renderReg,brief:renderBrief,lab:renderLab,watch:renderWatch,cal:calTab,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,crypto:renderCrypto,jr:renderJr,risk:renderRisk}[t];if(f)f()}
+function draw(t){S.dirty[t]=0;const f={op:function(){try{renderOps()}catch(e){$('#oplist').innerHTML='<div class="note"><b class="dn">Ekran hatası:</b> '+String(e.message||e)+'</div>'}},live:renderLive,reg:renderReg,brief:renderBrief,lab:renderLab,watch:renderWatch,cal:calTab,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,crypto:renderCrypto,jr:renderJr,risk:renderRisk}[t];if(f)f()}
 const BACKUP_VER=12;
 function backupObj(){
  return {wl:WL,alarms:S.alarms,tx:S.tx,jr:S.jr,tdkey:S.key,src:S.src,cap:S.cap,rskp:S.rskp,
@@ -1189,6 +1206,7 @@ async function pollMidas(){
   const arr=midasParse(text);
   if(!arr.length)throw new Error('boş liste');
   const now=Date.now();let hit=0;
+  if(!S.midHis)S.midHis={};
   arr.forEach(m=>{
    const code=m.Code;if(!code||m.Last==null)return;
    const patch={close:+m.Last,change:m.DailyChangePercent!=null?+m.DailyChangePercent:undefined,
@@ -1196,11 +1214,13 @@ async function pollMidas(){
     bid:m.Bid!=null?+m.Bid:undefined,ask:m.Ask!=null?+m.Ask:undefined,
     upperLimit:m.UpperLimit!=null?+m.UpperLimit:undefined,lowerLimit:m.LowerLimit!=null?+m.LowerLimit:undefined,
     _midasLive:now};
+   const h=S.midHis[code]=S.midHis[code]||[];h.push({t:now,p:+m.Last,v:+m.TotalVolume||0,tn:+m.TotalTurnover||0,b:+m.Bid||0,a:+m.Ask||0});
+   if(h.length>120)h.shift();
    const o=S.umap[code];if(o){Object.assign(o,patch);hit++}
    const q=S.quotes[code];if(q)Object.assign(q,patch);else if(o)S.quotes[code]=Object.assign({name:code},o);
   });
   S.midas={ok:true,at:now,n:hit,err:'',tries:S.midas.tries};
-  if(hit){try{buildPercentiles()}catch(e){}renderPx();mark('watch');checkAlarms();mark('op');updateOpenSignals()}
+  if(hit){try{buildPercentiles()}catch(e){}renderPx();mark('watch');checkAlarms();mark('op');updateOpenSignals();mark('live')}
  }catch(e){S.midas={ok:false,at:Date.now(),n:0,err:String(e.message||e),tries:S.midas.tries}}
  renderMidasStatus();
 }
@@ -1499,6 +1519,8 @@ async function watchLoop(){
 /* ================= diğer ================= */
 async function refreshFast(){
  if(document.hidden)return;
+ const midOk=S.midas&&S.midas.ok&&Date.now()-S.midas.at<60000;
+ if(midOk){renderPx();['watch','alarm','live'].forEach(mark);checkAlarms();updateOpenSignals();return} // canli fiyat Midas'tan; TradingView'a dusme
  const t=[...new Set([S.sym,...W(),...S.alarms.filter(a=>!a.hit).map(a=>a.s)])].map(s=>'BIST:'+s);
  if(!t.length)return;
  try{const j=await tvScan('global',{symbols:{tickers:t},columns:COLS});j.data.forEach(r=>{const o=rowObj(r,COLS);o.voltl=o.volume*o.close;o.tfm=null;
@@ -1563,6 +1585,44 @@ function toggleFilt(){const e=$('#filtsheet');e.classList.toggle('on');$('#filtb
 ['opvol','secsel','scrq','minal','minsc'].forEach(id=>{const e=$('#'+id);if(e)e.addEventListener('input',renderOps)});
 $('#viewseg2').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;S.view=b.dataset.v;LS.set('view',S.view);[...$('#viewseg2').children].forEach(x=>x.classList.toggle('on',x===b));renderOps()};
 
+
+/* ================= CANLI: yalnızca Midas verisiyle metrikler ================= */
+function midasLive(o){
+ const h=S.midHis&&S.midHis[o.name];if(!h||h.length<3)return null;
+ const n=h.length-1,p0=h[0],p1=h[n];
+ const mom=(p1.p/p0.p-1)*100; // uygulama acildiginden beri momentum
+ let momN=null;const step=Math.min(10,n);if(n>=step)momN=(p1.p/h[n-step].p-1)*100; // son ~10 tik
+ const dt=(p1.t-p0.t)/1000||1;
+ const vrate=(p1.v-p0.v)/dt; // lot/saniye
+ const vw=p1.v>0?p1.tn/p1.v:null; // gün içi ortalama işlem fiyatı (gerçek VWAP yaklaşımı)
+ const vd=vw?(p1.p-vw)/vw*100:null;
+ const bid=h[n].b||o.bid,ask=h[n].a||o.ask;
+ const spd=(bid&&ask&&ask>0)?(ask-bid)/ask*100:null;
+ const upD=o.upperLimit&&o.upperLimit>0?(o.upperLimit-p1.p)/o.upperLimit*100:null;
+ const dnD=o.lowerLimit&&o.lowerLimit>0?(p1.p-o.lowerLimit)/o.lowerLimit*100:null;
+ return{mom,momN,vrate,vw,vd,spd,upD,dnD,n:n+1};
+}
+const LIVEMOD=[['gain','Yükselen'],['lose','Düşen'],['tn','Hacim ₺'],['mom','Momentum'],['up','Tavana yakın'],['dn','Tabana yakın']];
+S.liveMode=S.liveMode||'gain';
+function liveRows(){
+ const liq=S.uni.filter(o=>o.voltl>=5e6&&S.midHis&&S.midHis[o.name]);
+ const m=S.liveMode;let d,ex,eh;
+ if(m==='gain'){d=liq.slice().sort((a,b)=>b.change-a.change);eh='Değ%';ex=o=>pct(o.change)}
+ else if(m==='lose'){d=liq.slice().sort((a,b)=>a.change-b.change);eh='Değ%';ex=o=>pct(o.change)}
+ else if(m==='tn'){d=liq.slice().sort((a,b)=>b.voltl-a.voltl);eh='Hacim';ex=o=>big(o.voltl)}
+ else if(m==='mom'){d=liq.map(o=>({o,l:midasLive(o)})).filter(x=>x.l&&x.l.momN!=null).sort((a,b)=>b.l.momN-a.l.momN).map(x=>x.o);eh='Mom';ex=o=>{const l=midasLive(o);return l?'<b class="'+(l.momN>=0?'up':'dn')+'">'+pct(l.momN)+'</b>':'-'}}
+ else if(m==='up'){d=liq.map(o=>({o,l:midasLive(o)})).filter(x=>x.l&&x.l.upD!=null&&x.l.upD<3).sort((a,b)=>a.l.upD-b.l.upD).map(x=>x.o);eh='Tavana';ex=o=>{const l=midasLive(o);return l?'%'+nf(l.upD,2):'-'}}
+ else{d=liq.map(o=>({o,l:midasLive(o)})).filter(x=>x.l&&x.l.dnD!=null&&x.l.dnD<3).sort((a,b)=>a.l.dnD-b.l.dnD).map(x=>x.o);eh='Tabana';ex=o=>{const l=midasLive(o);return l?'%'+nf(l.dnD,2):'-'}}
+ return{d:d,ex:ex,eh:eh};
+}
+function renderLive(){
+ const bar=$('#livebar');if(bar&&!bar._built){bar.innerHTML=LIVEMOD.map(x=>'<button data-lm="'+x[0]+'" class="'+(x[0]===S.liveMode?'on':'')+'">'+x[1]+'</button>').join('')+'<span style="flex:1"></span><span style="color:var(--dim);font-size:9.5px">◉ Midas canlı · ~5 sn</span>';bar._built=1;
+  bar.onclick=e=>{const b=e.target.closest('[data-lm]');if(!b)return;S.liveMode=b.dataset.lm;[...bar.children].forEach(x=>x.classList.toggle('on',x===b));renderLive()}}
+ const r=liveRows();if(!r.d.length){$('#live').innerHTML='<div class="note">Canlı veri birikiyor — birkaç dakika içinde momentum ve hacim hızı hesaplanır. Liste yalnızca Midas verisiyle üretilir.</div>';return}
+ $('#live').innerHTML='<table><tr><th>#</th><th>Sembol</th><th>Son</th><th>Değ%</th><th>'+r.eh+'</th><th>VWAP</th><th>Hız</th><th>Spread</th></tr>'+
+ r.d.slice(0,60).map((o,i)=>{const l=midasLive(o);
+  return '<tr class="row" onclick="selectSym(\''+o.name+'\',\'bist\')"><td style="color:var(--dim)">'+(i+1)+'</td><td class="sym">'+o.name+'</td><td>'+nf(o.close)+'</td><td class="'+cls(o.change)+'">'+pct(o.change)+'</td><td>'+r.ex(o)+'</td><td>'+(l&&l.vw?nf(l.vw)+' <i class="'+cls(l.vd)+'" style="font-style:normal;font-size:9px">'+pct(l.vd)+'</i>':'-')+'</td><td>'+(l?big(l.vrate)+'/s':'-')+'</td><td>'+(l&&l.spd!=null?nf(l.spd,2)+'%':'-')+'</td></tr>'}).join('')+'</table>';
+}
 
 /* ================= gün özeti ================= */
 function briefData(){
@@ -2176,218 +2236,11 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadUnive
  setInterval(refreshTick,12000);
  setInterval(loadUniverse,30000);
  setInterval(algolabRefreshSession,9*60000);
- setInterval(pollMidas,8000);
+ setInterval(pollMidas,5000);
  setInterval(loadCrypto,25000);
  setInterval(loadDom,180000);
  setInterval(()=>{if(!document.hidden&&S.tab==='chart')loadCandles()},60000);
 })();
 </script>
-</body>
-
-// ============================================================================
-// BIST TERMINAL - REAL-TIME 15m + 4H CANDLE ENGINE + AL/SAT SIGNAL
-// Midas tick'lerinden live candle rekonstruksiyonu
-// ============================================================================
-
-class LiveCandleEngine {
-  constructor() {
-    this.builders = { '15m': new Map(), '4h': new Map() };
-    this.candles = { '15m': {}, '4h': {} };
-    this.lastCandle = { '15m': {}, '4h': {} };
-    this.signals = {};
-    this.emaCache = {};
-    this.init();
-  }
-
-  init() {
-    const self = this;
-    const origPollMidas = window.pollMidas;
-    window.pollMidas = async function() {
-      await origPollMidas.call(this);
-      if (S.midas && S.midas.ok) {
-        self.processMidasTicks();
-      }
-    };
-  }
-
-  processMidasTicks() {
-    const now = Date.now();
-    Object.entries(S.quotes || {}).forEach(([sym, q]) => {
-      if (q._midasLive && (now - q._midasLive) < 15000) {
-        const price = q.close;
-        const volume = q.volume || 0;
-        this.addTick(sym, price, volume, now);
-      }
-    });
-  }
-
-  addTick(symbol, price, volume, timestamp) {
-    if (!this.builders['15m'].has(symbol)) {
-      this.builders['15m'].set(symbol, new CandleBuilder(symbol, 900));
-      this.candles['15m'][symbol] = [];
-    }
-    if (!this.builders['4h'].has(symbol)) {
-      this.builders['4h'].set(symbol, new CandleBuilder(symbol, 14400));
-      this.candles['4h'][symbol] = [];
-    }
-
-    const ts15 = Math.floor(timestamp / 900) * 900;
-    const ts4h = Math.floor(timestamp / 14400) * 14400;
-
-    // 15m
-    const prev15 = this.lastCandle['15m'][symbol];
-    this.builders['15m'].get(symbol).addTick(price, volume, ts15);
-    const curr15 = this.builders['15m'].get(symbol).getCurrentCandle(ts15);
-
-    if (prev15 && prev15.time !== curr15.time) {
-      this.onCandleClose('15m', symbol, prev15);
-    }
-    this.lastCandle['15m'][symbol] = curr15;
-
-    // 4h
-    const prev4h = this.lastCandle['4h'][symbol];
-    this.builders['4h'].get(symbol).addTick(price, volume, ts4h);
-    const curr4h = this.builders['4h'].get(symbol).getCurrentCandle(ts4h);
-
-    if (prev4h && prev4h.time !== curr4h.time) {
-      this.onCandleClose('4h', symbol, prev4h);
-    }
-    this.lastCandle['4h'][symbol] = curr4h;
-
-    this.updateChart(symbol);
-  }
-
-  onCandleClose(interval, symbol, closedCandle) {
-    const candles = this.getCandles(interval, symbol);
-    if (!candles || candles.length < 50) return;
-
-    const ema9 = this.calculateEMA(candles, 9);
-    const ema21 = this.calculateEMA(candles, 21);
-    const ema50 = this.calculateEMA(candles, 50);
-
-    if (!this.emaCache[symbol]) this.emaCache[symbol] = {};
-    this.emaCache[symbol][interval] = { ema9, ema21, ema50 };
-
-    const signal = this.generateSignal(symbol, interval, ema9, ema21, ema50);
-    if (!this.signals[symbol]) this.signals[symbol] = {};
-    this.signals[symbol][interval] = signal;
-
-    this.updateScreener(symbol);
-  }
-
-  calculateEMA(candles, period) {
-    if (candles.length < period) return null;
-    const closes = candles.map(c => c.close);
-    const multiplier = 2 / (period + 1);
-    let ema = closes.slice(0, period).reduce((a, b) => a + b, 0) / period;
-    const emas = [ema];
-    for (let i = period; i < closes.length; i++) {
-      ema = (closes[i] - ema) * multiplier + ema;
-      emas.push(ema);
-    }
-    return emas[emas.length - 1];
-  }
-
-  generateSignal(symbol, interval, ema9, ema21, ema50) {
-    let al = false, sat = false, score = 0;
-
-    if (ema9 && ema21 && ema50) {
-      if (ema9 > ema21 && ema21 > ema50) {
-        al = true;
-        score = 3;
-      } else if (ema9 < ema21 && ema21 < ema50) {
-        sat = true;
-        score = 1;
-      } else {
-        score = 2;
-      }
-    }
-
-    return { al, sat, score };
-  }
-
-  getCandles(interval, symbol) {
-    return this.candles[interval][symbol] || [];
-  }
-
-  updateScreener(symbol) {
-    const sig15m = this.signals[symbol]?.['15m'];
-    const sig4h = this.signals[symbol]?.['4h'];
-
-    const row = document.querySelector(`tr[data-sym="${symbol}"]`);
-    if (!row) return;
-
-    const sigCell = row.querySelector('td[data-col="sinyal"]');
-    if (!sigCell) return;
-
-    if ((sig15m?.al) || (sig4h?.al)) {
-      sigCell.classList.add('up');
-      sigCell.textContent = '● AL';
-    } else if ((sig15m?.sat) || (sig4h?.sat)) {
-      sigCell.classList.add('dn');
-      sigCell.textContent = '● SAT';
-    } else {
-      sigCell.textContent = '';
-      sigCell.classList.remove('up', 'dn');
-    }
-  }
-
-  updateChart(symbol) {
-    if (symbol !== S.cur) return;
-    const chart15m = this.candles['15m'][symbol] || [];
-    const chart4h = this.candles['4h'][symbol] || [];
-
-    if (chart15m.length > 0 && window.series) {
-      try {
-        window.series.setData(chart15m.slice(-300));
-      } catch (e) {}
-    }
-    if (chart4h.length > 0 && window.series2) {
-      try {
-        window.series2.setData(chart4h.slice(-300));
-      } catch (e) {}
-    }
-  }
-}
-
-class CandleBuilder {
-  constructor(symbol, interval) {
-    this.symbol = symbol;
-    this.interval = interval;
-    this.candles = {};
-  }
-
-  addTick(price, volume, timestamp) {
-    const candleTime = Math.floor(timestamp / this.interval) * this.interval;
-
-    if (!this.candles[candleTime]) {
-      this.candles[candleTime] = {
-        time: candleTime / 1000,
-        open: price,
-        high: price,
-        low: price,
-        close: price,
-        volume: volume
-      };
-    } else {
-      const c = this.candles[candleTime];
-      c.high = Math.max(c.high, price);
-      c.low = Math.min(c.low, price);
-      c.close = price;
-      c.volume += volume;
-    }
-  }
-
-  getCurrentCandle(timestamp) {
-    const candleTime = Math.floor(timestamp / this.interval) * this.interval;
-    return this.candles[candleTime] || null;
-  }
-}
-
-// Initialize
-if (!window.liveEngine) {
-  window.liveEngine = new LiveCandleEngine();
-  console.log('✓ Real-time Candle Engine aktif — 15m + 4H live, Midas tick\'lerinden');
-}
 </body>
 </html>
