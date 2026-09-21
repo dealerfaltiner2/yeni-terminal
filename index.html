@@ -2183,4 +2183,211 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadUnive
 })();
 </script>
 </body>
+
+// ============================================================================
+// BIST TERMINAL - REAL-TIME 15m + 4H CANDLE ENGINE + AL/SAT SIGNAL
+// Midas tick'lerinden live candle rekonstruksiyonu
+// ============================================================================
+
+class LiveCandleEngine {
+  constructor() {
+    this.builders = { '15m': new Map(), '4h': new Map() };
+    this.candles = { '15m': {}, '4h': {} };
+    this.lastCandle = { '15m': {}, '4h': {} };
+    this.signals = {};
+    this.emaCache = {};
+    this.init();
+  }
+
+  init() {
+    const self = this;
+    const origPollMidas = window.pollMidas;
+    window.pollMidas = async function() {
+      await origPollMidas.call(this);
+      if (S.midas && S.midas.ok) {
+        self.processMidasTicks();
+      }
+    };
+  }
+
+  processMidasTicks() {
+    const now = Date.now();
+    Object.entries(S.quotes || {}).forEach(([sym, q]) => {
+      if (q._midasLive && (now - q._midasLive) < 15000) {
+        const price = q.close;
+        const volume = q.volume || 0;
+        this.addTick(sym, price, volume, now);
+      }
+    });
+  }
+
+  addTick(symbol, price, volume, timestamp) {
+    if (!this.builders['15m'].has(symbol)) {
+      this.builders['15m'].set(symbol, new CandleBuilder(symbol, 900));
+      this.candles['15m'][symbol] = [];
+    }
+    if (!this.builders['4h'].has(symbol)) {
+      this.builders['4h'].set(symbol, new CandleBuilder(symbol, 14400));
+      this.candles['4h'][symbol] = [];
+    }
+
+    const ts15 = Math.floor(timestamp / 900) * 900;
+    const ts4h = Math.floor(timestamp / 14400) * 14400;
+
+    // 15m
+    const prev15 = this.lastCandle['15m'][symbol];
+    this.builders['15m'].get(symbol).addTick(price, volume, ts15);
+    const curr15 = this.builders['15m'].get(symbol).getCurrentCandle(ts15);
+
+    if (prev15 && prev15.time !== curr15.time) {
+      this.onCandleClose('15m', symbol, prev15);
+    }
+    this.lastCandle['15m'][symbol] = curr15;
+
+    // 4h
+    const prev4h = this.lastCandle['4h'][symbol];
+    this.builders['4h'].get(symbol).addTick(price, volume, ts4h);
+    const curr4h = this.builders['4h'].get(symbol).getCurrentCandle(ts4h);
+
+    if (prev4h && prev4h.time !== curr4h.time) {
+      this.onCandleClose('4h', symbol, prev4h);
+    }
+    this.lastCandle['4h'][symbol] = curr4h;
+
+    this.updateChart(symbol);
+  }
+
+  onCandleClose(interval, symbol, closedCandle) {
+    const candles = this.getCandles(interval, symbol);
+    if (!candles || candles.length < 50) return;
+
+    const ema9 = this.calculateEMA(candles, 9);
+    const ema21 = this.calculateEMA(candles, 21);
+    const ema50 = this.calculateEMA(candles, 50);
+
+    if (!this.emaCache[symbol]) this.emaCache[symbol] = {};
+    this.emaCache[symbol][interval] = { ema9, ema21, ema50 };
+
+    const signal = this.generateSignal(symbol, interval, ema9, ema21, ema50);
+    if (!this.signals[symbol]) this.signals[symbol] = {};
+    this.signals[symbol][interval] = signal;
+
+    this.updateScreener(symbol);
+  }
+
+  calculateEMA(candles, period) {
+    if (candles.length < period) return null;
+    const closes = candles.map(c => c.close);
+    const multiplier = 2 / (period + 1);
+    let ema = closes.slice(0, period).reduce((a, b) => a + b, 0) / period;
+    const emas = [ema];
+    for (let i = period; i < closes.length; i++) {
+      ema = (closes[i] - ema) * multiplier + ema;
+      emas.push(ema);
+    }
+    return emas[emas.length - 1];
+  }
+
+  generateSignal(symbol, interval, ema9, ema21, ema50) {
+    let al = false, sat = false, score = 0;
+
+    if (ema9 && ema21 && ema50) {
+      if (ema9 > ema21 && ema21 > ema50) {
+        al = true;
+        score = 3;
+      } else if (ema9 < ema21 && ema21 < ema50) {
+        sat = true;
+        score = 1;
+      } else {
+        score = 2;
+      }
+    }
+
+    return { al, sat, score };
+  }
+
+  getCandles(interval, symbol) {
+    return this.candles[interval][symbol] || [];
+  }
+
+  updateScreener(symbol) {
+    const sig15m = this.signals[symbol]?.['15m'];
+    const sig4h = this.signals[symbol]?.['4h'];
+
+    const row = document.querySelector(`tr[data-sym="${symbol}"]`);
+    if (!row) return;
+
+    const sigCell = row.querySelector('td[data-col="sinyal"]');
+    if (!sigCell) return;
+
+    if ((sig15m?.al) || (sig4h?.al)) {
+      sigCell.classList.add('up');
+      sigCell.textContent = '● AL';
+    } else if ((sig15m?.sat) || (sig4h?.sat)) {
+      sigCell.classList.add('dn');
+      sigCell.textContent = '● SAT';
+    } else {
+      sigCell.textContent = '';
+      sigCell.classList.remove('up', 'dn');
+    }
+  }
+
+  updateChart(symbol) {
+    if (symbol !== S.cur) return;
+    const chart15m = this.candles['15m'][symbol] || [];
+    const chart4h = this.candles['4h'][symbol] || [];
+
+    if (chart15m.length > 0 && window.series) {
+      try {
+        window.series.setData(chart15m.slice(-300));
+      } catch (e) {}
+    }
+    if (chart4h.length > 0 && window.series2) {
+      try {
+        window.series2.setData(chart4h.slice(-300));
+      } catch (e) {}
+    }
+  }
+}
+
+class CandleBuilder {
+  constructor(symbol, interval) {
+    this.symbol = symbol;
+    this.interval = interval;
+    this.candles = {};
+  }
+
+  addTick(price, volume, timestamp) {
+    const candleTime = Math.floor(timestamp / this.interval) * this.interval;
+
+    if (!this.candles[candleTime]) {
+      this.candles[candleTime] = {
+        time: candleTime / 1000,
+        open: price,
+        high: price,
+        low: price,
+        close: price,
+        volume: volume
+      };
+    } else {
+      const c = this.candles[candleTime];
+      c.high = Math.max(c.high, price);
+      c.low = Math.min(c.low, price);
+      c.close = price;
+      c.volume += volume;
+    }
+  }
+
+  getCurrentCandle(timestamp) {
+    const candleTime = Math.floor(timestamp / this.interval) * this.interval;
+    return this.candles[candleTime] || null;
+  }
+}
+
+// Initialize
+if (!window.liveEngine) {
+  window.liveEngine = new LiveCandleEngine();
+  console.log('✓ Real-time Candle Engine aktif — 15m + 4H live, Midas tick\'lerinden');
+}
+</body>
 </html>
