@@ -392,6 +392,8 @@ body{font-size:12.5px}
    <div id="jrstat"></div><div id="jrlist"></div>
   </div>
 
+  <div class="tab" id="t-perf"><div id="perfbody"></div></div>
+
   <div class="tab" id="t-risk"><div class="sett" id="riskbody"></div></div>
   <div class="tab" id="t-crypto"><div class="bar" id="cdom" style="color:var(--dim);font-size:9.5px">Kripto yükleniyor...</div><div id="crypto"></div></div>
 
@@ -461,6 +463,7 @@ body{font-size:12.5px}
   <button data-t="heat" style="--tc:#fb923c"><i>▦</i>Isı</button>
   <button data-t="alarm" style="--tc:#ff4d5e"><i>◔</i>Alarm</button>
   <button data-t="jr" style="--tc:#4ade80"><i>✎</i>Günlük</button>
+  <button data-t="perf" style="--tc:#34d399"><i>📊</i>Performans</button>
   <button data-t="risk" style="--tc:#22d3ee"><i>%</i>Risk</button>
   <button data-t="crypto" style="--tc:#f59e0b"><i>₿</i>Kripto</button>
   <button data-t="port" style="--tc:#818cf8"><i>∑</i>Portföy</button>
@@ -578,6 +581,7 @@ async function autoRun(manual){
       '#'+c.o.name+' #'+dir;
      await tgSend(txt);
      S.sentSig.push(key);sent++;
+     beep();notify('BIST · Sinyal gönderildi',c.o.name+' '+dir);
      seenAAdd(c.o.name,dir);
      sigRecord(c.o.name,dir,a);
      openSignalTx(c.o.name,dir,a);
@@ -593,7 +597,7 @@ setInterval(()=>{if(S.autoOn)autoRun(false)},15*60*1000);
 function saveCap(){S.cap=+$('#cap').value||0;S.rskp=+$('#rsk').value||1;LS.set('cap',S.cap);LS.set('rskp',S.rskp);renderRisk();alert('Kaydedildi')}
 async function testSrc(){const m=$('#srcmsg');m.textContent='test...';try{const cs=await getBars('THYAO','15min');m.innerHTML='<b class="up">Çalışıyor</b> — '+cs.length+' mum'}catch(e){m.innerHTML='<b class="dn">Başarısız</b> — '+e.message}}
 function mark(t){if(S.tab===t)draw(t);else S.dirty[t]=1}
-function draw(t){S.dirty[t]=0;const f={op:function(){try{renderOps()}catch(e){$('#oplist').innerHTML='<div class="note"><b class="dn">Ekran hatası:</b> '+String(e.message||e)+'</div>'}},live:renderLive,reg:renderReg,brief:renderBrief,lab:renderLab,watch:renderWatch,cal:calTab,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,crypto:renderCrypto,jr:renderJr,risk:renderRisk}[t];if(f)f()}
+function draw(t){S.dirty[t]=0;const f={op:function(){try{renderOps()}catch(e){$('#oplist').innerHTML='<div class="note"><b class="dn">Ekran hatası:</b> '+String(e.message||e)+'</div>'}},live:renderLive,reg:renderReg,brief:renderBrief,lab:renderLab,watch:renderWatch,cal:calTab,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,crypto:renderCrypto,jr:renderJr,perf:renderPerf,risk:renderRisk}[t];if(f)f()}
 const BACKUP_VER=12;
 function backupObj(){
  return {wl:WL,alarms:S.alarms,tx:S.tx,jr:S.jr,tdkey:S.key,src:S.src,cap:S.cap,rskp:S.rskp,
@@ -1238,7 +1242,7 @@ async function deepScan(){
  await Promise.all(Array.from({length:CONC},dwork));
  S.scanning=false;$('#deepbtn').textContent='⚡ Derin';$('#dprog').style.width='0';
  LS.set('seenA',S.seenA.slice(-200));
- if(newA.length){$('#alerttxt').textContent='Yeni A sinyali: '+newA.join(', ');$('#alertbox').classList.add('on');beep();if(navigator.vibrate)navigator.vibrate([150,80,150])}
+ if(newA.length){$('#alerttxt').textContent='Yeni A sinyali: '+newA.join(', ');$('#alertbox').classList.add('on');beep();notify('BIST · Yeni A sinyali',newA.join(', '));if(navigator.vibrate)navigator.vibrate([150,80,150])}
  renderOps();
 }
 
@@ -1847,7 +1851,7 @@ function updateOpenSignals(){
   else if(tp2!=null&&(s>0?px>=tp2:px<=tp2)){j.status='TP2';j.r=+2.5;j.x=tp2;j.closeD=todayStr();ch=true}
   else if(tp1!=null&&(s>0?px>=tp1:px<=tp1)){j.status='TP1';j.r=+1.5;j.x=tp1;j.closeD=todayStr();ch=true}
  });
- if(ch){LS.set('jr',S.jr);mark('jr');mark('brief')}
+ if(ch){LS.set('jr',S.jr);mark('jr');mark('brief');mark('perf');dayEndCheck()}
 }
 function agg(a){if(!a||!a.length)return null;const w=a.filter(x=>x>0).length/a.length*100,e=a.reduce((s,x)=>s+x,0)/a.length;return{n:a.length,win:w,exp:e}}
 function healthStats(records){
@@ -2100,7 +2104,7 @@ function addJr(e){e.preventDefault();
  S.jr.push({s:$('#jrs').value.trim().toUpperCase(),d:$('#jrd').value,k:$('#jrk').value,type:'manuel',tf:S.stf,e:+$('#jre').value,l:+$('#jrl').value,t:+$('#jrt').value||null,tp2v:null,dt:new Date().toISOString().slice(0,16).replace('T',' '),x:null,r:null,pct:null,status:'açık',closeD:null});
  LS.set('jr',S.jr);e.target.reset();renderJr()}
 function closeJr(i){const v=prompt('Çıkış fiyatı:');if(!v)return;const j=S.jr[i],x=+v;if(!x)return;
- const risk=Math.abs(j.e-j.l)||1;j.x=x;j.r=(j.d==='AL'?(x-j.e):(j.e-x))/risk;j.pct=(j.d==='AL'?(x-j.e):(j.e-x))/j.e*100;j.status='kapandı';j.closeD=todayStr();LS.set('jr',S.jr);renderJr();maeMfe(i)}
+ const risk=Math.abs(j.e-j.l)||1;j.x=x;j.r=(j.d==='AL'?(x-j.e):(j.e-x))/risk;j.pct=(j.d==='AL'?(x-j.e):(j.e-x))/j.e*100;j.status='kapandı';j.closeD=todayStr();LS.set('jr',S.jr);renderJr();mark('perf');maeMfe(i)}
 async function maeMfe(i){
  const j=S.jr[i];if(!j)return;
  try{
@@ -2112,7 +2116,7 @@ async function maeMfe(i){
   j.mae=mae;j.mfe=mfe;LS.set('jr',S.jr);renderJr();
  }catch(e){console.warn('MAE/MFE '+j.s+': '+(e.message||e))}
 }
-function delJr(i){S.jr.splice(i,1);LS.set('jr',S.jr);renderJr()}
+function delJr(i){S.jr.splice(i,1);LS.set('jr',S.jr);renderJr();mark('perf')}
 function journalFromBox(){const b=S.box;if(!b){alert('Önce AL/SAT kutusu kur');return}
  let k=S.setup;
  if(k==='all'){
@@ -2122,6 +2126,101 @@ function journalFromBox(){const b=S.box;if(!b){alert('Önce AL/SAT kutusu kur');
  }
  S.jr.push({s:b.sym,d:b.dir,k,type:'manuel',tf:S.stf,e:b.entry,l:b.sl,t:b.tp,tp2v:null,dt:new Date().toISOString().slice(0,16).replace('T',' '),x:null,r:null,pct:null,status:'açık',closeD:null});
  LS.set('jr',S.jr);showTab('jr')}
+/* ================= PERFORMANS PANELI ================= */
+function renderPerf(){
+ const el=$('#perfbody');if(!el)return;
+ const closed=S.jr.filter(j=>j.r!=null);
+ const openN=S.jr.filter(j=>j.r==null).length;
+ const wins=closed.filter(j=>j.r>0),losses=closed.filter(j=>j.r<0);
+ const sumR=a=>a.reduce((x,j)=>x+j.r,0);
+ const gw=sumR(wins),gl=Math.abs(sumR(losses));
+ const pf=gl>0?(gw/gl):(gw>0?'∞':'-');
+ const avgR=closed.length?sumR(closed)/closed.length:0;
+ const wr=closed.length?(wins.length/closed.length*100):0;
+ // kurulum bazli
+ const byK={};
+ closed.forEach(j=>{const k=j.k||'manual';byK[k]=byK[k]||{n:0,w:0,r:0};byK[k].n++;if(j.r>0)byK[k].w++;byK[k].r+=j.r});
+ const ks=Object.keys(byK).sort((a,b)=>(byK[b].n-byK[a].n)||(byK[b].r-byK[a].r));
+ // sonuc dagilimi
+ const stC={};S.jr.forEach(j=>{const s=j.status||(j.x?'kapandı':'açık');stC[s]=(stC[s]||0)+1});
+ // ozkayna egrisi (kapanan islemler kronolojik)
+ const seq=closed.slice().sort((a,b)=>String(a.dt).localeCompare(String(b.dt)));
+ let cum=0;const pts=seq.map(j=>cum+=j.r);
+ const W=600,H=110;
+ const maxAbs=Math.max(1,...pts.map(Math.abs));
+ const xy=pts.map((pt,i)=>[(i/Math.max(1,pts.length-1))*W,(H/2)-(pt/maxAbs)*(H/2-8)]);
+ const line=xy.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+ const todayR=sumR(S.jr.filter(j=>j.closeD===todayStr()));
+ let h='<div class="note" style="padding-bottom:0;letter-spacing:.5px">📊 PERFORMANS</div>';
+ h+='<div class="grid">';
+ h+='<div><span class="k">Kapanan İşlem</span><span class="v">'+closed.length+'</span></div>';
+ h+='<div><span class="k">Win Rate</span><span class="v" style="color:'+(wr>=50?'var(--up)':'var(--txt)')+'">'+nf(wr,0)+'%</span></div>';
+ h+='<div><span class="k">Ortalama R</span><span class="v" style="color:'+cls(avgR)+'">'+nf(avgR,2)+'R</span></div>';
+ h+='<div><span class="k">Profit Factor</span><span class="v">'+(typeof pf==='number'?nf(pf,2):pf)+'</span></div>';
+ h+='<div><span class="k">Toplam R</span><span class="v" style="color:'+cls(gw-gl)+'">'+(gw-gl>=0?'+':'')+nf(gw-gl,1)+'R</span></div>';
+ h+='<div><span class="k">Açık İşlem</span><span class="v">'+openN+'</span></div>';
+ h+='<div><span class="k">En İyi / En Kötü</span><span class="v">'+(closed.length?nf(Math.max.apply(null,closed.map(j=>j.r)),1)+'R / '+nf(Math.min.apply(null,closed.map(j=>j.r)),1)+'R':'-')+'</span></div>';
+ h+='<div><span class="k">Bugün (kapanan)</span><span class="v" style="color:'+cls(todayR)+'">'+(todayR>=0?'+':'')+nf(todayR,1)+'R</span></div>';
+ h+='</div>';
+ // ozkayna egrisi
+ h+='<div style="padding:10px 12px 2px"><div class="k" style="color:var(--dim);font-size:9.5px;letter-spacing:.3px;margin-bottom:5px">ÖZKAYNA EĞRİSİ (kümülatif R)</div>';
+ if(pts.length>1){
+  h+='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:10px">';
+  h+='<line x1="0" y1="'+(H/2)+'" x2="'+W+'" y2="'+(H/2)+'" stroke="var(--line2)" stroke-width="1" stroke-dasharray="4 4"/>';
+  h+='<polyline points="'+line+'" fill="none" stroke="'+(cum>=0?'var(--up)':'var(--dn)')+'" stroke-width="2" stroke-linejoin="round"/>';
+  if(xy.length){const lp=xy[xy.length-1];h+='<circle cx="'+lp[0]+'" cy="'+lp[1]+'" r="3.5" fill="'+(cum>=0?'var(--up)':'var(--dn)')+'"/>'}
+  h+='<text x="'+(W-6)+'" y="14" text-anchor="end" font-size="11" fill="var(--txt2)" font-family="var(--mono)">'+(cum>=0?'+':'')+nf(cum,1)+'R</text>';
+  h+='</svg>';
+ }else h+='<div class="note">Henüz yeterli kapalı işlem yok — eğri en az 2 kapanan işlemde çizilir.</div>';
+ h+='</div>';
+ // kurulum bazli tablo
+ if(ks.length){
+  h+='<div class="note" style="padding-bottom:0;letter-spacing:.5px">KURULUM BAZLI</div><table><tr><th>Kurulum</th><th>N</th><th>Win%</th><th>Ort.R</th><th>Toplam R</th></tr>';
+  h+=ks.map(k=>{const b=byK[k];return '<tr><td class="sym" style="font-size:11.5px">'+(SNAME[k]||k)+'</td><td>'+b.n+'</td><td class="'+(b.w/b.n>=.5?'up':'dn')+'">'+nf(b.w/b.n*100,0)+'%</td><td class="'+cls(b.r/b.n)+'">'+nf(b.r/b.n,2)+'</td><td class="'+cls(b.r)+'">'+(b.r>=0?'+':'')+nf(b.r,1)+'</td></tr>'}).join('');
+  h+='</table>';
+ }
+ // sonuc dagilimi
+ h+='<div style="padding:10px 12px"><div class="k" style="color:var(--dim);font-size:9.5px;letter-spacing:.3px;margin-bottom:6px">SONUÇ DAĞILIMI</div><div class="tags">';
+ const order=['TP2','TP1','stop','kapandı','açık','iptal'];
+ order.forEach(s=>{if(stC[s])h+='<span class="tag" style="color:'+(s==='TP2'||s==='TP1'?'var(--up)':s==='stop'?'var(--dn)':'var(--txt2)')+'">'+s+' · '+stC[s]+'</span>'});
+ h+='</div></div>';
+ el.innerHTML=h;
+}
+
+/* ================= BILDIRIM + GUN SONU RAPORU ================= */
+function notify(title,body){
+ try{
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const n=new Notification(title,{body:body});
+  n.onclick=()=>{try{window.focus()}catch(e){};n.close()};
+ }catch(e){}
+}
+function dayEndCheck(){
+ if(S.lastReport==null)S.lastReport=LS.get('lastReport','');
+ const now=new Date();
+ if(now.getDay()===0||now.getDay()===6)return;
+ if(now.getHours()*60+now.getMinutes()<1090)return; // 18:10 sonrasi
+ const t=todayStr();
+ if(S.lastReport===t)return;
+ if(!S.tgTok||!S.tgChat)return;
+ S.lastReport=t;LS.set('lastReport',t);
+ const todays=S.sigHist.filter(x=>String(x.k).indexOf('|'+t)>=0);
+ const jrT=S.jr.filter(j=>String(j.dt).slice(0,10)===t);
+ const closedT=S.jr.filter(j=>j.closeD===t);
+ const sumR=a=>a.reduce((x,j)=>x+(j.r||0),0);
+ const bl=S.breadthLog.filter(x=>x.d===t)[0];
+ const byK={};todays.forEach(x=>(x.setups||[]).forEach(k=>byK[k]=(byK[k]||0)+1));
+ const topK=Object.keys(byK).sort((a,b)=>byK[b]-byK[a])[0];
+ let msg='📋 <b>GÜN SONU RAPORU — '+t+'</b>\n';
+ msg+='• Sinyal: '+todays.length+' ('+todays.filter(x=>x.grade==='A').length+' A sınıfı)\n';
+ msg+='• Açılan işlem: '+jrT.length+' ('+jrT.filter(j=>j.r==null).length+' hâlâ açık)\n';
+ msg+='• Bugün kapanan: '+closedT.length+' işlem · '+((x=>x>=0?'+':'')+nf(x,1))(sumR(closedT))+'R\n';
+ if(bl)msg+='• Breadth: %'+Math.round(bl.b)+' · hacim '+(bl.v>=1e9?nf(bl.v/1e9,1)+'Mr':nf(bl.v/1e6,0)+'Mn')+(bl.src==='live'?' (gün içi)':'')+'\n';
+ if(topK)msg+='• Günün kurulumu: '+(SNAME[topK]||topK)+'\n';
+ msg+='— BIST Terminal';
+ tgSend(msg).then(()=>notify("Gün sonu raporu gönderildi","Telegram'ı kontrol et")).catch(e=>console.warn('gün sonu raporu: '+(e.message||e)));
+}
+
 function renderJr(){
  const cl=S.jr.filter(j=>j.r!=null),by={},byt={};
  cl.forEach(j=>{(by[j.k]=by[j.k]||[]).push(j);(byt[j.tf||'15']=byt[j.tf||'15']||[]).push(j)});
