@@ -2275,8 +2275,14 @@ async function tvScanOnce(){
  try{if(typeof W==='function')(W()||[]).slice(0,30).forEach(s=>add('BIST:'+s))}catch(e){}
  add('BIST:XU100');
  try{fetch(base+'/set-syms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbols:uniq})}).catch(()=>{})}catch(e){}
+ // Oturum varsa TUM piyasa (600+ hisse), yoksa sadece izleme listesi
+ let use=uniq.slice(0,40);
+ if(SESS){
+  const all=Object.keys(S.umap||{}).filter(x=>/^[A-Z0-9]{3,7}$/.test(x)).slice(0,700);
+  if(all.length>40&&Date.now()-(TVS.fullAt||0)>20000){TVS.fullAt=Date.now();use=all.map(s=>'BIST:'+s)}
+ }
  try{
-  const r=await fetch(base+'/tv-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbols:uniq.slice(0,40),session:SESS})});
+  const r=await fetch(base+'/tv-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbols:use,session:SESS})});
   const d=await r.json();
   if(d&&d.ok===false){TVS.ok=false;TVS.err='scan http'+d.http+': '+(d.body||d.error||'?').slice(0,80);return}
   if(d&&Array.isArray(d.data)){
@@ -2311,6 +2317,18 @@ async function tvScanOnce(){
     o.update_mode='tv_bridge';S.umap[sym]=o;
     if(S.quotes[sym]){S.quotes[sym].close=v[1];if(v[2]!=null)S.quotes[sym].change=v[2]}
    });TVS.ok=true;TVS.at=Date.now();TVS.err='';TVS.n=dd.data.length;try{renderPx()}catch(e){}mark('watch');mark('alarm');checkAlarms();updateOpenSignals()}
+  }
+  // Webhook alarmlari: TV sunucularindan gelen tiklari uygula
+  if(dp&&dp.ticks){
+   let tn=0;
+   for(const sym in dp.ticks){
+    const tk=dp.ticks[sym];if(!tk||Date.now()-tk.at>180000)continue;tn++;
+    const o=S.umap[sym]||{};
+    o.close=tk.c;if(tk.ch!=null)o.change=tk.ch;
+    o.update_mode='tv_webhook';S.umap[sym]=o;
+    if(S.quotes[sym]){S.quotes[sym].close=tk.c;if(tk.ch!=null)S.quotes[sym].change=tk.ch}
+   }
+   if(tn>0&&(Date.now()-(dp.tat||0))<180000){TVS.ok=true;TVS.at=Date.now();TVS.err='';TVS.n=Math.max(TVS.n,tn);try{renderPx()}catch(e){}mark('watch');mark('alarm');checkAlarms();updateOpenSignals()}
   }
  }catch(e){}
 }
