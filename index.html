@@ -2202,7 +2202,7 @@ async function tvAuth(){
  const r=await fetch(base+'/tv-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:S.tvUser,password:S.tvPass})});
  const d=await r.json();
  if(d&&d.ok){S.tvSession=d.session;LS.set('tvsession',d.session);TVL.err='';return true}
- TVL.err='TV giris reddedildi'+(d&&d.status?(' ('+d.status+')'):(d&&d.error?(' ('+d.error+')'):''))+(S.tvUser?'':' (kullanici adi yok)');
+ TVL.err='TV giris reddedildi'+(d&&d.status?(' ('+d.status+')'):'')+(d&&d.debug?(' '+d.debug.slice(0,60)):'')+(S.tvUser?'':' (kullanici adi yok)');
  return false;
 }
 function tvLiveSubs(){
@@ -2275,6 +2275,7 @@ async function tvScanOnce(){
  try{
   const r=await fetch(base+'/tv-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbols:uniq.slice(0,40),session:S.tvSession||''})});
   const d=await r.json();
+  if(d&&d.ok===false){TVS.ok=false;TVS.err='scan http'+d.http+': '+(d.body||d.error||'?').slice(0,80);return}
   if(d&&Array.isArray(d.data)){
    d.data.forEach(row=>{
     const sym=(row.s||'').split(':')[1];if(!sym)return;
