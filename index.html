@@ -410,7 +410,7 @@ body{font-size:12.5px}
     <input id="tdkey" placeholder="Twelve Data apikey"><input id="tvproxy" placeholder="TV WebSocket proxy URL (wss://xxxx.workers.dev)">
   <input id="tvuser" placeholder="TradingView kullanıcı adı (canlı veri için)" autocomplete="off">
   <input id="tvpass" type="password" placeholder="TradingView şifresi (sadece oturum açar, saklanmaz)"><button class="g" onclick="saveKey()">Anahtarı kaydet</button>
-    <button class="g" onclick="testSrc()">Veri kaynağını test et</button><button class="g" onclick="TVL.syms={};try{TVL.ws&&TVL.ws.close()}catch(e){}tvLiveStart();setTimeout(function(){alert('TV durumu: '+(TVL.state||'-')+' '+(TVL.err||'(bağlanıyor...)'))},1600)">⚡ TV'ye yeniden bağlan</button><div id="srcmsg" class="note"></div>
+    <button class="g" onclick="testSrc()">Veri kaynağını test et</button><button class="g" onclick="TVL.syms={};try{TVL.ws&&TVL.ws.close()}catch(e){}tvLiveStart();setTimeout(function(){alert('TV durumu: '+(TVL.state||'-')+' '+(TVL.err||'(bağlanıyor...)'))},1600)">⚡ TV'ye yeniden bağlan</button><button class="g" onclick="proxyTest()">🔍 Proxy testi</button><div id="srcmsg" class="note"></div>
     <b>MİDAS CANLI VERİ</b>
     <div id="midasmsg" class="note">Yükleniyor...</div>
     <div class="note">Terminal, Midas'ın herkese açık genel veri ucundan tüm BIST hisselerinin fiyatını ~8 saniyede bir tazeler (fiyat, hacim, tavan/taban). Bu resmi/garantili bir API değil — Midas'ın kendi sitesini besleyen genel bir uç. Durursa terminal otomatik olarak TradingView'ın 15dk gecikmeli verisine döner, hiçbir şey bozulmaz.</div>
@@ -1469,9 +1469,24 @@ async function getBarsTracked(s,tf,sh){
  throw lastErr||new Error('tüm kaynaklar başarısız');
 }
 const getBars=(s,tf,sh)=>getBarsTracked(s,tf,sh);
+let TVDIAG={at:0};
+async function tvDiagRun(){
+ if(!S.tvproxy)return;
+ const base=S.tvproxy.replace(/^wss:/,'https:').replace(/\/$/,'');
+ try{const r=await fetch(base+'/tv-test');const d=await r.json();TVDIAG.tv=d.opened?('ACILDI'):('ACILMADI:'+(d.error||d.status||'?'))}catch(e){TVDIAG.tv='HATA:'+e.message}
+ try{
+  const ws=new WebSocket(base.replace(/^https:/,'wss:')+'/ws-echo');
+  const m=await new Promise((res,rej)=>{const t=setTimeout(()=>{try{ws.close()}catch(_){};rej(new Error('asim'))},5000);ws.onopen=()=>ws.send('p');ws.onmessage=ev=>{clearTimeout(t);try{ws.close()}catch(_){};res(ev.data)};ws.onerror=()=>{clearTimeout(t);rej(new Error('hata'))}});
+  TVDIAG.echo=m==='echo:p'?'OK':'yanlis'
+ }catch(e){TVDIAG.echo='HATA:'+e.message}
+ TVDIAG.at=Date.now();
+ try{renderSrcStatus()}catch(e){}
+}
 function renderSrcStatus(){
  const m=$('#srcmsg');if(!m)return;
  try{if(TVL&&TVL.state==='-'&&TVL.tries===0)tvLiveStart()}catch(e){} // guvenlik: hic baslatilmadiysa panel baslatir
+ try{if(S.tvproxy&&Date.now()-TVDIAG.at>60000&&!(TVL.ok&&Date.now()-TVL.last<15000))tvDiagRun()}catch(e){} // otomatik tani
+ try{if(S.tvproxy&&Date.now()-TVDIAG.at>60000&&!(TVL.ok&&Date.now()-TVL.last<15000))tvDiagRun()}catch(e){} // otomatik tani
  const lagMin=SRCINFO.lagMs/60000;
  // 1) BIRINCI CANLI KAYNAK: MIDAS (~8 sn'de tum BIST)
  const mid=S.midas||{};
@@ -1484,7 +1499,9 @@ function renderSrcStatus(){
   ?'<span class="up">⚡ GERÇEK ANLIK'+(S.tvSession?' (oturum ✓)':'')+'</span> · '+Object.keys(TVL.syms).length+' sembol · ~1 sn'
   :(TVL.state==='acik'
    ?'<span style="color:var(--acc)">◌ TV açık, veri bekleniyor</span> · '+Object.keys(TVL.syms).length+' sembol'
-   :'<span class="dn">○ TV bağlı değil</span> ['+(TVL.state||'-')+(TVL.err?(' · '+TVL.err):'')+' · deneme '+TVL.tries+(TVL.gerr?(' · ⚠'+TVL.gerr):'')+']'+(S.tvproxy?'':'<br><span style="color:var(--acc)">→ Çözüm: Ayarlar bolumundeki "TV WebSocket proxy URL" alanina wss:// adresi gir</span>'));
+   :'<span class="dn">○ TV bağlı değil</span> ['+(TVL.state||'-')+(TVL.err?(' · '+TVL.err):'')+' · deneme '+TVL.tries+(TVL.gerr?(' · ⚠'+TVL.gerr):'')+']'
+    +(TVDIAG.at?('<br><span style="color:var(--txt2)">tani: echo '+TVDIAG.echo+' · TV '+TVDIAG.tv+'</span>'):'')
+    +(S.tvproxy?'':'<br><span style="color:var(--acc)">→ Çözüm: Ayarlar bolumundeki "TV WebSocket proxy URL" alanina wss:// adresi gir</span>'));
  // 2) MUM VERISI: Yahoo -> Twelve Data (birincil basarisizsa yedek)
  const mumLine='Mum verisi: <b>'+SRCINFO.src+'</b> · son mum ~'+nf(lagMin,0)+' dk önce · sıralama: '+(S.src==='td'?'Twelve Data → Yahoo':'Yahoo → Twelve Data')+(S.key?'':' · <span class="dn">tdkey boş — Twelve Data yedeği atlanıyor</span>');
  m.innerHTML='<b style="letter-spacing:.5px">VERİ KAYNAĞI SIRASI</b><br>0) '+tvLine+'<br>1) '+midLine+'<br>2) '+mumLine+
@@ -2160,6 +2177,24 @@ function tvLiveStart(){
   ws.onclose=ev=>{TVL.state='kapali';if(!TVL.err)TVL.err='kod '+(ev.code||'?');TVL.ok=false;setTimeout(tvLiveStart,Math.min(15000,2000*Math.max(1,TVL.tries)))};
   ws.onerror=()=>{TVL.err='baglanti hatasi';try{ws.close()}catch(e){}};
  }catch(e){TVL.err=e.message||'hata';setTimeout(tvLiveStart,5000)}
+}
+async function proxyTest(){
+ if(!S.tvproxy){alert('Önce proxy URL gir');return}
+ const base=S.tvproxy.replace(/^wss:/,'https:').replace(/\/$/,'');
+ let out='1) HTTP: ';
+ try{const r=await fetch(base);out+=(r.status===200?'OK ✓':'HTTP '+r.status)}catch(e){out+='HATA: '+e.message}
+ out+='\n2) Echo (sen->worker): ';
+ try{
+  const ws=new WebSocket(base.replace(/^https:/,'wss:')+'/ws-echo');
+  const m=await new Promise((res,rej)=>{const t=setTimeout(()=>{try{ws.close()}catch(_){};rej(new Error('zaman asimi'))},5000);ws.onopen=()=>ws.send('ping');ws.onmessage=ev=>{clearTimeout(t);try{ws.close()}catch(_){};res(ev.data)};ws.onerror=()=>{clearTimeout(t);rej(new Error('ws hatasi'))}});
+  out+=m==='echo:ping'?'OK ✓':'yanlis: '+m
+ }catch(e){out+='HATA: '+e.message}
+ out+='\n3) TV-test (worker->TradingView): ';
+ try{
+  const r=await fetch(base+'/tv-test');const d=await r.json();
+  out+=d.opened?'TV ACILDI ✓':('ACILMADI: '+(d.error||d.status||'?'))
+ }catch(e){out+='HATA: '+e.message}
+ alert(out)
 }
 async function tvAuth(){
  if(!S.tvproxy)throw new Error('proxy yok');
