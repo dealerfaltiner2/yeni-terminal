@@ -2473,7 +2473,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadUnive
  if(S.mode==='bist'&&S.sym&&!W().includes(S.sym)){W().push(S.sym);saveWL();renderWatch()} // aktif sembol takipte yoksa ekle
  [...$('#viewseg2').children].forEach(x=>x.classList.toggle('on',x.dataset.v===S.view));
  [...$('#autoseg').children].forEach(x=>x.classList.toggle('on',+x.dataset.a===S.autoOn));
- await loadUniverse();
+ try{await loadUniverse()}catch(e){TVL.gerr='universe: '+(e.message||e)} // KRITIK: bu satir reddederse tum init oluyordu
  const q=S.umap[S.sym];$('#symbtn').innerHTML=S.sym+'<small>'+((q&&q.description)||'BIST').slice(0,20)+'</small>';
  renderPx();renderOps();
  try{refreshTick()}catch(e){}try{loadCrypto()}catch(e){}try{loadDom()}catch(e){}try{watchLoop()}catch(e){}try{loadCandles()}catch(e){}try{algolabPollLoop()}catch(e){}try{alBadge()}catch(e){}
@@ -2486,7 +2486,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadUnive
  backfillBreadthFromIndex();
  setInterval(refreshFast,4000);
  setInterval(refreshTick,12000);
- setInterval(loadUniverse,30000);
+ setInterval(function(){loadUniverse().catch(e=>{TVL.gerr='uni30: '+(e.message||e)})},30000);
  setInterval(algolabRefreshSession,9*60000);
  setInterval(pollMidas,5000);
  setInterval(loadCrypto,25000);
