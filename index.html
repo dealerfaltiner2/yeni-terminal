@@ -407,7 +407,7 @@ body{font-size:12.5px}
     <b>MUM VERİSİ</b>
     <select id="srcsel" onchange="setSrc()"><option value="yahoo">Yahoo (kendi proxy'n)</option><option value="td">Twelve Data</option></select>
     <select id="barlim" onchange="setBarLim()"><option value="short">Grafik geçmişi: kısa (hızlı)</option><option value="long">Grafik geçmişi: uzun</option></select>
-    <input id="tdkey" placeholder="Twelve Data apikey"><button class="g" onclick="saveKey()">Anahtarı kaydet</button>
+    <input id="tdkey" placeholder="Twelve Data apikey"><input id="tvproxy" placeholder="TV WebSocket proxy URL (opsiyonel — kesin canlı için)"><button class="g" onclick="saveKey()">Anahtarı kaydet</button>
     <button class="g" onclick="testSrc()">Veri kaynağını test et</button><div id="srcmsg" class="note"></div>
     <b>MİDAS CANLI VERİ</b>
     <div id="midasmsg" class="note">Yükleniyor...</div>
@@ -488,7 +488,7 @@ const saveWL=()=>LS.set('wl',WL);
 
 const S={sym:LS.get('sym','THYAO'),mode:LS.get('mode','bist'),tf:LS.get('tf','15min'),ct:'candle',
  ind:LS.get('ind',{ema20:1,ema50:1,ema200:0,vwap:0,bb:0,poc:1}),lower:'rsi',
- tx:LS.get('tx',[]),jr:LS.get('jr',[]),key:LS.get('tdkey',''),src:LS.get('src','yahoo'),blim:LS.get('blim','short'),
+ tx:LS.get('tx',[]),jr:LS.get('jr',[]),key:LS.get('tdkey',''),src:LS.get('src','yahoo'),tvproxy:LS.get('tvproxy',''),blim:LS.get('blim','short'),
  cap:LS.get('cap',100000),rskp:LS.get('rskp',1),alarms:LS.get('alarms',[]),
  uni:[],umap:{},sectors:new Set(),quotes:{},crypto:[],cmap:{},candles:[],ccache:{},wsig:{},vp:null,deep:{},
  sort:{k:'market_cap_basic',d:-1},mov:'gain',box:null,plines:[],tab:'op',limit:100,dirty:{},
@@ -496,9 +496,9 @@ const S={sym:LS.get('sym','THYAO'),mode:LS.get('mode','bist'),tf:LS.get('tf','15
 /* kisa vadeli giris filtreleri her zaman acik: EMA20/50 momentum, EMA200 ana trend, VWAP S/D */
 (function(){const d={ema20:1,ema50:1,ema200:1,vwap:1,bb:0,poc:0};for(const k in d){if(typeof S.ind[k]!=='number')S.ind[k]=d[k]}
  S.ind.ema20=1;S.ind.ema50=1;S.ind.ema200=1;S.ind.vwap=1;LS.set('ind',S.ind)})();
-$('#tdkey').value=S.key;$('#srcsel').value=S.src;$('#barlim').value=S.blim;$('#cap').value=S.cap;$('#rsk').value=S.rskp;
+$('#tdkey').value=S.key;$('#tvproxy').value=S.tvproxy;$('#srcsel').value=S.src;$('#barlim').value=S.blim;$('#cap').value=S.cap;$('#rsk').value=S.rskp;
 $('#tgtok').value=S.tgTok;$('#tgchat').value=S.tgChat;$('#tgmin').value=S.tgMin;
-function saveKey(){S.key=$('#tdkey').value.trim();LS.set('tdkey',S.key);S.ccache={};loadCandles();alert('Kaydedildi')}
+function saveKey(){S.key=$('#tdkey').value.trim();LS.set('tdkey',S.key);S.tvproxy=$('#tvproxy').value.trim();LS.set('tvproxy',S.tvproxy);S.ccache={};try{TVL.syms={};if(TVL.ws)TVL.ws.close()}catch(e){}setTimeout(tvLiveStart,500);loadCandles();alert('Kaydedildi')}
 function setSrc(){S.src=$('#srcsel').value;LS.set('src',S.src);S.ccache={};loadCandles()}
 function setBarLim(){S.blim=$('#barlim').value;LS.set('blim',S.blim);S.ccache={};loadCandles()}
 function saveTg(silent){
@@ -601,7 +601,7 @@ function draw(t){S.dirty[t]=0;const f={op:function(){try{renderOps()}catch(e){$(
 const BACKUP_VER=12;
 function backupObj(){
  return {wl:WL,alarms:S.alarms,tx:S.tx,jr:S.jr,tdkey:S.key,src:S.src,cap:S.cap,rskp:S.rskp,
-  sym:S.sym,mode:S.mode,tf:S.tf,ind:S.ind,ext:S.ext,sigHist:S.sigHist,
+  sym:S.sym,mode:S.mode,tf:S.tf,ind:S.ind,ext:S.ext,sigHist:S.sigHist,tvproxy:S.tvproxy,
   tgTok:S.tgTok,tgChat:S.tgChat,tgMin:S.tgMin,
   breadthLog:S.breadthLog,sentSig:S.sentSig,stf:S.stf,view:S.view,blim:S.blim,seenA:S.seenA,
   savedAt:new Date().toISOString(),v:BACKUP_VER};
@@ -636,7 +636,7 @@ function restore(){
  try{b=JSON.parse(decodeURIComponent(escape(atob(t.slice(6)))))}
  catch(e){alert('Yedek metni bozuk — çözülemedi ('+e.message+').');return}
  if(typeof b!=='object'||b===null){alert('Yedek içeriği geçersiz (nesne değil).');return}
- const ALL_KEYS=['wl','alarms','tx','jr','tdkey','src','cap','rskp','sym','mode','tf','ind','ext','sigHist','tgTok','tgChat','tgMin','breadthLog','sentSig','stf','view','blim','seenA'];
+ const ALL_KEYS=['wl','alarms','tx','jr','tdkey','src','cap','rskp','sym','mode','tf','ind','ext','sigHist','tgTok','tgChat','tgMin','breadthLog','sentSig','stf','view','blim','seenA','tvproxy'];
  ALL_KEYS.forEach(k=>{
   if(k==='tdkey'){LS.set('tdkey',b.tdkey||'');return}
   if(b[k]!==undefined)LS.set(k,b[k]);
@@ -1472,14 +1472,16 @@ function renderSrcStatus(){
  const lagMin=SRCINFO.lagMs/60000;
  // 1) BIRINCI CANLI KAYNAK: MIDAS (~8 sn'de tum BIST)
  const mid=S.midas||{};
- const midOk=mid.ok&&Date.now()-mid.at<60000;
+ const midOk=mid.at&&Date.now()-mid.at<90000;
  const midLine=midOk
   ?'<span class="up">● Midas</span> · '+mid.n+' hisse · '+new Date(mid.at).toLocaleTimeString('tr-TR')
   :'<span class="dn">○ Midas yok'+(mid.err?(' ('+mid.err+')'):'')+'</span>';
  const tvOk=TVL.ok&&Date.now()-TVL.last<15000;
  const tvLine=tvOk
   ?'<span class="up">⚡ GERÇEK ANLIK</span> · '+Object.keys(TVL.syms).length+' sembol · ~1 sn'
-  :'<span class="dn">○ TV WebSocket bağlı değil</span> — fiyatlar Midas (15dk gecikmeli)';
+  :(TVL.state==='acik'
+   ?'<span style="color:var(--acc)">◌ TV açık, veri bekleniyor</span> · '+Object.keys(TVL.syms).length+' sembol'
+   :'<span class="dn">○ TV bağlı değil</span> ['+(TVL.state||'-')+(TVL.err?(' · '+TVL.err):'')+' · deneme '+TVL.tries+'] — Midas (15dk gecikmeli)');
  // 2) MUM VERISI: Yahoo -> Twelve Data (birincil basarisizsa yedek)
  const mumLine='Mum verisi: <b>'+SRCINFO.src+'</b> · son mum ~'+nf(lagMin,0)+' dk önce · sıralama: '+(S.src==='td'?'Twelve Data → Yahoo':'Yahoo → Twelve Data')+(S.key?'':' · <span class="dn">tdkey boş — Twelve Data yedeği atlanıyor</span>');
  m.innerHTML='<b style="letter-spacing:.5px">VERİ KAYNAĞI SIRASI</b><br>0) '+tvLine+'<br>1) '+midLine+'<br>2) '+mumLine+
@@ -2135,19 +2137,21 @@ let TVL={ws:null,ses:'qs_'+Math.random().toString(36).slice(2),buf:'',syms:{},ok
 const TVFLD=['lp','ch','chp','volume','high','low','open','bid','ask'];
 function tvSend(m,p){try{const s=JSON.stringify(p);TVL.ws.send('~m~'+s.length+'~m~'+s)}catch(e){}}
 function tvLiveStart(){
+ TVL.tries++;
  try{
   if(TVL.ws&&(TVL.ws.readyState===0||TVL.ws.readyState===1))return;
-  const ws=new WebSocket('wss://data.tradingview.com/socket.io/websocket?from=symbols/BIST%2F&date='+Date.now());
-  TVL.ws=ws;
-  ws.onopen=()=>{TVL.tries=0;TVL.buf='';
+  const url=S.tvproxy?S.tvproxy:('wss://data.tradingview.com/socket.io/websocket?from=symbols/BIST%2F&date='+Date.now());
+  const ws=new WebSocket(url);
+  TVL.ws=ws;TVL.state='baglaniyor';TVL.err='';
+  ws.onopen=()=>{TVL.tries=0;TVL.buf='';TVL.state='acik';TVL.err='';
    tvSend('set_auth_token',['unauthorized_user_token']);
    tvSend('quote_create_session',[TVL.ses]);
    tvSend('quote_set_fields',[TVL.ses].concat(TVFLD));
    tvLiveSubs()};
   ws.onmessage=ev=>tvLiveOnMsg(ev.data);
-  ws.onclose=()=>{TVL.ok=false;setTimeout(tvLiveStart,Math.min(30000,4000*(++TVL.tries)))};
-  ws.onerror=()=>{try{ws.close()}catch(e){}};
- }catch(e){setTimeout(tvLiveStart,6000)}
+  ws.onclose=ev=>{TVL.state='kapali';if(!TVL.err)TVL.err='kod '+(ev.code||'?');TVL.ok=false;setTimeout(tvLiveStart,Math.min(15000,2000*Math.max(1,TVL.tries)))};
+  ws.onerror=()=>{TVL.err='baglanti hatasi';try{ws.close()}catch(e){}};
+ }catch(e){TVL.err=e.message||'hata';setTimeout(tvLiveStart,5000)}
 }
 function tvLiveSubs(){
  try{
@@ -2169,13 +2173,21 @@ function tvLiveOnMsg(data){
  while(guard++<200){
   const i=TVL.buf.indexOf('~m~');
   if(i<0){TVL.buf='';break}
-  const lenEnd=TVL.buf.indexOf('~m~',i+3);
+  const rest=TVL.buf.slice(i+3);
+  // kalp atisi: ~m~~h~<sayi>  (uzunluk alani bos) — asla JSON parse edilmez, aynen geri gonderilir
+  if(rest.slice(0,3)==='~h~'){
+   const end=rest.indexOf('~m~',3);
+   const beat=rest.slice(0,end<0?rest.length:end);
+   try{TVL.ws.send('~m~'+beat)}catch(e){}
+   TVL.buf=end<0?'':rest.slice(end);
+   continue;
+  }
+  const lenEnd=rest.indexOf('~m~');
   if(lenEnd<0){TVL.buf=TVL.buf.slice(i);break}
-  const len=+TVL.buf.slice(i+3,lenEnd);
-  if(TVL.buf.length<lenEnd+2+len){TVL.buf=TVL.buf.slice(i);break}
-  const payload=TVL.buf.slice(lenEnd+2,lenEnd+2+len);
-  TVL.buf=TVL.buf.slice(lenEnd+2+len);
-  if(payload.charAt(0)==='~'){try{TVL.ws.send('~m~'+payload)}catch(e){}continue} // kalp atisi
+  const len=+rest.slice(0,lenEnd);
+  if(!len||isNaN(len)||TVL.buf.length<i+3+lenEnd+2+len){TVL.buf=TVL.buf.slice(i);break}
+  const payload=rest.slice(lenEnd+2,lenEnd+2+len);
+  TVL.buf=TVL.buf.slice(i+3+lenEnd+2+len);
   let msg;try{msg=JSON.parse(payload)}catch(e){continue}
   if(msg.m!=='qsd'||!msg.p||!msg.p[1])continue;
   const v=msg.p[1].v||{};if(v.lp==null)continue;
@@ -2191,8 +2203,8 @@ function tvLiveOnMsg(data){
   o.update_mode='tv_live';
   S.umap[name]=o;
   if(S.quotes[name]){S.quotes[name].close=v.lp;if(v.chp!=null)S.quotes[name].change=v.chp;if(v.volume!=null)S.quotes[name].volume=v.volume}
-  TVL.ok=true;TVL.last=Date.now();
-  if(Date.now()-TVL.throttle>1500){TVL.throttle=Date.now();try{renderPx()}catch(e){}mark('watch');mark('alarm');mark('live');checkAlarms()}
+  TVL.ok=true;TVL.last=Date.now();TVL.err='';
+  if(Date.now()-TVL.throttle>1200){TVL.throttle=Date.now();try{renderPx()}catch(e){}mark('watch');mark('alarm');mark('live');checkAlarms()}
  }
 }
 
@@ -2465,6 +2477,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadUnive
  refreshTick();loadCrypto();loadDom();watchLoop();loadCandles();algolabPollLoop();alBadge();
  updateOpenSignals();setInterval(updateOpenSignals,60000);renderSrcStatus();setInterval(renderSrcStatus,30000);
  setTimeout(tvLiveStart,2500);setInterval(tvLiveSubs,30000);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden){tvLiveStart();pollMidas()}});
  if(S.al.connected)algolabRefreshSession();
  pollMidas();
  backfillBreadthFromIndex();
