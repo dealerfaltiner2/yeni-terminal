@@ -409,7 +409,8 @@ body{font-size:12.5px}
     <select id="barlim" onchange="setBarLim()"><option value="short">Grafik geçmişi: kısa (hızlı)</option><option value="long">Grafik geçmişi: uzun</option></select>
     <input id="tdkey" placeholder="Twelve Data apikey"><input id="tvproxy" placeholder="TV WebSocket proxy URL (wss://xxxx.workers.dev)">
   <input id="tvuser" placeholder="TradingView kullanıcı adı (canlı veri için)" autocomplete="off">
-  <input id="tvpass" type="password" placeholder="TradingView şifresi (sadece oturum açar, saklanmaz)"><button class="g" onclick="saveKey()">Anahtarı kaydet</button>
+  <input id="tvpass" type="password" placeholder="TradingView şifresi (CAPTCHA engeli — bos birak)">
+  <input id="tvman" placeholder="TV Session ID (manuel — bilgisayardan al, CAPTCHA by-pass)"><button class="g" onclick="saveKey()">Anahtarı kaydet</button>
     <button class="g" onclick="testSrc()">Veri kaynağını test et</button><button class="g" onclick="TVL.syms={};try{TVL.ws&&TVL.ws.close()}catch(e){}tvLiveStart();setTimeout(function(){alert('TV durumu: '+(TVL.state||'-')+' '+(TVL.err||'(bağlanıyor...)'))},1600)">⚡ TV'ye yeniden bağlan</button><button class="g" onclick="proxyTest()">🔍 Proxy testi</button><div id="srcmsg" class="note"></div>
     <b>MİDAS CANLI VERİ</b>
     <div id="midasmsg" class="note">Yükleniyor...</div>
@@ -490,7 +491,7 @@ const saveWL=()=>LS.set('wl',WL);
 
 const S={sym:LS.get('sym','THYAO'),mode:LS.get('mode','bist'),tf:LS.get('tf','15min'),ct:'candle',
  ind:LS.get('ind',{ema20:1,ema50:1,ema200:0,vwap:0,bb:0,poc:1}),lower:'rsi',
- tx:LS.get('tx',[]),jr:LS.get('jr',[]),key:LS.get('tdkey',''),src:LS.get('src','yahoo'),tvproxy:LS.get('tvproxy',''),tvUser:LS.get('tvUser',''),tvPass:LS.get('tvPass',''),tvSession:LS.get('tvsession',''),blim:LS.get('blim','short'),
+ tx:LS.get('tx',[]),jr:LS.get('jr',[]),key:LS.get('tdkey',''),src:LS.get('src','yahoo'),tvproxy:LS.get('tvproxy',''),tvUser:LS.get('tvUser',''),tvPass:LS.get('tvPass',''),tvSession:LS.get('tvsession',''),tvMan:LS.get('tvman',''),blim:LS.get('blim','short'),
  cap:LS.get('cap',100000),rskp:LS.get('rskp',1),alarms:LS.get('alarms',[]),
  uni:[],umap:{},sectors:new Set(),quotes:{},crypto:[],cmap:{},candles:[],ccache:{},wsig:{},vp:null,deep:{},
  sort:{k:'market_cap_basic',d:-1},mov:'gain',box:null,plines:[],tab:'op',limit:100,dirty:{},
@@ -498,9 +499,9 @@ const S={sym:LS.get('sym','THYAO'),mode:LS.get('mode','bist'),tf:LS.get('tf','15
 /* kisa vadeli giris filtreleri her zaman acik: EMA20/50 momentum, EMA200 ana trend, VWAP S/D */
 (function(){const d={ema20:1,ema50:1,ema200:1,vwap:1,bb:0,poc:0};for(const k in d){if(typeof S.ind[k]!=='number')S.ind[k]=d[k]}
  S.ind.ema20=1;S.ind.ema50=1;S.ind.ema200=1;S.ind.vwap=1;LS.set('ind',S.ind)})();
-$('#tdkey').value=S.key;$('#tvproxy').value=S.tvproxy;$('#tvuser').value=S.tvUser;$('#tvpass').value=S.tvPass;$('#srcsel').value=S.src;$('#barlim').value=S.blim;$('#cap').value=S.cap;$('#rsk').value=S.rskp;
+$('#tdkey').value=S.key;$('#tvproxy').value=S.tvproxy;$('#tvuser').value=S.tvUser;$('#tvpass').value=S.tvPass;$('#tvman').value=S.tvMan;$('#srcsel').value=S.src;$('#barlim').value=S.blim;$('#cap').value=S.cap;$('#rsk').value=S.rskp;
 $('#tgtok').value=S.tgTok;$('#tgchat').value=S.tgChat;$('#tgmin').value=S.tgMin;
-function saveKey(){S.key=$('#tdkey').value.trim();LS.set('tdkey',S.key);S.tvproxy=$('#tvproxy').value.trim();LS.set('tvproxy',S.tvproxy);var nu=$('#tvuser').value.trim(),np=$('#tvpass').value;if(nu!==S.tvUser||np!==S.tvPass){S.tvSession='';LS.set('tvsession','')}S.tvUser=nu;LS.set('tvUser',nu);if(np){S.tvPass=np;LS.set('tvPass',np)}S.ccache={};try{TVL.syms={};if(TVL.ws)TVL.ws.close()}catch(e){}setTimeout(tvLiveStart,500);loadCandles();alert('Kaydedildi')}
+function saveKey(){S.key=$('#tdkey').value.trim();LS.set('tdkey',S.key);S.tvproxy=$('#tvproxy').value.trim();LS.set('tvproxy',S.tvproxy);S.tvMan=$('#tvman').value.trim();LS.set('tvman',S.tvMan);var nu=$('#tvuser').value.trim(),np=$('#tvpass').value;if(nu!==S.tvUser||np!==S.tvPass){S.tvSession='';LS.set('tvsession','')}S.tvUser=nu;LS.set('tvUser',nu);if(np){S.tvPass=np;LS.set('tvPass',np)}S.ccache={};try{TVL.syms={};if(TVL.ws)TVL.ws.close()}catch(e){}setTimeout(tvLiveStart,500);loadCandles();alert('Kaydedildi')}
 function setSrc(){S.src=$('#srcsel').value;LS.set('src',S.src);S.ccache={};loadCandles()}
 function setBarLim(){S.blim=$('#barlim').value;LS.set('blim',S.blim);S.ccache={};loadCandles()}
 function saveTg(silent){
@@ -2266,14 +2267,16 @@ async function tvScanOnce(){
  if(!S.tvproxy||S.mode!=='bist')return;
  if(document.hidden)return;
  const base=S.tvproxy.replace(/^wss:/,'https:').replace(/\/$/,'');
- if(S.tvUser&&S.tvPass&&!S.tvSession){try{await tvAuth()}catch(e){}}
+ const SESS=S.tvMan||S.tvSession||'';
+ if(!SESS&&S.tvUser&&S.tvPass){/* sunucu girisi CAPTCHA yuzunden kapali */}
  const uniq=[];const seen={};
  const add=s=>{if(s&&!seen[s]){seen[s]=1;uniq.push(s)}};
  if(S.sym)add('BIST:'+S.sym);
  try{if(typeof W==='function')(W()||[]).slice(0,30).forEach(s=>add('BIST:'+s))}catch(e){}
  add('BIST:XU100');
+ try{fetch(base+'/set-syms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbols:uniq})}).catch(()=>{})}catch(e){}
  try{
-  const r=await fetch(base+'/tv-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbols:uniq.slice(0,40),session:S.tvSession||''})});
+  const r=await fetch(base+'/tv-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbols:uniq.slice(0,40),session:SESS})});
   const d=await r.json();
   if(d&&d.ok===false){TVS.ok=false;TVS.err='scan http'+d.http+': '+(d.body||d.error||'?').slice(0,80);return}
   if(d&&Array.isArray(d.data)){
@@ -2295,6 +2298,21 @@ async function tvScanOnce(){
    try{renderPx()}catch(e){}mark('watch');mark('alarm');checkAlarms();updateOpenSignals();
   }else{TVS.ok=false;TVS.err='bos yanit'}
  }catch(e){TVS.ok=false;TVS.err=e.message||'hata'}
+ // Kopru: Safari'deki TV sekmesinden gelen taze veri varsa onu kullan
+ try{
+  const rp=await fetch(base+'/pull');
+  const dp=await rp.json();
+  if(dp&&dp.data&&Date.now()-dp.at<150000){
+   const dd=JSON.parse(dp.data);
+   if(dd&&Array.isArray(dd.data)){dd.data.forEach(row=>{
+    const sym=(row.s||'').split(':')[1];if(!sym)return;const v=row.d||[];const o=S.umap[sym]||{};
+    if(v[1]!=null)o.close=v[1];if(v[2]!=null)o.change=v[2];if(v[3]!=null)o.change_abs=v[3];
+    if(v[4]!=null)o.volume=v[4];if(v[5]!=null)o.high=v[5];if(v[6]!=null)o.low=v[6];if(v[7]!=null)o.open=v[7];
+    o.update_mode='tv_bridge';S.umap[sym]=o;
+    if(S.quotes[sym]){S.quotes[sym].close=v[1];if(v[2]!=null)S.quotes[sym].change=v[2]}
+   });TVS.ok=true;TVS.at=Date.now();TVS.err='';TVS.n=dd.data.length;try{renderPx()}catch(e){}mark('watch');mark('alarm');checkAlarms();updateOpenSignals()}
+  }
+ }catch(e){}
 }
 
 /* ================= PERFORMANS PANELI ================= */
