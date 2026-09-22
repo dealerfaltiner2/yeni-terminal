@@ -1494,13 +1494,13 @@ function renderSrcStatus(){
  const midLine=midOk
   ?'<span class="up">● Midas</span> · '+mid.n+' hisse · '+new Date(mid.at).toLocaleTimeString('tr-TR')
   :'<span class="dn">○ Midas yok'+(mid.err?(' ('+mid.err+')'):'')+'</span>';
- const tvOk=TVL.ok&&Date.now()-TVL.last<15000;
+ const tvOk=(TVL.ok&&Date.now()-TVL.last<15000)||(TVS.ok&&Date.now()-TVS.at<20000);
  const tvLine=tvOk
-  ?'<span class="up">⚡ GERÇEK ANLIK'+(S.tvSession?' (oturum ✓)':'')+'</span> · '+Object.keys(TVL.syms).length+' sembol · ~1 sn'
+  ?(TVS.ok&&Date.now()-TVS.at<20000?'⚡ GERÇEK ANLIK (scanner · '+(S.tvSession?'oturum ✓':'15dk')+') · '+TVS.n+' hisse ~4 sn':'⚡ GERÇEK ANLIK'+(S.tvSession?' (oturum ✓)':'')+' · '+Object.keys(TVL.syms).length+' sembol · ~1 sn')
   :(TVL.state==='acik'
    ?'<span style="color:var(--acc)">◌ TV açık, veri bekleniyor</span> · '+Object.keys(TVL.syms).length+' sembol'
    :'<span class="dn">○ TV bağlı değil</span> ['+(TVL.state||'-')+(TVL.err?(' · '+TVL.err):'')+' · deneme '+TVL.tries+(TVL.gerr?(' · ⚠'+TVL.gerr):'')+']'
-    +(TVDIAG.at?('<br><span style="color:var(--txt2)">tani: echo '+TVDIAG.echo+' · TV '+TVDIAG.tv+'</span>'):'')
+    +(TVDIAG.at?('<br><span style="color:var(--txt2)">tani: echo '+TVDIAG.echo+' · TV '+TVDIAG.tv+(TVS.err?(' · scan:'+TVS.err):'')+'</span>'):'')
     +(S.tvproxy?'':'<br><span style="color:var(--acc)">→ Çözüm: Ayarlar bolumundeki "TV WebSocket proxy URL" alanina wss:// adresi gir</span>'));
  // 2) MUM VERISI: Yahoo -> Twelve Data (birincil basarisizsa yedek)
  const mumLine='Mum verisi: <b>'+SRCINFO.src+'</b> · son mum ~'+nf(lagMin,0)+' dk önce · sıralama: '+(S.src==='td'?'Twelve Data → Yahoo':'Yahoo → Twelve Data')+(S.key?'':' · <span class="dn">tdkey boş — Twelve Data yedeği atlanıyor</span>');
@@ -2260,6 +2260,42 @@ function tvLiveOnMsg(data){
  }
 }
 
+/* ============ TV SCANNER CANLI (HTTP — Cloudflare engelini asar) ============ */
+let TVS={at:0,ok:false,err:'',n:0};
+async function tvScanOnce(){
+ if(!S.tvproxy||S.mode!=='bist')return;
+ if(document.hidden)return;
+ const base=S.tvproxy.replace(/^wss:/,'https:').replace(/\/$/,'');
+ if(S.tvUser&&S.tvPass&&!S.tvSession){try{await tvAuth()}catch(e){}}
+ const uniq=[];const seen={};
+ const add=s=>{if(s&&!seen[s]){seen[s]=1;uniq.push(s)}};
+ if(S.sym)add('BIST:'+S.sym);
+ try{if(typeof W==='function')(W()||[]).slice(0,30).forEach(s=>add('BIST:'+s))}catch(e){}
+ add('BIST:XU100');
+ try{
+  const r=await fetch(base+'/tv-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbols:uniq.slice(0,40),session:S.tvSession||''})});
+  const d=await r.json();
+  if(d&&Array.isArray(d.data)){
+   d.data.forEach(row=>{
+    const sym=(row.s||'').split(':')[1];if(!sym)return;
+    const v=row.d||[];const o=S.umap[sym]||{};
+    if(v[1]!=null)o.close=v[1];
+    if(v[2]!=null)o.change=v[2];
+    if(v[3]!=null)o.change_abs=v[3];
+    if(v[4]!=null)o.volume=v[4];
+    if(v[5]!=null)o.high=v[5];
+    if(v[6]!=null)o.low=v[6];
+    if(v[7]!=null)o.open=v[7];
+    o.update_mode='tv_scan';
+    S.umap[sym]=o;
+    if(S.quotes[sym]){S.quotes[sym].close=v[1];if(v[2]!=null)S.quotes[sym].change=v[2]}
+   });
+   TVS.ok=true;TVS.at=Date.now();TVS.err='';TVS.n=d.data.length;
+   try{renderPx()}catch(e){}mark('watch');mark('alarm');checkAlarms();updateOpenSignals();
+  }else{TVS.ok=false;TVS.err='bos yanit'}
+ }catch(e){TVS.ok=false;TVS.err=e.message||'hata'}
+}
+
 /* ================= PERFORMANS PANELI ================= */
 function renderPerf(){
  const el=$('#perfbody');if(!el)return;
@@ -2530,6 +2566,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadUnive
  try{updateOpenSignals()}catch(e){}setInterval(function(){try{updateOpenSignals()}catch(e){}},60000);
  try{renderSrcStatus()}catch(e){}setInterval(function(){try{renderSrcStatus()}catch(e){}},15000);
  try{setTimeout(tvLiveStart,1500)}catch(e){TVL.gerr='start:'+e.message}setInterval(function(){try{tvLiveSubs()}catch(e){}},30000);
+ try{setInterval(function(){try{tvScanOnce()}catch(e){}},4000)}catch(e){}
  document.addEventListener('visibilitychange',()=>{if(!document.hidden){tvLiveStart();pollMidas()}});
  if(S.al.connected)algolabRefreshSession();
  pollMidas();
