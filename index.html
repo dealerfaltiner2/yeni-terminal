@@ -408,7 +408,7 @@ body{font-size:12.5px}
     <select id="srcsel" onchange="setSrc()"><option value="yahoo">Yahoo (kendi proxy'n)</option><option value="td">Twelve Data</option></select>
     <select id="barlim" onchange="setBarLim()"><option value="short">Grafik geçmişi: kısa (hızlı)</option><option value="long">Grafik geçmişi: uzun</option></select>
     <input id="tdkey" placeholder="Twelve Data apikey"><input id="tvproxy" placeholder="TV WebSocket proxy URL (opsiyonel — kesin canlı için)"><button class="g" onclick="saveKey()">Anahtarı kaydet</button>
-    <button class="g" onclick="testSrc()">Veri kaynağını test et</button><div id="srcmsg" class="note"></div>
+    <button class="g" onclick="testSrc()">Veri kaynağını test et</button><button class="g" onclick="TVL.syms={};try{TVL.ws&&TVL.ws.close()}catch(e){}tvLiveStart()">⚡ TV'ye yeniden bağlan</button><div id="srcmsg" class="note"></div>
     <b>MİDAS CANLI VERİ</b>
     <div id="midasmsg" class="note">Yükleniyor...</div>
     <div class="note">Terminal, Midas'ın herkese açık genel veri ucundan tüm BIST hisselerinin fiyatını ~8 saniyede bir tazeler (fiyat, hacim, tavan/taban). Bu resmi/garantili bir API değil — Midas'ın kendi sitesini besleyen genel bir uç. Durursa terminal otomatik olarak TradingView'ın 15dk gecikmeli verisine döner, hiçbir şey bozulmaz.</div>
@@ -1469,6 +1469,7 @@ async function getBarsTracked(s,tf,sh){
 const getBars=(s,tf,sh)=>getBarsTracked(s,tf,sh);
 function renderSrcStatus(){
  const m=$('#srcmsg');if(!m)return;
+ try{if(TVL&&TVL.state==='-'&&TVL.tries===0)tvLiveStart()}catch(e){} // guvenlik: hic baslatilmadiysa panel baslatir
  const lagMin=SRCINFO.lagMs/60000;
  // 1) BIRINCI CANLI KAYNAK: MIDAS (~8 sn'de tum BIST)
  const mid=S.midas||{};
@@ -1481,7 +1482,7 @@ function renderSrcStatus(){
   ?'<span class="up">⚡ GERÇEK ANLIK</span> · '+Object.keys(TVL.syms).length+' sembol · ~1 sn'
   :(TVL.state==='acik'
    ?'<span style="color:var(--acc)">◌ TV açık, veri bekleniyor</span> · '+Object.keys(TVL.syms).length+' sembol'
-   :'<span class="dn">○ TV bağlı değil</span> ['+(TVL.state||'-')+(TVL.err?(' · '+TVL.err):'')+' · deneme '+TVL.tries+'] — Midas (15dk gecikmeli)');
+   :'<span class="dn">○ TV bağlı değil</span> ['+(TVL.state||'-')+(TVL.err?(' · '+TVL.err):'')+' · deneme '+TVL.tries+(TVL.gerr?(' · ⚠'+TVL.gerr):'')+'] — Midas (15dk gecikmeli)');
  // 2) MUM VERISI: Yahoo -> Twelve Data (birincil basarisizsa yedek)
  const mumLine='Mum verisi: <b>'+SRCINFO.src+'</b> · son mum ~'+nf(lagMin,0)+' dk önce · sıralama: '+(S.src==='td'?'Twelve Data → Yahoo':'Yahoo → Twelve Data')+(S.key?'':' · <span class="dn">tdkey boş — Twelve Data yedeği atlanıyor</span>');
  m.innerHTML='<b style="letter-spacing:.5px">VERİ KAYNAĞI SIRASI</b><br>0) '+tvLine+'<br>1) '+midLine+'<br>2) '+mumLine+
@@ -2135,6 +2136,7 @@ function journalFromBox(){const b=S.box;if(!b){alert('Önce AL/SAT kutusu kur');
 /* ============ TRADINGVIEW WEBSOCKET — GERCEK ZAMANLI (~1 sn) ============ */
 let TVL={ws:null,ses:'qs_'+Math.random().toString(36).slice(2),buf:'',syms:{},ok:false,last:0,tries:0,throttle:0};
 const TVFLD=['lp','ch','chp','volume','high','low','open','bid','ask'];
+window.addEventListener('error',e=>{try{TVL.gerr=(e.message||'hata')+' @'+(e.lineno||'?')}catch(_){}});
 function tvSend(m,p){try{const s=JSON.stringify(p);TVL.ws.send('~m~'+s.length+'~m~'+s)}catch(e){}}
 function tvLiveStart(){
  TVL.tries++;
@@ -2474,9 +2476,10 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadUnive
  await loadUniverse();
  const q=S.umap[S.sym];$('#symbtn').innerHTML=S.sym+'<small>'+((q&&q.description)||'BIST').slice(0,20)+'</small>';
  renderPx();renderOps();
- refreshTick();loadCrypto();loadDom();watchLoop();loadCandles();algolabPollLoop();alBadge();
- updateOpenSignals();setInterval(updateOpenSignals,60000);renderSrcStatus();setInterval(renderSrcStatus,30000);
- setTimeout(tvLiveStart,2500);setInterval(tvLiveSubs,30000);
+ try{refreshTick()}catch(e){}try{loadCrypto()}catch(e){}try{loadDom()}catch(e){}try{watchLoop()}catch(e){}try{loadCandles()}catch(e){}try{algolabPollLoop()}catch(e){}try{alBadge()}catch(e){}
+ try{updateOpenSignals()}catch(e){}setInterval(function(){try{updateOpenSignals()}catch(e){}},60000);
+ try{renderSrcStatus()}catch(e){}setInterval(function(){try{renderSrcStatus()}catch(e){}},15000);
+ try{setTimeout(tvLiveStart,1500)}catch(e){TVL.gerr='start:'+e.message}setInterval(function(){try{tvLiveSubs()}catch(e){}},30000);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden){tvLiveStart();pollMidas()}});
  if(S.al.connected)algolabRefreshSession();
  pollMidas();
