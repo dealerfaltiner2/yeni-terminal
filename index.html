@@ -384,6 +384,13 @@ td.fl-up,td.fl-dn{border-radius:4px}
 #more .mgrid button svg{width:27px;height:27px;color:var(--tc)}
 #more .mgrid button.on{border-color:var(--tc);background:rgba(255,255,255,.08)}
 .tab>.btn,#labbody>.btn,#labbody .btn{margin-left:12px;margin-right:12px}
+
+/* ---- v4 surum seridi ---- */
+#updbar{display:none;align-items:center;justify-content:center;gap:8px;padding:10px 12px;font-size:13px;font-weight:700;cursor:pointer;
+ background:linear-gradient(90deg,#2563eb,#7c3aed);color:#fff;border-bottom:1px solid rgba(255,255,255,.12);flex:0 0 auto}
+#updbar.on{display:flex}
+#updbar.ok{background:linear-gradient(90deg,#059669,#10b981)}
+#updbar:active{filter:brightness(1.15)}
 @media (prefers-reduced-motion:reduce){.fl-up,.fl-dn,.livebadge i{animation:none}#more .sh,#more .bd{transition:none}}
 </style>
 </head>
@@ -394,6 +401,7 @@ td.fl-up,td.fl-dn{border-radius:4px}
   <div id="px">-<small>-</small></div>
   <span id="regbadge">--</span>
  </div>
+ <div id="updbar" onclick="appReload()"></div>
  <div id="tick"><div id="tickrun"></div></div>
  <div id="alertbox"><span id="alerttxt"></span><button onclick="closeAlert()">Tamam</button></div>
 
@@ -528,6 +536,9 @@ td.fl-up,td.fl-dn{border-radius:4px}
     <div class="note">Bağlandığında üstteki fiyat, İzleme listesi ve Alarm kontrolleri seçili semboller için <b>gerçek zamanlı</b> olur (Fırsat taraması TradingView Worker bağlantından gelir — AlgoLab'ın hız sınırı toplu taramaya uygun değil, sadece tek tek fiyat sorgusuna uygun).<br><br>Şifren ve TC kimlik no hiçbir yerde saklanmaz, sadece oturum açarken kullanılır. Oturum anahtarı (hash) telefonunda kalır. AlgoLab bazı hesaplarda her oturumda yeniden SMS isteyebilir — bağlantı koparsa buradan tekrar giriş yap.<br><br><b>Not:</b> Bu, henüz gerçek bir hesapla test edilmedi. İlk bağlantıda veri alanları uyuşmazsa (fiyat görünmezse) ham yanıtı konsoldan kontrol edip birlikte düzeltiriz.</div>
     <b>SERMAYE</b>
     <input id="cap" type="number" placeholder="Sermaye ₺"><input id="rsk" type="number" step="any" placeholder="İşlem riski %"><button class="g pri" onclick="saveCap()">Kaydet</button>
+    <b>SÜRÜM</b>
+    <div id="vermsg" class="note" style="padding-top:0">Kontrol ediliyor…</div>
+    <button class="g" onclick="appUpdate()">🔄 Şimdi güncelle</button>
     <b>YEDEK</b>
     <button class="g" onclick="backup()">Yedeği kopyala</button>
     <button class="g" onclick="backupToFile()">Yedeği dosyaya indir</button>
@@ -2770,6 +2781,40 @@ function tvReconnectReport(){
    mb.querySelector('.lbl').textContent=sec&&tile?tile.textContent:'Menü';
    more.querySelectorAll('.mgrid [data-t]').forEach(x=>x.classList.toggle('on',x.dataset.t===t));
   }catch(e){}};
+ }catch(e){}
+ // ---- surum kontrolu ----
+ try{
+  const APP_VER="4.2";
+  const UPD={last:0,remote:'',err:''};
+  const base=()=>location.href.split('#')[0].split('?')[0];
+  const bar=document.getElementById('updbar');
+  window.appReload=function(){try{sessionStorage.setItem('updFrom',APP_VER)}catch(e){}location.replace(base()+'?v='+Date.now())};
+  function renderVer(){const el=document.getElementById('vermsg');if(!el)return;
+   const nw=UPD.remote&&UPD.remote!==APP_VER;
+   el.innerHTML='Açık sürüm: <b>v'+APP_VER+'</b>'+(UPD.last?' · son kontrol '+new Date(UPD.last).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}):'')+
+    ' · '+(UPD.err?'<span class="wrn">kontrol edilemedi</span>':nw?'<span class="wrn">yeni sürüm hazır: v'+UPD.remote+'</span>':(UPD.last?'<span class="up">güncel ✓</span>':'kontrol ediliyor…'))}
+  async function checkUpd(){
+   try{const r=await fetch(base()+'?chk='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);
+    const m=(await r.text()).match(/APP_VER="(\d[\d.]*)"/);UPD.remote=m?m[1]:'';UPD.err='';
+   }catch(e){UPD.err=String(e.message||e)}
+   UPD.last=Date.now();
+   if(UPD.remote&&UPD.remote!==APP_VER){bar.classList.remove('ok');bar.textContent='🔄 Yeni sürüm hazır (v'+UPD.remote+') — güncellemek için dokun';bar.onclick=window.appReload;bar.classList.add('on')}
+   renderVer();return UPD;
+  }
+  window.appUpdate=async function(){
+   const el=document.getElementById('vermsg');if(el)el.textContent='Kontrol ediliyor…';
+   await checkUpd();
+   if(UPD.remote&&UPD.remote!==APP_VER){window.appReload();return}
+   if(confirm((UPD.err?'Sürüm kontrol edilemedi ('+UPD.err+').':'Zaten en güncel sürümdesin (v'+APP_VER+').')+'\n\nYine de önbelleği atlayıp yeniden yüklensin mi?'))window.appReload();
+  };
+  // guncellemeden sonra kisa onay seridi
+  try{const f=sessionStorage.getItem('updFrom');if(f!==null){sessionStorage.removeItem('updFrom');
+   bar.classList.add('on','ok');bar.onclick=null;bar.textContent=(f!==APP_VER?'✅ Güncellendi: v'+f+' → v'+APP_VER:'✅ Yeniden yüklendi · v'+APP_VER);
+   setTimeout(()=>bar.classList.remove('on','ok'),4000)}}catch(e){}
+  setTimeout(checkUpd,4000);
+  setInterval(()=>{if(!document.hidden)checkUpd()},5*60000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now()-UPD.last>60000)checkUpd()});
+  renderVer();
  }catch(e){}
  // Ayarlar acikken kaynak durumu sik tazelensin
  setInterval(function(){try{if(S.tab==='set'&&!document.hidden)renderSrcStatus()}catch(e){}},3000);
