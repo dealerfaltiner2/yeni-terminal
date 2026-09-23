@@ -297,6 +297,59 @@ body{font-size:12.5px}
 .card{max-width:860px}
 .grid{grid-template-columns:repeat(4,1fr)}
 }
+
+/* ============ v4 · MODERN KATMAN (okunabilirlik + canli hareket) ============ */
+:root{
+--sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Inter","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+--mono:var(--sans);
+--txt2:#bfc9d6;--dim:#8794a6;--line:#1a2636;--line2:#2b3b51;--wrn:#f5a524}
+body{font-size:13px;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+button,input,select,textarea{font-variant-numeric:tabular-nums}
+.wrn{color:var(--wrn)}
+#px{font-size:20px;letter-spacing:-.2px}
+#px .pxv{display:inline-block;padding:1px 5px;margin-right:-5px;border-radius:7px}
+#px small{font-size:12px}
+#symbtn{font-size:15px;letter-spacing:.2px}
+#tickrun{font-size:12.5px}
+#tabs button{font-size:10.5px;letter-spacing:.2px}
+th{font-size:10.5px;letter-spacing:.8px}
+td.sym{font-size:13.5px;letter-spacing:.2px}
+.cname{font-size:14.5px}
+.cprice{font-size:13.5px}
+.cdesc{font-size:10.5px}
+.tag{font-size:10px}
+.why{font-size:11px}
+.note{font-size:12.5px;line-height:1.6;color:var(--dim)}
+.sett{gap:10px}
+.sett>b{font-size:11px;color:var(--txt2);letter-spacing:1.1px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.sett>b:first-child{margin-top:0;padding-top:0;border-top:0}
+.sett .note b{font-size:inherit;color:var(--txt);letter-spacing:.2px;margin:0;padding:0;border:0}
+.sett input,.sett textarea,.sett select{font-size:16px;padding:11px 12px}
+.sett input::placeholder,.sett textarea::placeholder{color:#6f7d90}
+.sett button{font-size:14px;padding:12px}
+.sett button.g{color:var(--txt);background:rgba(255,255,255,.05);border:1px solid var(--line2)}
+.sett button.g:active{background:rgba(255,255,255,.1)}
+.sett button.pri{background:linear-gradient(135deg,#ffd166,#f59e0b);color:#131007;border:0;font-weight:800;box-shadow:0 3px 14px rgba(245,158,11,.28)}
+.sett button.danger{color:#ff8a96;border-color:rgba(255,85,102,.45);background:rgba(255,85,102,.07)}
+#srcmsg{font-size:12.5px;line-height:1.75;color:var(--txt2)}
+/* canli fiyat parlamasi */
+@keyframes flUp{0%{background-color:rgba(0,211,160,.42);color:#eafff8}100%{background-color:rgba(0,211,160,0)}}
+@keyframes flDn{0%{background-color:rgba(255,85,102,.42);color:#fff1f3}100%{background-color:rgba(255,85,102,0)}}
+.fl-up{animation:flUp .9s ease-out}
+.fl-dn{animation:flDn .9s ease-out}
+td.fl-up,td.fl-dn{border-radius:4px}
+/* CANLI rozeti */
+.livebadge{color:var(--up);display:inline-flex;align-items:center;gap:5px;margin-left:5px;font-weight:700;letter-spacing:.4px}
+.livebadge i{width:7px;height:7px;border-radius:50%;background:var(--up);display:inline-block;animation:lvPulse 1.8s infinite}
+.livebadge.tick i{animation-duration:1s}
+@keyframes lvPulse{0%{box-shadow:0 0 0 0 rgba(0,211,160,.6)}70%{box-shadow:0 0 0 7px rgba(0,211,160,0)}100%{box-shadow:0 0 0 0 rgba(0,211,160,0)}}
+/* uzun aciklamalar katlanir */
+.note.fold{max-height:4.9em;overflow:hidden;position:relative;cursor:pointer;padding-bottom:22px}
+.note.fold::after{content:"devamını göster ▾";position:absolute;left:0;right:0;bottom:0;padding:18px 12px 4px;text-align:right;
+ color:var(--acc);font-size:11.5px;font-weight:700;background:linear-gradient(180deg,rgba(6,9,14,0),var(--bg) 55%)}
+.note.fold.open{max-height:none}
+.note.fold.open::after{content:"kapat ▴";position:static;display:block;padding:6px 0 0;background:none}
+@media (prefers-reduced-motion:reduce){.fl-up,.fl-dn,.livebadge i{animation:none}}
 </style>
 </head>
 <body>
@@ -408,19 +461,19 @@ body{font-size:12.5px}
     <select id="srcsel" onchange="setSrc()"><option value="yahoo">Yahoo (kendi proxy'n)</option><option value="td">Twelve Data</option></select>
     <select id="barlim" onchange="setBarLim()"><option value="short">Grafik geçmişi: kısa (hızlı)</option><option value="long">Grafik geçmişi: uzun</option></select>
     <input id="tdkey" placeholder="Twelve Data apikey"><input id="tvproxy" placeholder="TV WebSocket proxy URL (wss://xxxx.workers.dev)">
-  <input id="tvuser" placeholder="TradingView kullanıcı adı (canlı veri için)" autocomplete="off">
-  <input id="tvpass" type="password" placeholder="TradingView şifresi (CAPTCHA engeli — bos birak)">
-  <input id="tvman" placeholder="TV Session ID (manuel)"><input id="tvman2" placeholder="TV Session Sign (manuel — sessionid_sign degeri)"><button class="g" onclick="saveKey()">Anahtarı kaydet</button>
-    <button class="g" onclick="testSrc()">Veri kaynağını test et</button><button class="g" onclick="TVL.syms={};try{TVL.ws&&TVL.ws.close()}catch(e){}tvLiveStart();setTimeout(function(){alert('TV durumu: '+(TVL.state||'-')+' '+(TVL.err||'(bağlanıyor...)'))},1600)">⚡ TV'ye yeniden bağlan</button><button class="g" onclick="proxyTest()">🔍 Proxy testi</button><div id="srcmsg" class="note"></div>
+  <input id="tvuser" placeholder="TradingView kullanıcı adı (boş bırak — Worker kullanılıyor)" autocomplete="off">
+  <input id="tvpass" type="password" placeholder="TradingView şifresi (boş bırak — Worker kullanılıyor)">
+  <input id="tvman" placeholder="TV Session ID (Worker için: worker)"><input id="tvman2" placeholder="TV Session Sign (boş bırak)"><button class="g pri" onclick="saveKey()">Anahtarı kaydet</button>
+    <button class="g" onclick="testSrc()">Veri kaynağını test et</button><button class="g" onclick="TVL.syms={};try{TVL.ws&&TVL.ws.close()}catch(e){}tvLiveStart();tvReconnectReport()">⚡ TV'ye yeniden bağlan</button><button class="g" onclick="proxyTest()">🔍 Proxy testi</button><div id="srcmsg" class="note"></div>
     <b>MİDAS CANLI VERİ</b>
     <div id="midasmsg" class="note">Yükleniyor...</div>
-    <div class="note">Terminal, Midas'ın herkese açık genel veri ucundan tüm BIST hisselerinin fiyatını ~8 saniyede bir tazeler (fiyat, hacim, tavan/taban). Bu resmi/garantili bir API değil — Midas'ın kendi sitesini besleyen genel bir uç. Durursa terminal otomatik olarak TradingView'ın 15dk gecikmeli verisine döner, hiçbir şey bozulmaz.</div>
+    <div class="note">Terminal, Midas'ın herkese açık genel veri ucundan tüm BIST hisselerinin fiyatını ~8 saniyede bir tazeler (fiyat, hacim, tavan/taban). Bu resmi/garantili bir API değil — Midas'ın kendi sitesini besleyen genel bir uç. TradingView (Worker) verisi taze olduğunda öncelik her zaman ondadır; Midas yalnızca yedek olarak kullanılır. Durursa hiçbir şey bozulmaz.</div>
     <b>OTOMATİK TARAMA + TELEGRAM</b>
     <div class="frow" style="padding:2px 0"><label>Durum</label><div class="seg" id="autoseg"><button data-a="0" class="on">Kapalı</button><button data-a="1">Açık</button></div></div>
     <input id="tgtok" placeholder="Telegram bot token" oninput="saveTg(true)">
     <input id="tgchat" placeholder="Chat ID" oninput="saveTg(true)">
     <div class="frow" style="padding:2px 0"><label>Min puan</label><select id="tgmin" onchange="saveTg(true)"><option value="40">40</option><option value="55" selected>55</option><option value="70">70</option></select></div>
-    <button class="g" onclick="saveTg()">Kaydet</button>
+    <button class="g pri" onclick="saveTg()">Kaydet</button>
     <button class="g" onclick="tgTest()">Test mesajı gönder</button>
     <button class="g" onclick="autoRun(true)">Şimdi tara ve gönder</button>
     <div id="tgmsg" class="note"></div>
@@ -437,9 +490,9 @@ body{font-size:12.5px}
     </div>
     <div id="almsg" class="note"></div>
     <button class="g" onclick="algolabDisconnect()">Bağlantıyı kes</button>
-    <div class="note">Bağlandığında üstteki fiyat, İzleme listesi ve Alarm kontrolleri seçili semboller için <b>gerçek zamanlı</b> olur (625 hisselik Fırsat taraması hâlâ TradingView'dan ~15 dk gecikmeli gelir — AlgoLab'ın hız sınırı toplu taramaya uygun değil, sadece tek tek fiyat sorgusuna uygun).<br><br>Şifren ve TC kimlik no hiçbir yerde saklanmaz, sadece oturum açarken kullanılır. Oturum anahtarı (hash) telefonunda kalır. AlgoLab bazı hesaplarda her oturumda yeniden SMS isteyebilir — bağlantı koparsa buradan tekrar giriş yap.<br><br><b>Not:</b> Bu, henüz gerçek bir hesapla test edilmedi. İlk bağlantıda veri alanları uyuşmazsa (fiyat görünmezse) ham yanıtı konsoldan kontrol edip birlikte düzeltiriz.</div>
+    <div class="note">Bağlandığında üstteki fiyat, İzleme listesi ve Alarm kontrolleri seçili semboller için <b>gerçek zamanlı</b> olur (Fırsat taraması TradingView Worker bağlantından gelir — AlgoLab'ın hız sınırı toplu taramaya uygun değil, sadece tek tek fiyat sorgusuna uygun).<br><br>Şifren ve TC kimlik no hiçbir yerde saklanmaz, sadece oturum açarken kullanılır. Oturum anahtarı (hash) telefonunda kalır. AlgoLab bazı hesaplarda her oturumda yeniden SMS isteyebilir — bağlantı koparsa buradan tekrar giriş yap.<br><br><b>Not:</b> Bu, henüz gerçek bir hesapla test edilmedi. İlk bağlantıda veri alanları uyuşmazsa (fiyat görünmezse) ham yanıtı konsoldan kontrol edip birlikte düzeltiriz.</div>
     <b>SERMAYE</b>
-    <input id="cap" type="number" placeholder="Sermaye ₺"><input id="rsk" type="number" step="any" placeholder="İşlem riski %"><button class="g" onclick="saveCap()">Kaydet</button>
+    <input id="cap" type="number" placeholder="Sermaye ₺"><input id="rsk" type="number" step="any" placeholder="İşlem riski %"><button class="g pri" onclick="saveCap()">Kaydet</button>
     <b>YEDEK</b>
     <button class="g" onclick="backup()">Yedeği kopyala</button>
     <button class="g" onclick="backupToFile()">Yedeği dosyaya indir</button>
@@ -447,8 +500,8 @@ body{font-size:12.5px}
     <button class="g" onclick="restore()">Geri yükle</button>
     <input type="file" id="bkfile" accept=".txt" style="display:none" onchange="restoreFromFile(this)">
     <button class="g" onclick="document.getElementById('bkfile').click()">Dosyadan geri yükle</button>
-    <div class="note">Tarama verisi TradingView'dan ~15 dk gecikmeli; derin tarama ve grafik mumları kendi Cloudflare proxy'nden Yahoo'ya gider. Kurulum eşikleri geçmiş test edilmemiştir. Yatırım tavsiyesi değildir.</div>
-    <button class="g" onclick="if(confirm('Tüm yerel veriler silinsin mi?')){localStorage.clear();location.reload()}">Yerel verileri sıfırla</button>
+    <div class="note">Tarama verisi bist-tv Worker üzerinden TradingView hesabınla gerçek zamanlı gelir (Worker'a ulaşılamazsa ~15 dk gecikmeli doğrudan TradingView'e düşer); derin tarama ve grafik mumları kendi Cloudflare proxy'nden Yahoo'ya gider. Kurulum eşikleri geçmiş test edilmemiştir. Yatırım tavsiyesi değildir.</div>
+    <button class="g danger" onclick="if(confirm('Tüm yerel veriler (ayarlar, izleme listesi, alarmlar, günlük) silinsin mi? Bu geri alınamaz.')){localStorage.clear();location.reload()}">Yerel verileri sıfırla</button>
    </div>
   </div>
  </div>
@@ -720,7 +773,9 @@ async function loadUniverse(){
   S.uni=data.map(r=>rowObj(r,cols));S.umap={};S.sectors=new Set();
   S.uni.forEach(o=>{o.voltl=o.volume*o.close;o.tfm=null;
    const prevQ=S.quotes[o.name];
-   if(prevQ&&prevQ._midasLive&&Date.now()-prevQ._midasLive<15000){o.close=prevQ.close;o.change=prevQ.change;o.bid=prevQ.bid;o.ask=prevQ.ask;o.upperLimit=prevQ.upperLimit;o.lowerLimit=prevQ.lowerLimit;o._midasLive=prevQ._midasLive;o.voltl=o.volume*o.close}
+   if(prevQ&&prevQ._tvLive&&Date.now()-prevQ._tvLive<6000){o.close=prevQ.close;o.change=prevQ.change;o._tvLive=prevQ._tvLive;o.voltl=o.volume*o.close}
+   else if(prevQ&&prevQ._midasLive&&Date.now()-prevQ._midasLive<15000&&!(S.scanVia==='worker')){o.close=prevQ.close;o.change=prevQ.change;o.bid=prevQ.bid;o.ask=prevQ.ask;o.upperLimit=prevQ.upperLimit;o.lowerLimit=prevQ.lowerLimit;o._midasLive=prevQ._midasLive;o.voltl=o.volume*o.close}
+   if(S.scanVia==='worker'&&!o._tvLive)o._tvScan=Date.now();
    S.umap[o.name]=o;if(o.sector)S.sectors.add(o.sector);S.quotes[o.name]=o});
   const sel=$('#secsel'),cur=sel?sel.value:'';
   if(sel)sel.innerHTML='<option value="">Tümü</option>'+[...S.sectors].sort().map(x=>'<option '+(x===cur?'selected':'')+'>'+x+'</option>').join('');
@@ -1282,6 +1337,8 @@ async function fetchMidasRaw(){
   return await r2.text();
  }
 }
+function tvFresh(q){const n=Date.now();return !!(q&&((q._tvLive&&n-q._tvLive<6000)||(q._tvScan&&n-q._tvScan<35000)))}
+function midasSoft(p){const c=Object.assign({},p);delete c.close;delete c.change;delete c.volume;delete c.voltl;return c}
 async function pollMidas(){
  if(document.hidden){S.midas.err='sekme arka planda';renderMidasStatus();return}
  S.midas.tries=(S.midas.tries||0)+1;
@@ -1300,8 +1357,8 @@ async function pollMidas(){
     _midasLive:now};
    const h=S.midHis[code]=S.midHis[code]||[];h.push({t:now,p:+m.Last,v:+m.TotalVolume||0,tn:+m.TotalTurnover||0,b:+m.Bid||0,a:+m.Ask||0});
    if(h.length>120)h.shift();
-   const o=S.umap[code];if(o){Object.assign(o,patch);hit++}
-   const q=S.quotes[code];if(q)Object.assign(q,patch);else if(o)S.quotes[code]=Object.assign({name:code},o);
+   const o=S.umap[code];if(o){Object.assign(o,tvFresh(o)?midasSoft(patch):patch);hit++}
+   const q=S.quotes[code];if(q)Object.assign(q,tvFresh(q)?midasSoft(patch):patch);else if(o)S.quotes[code]=Object.assign({name:code},o);
   });
   S.midas={ok:true,at:now,n:hit,err:'',tries:S.midas.tries};
   if(hit){try{buildPercentiles()}catch(e){}renderPx();mark('watch');checkAlarms();mark('op');updateOpenSignals();mark('live')}
@@ -1485,12 +1542,12 @@ let TVDIAG={at:0};
 async function tvDiagRun(){
  if(!S.tvproxy)return;
  const base=S.tvproxy.replace(/^wss:/,'https:').replace(/\/$/,'');
- try{const r=await fetch(base+'/tv-test');const d=await r.json();TVDIAG.tv=d.opened?('ACILDI'):('ACILMADI:'+(d.error||d.status||'?'))}catch(e){TVDIAG.tv='HATA:'+e.message}
+ try{const r=await fetch(base+'/tv-test');const d=await r.json();TVDIAG.tv=d.opened?('açıldı'):('açılmadı: '+(d.error||d.status||'?'))}catch(e){TVDIAG.tv='hata: '+e.message}
  try{
   const ws=new WebSocket(base.replace(/^https:/,'wss:')+'/ws-echo');
   const m=await new Promise((res,rej)=>{const t=setTimeout(()=>{try{ws.close()}catch(_){};rej(new Error('asim'))},5000);ws.onopen=()=>ws.send('p');ws.onmessage=ev=>{clearTimeout(t);try{ws.close()}catch(_){};res(ev.data)};ws.onerror=()=>{clearTimeout(t);rej(new Error('hata'))}});
-  TVDIAG.echo=m==='echo:p'?'OK':'yanlis'
- }catch(e){TVDIAG.echo='HATA:'+e.message}
+  TVDIAG.echo=m==='echo:p'?'OK':'yanıt yok'
+ }catch(e){TVDIAG.echo='hata: '+e.message}
  TVDIAG.at=Date.now();
  try{renderSrcStatus()}catch(e){}
 }
@@ -1508,16 +1565,16 @@ function renderSrcStatus(){
   :'<span class="dn">○ Midas yok'+(mid.err?(' ('+mid.err+')'):'')+'</span>';
  const tvOk=(TVL.ok&&Date.now()-TVL.last<15000)||(TVS.ok&&Date.now()-TVS.at<20000);
  const tvLine=tvOk
-  ?(TVS.ok&&Date.now()-TVS.at<20000?'⚡ GERÇEK ANLIK (scanner · '+(S.tvSession?'oturum ✓':'15dk')+') · '+TVS.n+' hisse ~4 sn':'⚡ GERÇEK ANLIK'+(S.tvSession?' (oturum ✓)':'')+' · '+Object.keys(TVL.syms).length+' sembol · ~1 sn')
+  ?('<span class="up">⚡ GERÇEK ANLIK</span>'+((TVL.ok&&Date.now()-TVL.last<15000)?' · anlık akış '+Object.keys(TVL.syms).length+' sembol (~1 sn)':'')+((TVS.ok&&Date.now()-TVS.at<20000)?' · tarama '+TVS.n+' hisse (~4 sn)':''))
   :(TVL.state==='acik'
-   ?'<span style="color:var(--acc)">◌ TV açık, veri bekleniyor</span> · '+Object.keys(TVL.syms).length+' sembol'
-   :'<span class="dn">○ TV bağlı değil</span> ['+(TVL.state||'-')+(TVL.err?(' · '+TVL.err):'')+' · deneme '+TVL.tries+(TVL.gerr?(' · ⚠'+TVL.gerr):'')+']'
-    +(TVDIAG.at?('<br><span style="color:var(--txt2)">tani: echo '+TVDIAG.echo+' · TV '+TVDIAG.tv+(TVS.err?(' · scan:'+TVS.err):'')+'</span>'):'')
-    +(S.tvproxy?'':'<br><span style="color:var(--acc)">→ Çözüm: Ayarlar bolumundeki "TV WebSocket proxy URL" alanina wss:// adresi gir</span>'));
+   ?'<span style="color:var(--acc)">◌ TV bağlı, işlem bekleniyor</span> · '+Object.keys(TVL.syms).length+' sembol'
+   :'<span class="dn">○ TV bağlı değil</span> ['+({acik:'açık',kapali:'kapalı',baglaniyor:'bağlanıyor'}[TVL.state]||TVL.state||'-')+(TVL.err?(' · '+TVL.err):'')+' · deneme '+TVL.tries+(TVL.gerr?(' · ⚠'+TVL.gerr):'')+']'
+    +(TVDIAG.at?('<br><span style="color:var(--txt2)">tanı: köprü '+TVDIAG.echo+' · TV '+TVDIAG.tv+(TVS.err?(' · tarama: '+TVS.err):'')+'</span>'):'')
+    +(S.tvproxy?'':'<br><span style="color:var(--acc)">→ Çözüm: Ayarlar bölümündeki "TV WebSocket proxy URL" alanına wss:// adresini gir</span>'));
  // 2) MUM VERISI: Yahoo -> Twelve Data (birincil basarisizsa yedek)
- const mumLine='Mum verisi: <b>'+SRCINFO.src+'</b> · son mum ~'+nf(lagMin,0)+' dk önce · sıralama: '+(S.src==='td'?'Twelve Data → Yahoo':'Yahoo → Twelve Data')+(S.key?'':' · <span class="dn">tdkey boş — Twelve Data yedeği atlanıyor</span>');
+ const mumLine='Mum verisi: <b>'+SRCINFO.src+'</b> · son mum ~'+nf(lagMin,0)+' dk önce · sıralama: '+(S.src==='td'?'Twelve Data → Yahoo':'Yahoo → Twelve Data')+(S.key?'':' · <span class="wrn">Twelve Data anahtarı yok — yedek kaynak kapalı</span>');
  m.innerHTML='<b style="letter-spacing:.5px">VERİ KAYNAĞI SIRASI</b><br>0) '+tvLine+'<br>1) '+midLine+'<br>2) '+mumLine+
- (SRCINFO.stale?'<br><span class="dn">⚠ Gecikmeli veri — sinyal üretiminde kullanılmıyor.</span>':'<br><span class="up">'+(withinMarketHours()?'✓ Mum verisi taze':'✓ Piyasa kapalı — son mum kapanış verisi (gecikme kontrolü seansta aktif)')+'</span>');
+ (SRCINFO.stale?'<br><span class="dn">⚠ Gecikmeli veri — sinyal üretiminde kullanılmıyor.</span>':'<br><span class="up">'+(withinMarketHours()?'✓ Mum verisi taze':'✓ Piyasa kapalı — son mum kapanış verisi')+'</span>');
 }
 const dayKey=t=>typeof t==='string'?t:new Date(t*1000).toISOString().slice(0,10);
 function profileOf(bars,rows){
@@ -1633,7 +1690,9 @@ async function refreshFast(){
  if(!t.length)return;
  try{const j=await tvScan('global',{symbols:{tickers:t},columns:COLS});j.data.forEach(r=>{const o=rowObj(r,COLS);o.voltl=o.volume*o.close;o.tfm=null;
   const prevQ=S.quotes[o.name];
-  if(prevQ&&prevQ._midasLive&&Date.now()-prevQ._midasLive<15000){o.close=prevQ.close;o.change=prevQ.change;o.bid=prevQ.bid;o.ask=prevQ.ask;o.upperLimit=prevQ.upperLimit;o.lowerLimit=prevQ.lowerLimit;o._midasLive=prevQ._midasLive}
+  if(prevQ&&prevQ._tvLive&&Date.now()-prevQ._tvLive<6000){o.close=prevQ.close;o.change=prevQ.change;o._tvLive=prevQ._tvLive}
+  else if(prevQ&&prevQ._midasLive&&Date.now()-prevQ._midasLive<15000&&!(S.scanVia==='worker')){o.close=prevQ.close;o.change=prevQ.change;o.bid=prevQ.bid;o.ask=prevQ.ask;o.upperLimit=prevQ.upperLimit;o.lowerLimit=prevQ.lowerLimit;o._midasLive=prevQ._midasLive}
+  if(S.scanVia==='worker'&&!o._tvLive)o._tvScan=Date.now();
   S.quotes[o.name]=o});renderPx();['watch','alarm'].forEach(mark);checkAlarms();updateOpenSignals()}catch(e){}
 }
 async function refreshTick(){
@@ -1663,9 +1722,10 @@ async function loadDom(){if(document.hidden)return;try{const g=(await (await fet
 function sparkSvg(a){if(!a||a.length<2)return'';const mn=Math.min.apply(null,a),mx=Math.max.apply(null,a),w=60,h=18;const p=a.map((v,i)=>(i/(a.length-1)*w).toFixed(1)+','+(h-(v-mn)/(mx-mn||1)*h).toFixed(1)).join(' ');return'<svg class="spark" viewBox="0 0 '+w+' '+h+'"><polyline fill="none" stroke="'+(a[a.length-1]>=a[0]?'#00c48c':'#ff4d5e')+'" stroke-width="1.5" points="'+p+'"/></svg>'}
 function renderCrypto(){$('#crypto').innerHTML='<table><tr><th>Coin</th><th>Fiyat</th><th>24s</th><th>7g</th><th>Hacim $</th></tr>'+S.crypto.map(c=>'<tr class="row" onclick="selectSym(\''+c.name+'\',\'crypto\')"><td class="sym">'+c.name+'</td><td>'+nf(c.close,c.close<1?4:2)+'</td><td class="'+cls(c.change)+'">'+pct(c.change)+'</td><td>'+sparkSvg(c.spark)+'</td><td>'+big(c.volume)+'</td></tr>').join('')+'</table>'}
 function curQuote(){return S.mode==='crypto'?S.cmap[S.sym]:S.quotes[S.sym]}
-function renderPx(){const q=curQuote();if(!q){$('#px').innerHTML='-<small>-</small>';return}
- const live=(q._live&&Date.now()-q._live<15000)||(q._midasLive&&Date.now()-q._midasLive<15000);
- $('#px').innerHTML=nf(q.close,q.close<1?4:2)+'<small class="'+cls(q.change)+'">'+pct(q.change)+(live?' <span style="color:var(--up)">● CANLI</span>':'')+'</small>'}
+function renderPx(){const q=curQuote();if(!q){$('#px').innerHTML='<span class="pxv">-</span><small>-</small>';return}
+ const n=Date.now(),tick=q._tvLive&&n-q._tvLive<15000;
+ const live=tick||(q._tvScan&&n-q._tvScan<20000)||(q._live&&n-q._live<15000)||(q._midasLive&&n-q._midasLive<15000);
+ $('#px').innerHTML='<span class="pxv">'+nf(q.close,q.close<1?4:2)+'</span><small class="'+cls(q.change)+'">'+pct(q.change)+(live?' <span class="livebadge'+(tick?' tick':'')+'"><i></i>CANLI</span>':'')+'</small>'}
 function renderWLSel(){$('#wlsel').innerHTML=Object.keys(WL.lists).map(n=>'<option '+(n===WL.cur?'selected':'')+'>'+n+'</option>').join('')}
 $('#wlsel').onchange=e=>{WL.cur=e.target.value;saveWL();renderWatch()};
 function newList(){const n=prompt('Liste adı:');if(!n||WL.lists[n])return;WL.lists[n]=[];WL.cur=n;saveWL();renderWLSel();renderWatch()}
@@ -2168,7 +2228,7 @@ function journalFromBox(){const b=S.box;if(!b){alert('Önce AL/SAT kutusu kur');
 let TVL={ws:null,ses:'qs_'+Math.random().toString(36).slice(2),buf:'',syms:{},ok:false,last:0,tries:0,throttle:0};
 const TVFLD=['lp','ch','chp','volume','high','low','open','bid','ask'];
 window.addEventListener('error',e=>{try{TVL.gerr=(e.message||'hata')+' @'+(e.lineno||'?')}catch(_){}});
-function tvSend(m,p){try{const s=JSON.stringify(p);TVL.ws.send('~m~'+s.length+'~m~'+s)}catch(e){}}
+function tvSend(m,p){try{const s=JSON.stringify({m:m,p:p});TVL.ws.send('~m~'+s.length+'~m~'+s)}catch(e){}}
 function tvLiveStart(){
  TVL.tries++;
  try{
@@ -2176,7 +2236,7 @@ function tvLiveStart(){
   const url=S.tvproxy?S.tvproxy:('wss://data.tradingview.com/socket.io/websocket?from=symbols/BIST%2F&date='+Date.now());
   const ws=new WebSocket(url);
   TVL.ws=ws;TVL.state='baglaniyor';TVL.err='';
-  ws.onopen=()=>{TVL.tries=0;TVL.buf='';TVL.state='acik';TVL.err='';
+  ws.onopen=()=>{if(TVL.ws!==ws)return;TVL.tries=0;TVL.buf='';TVL.state='acik';TVL.err='';TVL.syms={};
    (async()=>{
     let tok=S.tvSession||'';
     if(S.tvUser&&S.tvPass&&!tok){try{await tvAuth();tok=S.tvSession||''}catch(e){}}
@@ -2185,9 +2245,9 @@ function tvLiveStart(){
     tvSend('quote_set_fields',[TVL.ses].concat(TVFLD));
     tvLiveSubs();
    })()};
-  ws.onmessage=ev=>tvLiveOnMsg(ev.data);
-  ws.onclose=ev=>{TVL.state='kapali';if(!TVL.err)TVL.err='kod '+(ev.code||'?');TVL.ok=false;setTimeout(tvLiveStart,Math.min(15000,2000*Math.max(1,TVL.tries)))};
-  ws.onerror=()=>{TVL.err='baglanti hatasi';try{ws.close()}catch(e){}};
+  ws.onmessage=ev=>{if(TVL.ws===ws)tvLiveOnMsg(ev.data)};
+  ws.onclose=ev=>{if(TVL.ws!==ws)return;TVL.state='kapali';if(!TVL.err)TVL.err='kod '+(ev.code||'?');TVL.ok=false;setTimeout(tvLiveStart,Math.min(15000,2000*Math.max(1,TVL.tries)))};
+  ws.onerror=()=>{if(TVL.ws!==ws)return;TVL.err='bağlantı hatası';try{ws.close()}catch(e){}};
  }catch(e){TVL.err=e.message||'hata';setTimeout(tvLiveStart,5000)}
 }
 async function proxyTest(){
@@ -2214,7 +2274,7 @@ async function tvAuth(){
  const r=await fetch(base+'/tv-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:S.tvUser,password:S.tvPass})});
  const d=await r.json();
  if(d&&d.ok){S.tvSession=d.session;LS.set('tvsession',d.session);TVL.err='';return true}
- TVL.err='TV giris reddedildi'+(d&&d.status?(' ('+d.status+')'):'')+(d&&d.debug?(' '+d.debug.slice(0,60)):'')+(S.tvUser?'':' (kullanici adi yok)');
+ TVL.err='TV girişi reddedildi'+(d&&d.status?(' ('+d.status+')'):'')+(d&&d.debug?(' '+d.debug.slice(0,60)):'')+(S.tvUser?'':' (kullanıcı adı yok)');
  return false;
 }
 function tvLiveSubs(){
@@ -2232,44 +2292,49 @@ function tvLiveSubs(){
  }catch(e){}
 }
 function tvLiveOnMsg(data){
+ if(typeof data!=='string')return;
  TVL.buf+=data;
- let guard=0;
- while(guard++<200){
+ let guard=0,got=false;
+ while(guard++<500){
   const i=TVL.buf.indexOf('~m~');
   if(i<0){TVL.buf='';break}
   const rest=TVL.buf.slice(i+3);
-  // kalp atisi: ~m~~h~<sayi>  (uzunluk alani bos) — asla JSON parse edilmez, aynen geri gonderilir
+  // eski bicim kalp atisi: ~m~~h~<sayi>
   if(rest.slice(0,3)==='~h~'){
-   const end=rest.indexOf('~m~',3);
-   const beat=rest.slice(0,end<0?rest.length:end);
-   try{TVL.ws.send('~m~'+beat)}catch(e){}
-   TVL.buf=end<0?'':rest.slice(end);
-   continue;
+   const end=rest.indexOf('~m~',3);const beat=rest.slice(0,end<0?rest.length:end);
+   try{TVL.ws.send('~m~'+beat.length+'~m~'+beat)}catch(e){}
+   TVL.buf=end<0?'':rest.slice(end);continue;
   }
   const lenEnd=rest.indexOf('~m~');
   if(lenEnd<0){TVL.buf=TVL.buf.slice(i);break}
   const len=+rest.slice(0,lenEnd);
-  if(!len||isNaN(len)||TVL.buf.length<i+3+lenEnd+2+len){TVL.buf=TVL.buf.slice(i);break}
-  const payload=rest.slice(lenEnd+2,lenEnd+2+len);
-  TVL.buf=TVL.buf.slice(i+3+lenEnd+2+len);
+  if(!(len>0)){TVL.buf=rest.slice(lenEnd);continue}
+  const start=lenEnd+3;
+  if(rest.length<start+len){TVL.buf=TVL.buf.slice(i);break}
+  const payload=rest.slice(start,start+len);
+  TVL.buf=rest.slice(start+len);
+  // standart kalp atisi: ~m~4~m~~h~12 -> aynen geri gonder
+  if(payload.slice(0,3)==='~h~'){try{TVL.ws.send('~m~'+payload.length+'~m~'+payload)}catch(e){}continue}
   let msg;try{msg=JSON.parse(payload)}catch(e){continue}
   if(msg.m!=='qsd'||!msg.p||!msg.p[1])continue;
-  const v=msg.p[1].v||{};if(v.lp==null)continue;
-  const name=(v.name||'').split(':')[1];if(!name)continue;
+  const dd=msg.p[1],v=dd.v||{};
+  const name=String(dd.n||v.name||'').split(':').pop();if(!name)continue;
   const o=S.umap[name]||{};
-  o.close=v.lp;
+  if(v.lp!=null)o.close=v.lp;
   if(v.chp!=null)o.change=v.chp;
   if(v.ch!=null)o.change_abs=v.ch;
   if(v.volume!=null)o.volume=v.volume;
   if(v.high!=null)o.high=v.high;
   if(v.low!=null)o.low=v.low;
   if(v.open!=null)o.open=v.open;
-  o.update_mode='tv_live';
+  if(v.lp!=null){o._tvLive=Date.now();o.update_mode='tv_live'}
+  if(o.volume!=null&&o.close!=null)o.voltl=o.volume*o.close;
   S.umap[name]=o;
-  if(S.quotes[name]){S.quotes[name].close=v.lp;if(v.chp!=null)S.quotes[name].change=v.chp;if(v.volume!=null)S.quotes[name].volume=v.volume}
-  TVL.ok=true;TVL.last=Date.now();TVL.err='';
-  if(Date.now()-TVL.throttle>1200){TVL.throttle=Date.now();try{renderPx()}catch(e){}mark('watch');mark('alarm');mark('live');checkAlarms()}
+  const q=S.quotes[name];
+  if(q&&q!==o){if(v.lp!=null){q.close=v.lp;q._tvLive=o._tvLive}if(v.chp!=null)q.change=v.chp;if(v.volume!=null)q.volume=v.volume}
+  if(v.lp!=null){got=true;TVL.ok=true;TVL.last=Date.now();TVL.err=''}
  }
+ if(got&&Date.now()-TVL.throttle>450){TVL.throttle=Date.now();try{renderPx()}catch(e){}mark('watch');mark('alarm');mark('live');try{checkAlarms()}catch(e){}}
 }
 
 /* ============ TV SCANNER CANLI (HTTP — Cloudflare engelini asar) ============ */
@@ -2300,16 +2365,17 @@ async function tvScanOnce(){
    d.data.forEach(row=>{
     const sym=(row.s||'').split(':')[1];if(!sym)return;
     const v=row.d||[];const o=S.umap[sym]||{};
-    if(v[1]!=null)o.close=v[1];
-    if(v[2]!=null)o.change=v[2];
-    if(v[3]!=null)o.change_abs=v[3];
+    const wsFresh=o._tvLive&&Date.now()-o._tvLive<6000;
+    if(!wsFresh){if(v[1]!=null)o.close=v[1];if(v[2]!=null)o.change=v[2];if(v[3]!=null)o.change_abs=v[3]}
     if(v[4]!=null)o.volume=v[4];
     if(v[5]!=null)o.high=v[5];
     if(v[6]!=null)o.low=v[6];
     if(v[7]!=null)o.open=v[7];
-    o.update_mode='tv_scan';
+    if(!wsFresh)o.update_mode='tv_scan';
+    o._tvScan=Date.now();
     S.umap[sym]=o;
-    if(S.quotes[sym]){S.quotes[sym].close=v[1];if(v[2]!=null)S.quotes[sym].change=v[2]}
+    const qq=S.quotes[sym];
+    if(qq&&qq!==o&&!(qq._tvLive&&Date.now()-qq._tvLive<6000)){if(v[1]!=null)qq.close=v[1];if(v[2]!=null)qq.change=v[2];qq._tvScan=o._tvScan}
    });
    TVS.ok=true;TVS.at=Date.now();TVS.err='';TVS.n=d.data.length;
    try{renderPx()}catch(e){}mark('watch');mark('alarm');checkAlarms();updateOpenSignals();
@@ -2627,6 +2693,48 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadUnive
  setInterval(loadCrypto,25000);
  setInterval(loadDom,180000);
  setInterval(()=>{if(!document.hidden&&S.tab==='chart')loadCandles()},60000);
+})();
+</script>
+<script>
+/* ============ v4 · canli hareket katmani ============ */
+function tvReconnectReport(){
+ const t0=Date.now();
+ (function chk(){
+  const st=TVL.state;
+  if(st==='acik'||Date.now()-t0>8000){
+   const map={acik:'✅ Bağlandı — anlık akış açık',kapali:'❌ Bağlantı kapalı',baglaniyor:'⏳ Hâlâ bağlanıyor, birazdan tekrar dene'};
+   alert('TradingView: '+(map[st]||st||'-')+(TVL.err&&st!=='acik'?(' · '+TVL.err):''));return}
+  setTimeout(chk,400)})();
+}
+(function(){
+ const PREV={};
+ function num(t){if(t==null)return null;let s=String(t).replace(/[^0-9,.\-]/g,'');if(!s)return null;s=s.replace(/\./g,'').replace(',','.');const x=parseFloat(s);return isFinite(x)?x:null}
+ function flash(el,key,txt){if(!el)return;const v=num(txt!=null?txt:el.textContent);const p=PREV[key];PREV[key]=v;
+  if(p==null||v==null||v===p)return;el.classList.remove('fl-up','fl-dn');void el.offsetWidth;el.classList.add(v>p?'fl-up':'fl-dn')}
+ function firstText(el){return el&&el.firstChild?el.firstChild.textContent:''}
+ function scanTable(root,prefix,col){if(!root)return;root.querySelectorAll('tr.row').forEach(tr=>{const s=tr.querySelector('td.sym'),td=tr.children[col];if(s&&td)flash(td,prefix+firstText(s).trim(),firstText(td))})}
+ const AFTER={
+  renderPx:()=>{const e=document.querySelector('#px .pxv');if(e)flash(e,'px:'+S.mode+':'+S.sym)},
+  renderWatch:()=>scanTable(document.getElementById('watch'),'w:',2),
+  renderLive:()=>scanTable(document.getElementById('live'),'l:',2),
+  renderOps:()=>{const r=document.getElementById('oplist');if(!r)return;
+   scanTable(r,'o:',2);
+   r.querySelectorAll('.card').forEach(c=>{const n=c.querySelector('.cname'),p=c.querySelector('.cprice');if(n&&p)flash(p,'c:'+n.textContent.trim(),firstText(p))})},
+  refreshTick:()=>{const run=document.getElementById('tickrun');if(!run)return;const dir={};
+   run.querySelectorAll('span').forEach(sp=>{const b=sp.querySelector('b');if(!b)return;const k='t:'+b.textContent,t=b.nextSibling?b.nextSibling.textContent:'';
+    if(!(k in dir)){const v=num(t),p=PREV[k];PREV[k]=v;dir[k]=(p==null||v==null||v===p)?'':(v>p?'fl-up':'fl-dn')}
+    if(dir[k]){sp.classList.remove('fl-up','fl-dn');void sp.offsetWidth;sp.classList.add(dir[k])}})}
+ };
+ Object.keys(AFTER).forEach(name=>{
+  const f=window[name];if(typeof f!=='function')return;
+  window[name]=function(){const r=f.apply(this,arguments);
+   try{if(r&&typeof r.then==='function')r.then(()=>{try{AFTER[name]()}catch(e){}});else AFTER[name]()}catch(e){}
+   return r};
+ });
+ // Ayarlar acikken kaynak durumu sik tazelensin
+ setInterval(function(){try{if(S.tab==='set'&&!document.hidden)renderSrcStatus()}catch(e){}},3000);
+ // Ayarlar: uzun aciklamalar katlanir (durum kutulari haric)
+ try{document.querySelectorAll('#t-set .note:not([id])').forEach(n=>{if((n.textContent||'').length>140){n.classList.add('fold');n.addEventListener('click',()=>n.classList.toggle('open'))}})}catch(e){}
 })();
 </script>
 </body>
