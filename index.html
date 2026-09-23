@@ -354,7 +354,37 @@ td.fl-up,td.fl-dn{border-radius:4px}
  color:var(--acc);font-size:11.5px;font-weight:700;background:linear-gradient(180deg,rgba(6,9,14,0),var(--bg) 55%)}
 .note.fold.open{max-height:none}
 .note.fold.open::after{content:"kapat ▴";position:static;display:block;padding:6px 0 0;background:none}
-@media (prefers-reduced-motion:reduce){.fl-up,.fl-dn,.livebadge i{animation:none}}
+
+/* ---- v4 alt menu ---- */
+#tabs{display:grid;grid-template-columns:repeat(5,1fr);overflow:visible;padding:6px 4px 4px;gap:2px}
+#tabs button{width:auto!important;min-height:64px!important;padding:6px 2px 7px!important;border-top:0!important;font-family:var(--sans);
+ font-size:11.5px!important;font-weight:600;letter-spacing:.1px;gap:4px;color:var(--dim);background:none!important}
+#tabs button .ico{width:54px;height:32px;display:grid;place-items:center;border-radius:16px;transition:background .2s,transform .15s}
+#tabs button svg{width:24px;height:24px}
+#tabs button:active .ico{transform:scale(.9)}
+#tabs button.on{color:var(--tc)}
+#tabs button.on .ico{background:rgba(255,255,255,.09);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+#tabs button.on svg{filter:drop-shadow(0 0 6px var(--tc))}
+#more{position:fixed;inset:0;z-index:60;display:none}
+#more.on{display:block}
+#more .bd{position:absolute;inset:0;background:rgba(3,5,9,.55);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);opacity:0;transition:opacity .22s}
+#more.open .bd{opacity:1}
+#more .sh{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,#121b29,#0b111b);border-top:1px solid var(--line2);
+ border-radius:22px 22px 0 0;padding:8px 14px calc(18px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .26s cubic-bezier(.2,.8,.2,1);
+ box-shadow:0 -18px 50px rgba(0,0,0,.55);max-width:640px;margin:0 auto}
+#more.open .sh{transform:none}
+#more .grab{width:42px;height:5px;border-radius:3px;background:var(--line2);margin:2px auto 10px}
+#more .mhead{display:flex;align-items:center;justify-content:space-between;margin:0 2px 12px}
+#more .mhead b{font-size:15px;color:#fff;letter-spacing:.2px}
+#more .mclose{background:rgba(255,255,255,.06);border:1px solid var(--line2);color:var(--txt2);width:34px;height:34px;border-radius:17px;font-size:14px}
+#more .mgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+#more .mgrid button{background:rgba(255,255,255,.04);border:1px solid var(--line2);border-radius:16px;padding:14px 2px 11px;color:var(--txt);
+ display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;font-weight:600;font-family:var(--sans);transition:transform .12s,background .15s}
+#more .mgrid button:active{transform:scale(.95);background:rgba(255,255,255,.08)}
+#more .mgrid button svg{width:27px;height:27px;color:var(--tc)}
+#more .mgrid button.on{border-color:var(--tc);background:rgba(255,255,255,.08)}
+.tab>.btn,#labbody>.btn,#labbody .btn{margin-left:12px;margin-right:12px}
+@media (prefers-reduced-motion:reduce){.fl-up,.fl-dn,.livebadge i{animation:none}#more .sh,#more .bd{transition:none}}
 </style>
 </head>
 <body>
@@ -512,25 +542,14 @@ td.fl-up,td.fl-dn{border-radius:4px}
  </div>
 
  <div id="tabs">
-  <button data-t="op" class="on" style="--tc:#ffb020"><i>◎</i>Fırsat</button>
-  <button data-t="live" style="--tc:#00e5a0"><i>◉</i>Canlı</button>
-  <button data-t="brief" style="--tc:#fde047"><i>☀️</i>Özet</button>
-  <button data-t="lab" style="--tc:#a78bfa"><i>🧪</i>Lab</button>
-  <button data-t="reg" style="--tc:#38bdf8"><i>◍</i>Piyasa</button>
-  <button data-t="chart" style="--tc:#00c48c"><i>◫</i>Grafik</button>
-  <button data-t="watch" style="--tc:#fbbf24"><i>★</i>İzleme</button>
-  <button data-t="cal" style="--tc:#f472b6"><i>▤</i>Takvim</button>
-  <button data-t="mov" style="--tc:#a78bfa"><i>↕</i>Hareket</button>
-  <button data-t="heat" style="--tc:#fb923c"><i>▦</i>Isı</button>
-  <button data-t="alarm" style="--tc:#ff4d5e"><i>◔</i>Alarm</button>
-  <button data-t="jr" style="--tc:#4ade80"><i>✎</i>Günlük</button>
-  <button data-t="perf" style="--tc:#34d399"><i>📊</i>Performans</button>
-  <button data-t="risk" style="--tc:#22d3ee"><i>%</i>Risk</button>
-  <button data-t="crypto" style="--tc:#f59e0b"><i>₿</i>Kripto</button>
-  <button data-t="port" style="--tc:#818cf8"><i>∑</i>Portföy</button>
-  <button data-t="set" style="--tc:#94a3b8"><i>⚙</i>Ayarlar</button>
+  <button data-t="op" class="on" style="--tc:#ffb020"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/></svg></span><span class="lbl">Fırsat</span></button>
+  <button data-t="live" style="--tc:#00e5a0"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 12 7 12 10 5 14 19 17 12 21 12"/></svg></span><span class="lbl">Canlı</span></button>
+  <button data-t="chart" style="--tc:#22d3a6"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="7" y1="3" x2="7" y2="21"/><rect x="5" y="7" width="4" height="8" rx="1"/><line x1="17" y1="4" x2="17" y2="20"/><rect x="15" y="9" width="4" height="6" rx="1"/></svg></span><span class="lbl">Grafik</span></button>
+  <button data-t="watch" style="--tc:#fbbf24"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 3 14.8 8.8 21 9.6 16.5 14 17.6 20.3 12 17.3 6.4 20.3 7.5 14 3 9.6 9.2 8.8"/></svg></span><span class="lbl">İzleme</span></button>
+  <button data-more="1" id="morebtn" style="--tc:#e2e8f0"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8"/></svg></span><span class="lbl">Menü</span></button>
  </div>
 </div>
+<div id="more"><div class="bd"></div><div class="sh"><div class="grab"></div><div class="mhead"><b>Tüm bölümler</b><button class="mclose" aria-label="Kapat">✕</button></div><div class="mgrid"><button data-t="brief" style="--tc:#fde047"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg><span>Özet</span></button><button data-t="lab" style="--tc:#a78bfa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9z"/><polyline points="9 13.5 11.3 15.8 15.5 11.5"/></svg><span>Karne</span></button><button data-t="reg" style="--tc:#38bdf8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 18a8.5 8.5 0 1 1 17 0"/><line x1="12" y1="18" x2="16.2" y2="11.2"/><circle cx="12" cy="18" r="1.2" fill="currentColor"/></svg><span>Piyasa</span></button><button data-t="mov" style="--tc:#c084fc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 20V5M4 9l4-4 4 4M16 4v15M12 15l4 4 4-4"/></svg><span>Hareket</span></button><button data-t="heat" style="--tc:#fb923c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="10" rx="1.5"/><rect x="14.5" y="3.5" width="6" height="6" rx="1.5"/><rect x="14.5" y="11.5" width="6" height="9" rx="1.5"/><rect x="3.5" y="15.5" width="9" height="5" rx="1.5"/></svg><span>Isı Haritası</span></button><button data-t="cal" style="--tc:#f472b6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Takvim</span></button><button data-t="alarm" style="--tc:#ff5d6c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.8 2H4.2z"/><path d="M10 21h4"/></svg><span>Alarm</span></button><button data-t="jr" style="--tc:#4ade80"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg><span>Günlük</span></button><button data-t="perf" style="--tc:#34d399"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg><span>Performans</span></button><button data-t="risk" style="--tc:#22d3ee"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 8v5M12 16v.5"/></svg><span>Risk</span></button><button data-t="port" style="--tc:#818cf8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4"/></svg><span>Portföy</span></button><button data-t="crypto" style="--tc:#f59e0b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 7.5h4a2.2 2.2 0 0 1 0 4.4h-4zM9.5 11.9h4.6a2.3 2.3 0 0 1 0 4.6H9.5zM9.5 7.5v9M11 6v1.5M11 16.5V18"/></svg><span>Kripto</span></button><button data-t="set" style="--tc:#94a3b8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>Ayarlar</span></button></div></div></div>
 <div id="pal" onclick="if(event.target.id==='pal')closePal()"><div id="palbox"><input id="palin" placeholder="Hisse veya kripto ara" autocomplete="off"><div id="pallist"></div></div></div>
 
 <script>
@@ -2099,14 +2118,14 @@ function saveExt(){
 }
 function renderLab(){
  const st=S.healthStats;
- let h='<div class="note" style="padding-bottom:0;letter-spacing:.5px">🩺 SİNYAL SAĞLIĞI</div>';
+ let h='<div class="note" style="padding-bottom:0;letter-spacing:.5px">📋 SİNYAL KARNESİ</div>';
  if(st&&st.overall){
   h+='<div class="grid"><div><span class="k">SİNYAL</span><span class="v">'+st.overall.n+'</span></div><div><span class="k">KAZANMA</span><span class="v">%'+nf(st.overall.win,0)+'</span></div><div><span class="k">BEKLENTİ</span><span class="v '+cls(st.overall.exp)+'">'+nf(st.overall.exp,2)+'R</span></div></div>';
   (st.tips||[]).forEach(t=>{h+='<div class="note"'+(t.charAt(0)!=='✓'?' style="color:var(--warn)"':'')+'>'+t+'</div>'});
   const ents=Object.entries(st.setupAgg).sort((a,b)=>b[1].exp-a[1].exp);
   if(ents.length)h+='<table><tr><th>Kurulum</th><th>N</th><th>Kazanma</th><th>Beklenti</th></tr>'+ents.map(([k,v])=>'<tr><td>'+(SNAME[k]||k)+'</td><td>'+v.n+'</td><td>%'+nf(v.win,0)+'</td><td class="'+cls(v.exp)+'">'+nf(v.exp,2)+'R</td></tr>').join('')+'</table>';
  }else h+='<div class="note">Henüz yeterli sinyal geçmişi yok. Birkaç gün ⚡ derin tarama çalıştır, sonra ↻ yenile. Sistem, verdiği A sinyallerinin 1/3/5 gün sonrasını ölçer.</div>';
- h+='<button class="btn" onclick="refreshHealth()">↻ Sağlığı Yenile</button>';
+ h+='<button class="btn" onclick="refreshHealth()">↻ Karneyi Yenile</button>';
  h+='<div class="note" style="padding:10px 0 0;letter-spacing:.5px">📊 BACKTEST</div>';
  h+='<div class="seg" style="margin-bottom:6px"><button class="'+(S.btDir==='AL'?'on':'')+'" onclick="S.btDir=\'AL\';renderLab()">AL</button><button class="'+(S.btDir==='SAT'?'on':'')+'" onclick="S.btDir=\'SAT\';renderLab()">SAT</button></div>';
  h+='<div class="sett"><label>Periyot<select onchange="S.btTf=this.value">'+['1day','1h','15min'].map(t=>'<option value="'+t+'"'+(S.btTf===t?' selected':'')+'>'+(t==='1day'?'Günlük':t)+'</option>').join('')+'</select></label>';
@@ -2736,6 +2755,22 @@ function tvReconnectReport(){
    try{if(r&&typeof r.then==='function')r.then(()=>{try{AFTER[name]()}catch(e){}});else AFTER[name]()}catch(e){}
    return r};
  });
+ // ---- alt menu: 4 ana sekme + Menu sayfasi ----
+ try{
+  const MAIN=['op','live','chart','watch'],more=document.getElementById('more'),mb=document.getElementById('morebtn');
+  const open=()=>{more.classList.add('on');requestAnimationFrame(()=>requestAnimationFrame(()=>more.classList.add('open')))};
+  const close=()=>{more.classList.remove('open');setTimeout(()=>more.classList.remove('on'),260)};
+  document.getElementById('tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.more){open();return}if(b.dataset.t)showTab(b.dataset.t)};
+  more.addEventListener('click',e=>{const b=e.target.closest('.mgrid [data-t]');if(b){close();showTab(b.dataset.t);return}if(e.target.closest('.mclose')||e.target.classList.contains('bd'))close()});
+  const _st=window.showTab;
+  window.showTab=function(t){_st.apply(this,arguments);try{
+   const sec=MAIN.indexOf(t)<0;mb.classList.toggle('on',sec);
+   const tile=more.querySelector('.mgrid [data-t="'+t+'"]');
+   mb.style.setProperty('--tc',sec&&tile?tile.style.getPropertyValue('--tc'):'#e2e8f0');
+   mb.querySelector('.lbl').textContent=sec&&tile?tile.textContent:'Menü';
+   more.querySelectorAll('.mgrid [data-t]').forEach(x=>x.classList.toggle('on',x.dataset.t===t));
+  }catch(e){}};
+ }catch(e){}
  // Ayarlar acikken kaynak durumu sik tazelensin
  setInterval(function(){try{if(S.tab==='set'&&!document.hidden)renderSrcStatus()}catch(e){}},3000);
  // Ayarlar: uzun aciklamalar katlanir (durum kutulari haric)
