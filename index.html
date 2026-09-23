@@ -684,8 +684,19 @@ let COLS=colsFor(LS.get('stf','15'));
 function rvolOf(o){const v=o['relative_volume_intraday|5'];return(v!=null&&isFinite(v)&&v>0)?v:o.relative_volume_10d_calc}
 const FILT=[{left:'type',operation:'equal',right:'stock'},{left:'subtype',operation:'in_range',right:['common','foreign-issuer']}];
 async function tvScan(ep,body){
- const r=await fetch('https://scanner.tradingview.com/'+ep+'/scan',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
+ const js=JSON.stringify(body);
+ // 1) Oncelik: bist-tv Worker (TradingView hesabinla, gercek zamanli). 2) Olmazsa: dogrudan TradingView (15dk gecikmeli).
+ if(S.tvproxy&&/^wss?:\/\//.test(S.tvproxy)){
+  try{
+   const base=S.tvproxy.replace(/^ws/,'http').replace(/\/+$/,'');
+   const r=await fetch(base+'/scan?market='+encodeURIComponent(ep),{method:'POST',headers:{'Content-Type':'text/plain'},body:js});
+   if(r.ok){const j=await r.json();S.scanVia='worker';return j}
+   if(r.status===400){let t='';try{t=(await r.text()).slice(0,90)}catch(e){}throw new Error('HTTP 400 · '+t)}
+  }catch(e){if(String(e.message||'').indexOf('HTTP 400')===0)throw e}
+ }
+ const r=await fetch('https://scanner.tradingview.com/'+ep+'/scan',{method:'POST',headers:{'Content-Type':'text/plain'},body:js});
  if(!r.ok){let t='';try{t=(await r.text()).slice(0,90)}catch(e){}throw new Error('HTTP '+r.status+(t?' · '+t:''))}
+ S.scanVia='direkt';
  return r.json()}
 const rowObj=(row,cols)=>{const o={ticker:row.s};cols.forEach((c,i)=>o[c]=row.d[i]);return o};
 async function loadUniverse(){
