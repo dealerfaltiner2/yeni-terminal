@@ -2310,11 +2310,11 @@ let TVC={cs:null,key:'',ser:0,ready:false,dirty:false,n:0};
 function tvChartSync(){
  try{
   if(!TVL.ws||TVL.ws.readyState!==1||TVL.state!=='acik')return;
-  const T=TVTF[S.tf];if(S.mode!=='bist'||!T||!S.sym)return;
-  const key=S.sym+'|'+S.tf;if(key===TVC.key)return;
+  const T=TVTF[S.tf];if((S.mode!=='bist'&&S.mode!=='crypto')||!T||!S.sym)return;
+  const key=S.mode+':'+S.sym+'|'+S.tf;if(key===TVC.key)return;
   const first=!TVC.cs;if(first){TVC.cs='cs_'+Math.random().toString(36).slice(2,12);tvSend('chart_create_session',[TVC.cs,''])}
   TVC.ser++;const sid='sds_sym_'+TVC.ser;TVC.ready=false;TVC.key=key;
-  tvSend('resolve_symbol',[TVC.cs,sid,'='+JSON.stringify({symbol:'BIST:'+S.sym,adjustment:'splits',session:'regular'})]);
+  tvSend('resolve_symbol',[TVC.cs,sid,'='+JSON.stringify({symbol:(S.mode==='crypto'?'BINANCE:'+S.sym+'USDT':'BIST:'+S.sym),adjustment:'splits',session:'regular'})]);
   if(first||!TVC.hasSer){tvSend('create_series',[TVC.cs,'$prices','s1',sid,T[0],3,'']);TVC.hasSer=true}
   else tvSend('modify_series',[TVC.cs,'$prices','s1',sid,T[0],'']);
  }catch(e){}
@@ -2323,18 +2323,20 @@ function tvChartMsg(m){
  if(m.m==='series_completed'){TVC.ready=true;return}
  if(!TVC.ready)return;
  const ser=m.p[1]&&m.p[1]['$prices'];if(!ser||!Array.isArray(ser.s))return;
- if(TVC.key!==S.sym+'|'+S.tf||S.mode!=='bist')return;
+ if(TVC.key!==S.mode+':'+S.sym+'|'+S.tf)return;
  const cs=S.candles;if(!cs||!cs.length)return;
  const daily=isDaily(S.tf);
  ser.s.map(b=>b&&b.v).filter(v=>v&&v[4]>0).sort((a,b)=>a[0]-b[0]).forEach(v=>{
   const last=cs[cs.length-1];if(Math.abs(v[4]/last.close-1)>0.25)return;
-  const bar={time:daily?istDate(v[0]):v[0],open:v[1],high:v[2],low:v[3],close:v[4],volume:v[5]||0};
+  const bar={time:(daily&&S.mode==='bist')?istDate(v[0]):v[0],open:v[1],high:v[2],low:v[3],close:v[4],volume:v[5]||0};
   if(bar.time===last.time)cs[cs.length-1]=bar;else if(bar.time>last.time)cs.push(bar);else return;
   TVC.dirty=true;TVC.n++;
+  if(S.mode==='crypto'){const q=S.cmap&&S.cmap[S.sym];if(q){const pc=q.close&&q.change!=null?q.close/(1+q.change/100):null;q.close=v[4];if(pc)q.change=(v[4]/pc-1)*100;q._tvLive=Date.now();TVC.px=true}}
  });
 }
 setInterval(function(){try{
  tvChartSync();
+ if(TVC.px){TVC.px=false;try{renderPx()}catch(e){}}
  if(TVC.dirty&&S.tab==='chart'&&!document.hidden){TVC.dirty=false;drawAll()}
 }catch(e){}},1000);
 let TVL={ws:null,ses:'qs_'+Math.random().toString(36).slice(2),buf:'',syms:{},ok:false,last:0,tries:0,throttle:0};
@@ -2757,7 +2759,7 @@ async function loadCandles(){
   else{cs=await getBars(S.sym,S.tf);if(S.tf==='15min'){S.wsig[S.sym]=analyze(cs,S.sym);mark('watch')}}
   if(my!==seq)return;
   S.candles=cs;S.ccache[k]={t:Date.now(),d:cs};S.vp=S.mode==='bist'?volumeProfiles(cs):null;
-  drawAll();chart.timeScale().scrollToRealTime();if(msg)msg.textContent=cs.length+' mum · '+SRCINFO.src+' · '+nf(SRCINFO.lagMs/60000,0)+'dk'+(SRCINFO.stale?' · GECİKMELİ':'');renderSrcStatus();
+  drawAll();chart.timeScale().scrollToRealTime();if(msg)msg.textContent=S.mode==='crypto'?(cs.length+' mum · Binance · canlı: TradingView'):(cs.length+' mum · '+SRCINFO.src+' · '+nf(SRCINFO.lagMs/60000,0)+'dk'+(SRCINFO.stale?' · GECİKMELİ':''));renderSrcStatus();
  }catch(e){if(my===seq&&msg)msg.textContent='hata: '+String(e.message).slice(0,34)}
 }
 function selectSym(s,mode){if(s!==S.sym){S.box=null;S.vp=null}S.sym=s;S.mode=mode;LS.set('sym',s);LS.set('mode',mode);
@@ -2865,7 +2867,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="4.5";
+  const APP_VER="4.6";
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
