@@ -391,6 +391,13 @@ td.fl-up,td.fl-dn{border-radius:4px}
 #updbar.on{display:flex}
 #updbar.ok{background:linear-gradient(90deg,#059669,#10b981)}
 #updbar:active{filter:brightness(1.15)}
+
+/* ---- v4.7 haber seridi ---- */
+#newsbar{display:none;padding:7px 12px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02);font-size:12px;line-height:1.5}
+#newsbar.on{display:block}
+#newsbar a{display:block;color:var(--txt2);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:2px 0}
+#newsbar a b{color:var(--acc);font-weight:800;margin-right:5px}
+#newsbar a i{font-style:normal;color:var(--dim);margin-right:6px}
 @media (prefers-reduced-motion:reduce){.fl-up,.fl-dn,.livebadge i{animation:none}#more .sh,#more .bd{transition:none}}
 </style>
 </head>
@@ -453,6 +460,7 @@ td.fl-up,td.fl-dn{border-radius:4px}
 
   <div class="tab" id="t-chart">
    <div class="bar" id="tfbar"></div>
+   <div id="newsbar"></div>
    <div id="panel">
     <div class="bar wrap">
      <button data-ct="candle" class="on">Mum</button><button data-ct="bar">Bar</button><button data-ct="line">Çizgi</button><button data-ct="area">Alan</button>
@@ -508,8 +516,6 @@ td.fl-up,td.fl-dn{border-radius:4px}
     <select id="srcsel" onchange="setSrc()"><option value="yahoo">Mum: TradingView → yedek Yahoo</option><option value="td">Mum: TradingView → yedek Twelve Data</option></select>
     <select id="barlim" onchange="setBarLim()"><option value="short">Grafik geçmişi: kısa (hızlı)</option><option value="long">Grafik geçmişi: uzun</option></select>
     <input id="tdkey" placeholder="Twelve Data apikey"><input id="tvproxy" placeholder="TV WebSocket proxy URL (wss://xxxx.workers.dev)">
-  <input id="tvuser" placeholder="TradingView kullanıcı adı (boş bırak — Worker kullanılıyor)" autocomplete="off">
-  <input id="tvpass" type="password" placeholder="TradingView şifresi (boş bırak — Worker kullanılıyor)">
   <input id="tvman" placeholder="TV Session ID (Worker için: worker)"><input id="tvman2" placeholder="TV Session Sign (boş bırak)"><button class="g pri" onclick="saveKey()">Anahtarı kaydet</button>
     <button class="g" onclick="testSrc()">Veri kaynağını test et</button><button class="g" onclick="TVL.syms={};try{TVL.ws&&TVL.ws.close()}catch(e){}tvLiveStart();tvReconnectReport()">⚡ TV'ye yeniden bağlan</button><button class="g" onclick="proxyTest()">🔍 Proxy testi</button><div id="srcmsg" class="note"></div>
     <b>MİDAS CANLI VERİ</b>
@@ -538,6 +544,15 @@ td.fl-up,td.fl-dn{border-radius:4px}
     <div id="almsg" class="note"></div>
     <button class="g" onclick="algolabDisconnect()">Bağlantıyı kes</button>
     <div class="note">Bağlandığında üstteki fiyat, İzleme listesi ve Alarm kontrolleri seçili semboller için <b>gerçek zamanlı</b> olur (Fırsat taraması TradingView Worker bağlantından gelir — AlgoLab'ın hız sınırı toplu taramaya uygun değil, sadece tek tek fiyat sorgusuna uygun).<br><br>Şifren ve TC kimlik no hiçbir yerde saklanmaz, sadece oturum açarken kullanılır. Oturum anahtarı (hash) telefonunda kalır. AlgoLab bazı hesaplarda her oturumda yeniden SMS isteyebilir — bağlantı koparsa buradan tekrar giriş yap.<br><br><b>Not:</b> Bu, henüz gerçek bir hesapla test edilmedi. İlk bağlantıda veri alanları uyuşmazsa (fiyat görünmezse) ham yanıtı konsoldan kontrol edip birlikte düzeltiriz.</div>
+    <b>SUNUCU · TELEFON KAPALIYKEN DE</b>
+    <div id="srvmsg" class="note" style="padding-top:0">Kontrol ediliyor…</div>
+    <div class="frow" style="padding:2px 0"><label>Alarmlar</label><div class="seg srvseg" data-k="al"><button data-v="0">Kapalı</button><button data-v="1">Açık</button></div></div>
+    <div class="frow" style="padding:2px 0"><label>Radar</label><div class="seg srvseg" data-k="rd"><button data-v="0">Kapalı</button><button data-v="1">Açık</button></div></div>
+    <div class="frow" style="padding:2px 0"><label>KAP</label><div class="seg srvseg" data-k="kap"><button data-v="0">Kapalı</button><button data-v="1">Açık</button></div></div>
+    <div class="frow" style="padding:2px 0"><label>Bağlantı</label><div class="seg srvseg" data-k="hl"><button data-v="0">Kapalı</button><button data-v="1">Açık</button></div></div>
+    <button class="g pri" onclick="srvSync(true)">Sunucuya gönder</button>
+    <button class="g" onclick="srvTest()">Sunucu testi (Telegram'a mesaj)</button>
+    <div class="note">Worker her dakika çalışır; telefon kapalıyken de: <b>fiyat alarmların</b> (Alarm sekmesi), <b>sunucu radarı</b> (5 dk hacim patlaması + VWAP üstü + gün zirvesi), izleme listendeki ilk 8 hissenin <b>KAP bildirimleri</b> (08:00–22:00) ve <b>bağlantı sağlığı</b> (TradingView oturumu düşerse ya da gecikmeli veri gelirse uyarı) Telegram'a gelir. Mesajlar Algı Radarı'ndaki kişisel Chat ID'ne, o boşsa gruba gider. Alarm ekleyince, silince ya da listeni değiştirince terminal ayarları kendiliğinden sunucuya gönderir.</div>
     <b>SERMAYE</b>
     <input id="cap" type="number" placeholder="Sermaye ₺"><input id="rsk" type="number" step="any" placeholder="İşlem riski %"><button class="g pri" onclick="saveCap()">Kaydet</button>
     <b>SÜRÜM</b>
@@ -592,9 +607,9 @@ const S={sym:LS.get('sym','THYAO'),mode:LS.get('mode','bist'),tf:LS.get('tf','15
 /* kisa vadeli giris filtreleri her zaman acik: EMA20/50 momentum, EMA200 ana trend, VWAP S/D */
 (function(){const d={ema20:1,ema50:1,ema200:1,vwap:1,bb:0,poc:0};for(const k in d){if(typeof S.ind[k]!=='number')S.ind[k]=d[k]}
  S.ind.ema20=1;S.ind.ema50=1;S.ind.ema200=1;S.ind.vwap=1;LS.set('ind',S.ind)})();
-$('#tdkey').value=S.key;$('#tvproxy').value=S.tvproxy;$('#tvuser').value=S.tvUser;$('#tvpass').value=S.tvPass;$('#tvman').value=S.tvMan;$('#tvman2').value=S.tvMan2;$('#srcsel').value=S.src;$('#barlim').value=S.blim;$('#cap').value=S.cap;$('#rsk').value=S.rskp;
+$('#tdkey').value=S.key;$('#tvproxy').value=S.tvproxy;try{localStorage.removeItem('tvPass');localStorage.removeItem('tvUser')}catch(e){}S.tvPass='';S.tvUser='';$('#tvman').value=S.tvMan;$('#tvman2').value=S.tvMan2;$('#srcsel').value=S.src;$('#barlim').value=S.blim;$('#cap').value=S.cap;$('#rsk').value=S.rskp;
 $('#tgtok').value=S.tgTok;$('#tgchat').value=S.tgChat;$('#tgmin').value=S.tgMin;
-function saveKey(){S.key=$('#tdkey').value.trim();LS.set('tdkey',S.key);S.tvproxy=$('#tvproxy').value.trim();LS.set('tvproxy',S.tvproxy);S.tvMan=$('#tvman').value.trim();LS.set('tvman',S.tvMan);S.tvMan2=$('#tvman2').value.trim();LS.set('tvman2',S.tvMan2);var nu=$('#tvuser').value.trim(),np=$('#tvpass').value;if(nu!==S.tvUser||np!==S.tvPass){S.tvSession='';LS.set('tvsession','')}S.tvUser=nu;LS.set('tvUser',nu);if(np){S.tvPass=np;LS.set('tvPass',np)}S.ccache={};try{TVL.syms={};if(TVL.ws)TVL.ws.close()}catch(e){}setTimeout(tvLiveStart,500);loadCandles();alert('Kaydedildi')}
+function saveKey(){S.key=$('#tdkey').value.trim();LS.set('tdkey',S.key);S.tvproxy=$('#tvproxy').value.trim();LS.set('tvproxy',S.tvproxy);S.tvMan=$('#tvman').value.trim();LS.set('tvman',S.tvMan);S.tvMan2=$('#tvman2').value.trim();LS.set('tvman2',S.tvMan2);S.ccache={};try{TVL.syms={};if(TVL.ws)TVL.ws.close()}catch(e){}setTimeout(tvLiveStart,500);loadCandles();alert('Kaydedildi')}
 function setSrc(){S.src=$('#srcsel').value;LS.set('src',S.src);S.ccache={};loadCandles()}
 function setBarLim(){S.blim=$('#barlim').value;LS.set('blim',S.blim);S.ccache={};loadCandles()}
 function saveTg(silent){
@@ -1626,8 +1641,7 @@ async function tvDiagRun(){
 function renderSrcStatus(){
  const m=$('#srcmsg');if(!m)return;
  try{if(TVL&&TVL.state==='-'&&TVL.tries===0)tvLiveStart()}catch(e){} // guvenlik: hic baslatilmadiysa panel baslatir
- try{if(S.tvproxy&&Date.now()-TVDIAG.at>60000&&!(TVL.ok&&Date.now()-TVL.last<15000))tvDiagRun()}catch(e){} // otomatik tani
- try{if(S.tvproxy&&Date.now()-TVDIAG.at>60000&&!(TVL.ok&&Date.now()-TVL.last<15000))tvDiagRun()}catch(e){} // otomatik tani
+  try{if(S.tvproxy&&Date.now()-TVDIAG.at>60000&&!(TVL.ok&&Date.now()-TVL.last<15000))tvDiagRun()}catch(e){} // otomatik tani
  const lagMin=SRCINFO.lagMs/60000;
  // 1) BIRINCI CANLI KAYNAK: MIDAS (~8 sn'de tum BIST)
  const mid=S.midas||{};
@@ -2261,7 +2275,7 @@ let actx=null;function beep(){try{actx=actx||new (window.AudioContext||window.we
 function askNotif(){if(!('Notification' in window)){alert('Bildirim desteklenmiyor');return}Notification.requestPermission().then(p=>alert('Bildirim: '+p))}
 function addAlarm(e){e.preventDefault();const s=$('#als').value.trim().toUpperCase(),l=+$('#all').value;if(!s||!l)return;const q=S.quotes[s]||S.umap[s];S.alarms.push({s,l,dir:q&&q.close?(l>q.close?'up':'down'):'up',t:Date.now()});LS.set('alarms',S.alarms);e.target.reset();beep();renderAlarms()}
 function delAlarm(i){S.alarms.splice(i,1);LS.set('alarms',S.alarms);renderAlarms()}
-function rearmAlarm(i){const a=S.alarms[i];if(!a)return;a.hit=false;LS.set('alarms',S.alarms);renderAlarms();checkAlarms()}
+function rearmAlarm(i){const a=S.alarms[i];if(!a)return;a.hit=false;a.t=Date.now();LS.set('alarms',S.alarms);renderAlarms();checkAlarms()}
 function renderAlarms(){$('#alarms').innerHTML=S.alarms.length?'<table><tr><th>Sembol</th><th>Seviye</th><th>Yön</th><th>Son</th><th>Durum</th><th></th></tr>'+S.alarms.map((a,i)=>{const q=S.quotes[a.s];return'<tr><td class="sym">'+a.s+'</td><td>'+nf(a.l)+'</td><td>'+(a.dir==='up'?'<span class="up">↑</span>':'<span class="dn">↓</span>')+'</td><td>'+(q?nf(q.close):'-')+'</td><td>'+(a.hit?'<b class="dn">GEÇTİ</b>':'bekliyor')+'</td><td><button class="xbtn" onclick="delAlarm('+i+')">✕</button></td></tr>'}).join('')+'</table>':'<div class="note">Alarm yok. Sembol ve seviye girip kur; sayfa açıkken ~15 dk gecikmeli fiyata göre kontrol edilir.</div>'}
 function checkAlarms(){let f=false;
  S.alarms.forEach(a=>{if(a.hit)return;const q=S.quotes[a.s];if(!q||!q.close)return;if((a.dir==='up'&&q.close>=a.l)||(a.dir==='down'&&q.close<=a.l)){a.hit=true;f=true;const m=a.s+' '+nf(q.close)+' → '+nf(a.l);$('#alerttxt').textContent=m;$('#alertbox').classList.add('on');beep();if(navigator.vibrate)navigator.vibrate([200,100,200]);if(window.Notification&&Notification.permission==='granted'){try{new Notification('BIST Alarm',{body:m})}catch(e){}}if(S.tgTok&&S.tgChat)tgSend('🔔 <b>ALARM</b> · '+htmlEsc(a.s)+' '+nf(q.close)+' → seviye '+nf(a.l)).catch(function(e){console.warn('telegram alarm: '+(e.message||e))});}});
@@ -2354,7 +2368,6 @@ function tvLiveStart(){
   ws.onopen=()=>{if(TVL.ws!==ws)return;TVL.tries=0;TVL.buf='';TVL.state='acik';TVL.err='';TVL.syms={};TVC.cs=null;TVC.key='';TVC.ready=false;TVC.hasSer=false;
    (async()=>{
     let tok=S.tvSession||'';
-    if(S.tvUser&&S.tvPass&&!tok){try{await tvAuth();tok=S.tvSession||''}catch(e){}}
     tvSend('set_auth_token',[tok||'unauthorized_user_token']);
     tvSend('quote_create_session',[TVL.ses]);
     tvSend('quote_set_fields',[TVL.ses].concat(TVFLD));
@@ -2462,13 +2475,11 @@ async function tvScanOnce(){
  if(document.hidden)return;
  const base=S.tvproxy.replace(/^wss:/,'https:').replace(/\/$/,'');
  const SESS=S.tvMan||S.tvSession||'';
- if(!SESS&&S.tvUser&&S.tvPass){/* sunucu girisi CAPTCHA yuzunden kapali */}
  const uniq=[];const seen={};
  const add=s=>{if(s&&!seen[s]){seen[s]=1;uniq.push(s)}};
  if(S.sym)add('BIST:'+S.sym);
  try{if(typeof W==='function')(W()||[]).slice(0,30).forEach(s=>add('BIST:'+s))}catch(e){}
  add('BIST:XU100');
- try{fetch(base+'/set-syms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbols:uniq})}).catch(()=>{})}catch(e){}
  // Oturum varsa TUM piyasa (600+ hisse), yoksa sadece izleme listesi
  let use=uniq.slice(0,40);
  if(SESS){
@@ -2499,33 +2510,6 @@ async function tvScanOnce(){
    try{renderPx()}catch(e){}mark('watch');mark('alarm');checkAlarms();updateOpenSignals();
   }else{TVS.ok=false;TVS.err='bos yanit'}
  }catch(e){TVS.ok=false;TVS.err=e.message||'hata'}
- // Kopru: Safari'deki TV sekmesinden gelen taze veri varsa onu kullan
- try{
-  const rp=await fetch(base+'/pull');
-  const dp=await rp.json();
-  if(dp&&dp.data&&Date.now()-dp.at<150000){
-   const dd=JSON.parse(dp.data);
-   if(dd&&Array.isArray(dd.data)){dd.data.forEach(row=>{
-    const sym=(row.s||'').split(':')[1];if(!sym)return;const v=row.d||[];const o=S.umap[sym]||{};
-    if(v[1]!=null)o.close=v[1];if(v[2]!=null)o.change=v[2];if(v[3]!=null)o.change_abs=v[3];
-    if(v[4]!=null)o.volume=v[4];if(v[5]!=null)o.high=v[5];if(v[6]!=null)o.low=v[6];if(v[7]!=null)o.open=v[7];
-    o.update_mode='tv_bridge';S.umap[sym]=o;
-    if(S.quotes[sym]){S.quotes[sym].close=v[1];if(v[2]!=null)S.quotes[sym].change=v[2]}
-   });TVS.ok=true;TVS.at=Date.now();TVS.err='';TVS.n=dd.data.length;try{renderPx()}catch(e){}mark('watch');mark('alarm');checkAlarms();updateOpenSignals()}
-  }
-  // Webhook alarmlari: TV sunucularindan gelen tiklari uygula
-  if(dp&&dp.ticks){
-   let tn=0;
-   for(const sym in dp.ticks){
-    const tk=dp.ticks[sym];if(!tk||Date.now()-tk.at>180000)continue;tn++;
-    const o=S.umap[sym]||{};
-    o.close=tk.c;if(tk.ch!=null)o.change=tk.ch;
-    o.update_mode='tv_webhook';S.umap[sym]=o;
-    if(S.quotes[sym]){S.quotes[sym].close=tk.c;if(tk.ch!=null)S.quotes[sym].change=tk.ch}
-   }
-   if(tn>0&&(Date.now()-(dp.tat||0))<180000){TVS.ok=true;TVS.at=Date.now();TVS.err='';TVS.n=Math.max(TVS.n,tn);try{renderPx()}catch(e){}mark('watch');mark('alarm');checkAlarms();updateOpenSignals()}
-  }
- }catch(e){}
 }
 
 /* ================= PERFORMANS PANELI ================= */
@@ -2867,7 +2851,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="4.6";
+  const APP_VER="4.7";
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -2898,6 +2882,91 @@ function tvReconnectReport(){
   setInterval(()=>{if(!document.hidden)checkUpd()},5*60000);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now()-UPD.last>60000)checkUpd()});
   renderVer();
+ }catch(e){}
+ // ---- v4.7 · sunucu (7/24) + KAP haberleri ----
+ try{
+  const SRV={opt:Object.assign({al:1,rd:1,kap:1,hl:1,rdMin:60},LS.get('srvOpt',{})),sig:'',last:null,err:'',news:{},busy:false};
+  const base=()=>(typeof tvBarsBase==='function'?tvBarsBase():'');
+  const aid=a=>a.s+'|'+a.l+'|'+(a.t||0);
+  function payload(){
+   const ch=(S.algi&&S.algi.cfg&&S.algi.cfg.chat)||S.tgChat||'';
+   return {tgTok:S.tgTok||'',chat:ch,alarms:(S.alarms||[]).filter(a=>!a.hit).map(a=>({id:aid(a),s:a.s,l:a.l,dir:a.dir})),
+    watch:(typeof W==='function'?(W()||[]):[]).slice(0,8),opt:SRV.opt};
+  }
+  function applyHits(hit){
+   if(!Array.isArray(hit)||!hit.length)return;let ch=false;
+   (S.alarms||[]).forEach(a=>{if(!a.hit&&hit.indexOf(aid(a))>=0){a.hit=true;ch=true}});
+   if(ch){LS.set('alarms',S.alarms);try{mark('alarm')}catch(e){}}
+  }
+  function render(){
+   const el=document.getElementById('srvmsg');if(!el)return;
+   const s=SRV.last;
+   if(!base()){el.innerHTML='<span class="wrn">TV WebSocket proxy adresi yok.</span>';return}
+   if(SRV.err){el.innerHTML='<span class="dn">'+htmlEsc(SRV.err)+'</span>';return}
+   if(!s){el.textContent='Kontrol ediliyor…';return}
+   const t=x=>x?new Date(x).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}):'-';
+   const fresh=s.lastRun&&Date.now()-s.lastRun<15*60000;
+   const h=s.health?(s.health.ok?'<span class="up">bağlantı ✓</span>':'<span class="dn">bağlantı ⚠ '+htmlEsc(s.health.why||'')+'</span>'):'bağlantı: seansta kontrol edilir';
+   el.innerHTML=(!s.kv?'<span class="dn">KV (DB) bağlaması yok — kurulum eksik</span><br>':'')+
+    (fresh?'<span class="up">● Sunucu çalışıyor</span>':'<span class="wrn">○ Sunucu son 15 dk çalışmadı</span> (Cron tetikleyicisi kurulu mu? Gece/hafta sonu normal)')+
+    ' · son çalışma '+t(s.lastRun)+'<br>'+h+' · '+(s.telegram?'Telegram ✓':'<span class="wrn">Telegram ayarı yok</span>')+
+    ' · '+s.alarms+' alarm · izleme: '+((s.watch||[]).join(', ')||'-')+
+    (s.today?'<br>Bugün: '+s.today.alarm+' alarm · '+s.today.radar+' radar · '+s.today.kap+' KAP':'')+
+    (s.err?'<br><span class="wrn">'+htmlEsc(s.err)+'</span>':'');
+  }
+  function segs(){document.querySelectorAll('.srvseg').forEach(sg=>{const k=sg.dataset.k;[...sg.children].forEach(b=>b.classList.toggle('on',+b.dataset.v===(SRV.opt[k]?1:0)));
+   sg.onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;SRV.opt[k]=+b.dataset.v;LS.set('srvOpt',SRV.opt);segs();srvSync(false)}})}
+  async function status(){
+   if(!base())return render();
+   try{const r=await fetch(base()+'/status');
+    if(r.status===404){SRV.err='Worker v5 yüklenmemiş (bist-tv kodunu güncelle)';return render()}
+    const j=await r.json();if(!j.ok)throw new Error(j.error||'hata');SRV.last=j;SRV.err='';applyHits(j.hit)}
+   catch(e){SRV.err='Sunucuya ulaşılamadı: '+(e.message||e)}
+   render();
+  }
+  window.srvSync=async function(manual){
+   if(!base()||SRV.busy)return;SRV.busy=true;
+   const p=payload(),sig=JSON.stringify(p);
+   try{
+    const r=await fetch(base()+'/sync',{method:'POST',headers:{'Content-Type':'text/plain'},body:sig});
+    if(r.status===404)throw new Error('Worker v5 yüklenmemiş');
+    const j=await r.json();if(!j.ok)throw new Error(j.error||'hata');
+    SRV.sig=sig;SRV.err='';applyHits(j.hit);
+    if(manual)alert('Sunucuya gönderildi: '+j.alarms+' alarm, '+j.watch+' izleme hissesi'+(j.telegram?'':'\n⚠ Telegram ayarı eksik (token/Chat ID)'));
+   }catch(e){SRV.err='Gönderilemedi: '+(e.message||e);if(manual)alert(SRV.err)}
+   SRV.busy=false;status();
+  };
+  window.srvTest=async function(){
+   if(!base())return alert('Önce proxy adresini gir');
+   await srvSync(false);
+   try{const j=await (await fetch(base()+'/cron-test?force=1&tg=1')).json();
+    alert(j.telegramTest&&j.telegramTest.ok?'✅ Telegram\'a test mesajı gitti.\nBağlantı: '+(j.health?(j.health.ok?'gerçek zamanlı ✓':'⚠ '+j.health.why):'-')+' · taranan hisse: '+(j.scanned||0):'❌ '+((j.telegramTest&&j.telegramTest.error)||j.why||j.err||'test başarısız'))}
+   catch(e){alert('❌ '+(e.message||e))}
+   status();
+  };
+  // degisiklik olunca otomatik gonder (alarm, izleme listesi, Telegram)
+  setInterval(()=>{try{if(!base()||document.hidden)return;const sig=JSON.stringify(payload());if(sig!==SRV.sig)srvSync(false)}catch(e){}},15000);
+  setInterval(()=>{if(!document.hidden&&(S.tab==='set'||S.tab==='alarm'))status()},60000);
+  setTimeout(()=>{segs();status();try{const sig=JSON.stringify(payload());if(sig!==SRV.sig)srvSync(false)}catch(e){}},5000);
+  const _st2=window.showTab;window.showTab=function(t){_st2.apply(this,arguments);if(t==='set'){segs();status()}};
+
+  // ---- grafik: son KAP / haberler ----
+  async function newsFor(sym){
+   const bar=document.getElementById('newsbar');if(!bar)return;
+   if(!base()||S.mode!=='bist'||!sym){bar.classList.remove('on');return}
+   const c=SRV.news[sym];let items;
+   if(c&&Date.now()-c.t<120000)items=c.items;
+   else{try{const j=await (await fetch(base()+'/news?s='+encodeURIComponent(sym))).json();const d=j&&j.data&&j.data['BIST:'+sym];items=(d&&d.items)||[];SRV.news[sym]={t:Date.now(),items}}catch(e){items=[]}}
+   if(S.sym!==sym)return;
+   const list=items.slice(0,3);
+   if(!list.length){bar.classList.remove('on');bar.innerHTML='';return}
+   const dt=t=>t?new Date(t*1000).toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+   bar.innerHTML=list.map(n=>'<a href="'+htmlEsc(n.link||'#')+'" target="_blank" rel="noopener">'+(n.kap?'<b>KAP</b>':'<b style="color:var(--c1)">HABER</b>')+'<i>'+dt(n.t)+'</i>'+htmlEsc(n.title)+'</a>').join('');
+   bar.classList.add('on');
+  }
+  const _lc=window.loadCandles;
+  window.loadCandles=function(){const r=_lc.apply(this,arguments);try{newsFor(S.sym)}catch(e){}return r};
+  setTimeout(()=>{try{newsFor(S.sym)}catch(e){}},6000);
  }catch(e){}
  // Ayarlar acikken kaynak durumu sik tazelensin
  setInterval(function(){try{if(S.tab==='set'&&!document.hidden)renderSrcStatus()}catch(e){}},3000);
