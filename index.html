@@ -505,7 +505,7 @@ td.fl-up,td.fl-dn{border-radius:4px}
   <div class="tab" id="t-set">
    <div class="sett">
     <b>MUM VERİSİ</b>
-    <select id="srcsel" onchange="setSrc()"><option value="yahoo">Yahoo (kendi proxy'n)</option><option value="td">Twelve Data</option></select>
+    <select id="srcsel" onchange="setSrc()"><option value="yahoo">Mum: TradingView → yedek Yahoo</option><option value="td">Mum: TradingView → yedek Twelve Data</option></select>
     <select id="barlim" onchange="setBarLim()"><option value="short">Grafik geçmişi: kısa (hızlı)</option><option value="long">Grafik geçmişi: uzun</option></select>
     <input id="tdkey" placeholder="Twelve Data apikey"><input id="tvproxy" placeholder="TV WebSocket proxy URL (wss://xxxx.workers.dev)">
   <input id="tvuser" placeholder="TradingView kullanıcı adı (boş bırak — Worker kullanılıyor)" autocomplete="off">
@@ -1561,22 +1561,51 @@ async function tdBars(sym,tf,n){
  if(j.status==='error')throw new Error(j.message);
  return j.values.map(v=>{const d=v.datetime.split(' ')[0],tt=v.datetime.split(' ')[1];let time;if(isDaily(tf))time=d;else{const a=d.split('-').map(Number),b=tt.split(':').map(Number);time=Date.UTC(a[0],a[1]-1,a[2],b[0],b[1])/1000}return{time,open:+v.open,high:+v.high,low:+v.low,close:+v.close,volume:+v.volume||0}});
 }
+/* ================= TradingView mum verisi (bist-tv Worker /bars) ================= */
+const TVTF={'1min':['1',800,2500],'5min':['5',800,2500],'15min':['15',700,2000],'1h':['60',800,3000],'4h':['240',400,1500],'1day':['1D',300,1300],'1week':['1W',160,520],'1month':['1M',100,240]};
+const TVB={q:[],t:null,n:0,err:''};
+const istDate=t=>new Date((t+10800)*1000).toISOString().slice(0,10);
+function tvBarsBase(){return S.tvproxy&&/^wss?:\/\//.test(S.tvproxy)?S.tvproxy.replace(/^ws/,'http').replace(/\/+$/,''):''}
+function tvBars(sym,tf,short){
+ const T=TVTF[tf];if(!T||!tvBarsBase())return Promise.reject(new Error('TradingView mum kaynağı yok'));
+ const n=(short||S.blim==='short')?T[1]:T[2];
+ return new Promise((res,rej)=>{TVB.q.push({sym:String(sym).toUpperCase(),tf,n,res,rej});if(!TVB.t)TVB.t=setTimeout(tvBarsFlush,60)});
+}
+function tvBarsFlush(){
+ TVB.t=null;const q=TVB.q.splice(0),G={};
+ q.forEach(x=>{const k=x.tf+'|'+x.n;(G[k]=G[k]||[]).push(x)});
+ Object.keys(G).forEach(k=>{
+  const items=G[k],tf=items[0].tf,n=items[0].n,syms=[...new Set(items.map(x=>x.sym))];
+  for(let i=0;i<syms.length;i+=8){
+   const part=syms.slice(i,i+8),mine=items.filter(x=>part.indexOf(x.sym)>=0);
+   const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),16000);TVB.n++;
+   fetch(tvBarsBase()+'/bars?s='+encodeURIComponent(part.join(','))+'&tf='+TVTF[tf][0]+'&n='+n,{signal:ctl.signal})
+    .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
+    .then(j=>{clearTimeout(to);TVB.err='';
+     mine.forEach(x=>{const d=j&&j.data&&j.data[(x.sym.indexOf(':')>0?x.sym:'BIST:'+x.sym)];
+      if(!d||!d.bars||!d.bars.length){x.rej(new Error((d&&d.err)||'TradingView veri vermedi'));return}
+      const daily=isDaily(tf);
+      x.res(d.bars.filter(b=>b[4]!=null).map(b=>({time:daily?istDate(b[0]):b[0],open:b[1],high:b[2],low:b[3],close:b[4],volume:b[5]||0})))})})
+    .catch(e=>{clearTimeout(to);TVB.err=e&&e.name==='AbortError'?'zaman aşımı':(e.message||'bağlantı');mine.forEach(x=>x.rej(new Error(TVB.err)))});
+  }
+ });
+}
 /* ================= veri kaynagi kontrolu =================
    1) birincil kaynak (src ayarina gore)  2) basarisizsa yedek  3) her veride zaman damgasi kontrolu
    4) >20 dk gecikmis veri SRCINFO.stale ile isaretlenir, sinyal uretiminde kullanilmaz  5) panelde gosterilir */
 let SRCINFO={src:'-',lagMs:0,stale:false};
 async function getBarsTracked(s,tf,sh){
- const order=S.src==='td'?['td','yahoo']:['yahoo','td'];
+ const order=(tvBarsBase()?['tv']:[]).concat(S.src==='td'?['td','yahoo']:['yahoo','td']);
  let lastErr=null;
  for(let i=0;i<order.length;i++){
   const src2=order[i];
   try{
-   const cs=src2==='td'?await tdBars(s,tf):await yahooBars(s,tf,sh);
+   const cs=src2==='tv'?await tvBars(s,tf,sh):src2==='td'?await tdBars(s,tf):await yahooBars(s,tf,sh);
    const lt=cs.length?cs[cs.length-1].time:null;
    const lagMs=lt==null?0:Date.now()-(typeof lt==='string'?new Date(lt+'T23:59:59').getTime():lt*1000);
-   SRCINFO={src:src2,lagMs:lagMs,stale:!isDaily(tf)&&withinMarketHours()&&lagMs>20*60000}; // piyasa kapaliyken son mumun yasi gecikme sayilmaz
+   SRCINFO={src:src2==='tv'?'TradingView':src2,lagMs:lagMs,stale:!isDaily(tf)&&withinMarketHours()&&lagMs>20*60000}; // piyasa kapaliyken son mumun yasi gecikme sayilmaz
    return cs;
-  }catch(e){lastErr=e;SRCINFO={src:src2+' (hata)',lagMs:0,stale:true}}
+  }catch(e){lastErr=e;SRCINFO={src:(src2==='tv'?'TradingView':src2)+' (hata)',lagMs:0,stale:true}}
  }
  throw lastErr||new Error('tüm kaynaklar başarısız');
 }
@@ -1615,7 +1644,7 @@ function renderSrcStatus(){
     +(TVDIAG.at?('<br><span style="color:var(--txt2)">tanı: köprü '+TVDIAG.echo+' · TV '+TVDIAG.tv+(TVS.err?(' · tarama: '+TVS.err):'')+'</span>'):'')
     +(S.tvproxy?'':'<br><span style="color:var(--acc)">→ Çözüm: Ayarlar bölümündeki "TV WebSocket proxy URL" alanına wss:// adresini gir</span>'));
  // 2) MUM VERISI: Yahoo -> Twelve Data (birincil basarisizsa yedek)
- const mumLine='Mum verisi: <b>'+SRCINFO.src+'</b> · son mum ~'+nf(lagMin,0)+' dk önce · sıralama: '+(S.src==='td'?'Twelve Data → Yahoo':'Yahoo → Twelve Data')+(S.key?'':' · <span class="wrn">Twelve Data anahtarı yok — yedek kaynak kapalı</span>');
+ const mumLine='Mum verisi: <b>'+SRCINFO.src+'</b> · son mum ~'+nf(lagMin,0)+' dk önce · sıralama: '+(tvBarsBase()?'TradingView → ':'')+(S.src==='td'?'Twelve Data → Yahoo':'Yahoo → Twelve Data')+(TVB.err?' · <span class="wrn">TV mum: '+TVB.err+'</span>':'')+(TVC.key&&TVC.ready?' · grafik canlı ⚡':'')+(S.key?'':' · <span class="wrn">Twelve Data anahtarı yok — yedek kaynak kapalı</span>');
  m.innerHTML='<b style="letter-spacing:.5px">VERİ KAYNAĞI SIRASI</b><br>0) '+tvLine+'<br>1) '+midLine+'<br>2) '+mumLine+
  (SRCINFO.stale?'<br><span class="dn">⚠ Gecikmeli veri — sinyal üretiminde kullanılmıyor.</span>':'<br><span class="up">'+(withinMarketHours()?'✓ Mum verisi taze':'✓ Piyasa kapalı — son mum kapanış verisi')+'</span>');
 }
@@ -2277,6 +2306,37 @@ function journalFromBox(){const b=S.box;if(!b){alert('Önce AL/SAT kutusu kur');
  S.jr.push({s:b.sym,d:b.dir,k,type:'manuel',tf:S.stf,e:b.entry,l:b.sl,t:b.tp,tp2v:null,dt:new Date().toISOString().slice(0,16).replace('T',' '),x:null,r:null,pct:null,status:'açık',closeD:null});
  LS.set('jr',S.jr);showTab('jr')}
 /* ============ TRADINGVIEW WEBSOCKET — GERCEK ZAMANLI (~1 sn) ============ */
+let TVC={cs:null,key:'',ser:0,ready:false,dirty:false,n:0};
+function tvChartSync(){
+ try{
+  if(!TVL.ws||TVL.ws.readyState!==1||TVL.state!=='acik')return;
+  const T=TVTF[S.tf];if(S.mode!=='bist'||!T||!S.sym)return;
+  const key=S.sym+'|'+S.tf;if(key===TVC.key)return;
+  const first=!TVC.cs;if(first){TVC.cs='cs_'+Math.random().toString(36).slice(2,12);tvSend('chart_create_session',[TVC.cs,''])}
+  TVC.ser++;const sid='sds_sym_'+TVC.ser;TVC.ready=false;TVC.key=key;
+  tvSend('resolve_symbol',[TVC.cs,sid,'='+JSON.stringify({symbol:'BIST:'+S.sym,adjustment:'splits',session:'regular'})]);
+  if(first||!TVC.hasSer){tvSend('create_series',[TVC.cs,'$prices','s1',sid,T[0],3,'']);TVC.hasSer=true}
+  else tvSend('modify_series',[TVC.cs,'$prices','s1',sid,T[0],'']);
+ }catch(e){}
+}
+function tvChartMsg(m){
+ if(m.m==='series_completed'){TVC.ready=true;return}
+ if(!TVC.ready)return;
+ const ser=m.p[1]&&m.p[1]['$prices'];if(!ser||!Array.isArray(ser.s))return;
+ if(TVC.key!==S.sym+'|'+S.tf||S.mode!=='bist')return;
+ const cs=S.candles;if(!cs||!cs.length)return;
+ const daily=isDaily(S.tf);
+ ser.s.map(b=>b&&b.v).filter(v=>v&&v[4]>0).sort((a,b)=>a[0]-b[0]).forEach(v=>{
+  const last=cs[cs.length-1];if(Math.abs(v[4]/last.close-1)>0.25)return;
+  const bar={time:daily?istDate(v[0]):v[0],open:v[1],high:v[2],low:v[3],close:v[4],volume:v[5]||0};
+  if(bar.time===last.time)cs[cs.length-1]=bar;else if(bar.time>last.time)cs.push(bar);else return;
+  TVC.dirty=true;TVC.n++;
+ });
+}
+setInterval(function(){try{
+ tvChartSync();
+ if(TVC.dirty&&S.tab==='chart'&&!document.hidden){TVC.dirty=false;drawAll()}
+}catch(e){}},1000);
 let TVL={ws:null,ses:'qs_'+Math.random().toString(36).slice(2),buf:'',syms:{},ok:false,last:0,tries:0,throttle:0};
 const TVFLD=['lp','ch','chp','volume','high','low','open','bid','ask','update_mode'];
 const TV_TOPN=150;
@@ -2289,7 +2349,7 @@ function tvLiveStart(){
   const url=S.tvproxy?S.tvproxy:('wss://data.tradingview.com/socket.io/websocket?from=symbols/BIST%2F&date='+Date.now());
   const ws=new WebSocket(url);
   TVL.ws=ws;TVL.state='baglaniyor';TVL.err='';
-  ws.onopen=()=>{if(TVL.ws!==ws)return;TVL.tries=0;TVL.buf='';TVL.state='acik';TVL.err='';TVL.syms={};
+  ws.onopen=()=>{if(TVL.ws!==ws)return;TVL.tries=0;TVL.buf='';TVL.state='acik';TVL.err='';TVL.syms={};TVC.cs=null;TVC.key='';TVC.ready=false;TVC.hasSer=false;
    (async()=>{
     let tok=S.tvSession||'';
     if(S.tvUser&&S.tvPass&&!tok){try{await tvAuth();tok=S.tvSession||''}catch(e){}}
@@ -2368,6 +2428,7 @@ function tvLiveOnMsg(data){
   // standart kalp atisi: ~m~4~m~~h~12 -> aynen geri gonder
   if(payload.slice(0,3)==='~h~'){try{TVL.ws.send('~m~'+payload.length+'~m~'+payload)}catch(e){}continue}
   let msg;try{msg=JSON.parse(payload)}catch(e){continue}
+  if((msg.m==='du'||msg.m==='timescale_update'||msg.m==='series_completed')&&msg.p&&TVC.cs&&msg.p[0]===TVC.cs){try{tvChartMsg(msg)}catch(e){}continue}
   if(msg.m!=='qsd'||!msg.p||!msg.p[1])continue;
   const dd=msg.p[1],v=dd.v||{};
   const name=String(dd.n||v.name||'').split(':').pop();if(!name)continue;
@@ -2804,7 +2865,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="4.4";
+  const APP_VER="4.5";
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
