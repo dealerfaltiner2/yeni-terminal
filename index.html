@@ -514,7 +514,7 @@ td.fl-up,td.fl-dn{border-radius:4px}
     <button class="g" onclick="testSrc()">Veri kaynağını test et</button><button class="g" onclick="TVL.syms={};try{TVL.ws&&TVL.ws.close()}catch(e){}tvLiveStart();tvReconnectReport()">⚡ TV'ye yeniden bağlan</button><button class="g" onclick="proxyTest()">🔍 Proxy testi</button><div id="srcmsg" class="note"></div>
     <b>MİDAS CANLI VERİ</b>
     <div id="midasmsg" class="note">Yükleniyor...</div>
-    <div class="note">Terminal, Midas'ın herkese açık genel veri ucundan tüm BIST hisselerinin fiyatını ~8 saniyede bir tazeler (fiyat, hacim, tavan/taban). Bu resmi/garantili bir API değil — Midas'ın kendi sitesini besleyen genel bir uç. TradingView (Worker) verisi taze olduğunda öncelik her zaman ondadır; Midas yalnızca yedek olarak kullanılır. Durursa hiçbir şey bozulmaz.</div>
+    <div class="note">Midas verisi <b>15 dk gecikmelidir</b>. Anlık fiyat, hacim ve alış/satış her zaman TradingView (Worker) akışından gelir. Midas yalnızca tavan/taban bilgisi için ve TradingView bağlantısı tamamen koparsa <b>“15 dk”</b> etiketli yedek fiyat olarak kullanılır; bu durumda CANLI rozeti yanmaz.</div>
     <b>OTOMATİK TARAMA + TELEGRAM</b>
     <div class="frow" style="padding:2px 0"><label>Durum</label><div class="seg" id="autoseg"><button data-a="0" class="on">Kapalı</button><button data-a="1">Açık</button></div></div>
     <input id="tgtok" placeholder="Telegram bot token" oninput="saveTg(true)">
@@ -813,6 +813,7 @@ async function loadUniverse(){
   S.uni=data.map(r=>rowObj(r,cols));S.umap={};S.sectors=new Set();
   S.uni.forEach(o=>{o.voltl=o.volume*o.close;o.tfm=null;
    const prevQ=S.quotes[o.name];
+   if(prevQ){if(prevQ.bid>0)o.bid=prevQ.bid;if(prevQ.ask>0)o.ask=prevQ.ask;if(prevQ.upperLimit>0)o.upperLimit=prevQ.upperLimit;if(prevQ.lowerLimit>0)o.lowerLimit=prevQ.lowerLimit;if(prevQ._tvLive)o._tvLive=prevQ._tvLive;if(prevQ.volume>o.volume)o.volume=prevQ.volume}
    if(prevQ&&prevQ._tvLive&&Date.now()-prevQ._tvLive<6000){o.close=prevQ.close;o.change=prevQ.change;o._tvLive=prevQ._tvLive;o.voltl=o.volume*o.close}
    else if(prevQ&&prevQ._midasLive&&Date.now()-prevQ._midasLive<15000&&!(S.scanVia==='worker')){o.close=prevQ.close;o.change=prevQ.change;o.bid=prevQ.bid;o.ask=prevQ.ask;o.upperLimit=prevQ.upperLimit;o.lowerLimit=prevQ.lowerLimit;o._midasLive=prevQ._midasLive;o.voltl=o.volume*o.close}
    if(S.scanVia==='worker'&&!o._tvLive)o._tvScan=Date.now();
@@ -1378,7 +1379,8 @@ async function fetchMidasRaw(){
  }
 }
 function tvFresh(q){const n=Date.now();return !!(q&&((q._tvLive&&n-q._tvLive<6000)||(q._tvScan&&n-q._tvScan<35000)))}
-function midasSoft(p){const c=Object.assign({},p);delete c.close;delete c.change;delete c.volume;delete c.voltl;return c}
+function midasSoft(p){const c=Object.assign({},p);delete c.close;delete c.change;delete c.volume;delete c.voltl;delete c.bid;delete c.ask;delete c._midasLive;return c}
+function tvAlive(){try{const n=Date.now();return !!((typeof TVS!=='undefined'&&TVS.ok&&n-TVS.at<60000)||(typeof TVL!=='undefined'&&TVL.ok&&n-TVL.last<60000))}catch(e){return false}}
 async function pollMidas(){
  if(document.hidden){S.midas.err='sekme arka planda';renderMidasStatus();return}
  S.midas.tries=(S.midas.tries||0)+1;
@@ -1397,8 +1399,9 @@ async function pollMidas(){
     _midasLive:now};
    const h=S.midHis[code]=S.midHis[code]||[];h.push({t:now,p:+m.Last,v:+m.TotalVolume||0,tn:+m.TotalTurnover||0,b:+m.Bid||0,a:+m.Ask||0});
    if(h.length>120)h.shift();
-   const o=S.umap[code];if(o){Object.assign(o,tvFresh(o)?midasSoft(patch):patch);hit++}
-   const q=S.quotes[code];if(q)Object.assign(q,tvFresh(q)?midasSoft(patch):patch);else if(o)S.quotes[code]=Object.assign({name:code},o);
+   const tvA=tvAlive();
+   const o=S.umap[code];if(o){Object.assign(o,(tvA||tvFresh(o))?midasSoft(patch):patch);hit++}
+   const q=S.quotes[code];if(q)Object.assign(q,(tvA||tvFresh(q))?midasSoft(patch):patch);else if(o)S.quotes[code]=Object.assign({name:code},o);
   });
   S.midas={ok:true,at:now,n:hit,err:'',tries:S.midas.tries};
   if(hit){try{buildPercentiles()}catch(e){}renderPx();mark('watch');checkAlarms();mark('op');updateOpenSignals();mark('live')}
@@ -1601,11 +1604,11 @@ function renderSrcStatus(){
  const mid=S.midas||{};
  const midOk=mid.at&&Date.now()-mid.at<90000;
  const midLine=midOk
-  ?'<span class="up">● Midas</span> · '+mid.n+' hisse · '+new Date(mid.at).toLocaleTimeString('tr-TR')
+  ?'<span style="color:var(--txt2)">● Midas</span> <span class="wrn">(15 dk gecikmeli · yalnızca yedek)</span> · '+mid.n+' hisse · '+new Date(mid.at).toLocaleTimeString('tr-TR')
   :'<span class="dn">○ Midas yok'+(mid.err?(' ('+mid.err+')'):'')+'</span>';
  const tvOk=(TVL.ok&&Date.now()-TVL.last<15000)||(TVS.ok&&Date.now()-TVS.at<20000);
  const tvLine=tvOk
-  ?('<span class="up">⚡ GERÇEK ANLIK</span>'+((TVL.ok&&Date.now()-TVL.last<15000)?' · anlık akış '+Object.keys(TVL.syms).length+' sembol (~1 sn)':'')+((TVS.ok&&Date.now()-TVS.at<20000)?' · tarama '+TVS.n+' hisse (~4 sn)':''))
+  ?('<span class="up">⚡ GERÇEK ANLIK</span>'+((TVL.ok&&Date.now()-TVL.last<15000)?' · anlık akış '+Object.keys(TVL.syms).length+' sembol (~1 sn)':'')+((TVS.ok&&Date.now()-TVS.at<20000)?' · tarama '+TVS.n+' hisse (~4 sn)':'')+(TVL.drops?' · kopma '+TVL.drops:'')+(TVL.delayed?' · <span class="dn">⚠ TV gecikmeli veri gönderiyor ('+TVL.delayed+')</span>':''))
   :(TVL.state==='acik'
    ?'<span style="color:var(--acc)">◌ TV bağlı, işlem bekleniyor</span> · '+Object.keys(TVL.syms).length+' sembol'
    :'<span class="dn">○ TV bağlı değil</span> ['+({acik:'açık',kapali:'kapalı',baglaniyor:'bağlanıyor'}[TVL.state]||TVL.state||'-')+(TVL.err?(' · '+TVL.err):'')+' · deneme '+TVL.tries+(TVL.gerr?(' · ⚠'+TVL.gerr):'')+']'
@@ -1724,8 +1727,7 @@ async function watchLoop(){
 /* ================= diğer ================= */
 async function refreshFast(){
  if(document.hidden)return;
- const midOk=S.midas&&S.midas.ok&&Date.now()-S.midas.at<60000;
- if(midOk){renderPx();['watch','alarm','live'].forEach(mark);checkAlarms();updateOpenSignals();return} // canli fiyat Midas'tan; TradingView'a dusme
+ if(tvAlive()){renderPx();['watch','alarm','live'].forEach(mark);checkAlarms();updateOpenSignals();return} // anlik fiyat TradingView akisindan geliyor
  const t=[...new Set([S.sym,...W(),...S.alarms.filter(a=>!a.hit).map(a=>a.s)])].map(s=>'BIST:'+s);
  if(!t.length)return;
  try{const j=await tvScan('global',{symbols:{tickers:t},columns:COLS});j.data.forEach(r=>{const o=rowObj(r,COLS);o.voltl=o.volume*o.close;o.tfm=null;
@@ -1764,8 +1766,9 @@ function renderCrypto(){$('#crypto').innerHTML='<table><tr><th>Coin</th><th>Fiya
 function curQuote(){return S.mode==='crypto'?S.cmap[S.sym]:S.quotes[S.sym]}
 function renderPx(){const q=curQuote();if(!q){$('#px').innerHTML='<span class="pxv">-</span><small>-</small>';return}
  const n=Date.now(),tick=q._tvLive&&n-q._tvLive<15000;
- const live=tick||(q._tvScan&&n-q._tvScan<20000)||(q._live&&n-q._live<15000)||(q._midasLive&&n-q._midasLive<15000);
- $('#px').innerHTML='<span class="pxv">'+nf(q.close,q.close<1?4:2)+'</span><small class="'+cls(q.change)+'">'+pct(q.change)+(live?' <span class="livebadge'+(tick?' tick':'')+'"><i></i>CANLI</span>':'')+'</small>'}
+ const live=tick||(q._tvScan&&n-q._tvScan<20000)||(q._live&&n-q._live<15000);
+ const late=!live&&q._midasLive&&n-q._midasLive<60000;
+ $('#px').innerHTML='<span class="pxv">'+nf(q.close,q.close<1?4:2)+'</span><small class="'+cls(q.change)+'">'+pct(q.change)+(live?' <span class="livebadge'+(tick?' tick':'')+'"><i></i>CANLI</span>':late?' <span class="wrn" style="font-weight:700">15 dk</span>':'')+'</small>'}
 function renderWLSel(){$('#wlsel').innerHTML=Object.keys(WL.lists).map(n=>'<option '+(n===WL.cur?'selected':'')+'>'+n+'</option>').join('')}
 $('#wlsel').onchange=e=>{WL.cur=e.target.value;saveWL();renderWatch()};
 function newList(){const n=prompt('Liste adı:');if(!n||WL.lists[n])return;WL.lists[n]=[];WL.cur=n;saveWL();renderWLSel();renderWatch()}
@@ -1794,15 +1797,24 @@ function toggleFilt(){const e=$('#filtsheet');e.classList.toggle('on');$('#filtb
 $('#viewseg2').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;S.view=b.dataset.v;LS.set('view',S.view);[...$('#viewseg2').children].forEach(x=>x.classList.toggle('on',x===b));renderOps()};
 
 
-/* ================= CANLI: yalnızca Midas verisiyle metrikler ================= */
+/* ================= CANLI: TradingView anlik akisindan metrikler ================= */
+S.tvHis={};
+setInterval(function(){try{
+ if(document.hidden||!(TVL.ok&&Date.now()-TVL.last<60000))return;
+ const now=Date.now();
+ Object.keys(TVL.syms).forEach(s=>{const o=S.umap[s];if(!o||!(o.close>0))return;
+  const h=S.tvHis[s]=S.tvHis[s]||[];const l=h[h.length-1];
+  if(l&&now-l.t>120000)h.length=0;
+  h.push({t:now,p:o.close,v:Math.max(o.volume||0,l?l.v:0),tn:0,b:o.bid||0,a:o.ask||0});if(h.length>120)h.shift()});
+}catch(e){}},5000);
 function midasLive(o){
- const h=S.midHis&&S.midHis[o.name];if(!h||h.length<3)return null;
+ const h=S.tvHis&&S.tvHis[o.name];if(!h||h.length<3)return null;
  const n=h.length-1,p0=h[0],p1=h[n];
  const mom=(p1.p/p0.p-1)*100; // uygulama acildiginden beri momentum
  let momN=null;const step=Math.min(10,n);if(n>=step)momN=(p1.p/h[n-step].p-1)*100; // son ~10 tik
  const dt=(p1.t-p0.t)/1000||1;
  const vrate=(p1.v-p0.v)/dt; // lot/saniye
- const vw=p1.v>0?p1.tn/p1.v:null; // gün içi ortalama işlem fiyatı (gerçek VWAP yaklaşımı)
+ const vw=(p1.tn>0&&p1.v>0)?p1.tn/p1.v:(o.VWAP||o['VWAP|15']||null); // VWAP (TradingView taramasindan)
  const vd=vw?(p1.p-vw)/vw*100:null;
  const bid=h[n].b||o.bid,ask=h[n].a||o.ask;
  const spd=(bid&&ask&&ask>0)?(ask-bid)/ask*100:null;
@@ -1813,7 +1825,7 @@ function midasLive(o){
 const LIVEMOD=[['gain','Yükselen'],['lose','Düşen'],['tn','Hacim ₺'],['mom','Momentum'],['up','Tavana yakın'],['dn','Tabana yakın']];
 S.liveMode=S.liveMode||'gain';
 function liveRows(){
- const liq=S.uni.filter(o=>o.voltl>=5e6&&S.midHis&&S.midHis[o.name]);
+ const liq=S.uni.filter(o=>o.voltl>=5e6&&S.tvHis&&S.tvHis[o.name]);
  const m=S.liveMode;let d,ex,eh;
  if(m==='gain'){d=liq.slice().sort((a,b)=>b.change-a.change);eh='Değ%';ex=o=>pct(o.change)}
  else if(m==='lose'){d=liq.slice().sort((a,b)=>a.change-b.change);eh='Değ%';ex=o=>pct(o.change)}
@@ -1824,9 +1836,9 @@ function liveRows(){
  return{d:d,ex:ex,eh:eh};
 }
 function renderLive(){
- const bar=$('#livebar');if(bar&&!bar._built){bar.innerHTML=LIVEMOD.map(x=>'<button data-lm="'+x[0]+'" class="'+(x[0]===S.liveMode?'on':'')+'">'+x[1]+'</button>').join('')+'<span style="flex:1"></span><span style="color:var(--dim);font-size:9.5px">◉ Midas canlı · ~5 sn</span>';bar._built=1;
+ const bar=$('#livebar');if(bar&&!bar._built){bar.innerHTML=LIVEMOD.map(x=>'<button data-lm="'+x[0]+'" class="'+(x[0]===S.liveMode?'on':'')+'">'+x[1]+'</button>').join('')+'<span style="flex:1"></span><span style="color:var(--dim);font-size:9.5px">◉ TradingView anlık · ~5 sn</span>';bar._built=1;
   bar.onclick=e=>{const b=e.target.closest('[data-lm]');if(!b)return;S.liveMode=b.dataset.lm;[...bar.children].forEach(x=>x.classList.toggle('on',x===b));renderLive()}}
- const r=liveRows();if(!r.d.length){$('#live').innerHTML='<div class="note">Canlı veri birikiyor — birkaç dakika içinde momentum ve hacim hızı hesaplanır. Liste yalnızca Midas verisiyle üretilir.</div>';return}
+ const r=liveRows();if(!r.d.length){$('#live').innerHTML='<div class="note">Canlı veri birikiyor — birkaç dakika içinde momentum ve hacim hızı hesaplanır. Liste TradingView anlık akışındaki en likit hisselerden üretilir.</div>';return}
  $('#live').innerHTML='<table><tr><th>#</th><th>Sembol</th><th>Son</th><th>Değ%</th><th>'+r.eh+'</th><th>VWAP</th><th>Hız</th><th>Spread</th></tr>'+
  r.d.slice(0,60).map((o,i)=>{const l=midasLive(o);
   return '<tr class="row" onclick="selectSym(\''+o.name+'\',\'bist\')"><td style="color:var(--dim)">'+(i+1)+'</td><td class="sym">'+o.name+'</td><td>'+nf(o.close)+'</td><td class="'+cls(o.change)+'">'+pct(o.change)+'</td><td>'+r.ex(o)+'</td><td>'+(l&&l.vw?nf(l.vw)+' <i class="'+cls(l.vd)+'" style="font-style:normal;font-size:9px">'+pct(l.vd)+'</i>':'-')+'</td><td>'+(l?big(l.vrate)+'/s':'-')+'</td><td>'+(l&&l.spd!=null?nf(l.spd,2)+'%':'-')+'</td></tr>'}).join('')+'</table>';
@@ -2266,7 +2278,8 @@ function journalFromBox(){const b=S.box;if(!b){alert('Önce AL/SAT kutusu kur');
  LS.set('jr',S.jr);showTab('jr')}
 /* ============ TRADINGVIEW WEBSOCKET — GERCEK ZAMANLI (~1 sn) ============ */
 let TVL={ws:null,ses:'qs_'+Math.random().toString(36).slice(2),buf:'',syms:{},ok:false,last:0,tries:0,throttle:0};
-const TVFLD=['lp','ch','chp','volume','high','low','open','bid','ask'];
+const TVFLD=['lp','ch','chp','volume','high','low','open','bid','ask','update_mode'];
+const TV_TOPN=150;
 window.addEventListener('error',e=>{try{TVL.gerr=(e.message||'hata')+' @'+(e.lineno||'?')}catch(_){}});
 function tvSend(m,p){try{const s=JSON.stringify({m:m,p:p});TVL.ws.send('~m~'+s.length+'~m~'+s)}catch(e){}}
 function tvLiveStart(){
@@ -2283,10 +2296,10 @@ function tvLiveStart(){
     tvSend('set_auth_token',[tok||'unauthorized_user_token']);
     tvSend('quote_create_session',[TVL.ses]);
     tvSend('quote_set_fields',[TVL.ses].concat(TVFLD));
-    tvLiveSubs();
+    tvLiveSubs();setTimeout(tvLiveSubs,6000);
    })()};
   ws.onmessage=ev=>{if(TVL.ws===ws)tvLiveOnMsg(ev.data)};
-  ws.onclose=ev=>{if(TVL.ws!==ws)return;TVL.state='kapali';if(!TVL.err)TVL.err='kod '+(ev.code||'?');TVL.ok=false;setTimeout(tvLiveStart,Math.min(15000,2000*Math.max(1,TVL.tries)))};
+  ws.onclose=ev=>{if(TVL.ws!==ws)return;TVL.drops=(TVL.drops||0)+1;TVL.state='kapali';if(!TVL.err)TVL.err='kod '+(ev.code||'?');TVL.ok=false;setTimeout(tvLiveStart,Math.min(15000,2000*Math.max(1,TVL.tries)))};
   ws.onerror=()=>{if(TVL.ws!==ws)return;TVL.err='bağlantı hatası';try{ws.close()}catch(e){}};
  }catch(e){TVL.err=e.message||'hata';setTimeout(tvLiveStart,5000)}
 }
@@ -2324,11 +2337,10 @@ function tvLiveSubs(){
   if(S.mode==='bist'&&S.sym)want[S.sym]=1;
   if(S.mode==='bist'&&typeof W==='function')(W()||[]).slice(0,40).forEach(s=>want[s]=1);
   want['XU100']=1;
-  Object.keys(want).forEach(sym=>{
-   if(TVL.syms[sym])return;
-   TVL.syms[sym]=1;
-   tvSend('quote_add_symbols',[TVL.ses,'BIST:'+sym,{'flags':['force_permission']}]);
-  });
+  // radar ve Canli sekmesi icin: gunun en likit hisseleri (anlik akis)
+  {(S.uni||[]).filter(o=>o&&o.name&&/^[A-Z0-9]{3,7}$/.test(o.name)&&o.voltl>0).sort((a,b)=>b.voltl-a.voltl).slice(0,TV_TOPN).forEach(o=>want[o.name]=1)}
+  const add=Object.keys(want).filter(s=>!TVL.syms[s]).slice(0,Math.max(0,TV_TOPN+60-Object.keys(TVL.syms).length));
+  for(let i=0;i<add.length;i+=50){const ch=add.slice(i,i+50);ch.forEach(s=>TVL.syms[s]=1);tvSend('quote_add_symbols',[TVL.ses].concat(ch.map(s=>'BIST:'+s)).concat([{'flags':['force_permission']}]))}
  }catch(e){}
 }
 function tvLiveOnMsg(data){
@@ -2367,11 +2379,14 @@ function tvLiveOnMsg(data){
   if(v.high!=null)o.high=v.high;
   if(v.low!=null)o.low=v.low;
   if(v.open!=null)o.open=v.open;
+  if(v.bid>0)o.bid=v.bid;
+  if(v.ask>0)o.ask=v.ask;
+  if(v.update_mode){o._tvMode=v.update_mode;if(/delay/i.test(v.update_mode))TVL.delayed=name;}
   if(v.lp!=null){o._tvLive=Date.now();o.update_mode='tv_live'}
   if(o.volume!=null&&o.close!=null)o.voltl=o.volume*o.close;
   S.umap[name]=o;
   const q=S.quotes[name];
-  if(q&&q!==o){if(v.lp!=null){q.close=v.lp;q._tvLive=o._tvLive}if(v.chp!=null)q.change=v.chp;if(v.volume!=null)q.volume=v.volume}
+  if(q&&q!==o){if(v.lp!=null){q.close=v.lp;q._tvLive=o._tvLive}if(v.chp!=null)q.change=v.chp;if(v.volume!=null)q.volume=v.volume;if(v.bid>0)q.bid=v.bid;if(v.ask>0)q.ask=v.ask}
   if(v.lp!=null){got=true;TVL.ok=true;TVL.last=Date.now();TVL.err=''}
  }
  if(got&&Date.now()-TVL.throttle>450){TVL.throttle=Date.now();try{renderPx()}catch(e){}mark('watch');mark('alarm');mark('live');try{checkAlarms()}catch(e){}}
@@ -2789,7 +2804,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="4.3";
+  const APP_VER="4.4";
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -2881,10 +2896,7 @@ function tvReconnectReport(){
    n++;if(Math.abs(ml.p-o.close)/o.close<=.0015)ok++;
   });
   AL.agreeN=n;AL.agree=n?ok/n:null;
-  const midOk=S.midas&&S.midas.ok&&now-S.midas.at<20000;
-  if(!midOk)AL.src='tv';
-  else if(sess().open&&n>=20&&AL.agree<.6)AL.src='tv';
-  else AL.src='midas';
+  AL.src='tv'; // Midas 15 dk gecikmeli: radar yalnizca TradingView anlik akisiyla calisir
  }
 
  /* ---------- ozellikler ---------- */
@@ -2917,7 +2929,7 @@ function tvReconnectReport(){
   const upD=o.upperLimit>0?(o.upperLimit-L.p)/o.upperLimit*100:null;
   const late=(o.change!=null&&o.change>=5)||(upD!=null&&upD<=4);
   const spd=(L.a>0&&L.b>0)?(L.a-L.b)/L.a*100:null;
-  return{p:L.p,fa,mv5,fc,fd,fe,brk,abv,vw,late,upD,spd,rv:rvolOf(o),ch:o.change,at:L.at,lim:o.upperLimit};
+  return{p:L.p,ask:L.a,fa,mv5,fc,fd,fe,brk,abv,vw,late,upD,spd,rv:rvolOf(o),ch:o.change,lim:o.upperLimit};
  }
  function idxOk(now){
   const I=AL.idx;if(I.length<2)return true;
@@ -2941,7 +2953,8 @@ function tvReconnectReport(){
  const bucket=sc=>sc>=90?'90+':sc>=80?'80-89':sc>=70?'70-79':'60-69';
 
  /* ---------- istatistik + kalibrasyon ---------- */
- function evR(e){if(e.res==='hit')return 2;if(e.res==='fail')return -1;if(e.res==='flat'&&e.r15!=null)return e.r15/e.stp;return null}
+ const COST=0.15; // % gidis-donus komisyon + kayma
+ function evR(e){let r=null;if(e.res==='hit')r=2;else if(e.res==='fail')r=-1;else if(e.res==='flat'&&e.r15!=null)r=e.r15/e.stp;if(r==null)return null;return r-(e.cost!=null?e.cost:COST)/e.stp}
  function stats(list){const d=list.filter(e=>evR(e)!=null);const n=d.length;if(!n)return{n:0};
   const hit=d.filter(e=>e.res==='hit').length;const r=d.reduce((a,e)=>a+evR(e),0);
   return{n,hit,hr:hit/n*100,avgR:r/n}}
@@ -2997,9 +3010,14 @@ function tvReconnectReport(){
    if(!AL.firstAt||now-AL.runAt>120000)AL.firstAt=now; // uzun ara → isinma bastan
    if(AL.runAt&&now-AL.runAt>120000){AL.h={};AL.mb={}}
    AL.runAt=now;
-   const F={},useMid=AL.src==='midas';
-   (S.uni||[]).forEach(o=>{
-    if(!o||!o.name||!(o.voltl>=3e6))return;
+   const tvOn=typeof TVL!=='undefined'&&TVL.ok&&now-TVL.last<60000;
+   if(!tvOn){AL.err='TradingView anlık akışı yok — radar bekliyor';AL.rows=[];updEvents(now,{},se);if(S.tab==='algi')renderAlgi();return}
+   if(AL.err&&AL.err.indexOf('TradingView anlık')===0)AL.err='';
+   const F={},useMid=false;
+   (S.uni||[]).forEach(o0=>{
+    if(!o0||!o0.name||!TVL.syms[o0.name])return;
+    const o=S.umap[o0.name]||o0;
+    if(!(o.voltl>=3e6))return;
     const mh=S.midHis&&S.midHis[o.name],ml=mh&&mh[mh.length-1];
     let s;
     if(useMid&&ml&&now-ml.t<20000)s={t:now,p:ml.p,v:ml.v,b:ml.b,a:ml.a,tn:ml.tn};
@@ -3030,8 +3048,9 @@ function tvReconnectReport(){
     st.cnt=fire?st.cnt+1:0;
     let stage=st.cnt>0?'hazir':awake?'uyanis':'';
     if(st.cnt>=3){
-     const stp=stopPct(f.p);
-     const e={id:sym+'-'+now,s:sym,t:now,d:dayKey(now),hr:se.hr,p0:f.p,sc,stp,sp:f.p*(1-stp/100),tp:f.p*(1+2*stp/100),hi:f.p,lo:f.p,lastT:now,
+     const p0=(f.ask>0&&f.ask>=f.p&&f.ask<=f.p*1.01)?f.ask:f.p; // giris: satis kademesinden alim
+     const stp=stopPct(p0);
+     const e={id:sym+'-'+now,s:sym,t:now,d:dayKey(now),hr:se.hr,p0:p0,px:f.p,cost:COST,sc,stp,sp:p0*(1-stp/100),tp:p0*(1+2*stp/100),hi:p0,lo:p0,lastT:now,
       f:{A:f.fa>=3,B:f.rv!=null&&f.rv>=2,C:f.fc>=.65,D:!!f.fd,E:!!f.fe,G:gOk,H:hOk,sh:!(o.voltl>=1e7)},g,sec:o.sector||'',res:null,r5:null,r15:null,r30:null,r60:null,conf:false,fade:false,ceil:false,mute:false};
      e.mute=muted(sc);
      AL.log.push(e);AL.dirty=true;saveLog(true);
@@ -3097,8 +3116,8 @@ function tvReconnectReport(){
   const se=sess(),now=Date.now();
   const H=Object.keys(AL.h).length;
   const warm=AL.firstAt?Math.min(60,Math.round((now-AL.firstAt)/1000)):0;
-  const src=AL.src==='midas'?'Midas':'TradingView';
-  const ag=AL.agree!=null?' · TV uyumu %'+nf(AL.agree*100,0)+' ('+AL.agreeN+')':'';
+  const src='TradingView anlık';
+  const ag=(typeof TVL!=='undefined'&&TVL.drops?' · kopma '+TVL.drops:'');
   let s;
   if(!AL.cfg.on)s='<span class="dn">○ Radar kapalı</span> — ⚙ Ayar’dan aç';
   else if(!se.open)s='<span style="color:var(--dim)">○ Piyasa kapalı</span> — radar 10:00–18:00 arası, sayfa açıkken çalışır';
@@ -3134,7 +3153,7 @@ function tvReconnectReport(){
  function vKarne(){
   const d=done(),all=stats(d);
   const row=(lab,st,extra)=>'<tr><td>'+lab+'</td><td>'+(st.n||0)+'</td><td>'+(st.n?'%'+nf(st.hr,0):'-')+'</td><td class="'+cls(st.avgR)+'">'+(st.n?nf(st.avgR,2)+'R':'-')+'</td>'+(extra!=null?'<td>'+extra+'</td>':'')+'</tr>';
-  let h='<div class="note"><b>İSABET TANIMI</b> — ateşlemeden sonra <b>15 dk içinde</b>, stopa değmeden önce hedefe değmek. Stop = max(%0,5 ; 2 fiyat adımı), hedef = 2× stop. Başa baş için isabet ≈ %33 yeter; asıl ölçü <b>ortalama R</b>.<br>'+
+  let h='<div class="note"><b>İSABET TANIMI</b> — ateşlemeden sonra <b>15 dk içinde</b>, stopa değmeden önce hedefe değmek. Stop = max(%0,5 ; 2 fiyat adımı), hedef = 2× stop. Giriş satış kademesinden alınır; her sinyalden %0,15 komisyon+kayma düşülür (≈0,3R), bu yüzden başa baş için isabet ≈ %43 gerekir. Asıl ölçü <b>ortalama R</b>.<br>'+
    'Tamamlanan '+all.n+' sinyal'+(all.n?' · isabet %'+nf(all.hr,0)+' · ort. '+nf(all.avgR,2)+'R':'')+(all.n<30?' · <span class="wrn">kalibrasyon için en az 30 sinyal gerekli</span>':'')+'</div>';
   h+='<table><tr><th>Skor aralığı</th><th>n</th><th>İsabet</th><th>Ort. R</th><th>Telegram</th></tr>'+['60-69','70-79','80-89','90+'].map(b=>{const st=stats(d.filter(e=>bucket(e.sc)===b));
    const m=AL.cfg.auto&&st.n>=20&&st.avgR<0;return row(b,st,m?'<span class="dn">🔇 susturuldu</span>':'<span class="up">açık</span>')}).join('')+'</table>';
@@ -3196,7 +3215,7 @@ function tvReconnectReport(){
   };
   document.getElementById('algiclr').onclick=()=>{if(!confirm('Tüm Algı Radarı kayıtları silinsin mi? Karne sıfırlanır.'))return;AL.log=[];saveLog(true);recalib();renderAlgi()};
  }
- const VIEWS=[['canli','Canlı'],['kayit','Sinyaller'],['karne','Karne'],['ayar','⚙ Ayar']];
+ const VIEWS=[['canli','Radar'],['kayit','Sinyaller'],['karne','İsabet'],['ayar','⚙ Ayar']];
  function renderAlgi(){
   const bar=document.getElementById('algibar'),body=document.getElementById('algibody');if(!bar||!body)return;
   if(!bar._built){bar.innerHTML=VIEWS.map(v=>'<button data-av="'+v[0]+'" class="'+(v[0]===AL.view?'on':'')+'">'+v[1]+'</button>').join('');bar._built=1;
