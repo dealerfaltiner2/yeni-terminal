@@ -513,9 +513,9 @@ td.fl-up,td.fl-dn{border-radius:4px}
   <div class="tab" id="t-set">
    <div class="sett">
     <b>MUM VERİSİ</b>
-    <select id="srcsel" onchange="setSrc()"><option value="yahoo">Mum: TradingView → yedek Yahoo</option><option value="td">Mum: TradingView → yedek Twelve Data</option></select>
+    <select id="srcsel" onchange="setSrc()" style="display:none"><option value="yahoo">Mum: TradingView → yedek Yahoo</option><option value="td">Mum: TradingView → yedek Twelve Data</option></select>
     <select id="barlim" onchange="setBarLim()"><option value="short">Grafik geçmişi: kısa (hızlı)</option><option value="long">Grafik geçmişi: uzun</option></select>
-    <input id="tdkey" placeholder="Twelve Data apikey"><input id="tvproxy" placeholder="TV WebSocket proxy URL (wss://xxxx.workers.dev)">
+    <input id="tdkey" placeholder="Twelve Data apikey" style="display:none"><input id="tvproxy" placeholder="TV WebSocket proxy URL (wss://xxxx.workers.dev)">
   <input id="tvman" placeholder="TV Session ID (Worker için: worker)"><input id="tvman2" placeholder="TV Session Sign (boş bırak)"><button class="g pri" onclick="saveKey()">Anahtarı kaydet</button>
     <button class="g" onclick="testSrc()">Veri kaynağını test et</button><button class="g" onclick="TVL.syms={};try{TVL.ws&&TVL.ws.close()}catch(e){}tvLiveStart();tvReconnectReport()">⚡ TV'ye yeniden bağlan</button><button class="g" onclick="proxyTest()">🔍 Proxy testi</button><div id="srcmsg" class="note"></div>
     <b>MİDAS CANLI VERİ</b>
@@ -1613,7 +1613,7 @@ function tvBarsFlush(){
    4) >20 dk gecikmis veri SRCINFO.stale ile isaretlenir, sinyal uretiminde kullanilmaz  5) panelde gosterilir */
 let SRCINFO={src:'-',lagMs:0,stale:false};
 async function getBarsTracked(s,tf,sh){
- const order=(tvBarsBase()?['tv']:[]).concat(S.src==='td'?['td','yahoo']:['yahoo','td']);
+ const order=(tvBarsBase()?['tv']:[]).concat(['yahoo']);   // v5.3: Twelve Data kaldirildi
  let lastErr=null;
  for(let i=0;i<order.length;i++){
   const src2=order[i];
@@ -1660,8 +1660,8 @@ function renderSrcStatus(){
    :'<span class="dn">○ TV bağlı değil</span> ['+({acik:'açık',kapali:'kapalı',baglaniyor:'bağlanıyor',yetki:'yetki bekleniyor'}[TVL.state]||TVL.state||'-')+(TVL.err?(' · '+TVL.err):'')+' · deneme '+TVL.tries+(TVL.gerr?(' · ⚠'+TVL.gerr):'')+']'
     +(TVDIAG.at?('<br><span style="color:var(--txt2)">tanı: köprü '+TVDIAG.echo+' · TV '+TVDIAG.tv+(TVS.err?(' · tarama: '+TVS.err):'')+'</span>'):'')
     +(S.tvproxy?'':'<br><span style="color:var(--acc)">→ Çözüm: Ayarlar bölümündeki "TV WebSocket proxy URL" alanına wss:// adresini gir</span>'));
- // 2) MUM VERISI: Yahoo -> Twelve Data (birincil basarisizsa yedek)
- const mumLine='Mum verisi: <b>'+SRCINFO.src+'</b> · son mum ~'+nf(lagMin,0)+' dk önce · sıralama: '+(tvBarsBase()?'TradingView → ':'')+(S.src==='td'?'Twelve Data → Yahoo':'Yahoo → Twelve Data')+(TVB.err?' · <span class="wrn">TV mum: '+TVB.err+'</span>':'')+(TVC.key&&TVC.ready?' · grafik canlı ⚡':'')+(S.key?'':' · <span class="wrn">Twelve Data anahtarı yok — yedek kaynak kapalı</span>');
+ // 2) MUM VERISI: TradingView -> Yahoo (yedek)
+ const mumLine='Mum verisi: <b>'+SRCINFO.src+'</b> · son mum ~'+nf(lagMin,0)+' dk önce · sıralama: '+(tvBarsBase()?'TradingView → ':'')+'Yahoo (yalnızca mum yedeği)'+(TVB.err?' · <span class="wrn">TV mum: '+TVB.err+'</span>':'')+(TVC.key&&TVC.ready?' · grafik canlı ⚡':'');
  m.innerHTML='<b style="letter-spacing:.5px">VERİ KAYNAĞI SIRASI</b><br>0) '+tvLine+'<br>1) '+midLine+'<br>2) '+mumLine+
  (SRCINFO.stale?'<br><span class="dn">⚠ Gecikmeli veri — sinyal üretiminde kullanılmıyor.</span>':'<br><span class="up">'+(withinMarketHours()?'✓ Mum verisi taze':'✓ Piyasa kapalı — son mum kapanış verisi')+'</span>');
 }
@@ -2879,7 +2879,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="5.2";
+  const APP_VER="5.3";
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
