@@ -1,4 +1,4 @@
-// bist-tv Worker yapılandırması — Cloudflare Workers Builds bu dosyayı kullanır. (v5.4)
+// bist-tv Worker yapılandırması — Cloudflare Workers Builds bu dosyayı kullanır. (v5.4 · yayın)
 // DİKKAT: name "bist-tv" olmalı. Eski "bist" worker'ına dokunulmaz.
 // Şifreler (TV_SESSION, TV_SESSION_SIGN, ACCESS_KEY) Cloudflare'de saklanır, burada YOK.
 {
