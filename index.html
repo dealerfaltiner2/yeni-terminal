@@ -665,7 +665,7 @@ function setSrc(){S.src=$('#srcsel').value;LS.set('src',S.src);S.ccache={};loadC
 function setBarLim(){S.blim=$('#barlim').value;LS.set('blim',S.blim);S.ccache={};loadCandles()}
 function saveTg(silent){
  try{
-  S.tgTok=$('#tgtok').value.trim();S.tgChat=$('#tgchat').value.trim();S.tgMin=+$('#tgmin').value;
+  S.tgTok=$('#tgtok').value.replace(/[^0-9A-Za-z:_-]/g,'');S.tgChat=$('#tgchat').value.replace(/[^0-9-]/g,'');$('#tgtok').value=S.tgTok;$('#tgchat').value=S.tgChat;S.tgMin=+$('#tgmin').value;
   LS.set('tgTok',S.tgTok);LS.set('tgChat',S.tgChat);LS.set('tgMin',S.tgMin);
   const m=$('#tgmsg');
   if(m)m.innerHTML='<b class="up">'+(silent?'Otomatik kaydedildi':'Kaydedildi')+'.</b> Token '+(S.tgTok?S.tgTok.slice(0,10)+'…':'boş')+' · Chat ID '+(S.tgChat||'boş');
@@ -3023,7 +3023,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="5.7";
+  const APP_VER="5.8";
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
