@@ -397,7 +397,7 @@ async function cron(env, force = false) {
       const ps = await pineSync(env, false);
       if ((ps.islenen || []).length) {
         const c0 = await kvGet(env, 'cfg', null);
-        for (const o of ps.islenen) await tgSend(c0, (o.ok ? '📈 <b>TradingView\'e yüklendi</b> · ' : '⚠️ <b>Pine yüklenemedi</b> · ') + esc(o.name) + (o.ok ? '' : '\n' + esc(String(o.derleme !== 'ok' ? o.derleme : o.yanit).slice(0, 300))));
+        for (const o of ps.islenen) if (!o.ok) await tgSend(c0, '⚠️ <b>Pine yüklenemedi</b> · ' + esc(o.name) + '\n' + esc(String(o.derleme !== 'ok' ? o.derleme : o.yanit).slice(0, 300))); // basarida mesaj yok
       }
     } catch (e) {}
   }
