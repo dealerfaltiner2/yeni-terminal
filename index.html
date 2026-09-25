@@ -2363,16 +2363,30 @@ const TVFLD=['lp','ch','chp','volume','high','low','open','bid','ask','update_mo
 const TV_TOPN=100;
 window.addEventListener('error',e=>{try{TVL.gerr=(e.message||'hata')+' @'+(e.lineno||'?')}catch(_){}});
 function tvSend(m,p){try{const s=JSON.stringify({m:m,p:p});TVL.ws.send('~m~'+s.length+'~m~'+s)}catch(e){}}
+// v5.0: sunucu (Worker v5.2) veriyi dogrudan borudan gecirir; yetki anahtarini buradan aliriz
+async function tvToken(){
+ if(TVL.tok&&Date.now()-TVL.tokAt<15*60e3)return TVL.tok;
+ try{
+  const base=S.tvproxy.replace(/^wss:/,'https:').replace(/\?.*$/,'').replace(/\/$/,'');
+  const ac=new AbortController();const t=setTimeout(()=>ac.abort(),6000);
+  const r=await fetch(base+'/tv-token',{signal:ac.signal});clearTimeout(t);
+  const d=await r.json();
+  if(d&&d.ok&&d.token){TVL.tok=d.token;TVL.tokAt=Date.now();return d.token}
+  TVL.err='yetki alınamadı'+(d&&d.err?(': '+String(d.err).slice(0,60)):'');
+ }catch(e){TVL.err='yetki alınamadı ('+(e.name==='AbortError'?'zaman aşımı':(e.message||'hata'))+')'}
+ return TVL.tok||'';
+}
 function tvLiveStart(){
  TVL.tries++;
  try{
   if(TVL.ws&&(TVL.ws.readyState===0||TVL.ws.readyState===1))return;
-  const url=S.tvproxy?S.tvproxy:('wss://data.tradingview.com/socket.io/websocket?from=symbols/BIST%2F&date='+Date.now());
+  const url=S.tvproxy?(S.tvproxy.replace(/\/$/,'')+(S.tvproxy.indexOf('?')<0?'?':'&')+'direct=1'):('wss://data.tradingview.com/socket.io/websocket?from=symbols/BIST%2F&date='+Date.now());
   const ws=new WebSocket(url);
   TVL.ws=ws;TVL.state='baglaniyor';TVL.err='';
   ws.onopen=()=>{if(TVL.ws!==ws)return;TVL.tries=0;TVL.buf='';TVL.state='acik';TVL.err='';TVL.syms={};TVC.cs=null;TVC.key='';TVC.ready=false;TVC.hasSer=false;
    (async()=>{
     let tok=S.tvSession||'';
+    if(S.tvproxy){tok=await tvToken();if(TVL.ws!==ws)return}
     tvSend('set_auth_token',[tok||'unauthorized_user_token']);
     tvSend('quote_create_session',[TVL.ses]);
     tvSend('quote_set_fields',[TVL.ses].concat(TVFLD));
@@ -2856,7 +2870,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="4.9";
+  const APP_VER="5.0";
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');

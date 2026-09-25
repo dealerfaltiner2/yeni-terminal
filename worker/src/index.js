@@ -1,4 +1,4 @@
-// BIST TV Köprüsü v5.1 — Cloudflare Worker (bist-tv)
+// BIST TV Köprüsü v5.2 — Cloudflare Worker (bist-tv)
 // Yayın: GitHub → Cloudflare Workers Builds (otomatik). Kodu burada değiştir, Cloudflare editöründe değil.
 // Secrets: TV_SESSION, TV_SESSION_SIGN, ACCESS_KEY
 // Terminal ayarı: wss://bist-tv.c8jmvhdm8c.workers.dev/ACCESS_KEY
@@ -94,7 +94,7 @@ async function test(env, url) {
     .split(',').map(s => s.trim()).filter(Boolean).slice(0, 10);
   const token = await getAuth(env, true);
   const rapor = {
-    surum: 'v5.1',
+    surum: 'v5.2',
     kv: !!env.DB,
     cerezVar: !!env.TV_SESSION,
     yetkiliToken: token !== 'unauthorized_user_token',
@@ -297,7 +297,7 @@ async function sync(request, env) {
 async function status(env) {
   const cfg = await kvGet(env, 'cfg', null), st = await kvGet(env, 'st', {});
   return json({
-    ok: true, surum: 'v5.1', kv: !!env.DB, synced: cfg ? cfg.at : null,
+    ok: true, surum: 'v5.2', kv: !!env.DB, synced: cfg ? cfg.at : null,
     telegram: !!(cfg && cfg.tgTok && cfg.chat), alarms: cfg ? cfg.alarms.length : 0, watch: cfg ? cfg.watch : [],
     lastRun: st.lastRun || null, health: st.health || null, hit: st.hit || [],
     today: st.cnt && st.cnt.d === trNow().day ? st.cnt : null, err: st.err || null
@@ -540,7 +540,29 @@ function echoWS() {
   return new Response(null, { status: 101, webSocket: client });
 }
 
-// Telefonun bağlantısı hemen kabul edilir; TradingView bağlantısı arkada kurulur.
+// v5.2: DOĞRUDAN BORU — TradingView WebSocket'i telefona olduğu gibi bağlanır.
+// Mesajlar Worker kodundan hiç geçmez (Cloudflare altyapısı taşır) → ücretsiz plandaki
+// 10 ms işlemci limiti dolmaz, bağlantı kopmaz. Yetki anahtarını terminal /tv-token ile alır.
+async function pipeTV(env) {
+  let last = '';
+  for (const h of ['prodata', 'data']) {
+    try {
+      const r = await fetch(`https://${h}.tradingview.com/socket.io/websocket?from=chart%2F&type=chart`, {
+        headers: { Upgrade: 'websocket', Origin: 'https://www.tradingview.com', 'User-Agent': UA, Cookie: cookieStr(env) }
+      });
+      if (r.webSocket) return new Response(null, { status: 101, webSocket: r.webSocket });
+      last += `${h}: HTTP ${r.status}; `;
+    } catch (e) { last += `${h}: ${e.message}; `; }
+  }
+  return json({ error: 'TV WebSocket açılmadı → ' + last }, 502);
+}
+async function tvToken(env) {
+  const token = await getAuth(env);
+  const ok = token !== 'unauthorized_user_token';
+  return json({ ok, token: ok ? token : '', err: ok ? null : authCache.err });
+}
+
+// (eski yol, geriye uyumluluk) Telefonun bağlantısı hemen kabul edilir; TradingView bağlantısı arkada kurulur.
 // v5.1: veri ayrıştırılmadan olduğu gibi aktarılır (işlemci limiti aşılmasın diye).
 // Kalp atışlarını (heartbeat) terminal kendisi yanıtlar.
 function stripAuth(raw) {
@@ -607,6 +629,7 @@ export default {
 
     if (isWS) {
       if (route === 'ws-echo') return echoWS();
+      if (url.searchParams.get('direct') === '1') return pipeTV(env);
       return relay(env, ctx);
     }
 
@@ -619,11 +642,12 @@ export default {
       case 'sync': if (request.method === 'POST') return sync(request, env); break;
       case 'cron-test': {
         const r = await cron(env, url.searchParams.get('force') === '1');
-        if (url.searchParams.get('tg') === '1') { const cfg = await kvGet(env, 'cfg', null); r.telegramTest = await tgSend(cfg, '🛰 <b>Sunucu testi</b> — bist-tv v5 çalışıyor · ' + trNow().hm); }
+        if (url.searchParams.get('tg') === '1') { const cfg = await kvGet(env, 'cfg', null); r.telegramTest = await tgSend(cfg, '🛰 <b>Sunucu testi</b> — bist-tv v5.2 çalışıyor · ' + trNow().hm); }
         return json(r);
       }
       case 'tv-test': return tvTest(env);
       case 'tv-login': return json({ ok: true, session: 'worker' });
+      case 'tv-token': return tvToken(env);
       case 'tv-scan': return tvScan(request, env);
       case 'set-syms': return json({ ok: true });
       case 'pull': return json({});
