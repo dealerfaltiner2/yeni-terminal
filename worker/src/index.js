@@ -1,4 +1,4 @@
-// BIST TV Köprüsü v5.2 — Cloudflare Worker (bist-tv)
+// BIST TV Köprüsü v5.3 — Cloudflare Worker (bist-tv)
 // Yayın: GitHub → Cloudflare Workers Builds (otomatik). Kodu burada değiştir, Cloudflare editöründe değil.
 // Secrets: TV_SESSION, TV_SESSION_SIGN, ACCESS_KEY
 // Terminal ayarı: wss://bist-tv.c8jmvhdm8c.workers.dev/ACCESS_KEY
@@ -94,7 +94,7 @@ async function test(env, url) {
     .split(',').map(s => s.trim()).filter(Boolean).slice(0, 10);
   const token = await getAuth(env, true);
   const rapor = {
-    surum: 'v5.2',
+    surum: 'v5.3',
     kv: !!env.DB,
     cerezVar: !!env.TV_SESSION,
     yetkiliToken: token !== 'unauthorized_user_token',
@@ -297,7 +297,7 @@ async function sync(request, env) {
 async function status(env) {
   const cfg = await kvGet(env, 'cfg', null), st = await kvGet(env, 'st', {});
   return json({
-    ok: true, surum: 'v5.2', kv: !!env.DB, synced: cfg ? cfg.at : null,
+    ok: true, surum: 'v5.3', kv: !!env.DB, synced: cfg ? cfg.at : null,
     telegram: !!(cfg && cfg.tgTok && cfg.chat), alarms: cfg ? cfg.alarms.length : 0, watch: cfg ? cfg.watch : [],
     lastRun: st.lastRun || null, health: st.health || null, hit: st.hit || [],
     today: st.cnt && st.cnt.d === trNow().day ? st.cnt : null, err: st.err || null
@@ -556,6 +556,22 @@ async function pipeTV(env) {
   }
   return json({ error: 'TV WebSocket açılmadı → ' + last }, 502);
 }
+// v5.3: /prefs — terminal ayar yedeği (Safari ↔ ana ekran uygulaması ↔ diğer telefon arasında tek dokunuşla taşıma)
+async function prefs(request, env) {
+  if (!env.DB) return json({ ok: false, error: 'KV bağlaması (DB) yok' }, 500);
+  if (request.method === 'POST') {
+    const t = await request.text();
+    if (!/^BISTT:[A-Za-z0-9+/=]+$/.test(t)) return json({ ok: false, error: 'geçersiz yedek' }, 400);
+    if (t.length > 3000000) return json({ ok: false, error: 'yedek çok büyük' }, 413);
+    await env.DB.put('prefs', t);
+    await env.DB.put('prefs_at', String(Date.now()));
+    return json({ ok: true, kb: Math.round(t.length / 1024) });
+  }
+  const t = await env.DB.get('prefs');
+  if (!t) return json({ ok: false, error: 'sunucuda kayıtlı ayar yok' }, 404);
+  const at = +(await env.DB.get('prefs_at')) || null;
+  return json({ ok: true, data: t, at });
+}
 async function tvToken(env) {
   const token = await getAuth(env);
   const ok = token !== 'unauthorized_user_token';
@@ -648,6 +664,7 @@ export default {
       case 'tv-test': return tvTest(env);
       case 'tv-login': return json({ ok: true, session: 'worker' });
       case 'tv-token': return tvToken(env);
+      case 'prefs': return prefs(request, env);
       case 'tv-scan': return tvScan(request, env);
       case 'set-syms': return json({ ok: true });
       case 'pull': return json({});

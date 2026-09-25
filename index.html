@@ -4,10 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22BIST%20Terminal%22%2C%22short_name%22%3A%22BIST%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22background_color%22%3A%22%2306090e%22%2C%22theme_color%22%3A%22%2306090e%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage/png%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAMAAAADACAIAAADdvvtQAAAD40lEQVR4nO3dsW3bQBiGYTpwbxcuvUjaTJAhPEBGyQAZIhOkzTpO7yKFAEawI%2Bp4H0kdj89TGYgAEbjXP88nKbp7eHoeoNanW18A%2ByYgIgIiIiAiAiIiICICInK/2TO9/tjuuRiG4fHlbYNnuVv1IFE0jVgvplUC0k2zFi9p4YAm0tlmojLaZi0WC%2Bi/lyuaRqy3OssE9PH6pNOgNZYpDejdNelmFxZctegcSD079W6lkj966ifQ%2BbNKZ6fyRaycQOrpw/na1c2hmoDU05OwodkBqac/SUPzAlJPr6obmhGQevpW11DNHkg9vapY2dKAxiTV07dxfQuHUFFAXl0/ppJ1n3cLM36OYNYqXw/IzeuAym9k3hNN5EpAdj9MN1A6gdy/jqZwxd3CiEwFZPt8cCVbaROIiICICIjIxYBsgBgKtkEmEBEBEREQEQER8VJXW3b3t4sJRERARAREREBEBEREQEQERERARBwk3kDJRxUuPaa1A0YTiIiAiAiIiICICIiIgIgIiIiAiAiIiICICIiIgIgIiIiAiAiIiICICIiIgIgIiIiAiAiIiICICIiIgIj4YOGUPz%2B/nX54%2BPr9ltfRMBOIiICICIiIgIgIiIiAiAiIiICICIiIk%2Bh/x80Vj3FCbQIRERARAREREBEBEdnNX2Gvn7%2Bcfnj8/eu2V8I5E4iIgIgIiIiAiAiIiICICIiIgIi0dZA4nhbWPcYZ4/ZMICICIiIgIgIiIiAiAiIiICICIiIgIgIiIiAiAiIiICICIiIgIgIiIiAiAiIiICICIiIgIgIiIiAiAiIiICICIiIgIm19Nv4mJr6uwJfuXmUCEREQEQERERARAREREBEBEREQEQERcRI9xQH0VSYQkbYm0MR/9OwL59pkAhEREBEBEREQEQERERARAREREJG2DhInOD9skwlEZDcTqCePL2%2BX/un1x/3VxzTFBCIiICICIiIgIgIiIiAiAiJyMaDxHGI8meCArp5LmUBETJe27OUAemQCEZkKyDbo4EpemDOBiJQGZAgdTeGKXwlod3s6FjfdgFsYkesB2UofUPn72uZNIA0dwaxVLgrITuiYSta9dAK5kR3E3Ddl12yiNdSripWdEdB5khrqz/malm9a5k0gDfWqrp6h4hamof5U1zPU7YE01JOknqH6JFpDfQjrGYbh7uHpeZGnr74CbmKptYteC3v3rEbRXiz4mx9NoNHHdEyjBq2xTMsENFwYPzJqxHqrs1hAJxN3MTFtbJu1WDigE5uhZi3%2Ba7xKQCMlNWK98b9uQOfEtLFt9gzbBUSXvCeaiICICIiIgIgIiIiAiPwFuv8Lfh%2B1QhcAAAAASUVORK5CYII%3D%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image/png%22%7D%2C%7B%22src%22%3A%22data%3Aimage/png%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAIAAAB7GkOtAAAL8UlEQVR4nO3dvZEbxxpAUUi1PteQqUTkKgIGoQAUCgNQEIqALtOhfBnPQNUWS28JYhfz0933HJMGODVT/C66ZzD86cMvv14A6Pn57AMA4BwCABAlAABRAgAQJQAAUQIAECUAAFECABAlAABRAgAQJQAAUQIAECUAAFECABAlAABRAgAQJQAAUQIAECUAAFFPZx/A6L7%2B5RTBxJ7/%2BPfsQxjXT/5T%2BG8Z97A8SXhRD4CJD3HlHhQDYOgDr6rFIBQAcx%2B4U6QE6wfA3Afebe0SrBwAox/YxKoZWDMARj%2BwufUysFQAzH3gAMuUYJEA7Dr6l7nYUGMy3LZCADa8xgtcUeA2E%2BPF3AHY5ELOfgmBd4vPkFkD8Phlm/eaAZtrjpQpA/DIpZrxIgGHSY2XyQLw7msz3YUBzlWYNjMF4H3XY6KLAYxm7bEzRwDecQ1muQDAFJacQhME4K3nffyTDkxqsXE0egDedLoHP9fAGpaZS%2BMGYLHSAitZY0ANGoBlAgssbPZJNWIA7j%2BnA55QoGbekfXz2QfwX/OeSqDp/lk02huLxwqA6Q/MaNIGDLQFdOd5MfqBYc01x0ZZAcx11gBedeeMGmQdMEQATH9gGRM14PwtoHvOgtEPTGf84XbyCmD8EwTwPvfMrnPXAWcGwPQH1jZ4A04LgOkPFIzcgHMCYPoDHcM2YIingP6f6Q%2BsZMyZdkIAfhi6Mc8UwCN%2BONmOXwQcHQDTH8garQGHBsD0B%2BKGasCg9wAA2NtxAfD1H%2BAy0iLgoACY/gAvBmnAEFtApj9QM8LcOyIAI7z0DmAuB0zO3QNg8wfgVadvBJ28BWT6A2Urvw76dr5Mf4Dbk3DXRcAQN4EBON6OAfD1H%2BAeZy0C9gqAJ38AtrLTRD1nC8jXf4BvnTIVdwmAzR%2BAtzp%2BI8hNYICoowPg6z/A9xw8IbcPgNu/AHvYfLoeugLw9R/gtiPn5MYB8PUfYD/bzlg3gQGitgyApz8BHnfY86BWAABRBwXA13%2BA%2Bx0zMzcLgNu/AMfYat7aAgKIOiIA9n8A3uqAyblNAOz/ABxpk6lrCwggavcA2P8BeJ%2B956cVAEDUBgFwAwDgeI/P3n1XAPZ/AB6x6xS1BQQQJQAAUQIAEPVoAG7chXADAOBxN2bpg/eBrQAAogQAIEoAAKIEACBKAACiHgqAl0AAnOuRObzXCsAzoABb2Wmi2gICiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIjyLgfgx773vgG/%2BZ%2BaFQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBA1NPZBwDs6%2BtfO/4zf/zDn//4d5Mj4R2sAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKKezj4AOME/f//56p9/%2BPjp0OOAU1kBAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQ9nX0A8Db//P3nsB/%2B4eOnbY4DDmEFABAlAABRAgAQJQAAUQIAECUAAFECABAlAABRAgAQJQAAUQIAECUAAFECABAlAABRXgc9va%2B//f7qnz9/%2BXzwkQBzsQIAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiHo6%2BwDqvv72%2B7Cf/Pzl8yZHAozJCgAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACDq6ewDgLf58PHT4x/yz99/7vfhMAsrAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAICop7MPAE7w4eOnsw8BzmcFABAlAABRAgAQJQAAUW4Cn%2Bz5y%2BcHP%2BHrb7/v9MnA2qwAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKKezj4AHvX85fPZhwBMyQoAIEoAAKIEACBKAACi3ASGxT3/8e/jH/L1r9dnxSYfzlmsAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAogQAIEoAAKIEACBKAACiBAAgSgAAovYKwPfeHg7AW%2B00UR8KgP8LAuBcj8xhW0AAUQIAECUAAFECABAlAABRjwbgxg1oT4ICPO7GLH3wUUwrAIAoX9KBH/OjnyVZAQBE7RsAtwEAHrHrFN0gANaGAMd7fPbaAgKI2j0AdoEA3mfv%2BWkFABC1TQDcBgA40iZT94gVgF0ggLc6YHLaAgKI2iwAdoEAjrHVvD1oBWAXCOB%2Bx8xMW0AAUVsG4PaqxCIA4B63p%2BWG%2B%2B1WAABRGwfArWCA/Ww7Yw9dAdgFArjtyDm5fQAsAgD2sPl0PfoegEUAwPccPCHdBAaI2iUAngcFeKvDnv58cc4KQAMAvnXKVNwrAG4FA2xlp4m64wrARhDAPY7f/LlyExggat8AWAQA3HbW1//L6SsADQDKzp2Buwfgh/nSAKDph9Nv76dpjlgBeCII4K0OmJxD3AS2CABqRph7BwXARhDAi9M3f66OWwFoAMBlmOl/GWQLCIDjHRoAiwAgbpyv/5fjVwAaAGQNNf0vp2wBaQAQNNr0vwx7D0ADgJWMOdPOCcA9oRvzfAG81T3T7JQfzJ62AtAAoGDY6X85dwtIA4C1jTz9L6ffA9AAYFWDT//L5fLTh19%2BPfGvv7pzxHupHDCFWWbaEE8B3XkWLAWA8c0y/S%2BDBOCiAcASJpr%2Bl0G2gF7cP98HOX0AVzOOr1FWAFf3nxdLAWAcM07/y2gBuGgAMJtJp/9ltC2gF28a7qOdUyBi9kk1aAAub/%2BCP%2BDJBVa1xoAaNwBXswcWWM8yc2n0AFxWKS2wgMXG0QQBuLzrfu/g5x2Yy5JTaI4AXL3vsZ/xrwEwrLXHzkwBuDzw6Ocs1wMYRGHaTBaAq0d%2BATDRtQGOlxovUwbgssWvwKa7VMB%2BmiNl1gBcbfJj4BkvG7CJ%2BAyZOwBXG74TYt4LCdzJxHixQgAuO78XaPZrDFkmw22LBODK6%2BGAAyww%2Bq%2BWCsALJQA2t8zcf7FmAK5kANjEeqP/auUAXMkA8G6rjv6r9QPwQgmAO60991%2BEAvBCCYBXReb%2Bi2IAviUGEFcb%2Bt%2BqB%2BA/9ACWV574/yEAPyAJMDXj/gYBAIj6%2BewDAOAcAgAQJQAAUQIAECUAAFECABAlAABRAgAQJQAAUQIAECUAAFECABAlAABRAgAQJQAAUQIAECUAAFECABD1P27Vcc3wEMcwAAAAAElFTkSuQmCC%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image/png%22%7D%5D%7D">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#080b10">
-<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAIAAADdvvtQAAAD40lEQVR4nO3dsW3bQBiGYTpwbxcuvUjaTJAhPEBGyQAZIhOkzTpO7yKFAEawI+p4H0kdj89TGYgAEbjXP88nKbp7eHoeoNanW18A+yYgIgIiIiAiAiIiICICInK/2TO9/tjuuRiG4fHlbYNnuVv1IFE0jVgvplUC0k2zFi9p4YAm0tlmojLaZi0WC+i/lyuaRqy3OssE9PH6pNOgNZYpDejdNelmFxZctegcSD079W6lkj966ifQ+bNKZ6fyRaycQOrpw/na1c2hmoDU05OwodkBqac/SUPzAlJPr6obmhGQevpW11DNHkg9vapY2dKAxiTV07dxfQuHUFFAXl0/ppJ1n3cLM36OYNYqXw/IzeuAym9k3hNN5EpAdj9MN1A6gdy/jqZwxd3CiEwFZPt8cCVbaROIiICICIjIxYBsgBgKtkEmEBEBEREQEQER8VJXW3b3t4sJRERARAREREBEBEREQEQERERARBwk3kDJRxUuPaa1A0YTiIiAiAiIiICICIiIgIgIiIiAiAiIiICICIiIgIgIiIiAiAiIiICICIiIgIgIiIiAiAiIiICICIiIgIj4YOGUPz+/nX54+Pr9ltfRMBOIiICICIiIgIgIiIiAiAiIiICICIiIk+h/x80Vj3FCbQIRERARAREREBEBEdnNX2Gvn7+cfnj8/eu2V8I5E4iIgIgIiIiAiAiIiICICIiIgIi0dZA4nhbWPcYZ4/ZMICICIiIgIgIiIiAiAiIiICICIiIgIgIiIiAiAiIiICICIiIgIgIiIiAiAiIiICICIiIgIgIiIiAiAiIiICICIiIgIm19Nv4mJr6uwJfuXmUCEREQEQERERARAREREBEBEREQEQERcRI9xQH0VSYQkbYm0MR/9OwL59pkAhEREBEBEREQEQERERARAREREJG2DhInOD9skwlEZDcTqCePL2+X/un1x/3VxzTFBCIiICICIiIgIgIiIiAiAiJyMaDxHGI8meCArp5LmUBETJe27OUAemQCEZkKyDbo4EpemDOBiJQGZAgdTeGKXwlod3s6FjfdgFsYkesB2UofUPn72uZNIA0dwaxVLgrITuiYSta9dAK5kR3E3Ddl12yiNdSripWdEdB5khrqz/malm9a5k0gDfWqrp6h4hamof5U1zPU7YE01JOknqH6JFpDfQjrGYbh7uHpeZGnr74CbmKptYteC3v3rEbRXiz4mx9NoNHHdEyjBq2xTMsENFwYPzJqxHqrs1hAJxN3MTFtbJu1WDigE5uhZi3+a7xKQCMlNWK98b9uQOfEtLFt9gzbBUSXvCeaiICICIiIgIgIiIiAiPwFuv8Lfh+1QhcAAAAASUVORK5CYII=">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-title" content="BIST">
+<meta name="mobile-web-app-capable" content="yes">
 <title>BIST Terminal · PRO</title>
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
@@ -41,6 +43,15 @@ color:var(--txt);font-family:var(--mono);font-size:12px;
 ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
 ::-webkit-scrollbar-track{background:transparent}
 #app{display:flex;flex-direction:column;height:100%;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+
+/* ---------- v5.6 uygulama kurulum kartı ---------- */
+#appbox{position:fixed;inset:0;z-index:9999;background:rgba(3,6,10,.72);display:flex;align-items:flex-end;justify-content:center;padding:16px 12px calc(16px + env(safe-area-inset-bottom));-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+#appbox .appcard{width:100%;max-width:460px;background:var(--panel);border:1px solid var(--line2);border-radius:18px;padding:18px 16px;display:flex;flex-direction:column;gap:10px;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+#appbox .appt{font-size:18px;font-weight:700;color:#fff}
+#appbox .appd{font-size:14px;line-height:1.5;color:var(--txt2)}
+#appbox input{font-size:16px;padding:12px;border-radius:10px;border:1px solid var(--line2);background:#05080c;color:#fff;width:100%}
+#appbox button{font:600 16px -apple-system,BlinkMacSystemFont,system-ui,sans-serif;padding:14px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.05);color:#fff;width:100%}
+#appbox button.pri{background:linear-gradient(180deg,#fcd34d,#f59e0b);color:#111;border:0}
 
 /* ---------- UST BAR ---------- */
 #top{display:flex;align-items:center;gap:9px;padding:10px 12px;flex:0 0 auto;min-height:52px;
@@ -559,13 +570,16 @@ td.fl-up,td.fl-dn{border-radius:4px}
     <div id="vermsg" class="note" style="padding-top:0">Kontrol ediliyor…</div>
     <button class="g" onclick="appUpdate()">🔄 Şimdi güncelle</button>
     <b>YEDEK</b>
+    <button class="g pri" onclick="cloudSave()">☁️ Ayarlarımı sunucuya kaydet</button>
+    <button class="g" onclick="cloudLoad()">☁️ Sunucudan ayarları yükle</button>
+    <div class="note" style="padding-top:0">Safari ↔ ana ekran uygulaması ↔ diğer telefon arasında ayar taşımak için: birinde <b>kaydet</b>, diğerinde <b>yükle</b>. Ayarların kendi bist-tv sunucunda, şifrenle korunur.</div>
     <button class="g" onclick="backup()">Yedeği kopyala</button>
     <button class="g" onclick="backupToFile()">Yedeği dosyaya indir</button>
     <textarea id="bktext" placeholder="Yedek metnini yapıştır"></textarea>
     <button class="g" onclick="restore()">Geri yükle</button>
     <input type="file" id="bkfile" accept=".txt" style="display:none" onchange="restoreFromFile(this)">
     <button class="g" onclick="document.getElementById('bkfile').click()">Dosyadan geri yükle</button>
-    <div class="note">Tarama verisi bist-tv Worker üzerinden TradingView hesabınla gerçek zamanlı gelir (Worker'a ulaşılamazsa ~15 dk gecikmeli doğrudan TradingView'e düşer); derin tarama ve grafik mumları kendi Cloudflare proxy'nden Yahoo'ya gider. Kurulum eşikleri geçmiş test edilmemiştir. Yatırım tavsiyesi değildir.</div>
+    <div class="note">Tarama verisi bist-tv Worker üzerinden TradingView hesabınla gerçek zamanlı gelir (Worker'a ulaşılamazsa ~15 dk gecikmeli doğrudan TradingView'e düşer); grafik mumları da TradingView'den gelir; Midas yalnızca yedektir. Kurulum eşikleri geçmiş test edilmemiştir. Yatırım tavsiyesi değildir.</div>
     <button class="g danger" onclick="if(confirm('Tüm yerel veriler (ayarlar, izleme listesi, alarmlar, günlük) silinsin mi? Bu geri alınamaz.')){localStorage.clear();location.reload()}">Yerel verileri sıfırla</button>
    </div>
   </div>
@@ -762,6 +776,44 @@ function restore(){
  alert('Geri yüklendi ('+when+', sürüm '+(b.v||'?')+'). Otomatik tarama güvenlik için kapatıldı, istersen Ayarlar\'dan tekrar aç.');
  location.reload();
 }
+
+/* ================= v5.6 UYGULAMA MODU: sunucu yedegi + kurulum ================= */
+function srvBase(u){return String(u||'').trim().replace(/^ws/i,'http').replace(/\?.*$/,'').replace(/\/+$/,'')}
+function isApp(){try{return !!(navigator.standalone||matchMedia('(display-mode: standalone)').matches)}catch(e){return false}}
+async function cloudSave(){
+ const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)){alert('Önce Ayarlar → "TV WebSocket proxy URL" alanına sunucu adresini gir.');return}
+ const t='BISTT:'+btoa(unescape(encodeURIComponent(JSON.stringify(backupObj()))));
+ try{const r=await fetch(b+'/prefs',{method:'POST',headers:{'Content-Type':'text/plain'},body:t});const d=await r.json();
+  if(d.ok)alert('✓ Ayarların sunucuya kaydedildi ('+d.kb+' KB).\n\nDiğer cihazda / uygulamada: Ayarlar → "Sunucudan ayarları yükle".');
+  else alert('Kaydedilemedi: '+(d.error||('HTTP '+r.status)));
+ }catch(e){alert('Sunucuya ulaşılamadı: '+(e.message||e))}
+}
+async function cloudLoad(addr){
+ let u=addr||S.tvproxy;
+ if(!u){u=prompt('Sunucu adresin (Safari\'deki terminalde Ayarlar → proxy URL alanındaki wss://… adresi):','wss://');if(!u)return}
+ const b=srvBase(u);if(!/^https:\/\//.test(b)){alert('Adres wss:// ile başlamalı');return}
+ try{const r=await fetch(b+'/prefs');const d=await r.json();
+  if(!d.ok){alert(d.error==='sunucuda kayıtlı ayar yok'?'Sunucuda kayıtlı ayar yok. Önce ayarların dolu olduğu yerde (Safari) "Ayarlarımı sunucuya kaydet"e bas.':('Yüklenemedi: '+(d.error||('HTTP '+r.status))));return}
+  if(!confirm('Sunucudaki ayarlar yüklensin mi?'+(d.at?('\n(kaydedilme: '+new Date(d.at).toLocaleString('tr-TR')+')'):'')+'\nBu cihazdaki ayarların yerine geçer.'))return;
+  $('#bktext').value=d.data;restore();
+ }catch(e){alert('Sunucuya ulaşılamadı — adres doğru mu? ('+(e.message||e)+')')}
+}
+function appSetup(){
+ try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{})}catch(e){}
+ const box=document.createElement('div');box.id='appbox';
+ const close=()=>{try{box.remove()}catch(e){}};
+ if(isApp()&&!S.tvproxy){
+  box.innerHTML='<div class="appcard"><div class="appt">Hoş geldin 👋</div><div class="appd">Uygulamanın hafızası Safari\'den ayrıdır, bu yüzden ayarların burada henüz yok. Sunucu adresini yapıştır, ayarların tek dokunuşla gelsin.</div><input id="appaddr" placeholder="wss://bist-tv…workers.dev/şifre" autocapitalize="off" autocorrect="off" spellcheck="false"><button class="g pri" id="appgo">☁️ Ayarlarımı yükle</button><button class="g" id="appx">Şimdilik geç</button><div class="appd" style="font-size:12px">Önce Safari\'deki terminalde Ayarlar → Yedek → "Ayarlarımı sunucuya kaydet"e basmış olmalısın.</div></div>';
+  document.body.appendChild(box);
+  box.querySelector('#appgo').onclick=()=>{const v=box.querySelector('#appaddr').value.trim();if(v)cloudLoad(v)};
+  box.querySelector('#appx').onclick=close;
+ }else if(!isApp()&&/iPhone|iPad|iPod/.test(navigator.userAgent)&&!LS.get('apphint',0)){
+  box.innerHTML='<div class="appcard apphint"><div class="appt">📲 Uygulama olarak kur</div><div class="appd">1) Önce Ayarlar → Yedek → <b>Ayarlarımı sunucuya kaydet</b><br>2) Safari\'de alttaki <b>Paylaş ⬆︎</b> → <b>Ana Ekrana Ekle</b><br>3) Ana ekrandaki <b>BIST</b> ikonundan aç → ayarlarını yükle</div><button class="g" id="appx">Tamam, gizle</button></div>';
+  document.body.appendChild(box);
+  box.querySelector('#appx').onclick=()=>{LS.set('apphint',1);close()};
+ }
+}
+setTimeout(appSetup,1200);
 
 /* ================= zaman dilimleri ================= */
 const TFDEF=[
@@ -2912,7 +2964,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="5.5";
+  const APP_VER="5.6";
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
