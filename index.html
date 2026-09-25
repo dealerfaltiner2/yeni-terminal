@@ -410,6 +410,43 @@ td.fl-up,td.fl-dn{border-radius:4px}
 #newsbar a b{color:var(--acc);font-weight:800;margin-right:5px}
 #newsbar a i{font-style:normal;color:var(--dim);margin-right:6px}
 @media (prefers-reduced-motion:reduce){.fl-up,.fl-dn,.livebadge i{animation:none}#more .sh,#more .bd{transition:none}}
+
+/* ============ v6 · SADE KART TASARIMI (yalniz gorunum) ============ */
+.card.v6{padding:14px 14px 12px;border-bottom:1px solid var(--line)}
+.card.v6.top{padding-left:12px}
+.card.v6 .crow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.card.v6 .cl{min-width:0;flex:1}
+.card.v6 .cn{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.card.v6 .cname{font-size:19px;font-weight:800;letter-spacing:.3px;color:#fff}
+.card.v6 .sc,.card.v6 .align{margin-left:0;font-size:11px;padding:3px 8px;border-radius:7px}
+.card.v6 .cdesc{font-size:12.5px;color:var(--dim);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.1px}
+.card.v6 .cprice{text-align:right;line-height:1.25;flex:0 0 auto}
+.card.v6 .cprice b{display:block;font-size:19px;font-weight:800;color:#fff;letter-spacing:-.2px}
+.card.v6 .cprice i{display:block;font-style:normal;font-size:14px;font-weight:700;margin-top:2px}
+.card.v6 .cprice i.vol{font-size:12px;font-weight:500;color:var(--dim)}
+.card.v6 .tags{margin-top:9px;gap:6px}
+.card.v6 .tag{font-size:11.5px;padding:4px 10px;font-weight:600}
+.card.v6 .mtf{margin-top:10px;gap:5px}
+.card.v6 .mtf span{font-size:11.5px;padding:5px 0;border-radius:8px;font-weight:600}
+.mts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.mt{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:9px;padding:5px 8px 6px}
+.mt span{display:block;font-size:10.5px;color:var(--dim);letter-spacing:.3px}
+.mt b{display:block;font-size:15px;font-weight:800;margin-top:1px}
+.mt i{display:block;height:3px;background:rgba(255,255,255,.07);border-radius:2px;margin-top:4px;overflow:hidden}
+.mt i u{display:block;height:100%;border-radius:2px}
+.card.v6 .key{margin-top:10px;font-size:13px;line-height:1.45;color:var(--wrn)}
+.card.v6 .key.ok{color:var(--up)}
+.card.v6 .key em{font-style:normal;color:var(--dim);font-size:12px}
+.card.v6 .detbtn{margin-top:9px;width:100%;font-size:12.5px;padding:7px;border-radius:10px;display:flex;justify-content:center;gap:6px;color:var(--txt2)}
+.card.v6 .plan{margin-top:8px;padding:11px 12px}
+.card.v6 .plan .warns div{font-size:12.5px}
+.card.v6 .plan .why{font-size:12.5px;color:var(--dim);gap:4px 12px;margin-top:4px}
+.card.v6 .plan .why b{color:var(--txt)}
+.card.v6 .plan .pr{margin-top:4px}
+.card.v6 .plan .pr span{font-size:11.5px;padding:4px 9px}
+.card.v6 .plan table{font-size:13px;width:100%;margin-top:4px}
+.dsub{font-size:10.5px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-top:10px;font-weight:700}
+.card.v6 .plan>.dsub:first-child,.card.v6 .plan>.warns+.dsub{margin-top:8px}
 </style>
 </head>
 <body>
@@ -1361,11 +1398,33 @@ function cardHtml(o,ix){const dir=S.dir,tf=S.stf;
    '<tr><td>Pozisyon</td><td style="text-align:right">'+(p.lots?nf(p.lots*p.entry,0)+' ₺':'—')+'</td></tr>'+
    (p.share!=null?'<tr><td>Günlük hacmin</td><td style="text-align:right;color:'+(p.share>2?'var(--dn)':'var(--txt2)')+'">'+nf(p.share,2)+'%'+(p.share>2?' · doldurmak zor':'')+'</td></tr>':'')+
    '</table></div>'):'';
-  return '<div class="card'+(ix<3?' top':'')+'" onclick="selectSym(\''+o.name+'\',\'bist\')">'+
-   '<div class="crow"><div><span class="cname">'+o.name+'</span>'+badge+alb+(isNew?'<span class="newtag">YENİ</span>':'')+(rise?'<span class="rise">▲ güçleniyor</span>':'')+
-   '<div class="cdesc">'+(o.description||'').slice(0,26)+(o['price_earnings_ttm']?' · FK'+nf(o['price_earnings_ttm'],0)+(o['price_book_fundamental']?' PD'+nf(o['price_book_fundamental'],1):''):'')+'</div></div>'+
-   '<div class="cprice">'+nf(o.close)+'<i class="'+cls(o.change)+'">'+pct(o.change)+'</i><i style="color:var(--dim)">'+big(o.voltl)+' ₺</i></div></div>'+
-   '<div class="tags">'+tags+'</div>'+mtfStrip(o)+pv+wh+'<div class="why">'+whyText(o,tf)+'</div>'+plan+'</div>';
+  // v6 kart: ust kisimda bir bakista gerekenler; ayrintilar "Detay" altinda
+  const meter=(lab,v)=>{if(v==null)return '<div class="mt"><span>'+lab+'</span><b>–</b><i><u style="width:0"></u></i></div>';
+   const c=v>=70?'var(--up)':v<=30?'var(--dn)':'var(--acc)';
+   return '<div class="mt"><span>'+lab+'</span><b style="color:'+c+'">'+v+'</b><i><u style="width:'+Math.max(4,Math.min(100,v))+'%;background:'+c+'"></u></i></div>'};
+  const meters='<div class="mts">'+meter('Hacim',pr.rv)+meter('Güç',pr.rs)+meter('Trend',pr.adx)+meter('Oynaklık',pr.atrp)+'</div>';
+  const ctx='<div class="pr">'+(o.secRank?'<span>sektör <b>'+o.secRank+'/'+o.secN+'</b></span>':'')+
+   (o.secAvg!=null?'<span class="'+(o.secAvg>0?'hi':'lo')+'">sektör ort. '+pct(o.secAvg)+'</span>':'')+
+   (o._rs!=null?'<span class="'+(o._rs>0?'hi':'lo')+'">endekse göre '+pct(o._rs)+'</span>':'')+
+   (o['price_earnings_ttm']?'<span>F/K <b>'+nf(o['price_earnings_ttm'],1)+'</b></span>':'')+(o['price_book_fundamental']?'<span>PD/DD <b>'+nf(o['price_book_fundamental'],1)+'</b></span>':'')+'</div>';
+  const w0=ws.length?'<div class="key '+(ws[0][0]==='ok'?'ok':'')+'">'+(ws[0][0]==='ok'?'✓ ':'⚠ ')+ws[0][1]+(ws.length>1?' <em>+'+(ws.length-1)+'</em>':''):'';
+  const wrest=ws.length>1?'<div class="warns">'+ws.slice(1,4).map(x=>'<div class="'+(x[0]==='ok'?'ok':'')+'">'+(x[0]==='ok'?'✓ ':'⚠ ')+x[1]+'</div>').join('')+'</div>':'';
+  const planT=p?('<div class="dsub">İşlem planı</div><table>'+
+   '<tr><td>Giriş</td><td style="color:#fff;text-align:right">'+nf(p.entry)+'</td></tr>'+
+   '<tr><td>Stop ('+p.stopRef+')</td><td class="dn" style="text-align:right">'+nf(p.stop)+' · '+nf(p.riskPct,2)+'%</td></tr>'+
+   '<tr><td>Hedef ('+p.tgtRef+')</td><td class="up" style="text-align:right">'+nf(p.tgt)+'</td></tr>'+
+   '<tr><td>Risk/Ödül</td><td style="text-align:right;color:'+(p.rr>=2?'var(--up)':p.rr>=1.3?'var(--acc)':'var(--dn)')+'">'+nf(p.rr,2)+'R</td></tr>'+
+   '<tr><td>Lot ('+nf(S.rskp,1)+'% risk)</td><td style="text-align:right;color:var(--acc)">'+(p.lots||'—')+'</td></tr>'+
+   '<tr><td>Pozisyon</td><td style="text-align:right">'+(p.lots?nf(p.lots*p.entry,0)+' ₺':'—')+'</td></tr>'+
+   (p.share!=null?'<tr><td>Günlük hacmin</td><td style="text-align:right;color:'+(p.share>2?'var(--dn)':'var(--txt2)')+'">'+nf(p.share,2)+'%'+(p.share>2?' · doldurmak zor':'')+'</td></tr>':'')+
+   '</table>'):'';
+  const detail='<button class="planbtn detbtn" onclick="togglePlan(\''+o.name+'\')">Detay'+(p?' · İşlem planı':'')+' <span>▾</span></button>'+
+   '<div class="plan" id="pl_'+o.name+'">'+wrest+'<div class="dsub">Göstergeler</div><div class="why">'+whyText(o,tf)+'</div><div class="dsub">Bağlam</div>'+ctx+planT+'</div>';
+  return '<div class="card v6'+(ix<3?' top':'')+'" onclick="selectSym(\''+o.name+'\',\'bist\')">'+
+   '<div class="crow"><div class="cl"><div class="cn"><span class="cname">'+o.name+'</span>'+badge+alb+(isNew?'<span class="newtag">YENİ</span>':'')+(rise?'<span class="rise">▲ güçleniyor</span>':'')+'</div>'+
+   '<div class="cdesc">'+(o.description||'').slice(0,30)+'</div></div>'+
+   '<div class="cprice"><b>'+nf(o.close)+'</b><i class="'+cls(o.change)+'">'+pct(o.change)+'</i><i class="vol">'+big(o.voltl)+' ₺</i></div></div>'+
+   '<div class="tags">'+tags+'</div>'+mtfStrip(o)+meters+w0+detail+'</div>';
 }
 /* ================= derin tarama ================= */
 async function deepScan(){
@@ -2964,7 +3023,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="5.6";
+  const APP_VER="5.7";
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
