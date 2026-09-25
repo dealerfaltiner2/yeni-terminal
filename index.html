@@ -1846,9 +1846,11 @@ $('#viewseg2').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;S.v
 /* ================= CANLI: TradingView anlik akisindan metrikler ================= */
 S.tvHis={};
 setInterval(function(){try{
- if(document.hidden||!(TVL.ok&&Date.now()-TVL.last<60000))return;
- const now=Date.now();
- Object.keys(TVL.syms).forEach(s=>{const o=S.umap[s];if(!o||!(o.close>0))return;
+ if(document.hidden||!tvAlive())return;
+ const now=Date.now(),set={};
+ Object.keys(TVL.syms).forEach(s=>set[s]=1);
+ (S.uni||[]).filter(o=>o&&o.name&&o.voltl>0).sort((a,b)=>b.voltl-a.voltl).slice(0,TV_TOPN).forEach(o=>set[o.name]=1);
+ Object.keys(set).forEach(s=>{const o=S.umap[s];if(!o||!(o.close>0))return;
   const h=S.tvHis[s]=S.tvHis[s]||[];const l=h[h.length-1];
   if(l&&now-l.t>120000)h.length=0;
   h.push({t:now,p:o.close,v:Math.max(o.volume||0,l?l.v:0),tn:0,b:o.bid||0,a:o.ask||0});if(h.length>120)h.shift()});
@@ -2358,7 +2360,7 @@ setInterval(function(){try{
 }catch(e){}},1000);
 let TVL={ws:null,ses:'qs_'+Math.random().toString(36).slice(2),buf:'',syms:{},ok:false,last:0,tries:0,throttle:0};
 const TVFLD=['lp','ch','chp','volume','high','low','open','bid','ask','update_mode'];
-const TV_TOPN=150;
+const TV_TOPN=100;
 window.addEventListener('error',e=>{try{TVL.gerr=(e.message||'hata')+' @'+(e.lineno||'?')}catch(_){}});
 function tvSend(m,p){try{const s=JSON.stringify({m:m,p:p});TVL.ws.send('~m~'+s.length+'~m~'+s)}catch(e){}}
 function tvLiveStart(){
@@ -2854,7 +2856,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="4.8";
+  const APP_VER="4.9";
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
