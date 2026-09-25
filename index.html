@@ -3023,7 +3023,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="5.8";
+  const APP_VER="5.9";
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3097,6 +3097,8 @@ function tvReconnectReport(){
    render();
   }
   window.srvSync=async function(manual){
+   // v5.9: yalniz 'Sunucuya gonder'e en az bir kez basilmis cihaz sunucu ayarlarini degistirir (misafir cihaz ezemez)
+   if(manual)LS.set('srvOwner',1);else if(!LS.get('srvOwner',0))return;
    if(!base()||SRV.busy)return;SRV.busy=true;
    const p=payload(),sig=JSON.stringify(p);
    try{
