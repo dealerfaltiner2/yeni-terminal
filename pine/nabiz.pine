@@ -1,0 +1,194 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0
+// © Fatih · BIST Terminal — Claude ile yazıldı
+//
+// NABIZ · BIST Akış Radarı
+// Amaç: fiyat koşmadan ÖNCE para girişini yakalamak (gün içi / scalp, yalnızca AL).
+// 6 bileşenli 0–100 puan: VWAP konumu, EMA dizilimi, göreli hacim, alım baskısı,
+// kırılım ve üst zaman dilimi trendi. Geç kalınmış (VWAP'tan çok uzak / günde +%5 üstü)
+// hareketler cezalandırılır; sinyal yalnızca bar KAPANINCA verilir (repaint yok).
+// Sinyalden sonra giriş, stop ve 2R hedef çizilir; STOP / HEDEF / ÇIK etiketleriyle takip edilir.
+
+//@version=6
+indicator("NABIZ · BIST Akış Radarı", shorttitle = "NABIZ", overlay = true, max_labels_count = 300, max_lines_count = 300)
+
+// ───────────── Ayarlar ─────────────
+grpS = "Sinyal"
+minScore  = input.int(70, "Minimum puan", minval = 40, maxval = 100, group = grpS)
+rvMin     = input.float(2.0, "Hacim patlaması (RVOL ≥)", minval = 1.0, step = 0.1, group = grpS)
+brkLen    = input.int(20, "Kırılım bakış (bar)", minval = 5, group = grpS)
+pressLen  = input.int(5, "Alım baskısı penceresi (bar)", minval = 2, group = grpS)
+extK      = input.float(2.5, "Aşırı uzama sınırı (VWAP'tan ATR katı)", minval = 0.5, step = 0.1, group = grpS)
+lateChg   = input.float(5.0, "Geç kalma sınırı (günlük %)", minval = 1.0, step = 0.5, group = grpS)
+coolBars  = input.int(10, "Sinyaller arası en az bar", minval = 1, group = grpS)
+
+grpR = "Risk"
+stopATR   = input.float(1.0, "Stop (ATR katı)", minval = 0.2, step = 0.1, group = grpR)
+rr        = input.float(2.0, "Hedef (R katı)", minval = 0.5, step = 0.5, group = grpR)
+atrLen    = input.int(14, "ATR uzunluğu", minval = 2, group = grpR)
+
+grpT = "Üst zaman dilimi"
+htf1      = input.timeframe("60", "Trend 1", group = grpT)
+htf2      = input.timeframe("240", "Trend 2", group = grpT)
+
+grpG = "Görünüm"
+showVW    = input.bool(true, "VWAP ve bantlar", group = grpG)
+showEMA   = input.bool(true, "EMA 9 / 21", group = grpG)
+showOR    = input.bool(true, "Açılış aralığı (ilk 15 dk)", group = grpG)
+showTbl   = input.bool(true, "Bilgi tablosu", group = grpG)
+showTrade = input.bool(true, "Giriş / stop / hedef çizgileri", group = grpG)
+
+// ───────────── Temel hesaplar ─────────────
+atr = ta.atr(atrLen)
+newDay = timeframe.change("D")
+[vw, vwUp, vwLo] = ta.vwap(hlc3, newDay, 1.0)
+ema9  = ta.ema(close, 9)
+ema21 = ta.ema(close, 21)
+
+// Göreli hacim
+volAvg = ta.sma(volume, 20)
+rvol = volAvg > 0 ? volume / volAvg : 0.0
+
+// Alım baskısı: kapanışın mum içindeki yerine göre hacim ağırlıklı (−1 … +1)
+rng = high - low
+clv = rng > 0 ? ((close - low) - (high - close)) / rng : 0.0
+dv = clv * volume
+volSum = math.sum(volume, pressLen)
+press = volSum > 0 ? math.sum(dv, pressLen) / volSum : 0.0
+
+// Günlük birikimli akış (gün başında sıfırlanır)
+var float cumFlow = 0.0
+cumFlow := newDay ? dv : cumFlow + dv
+
+// Kırılım: önceki N barın zirvesi veya açılış aralığı üstü
+prevHigh = ta.highest(high, brkLen)[1]
+
+// Açılış aralığı (günün ilk 15 dakikası)
+var float orH = na
+var float orL = na
+var int dayStart = na
+if newDay
+    dayStart := time
+    orH := high
+    orL := low
+else if not na(dayStart) and time - dayStart < 15 * 60 * 1000
+    orH := math.max(orH, high)
+    orL := math.min(orL, low)
+orDone = not na(dayStart) and time - dayStart >= 15 * 60 * 1000
+
+brkPrev = close > prevHigh
+brkOR = orDone and close > orH and close[1] <= orH
+breakout = brkPrev or brkOR
+
+// Üst zaman dilimi trendi (kapanmış barlar, repaint yok)
+htfUp(tf) =>
+    request.security(syminfo.tickerid, tf, close[1] > ta.ema(close, 20)[1] and ta.ema(close, 20)[1] > ta.ema(close, 20)[2], lookahead = barmerge.lookahead_on)
+up1 = htfUp(htf1)
+up2 = htfUp(htf2)
+
+// Günlük değişim (önceki gün kapanışına göre)
+prevDayClose = request.security(syminfo.tickerid, "D", close[1], lookahead = barmerge.lookahead_on)
+dayChg = prevDayClose > 0 ? (close / prevDayClose - 1) * 100 : 0.0
+
+// ───────────── Puan (0–100) ─────────────
+sVW    = close > vw ? 15.0 : 0.0
+sEMA   = ema9 > ema21 and ema21 > ema21[1] ? 15.0 : ema9 > ema21 ? 7.0 : 0.0
+sVol   = rvol >= rvMin ? 20.0 : rvol >= rvMin * 0.75 ? 10.0 : 0.0
+sPress = press >= 0.35 ? 20.0 : press >= 0.2 ? 10.0 : 0.0
+sBrk   = breakout ? 15.0 : 0.0
+sHTF   = (up1 ? 7.5 : 0.0) + (up2 ? 7.5 : 0.0)
+
+extended = atr > 0 and (close - vw) > extK * atr
+late = dayChg >= lateChg
+penalty = (extended ? 25.0 : 0.0) + (late ? 20.0 : 0.0)
+
+score = math.max(0.0, math.min(100.0, sVW + sEMA + sVol + sPress + sBrk + sHTF - penalty))
+
+// ───────────── Sinyal ve takip ─────────────
+var int lastSig = na
+coolOk = na(lastSig) or bar_index - lastSig >= coolBars
+rawSig = score >= minScore and breakout and close > vw and rvol >= rvMin * 0.75 and press > 0.2 and not extended and not late
+sig = rawSig and coolOk and barstate.isconfirmed
+
+var bool inTrade = false
+var float entry = na
+var float stopP = na
+var float tgt = na
+var line lE = na
+var line lS = na
+var line lT = na
+
+xDown = ta.crossunder(ema9, ema21)
+hitStop = false
+hitTgt = false
+exitWarn = false
+
+if inTrade
+    if low <= stopP
+        hitStop := true
+        inTrade := false
+    else if high >= tgt
+        hitTgt := true
+        inTrade := false
+    else if barstate.isconfirmed and (close < vw or xDown)
+        exitWarn := true
+        inTrade := false
+    if showTrade and not na(lE)
+        line.set_x2(lE, bar_index)
+        line.set_x2(lS, bar_index)
+        line.set_x2(lT, bar_index)
+
+if sig
+    lastSig := bar_index
+    inTrade := true
+    entry := close
+    stopP := close - stopATR * atr
+    tgt := close + rr * (close - stopP)
+    if showTrade
+        lE := line.new(bar_index, entry, bar_index + 1, entry, color = color.new(color.white, 20), width = 1)
+        lS := line.new(bar_index, stopP, bar_index + 1, stopP, color = color.new(#ff5566, 0), width = 1, style = line.style_dashed)
+        lT := line.new(bar_index, tgt, bar_index + 1, tgt, color = color.new(#00d3a0, 0), width = 1, style = line.style_dashed)
+    txt = "AL · " + str.tostring(math.round(score)) + "\nRVOL " + str.tostring(rvol, "#.#") + "x\nStop " + str.tostring(stopP, format.mintick) + "\nHedef " + str.tostring(tgt, format.mintick)
+    label.new(bar_index, low - atr * 0.4, txt, style = label.style_label_up, color = color.new(#00d3a0, 0), textcolor = color.black, size = size.small)
+
+if hitStop
+    label.new(bar_index, high + atr * 0.3, "STOP", style = label.style_label_down, color = color.new(#ff5566, 0), textcolor = color.white, size = size.tiny)
+if hitTgt
+    label.new(bar_index, high + atr * 0.3, "HEDEF 🎯", style = label.style_label_down, color = color.new(#00d3a0, 0), textcolor = color.black, size = size.tiny)
+if exitWarn
+    label.new(bar_index, high + atr * 0.3, "ÇIK", style = label.style_label_down, color = color.new(#f59e0b, 0), textcolor = color.black, size = size.tiny)
+
+// Uyanış: para giriyor ama fiyat henüz kırmadı
+wake = not inTrade and rvol >= rvMin and press >= 0.35 and close > vw and not breakout and not extended and barstate.isconfirmed
+plotshape(wake, "Uyanış", shape.circle, location.belowbar, color.new(#38bdf8, 30), size = size.tiny)
+
+// ───────────── Çizimler ─────────────
+plot(showVW ? vw : na, "VWAP", color.new(#fbbf24, 0), 2)
+p1 = plot(showVW ? vwUp : na, "VWAP +1σ", color.new(#fbbf24, 70), 1)
+p2 = plot(showVW ? vwLo : na, "VWAP −1σ", color.new(#fbbf24, 70), 1)
+fill(p1, p2, color.new(#fbbf24, 94), "VWAP bandı")
+plot(showEMA ? ema9 : na, "EMA 9", color.new(#38bdf8, 0), 1)
+plot(showEMA ? ema21 : na, "EMA 21", color.new(#a78bfa, 0), 1)
+plot(showOR and orDone ? orH : na, "Açılış aralığı üst", color.new(color.gray, 30), 1, plot.style_linebr)
+plot(showOR and orDone ? orL : na, "Açılış aralığı alt", color.new(color.gray, 30), 1, plot.style_linebr)
+barcolor(sig ? #00d3a0 : na)
+
+// ───────────── Bilgi tablosu ─────────────
+var table tb = table.new(position.top_right, 2, 8, bgcolor = color.new(#0b1017, 5), border_color = color.new(#253449, 0), border_width = 1)
+cellRow(r, k, v, c) =>
+    table.cell(tb, 0, r, k, text_color = color.new(#a8b4c3, 0), text_size = size.small, text_halign = text.align_left)
+    table.cell(tb, 1, r, v, text_color = c, text_size = size.small, text_halign = text.align_right)
+if showTbl and barstate.islast
+    scCol = score >= minScore ? #00d3a0 : score >= minScore - 15 ? #fbbf24 : #ff5566
+    cellRow(0, "NABIZ", str.tostring(math.round(score)) + "/100", scCol)
+    cellRow(1, "VWAP", close > vw ? "üstünde" : "altında", close > vw ? #00d3a0 : #ff5566)
+    cellRow(2, "EMA 9/21", ema9 > ema21 ? "yukarı" : "aşağı", ema9 > ema21 ? #00d3a0 : #ff5566)
+    cellRow(3, "RVOL", str.tostring(rvol, "#.#") + "x", rvol >= rvMin ? #00d3a0 : #a8b4c3)
+    cellRow(4, "Alım baskısı", str.tostring(press * 100, "#") + "%", press >= 0.35 ? #00d3a0 : press >= 0.2 ? #fbbf24 : #ff5566)
+    cellRow(5, "Trend " + htf1 + "/" + htf2, (up1 ? "↑" : "·") + " " + (up2 ? "↑" : "·"), up1 and up2 ? #00d3a0 : #a8b4c3)
+    cellRow(6, "Günlük", str.tostring(dayChg, "+#.##;-#.##") + "%", dayChg >= 0 ? #00d3a0 : #ff5566)
+    cellRow(7, "Durum", inTrade ? "işlemde" : extended ? "uzamış" : late ? "geç" : wake ? "uyanış 👀" : "bekle", inTrade ? #00d3a0 : wake ? #38bdf8 : #a8b4c3)
+
+// ───────────── Alarmlar ─────────────
+alertcondition(sig, "NABIZ · AL", "NABIZ AL sinyali: {{ticker}} {{close}}")
+alertcondition(wake, "NABIZ · Uyanış", "NABIZ uyanış (para girişi): {{ticker}} {{close}}")
+alertcondition(hitStop or exitWarn, "NABIZ · Çık / Stop", "NABIZ çıkış: {{ticker}} {{close}}")
