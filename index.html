@@ -1657,7 +1657,7 @@ function renderSrcStatus(){
   ?('<span class="up">⚡ GERÇEK ANLIK</span>'+((TVL.ok&&Date.now()-TVL.last<15000)?' · anlık akış '+Object.keys(TVL.syms).length+' sembol (~1 sn)':'')+((TVS.ok&&Date.now()-TVS.at<20000)?' · tarama '+TVS.n+' hisse (~4 sn)':'')+(TVL.drops?' · kopma '+TVL.drops:'')+(!(TVL.ok&&Date.now()-TVL.last<15000)?' · <span class="wrn">anlık akış yok ['+tvDiag()+']</span>':'')+(TVL.delayed?' · <span class="dn">⚠ TV gecikmeli veri gönderiyor ('+TVL.delayed+')</span>':''))
   :(TVL.state==='acik'
    ?'<span style="color:var(--acc)">◌ TV bağlı, işlem bekleniyor</span> · '+Object.keys(TVL.syms).length+' sembol'
-   :'<span class="dn">○ TV bağlı değil</span> ['+({acik:'açık',kapali:'kapalı',baglaniyor:'bağlanıyor'}[TVL.state]||TVL.state||'-')+(TVL.err?(' · '+TVL.err):'')+' · deneme '+TVL.tries+(TVL.gerr?(' · ⚠'+TVL.gerr):'')+']'
+   :'<span class="dn">○ TV bağlı değil</span> ['+({acik:'açık',kapali:'kapalı',baglaniyor:'bağlanıyor',yetki:'yetki bekleniyor'}[TVL.state]||TVL.state||'-')+(TVL.err?(' · '+TVL.err):'')+' · deneme '+TVL.tries+(TVL.gerr?(' · ⚠'+TVL.gerr):'')+']'
     +(TVDIAG.at?('<br><span style="color:var(--txt2)">tanı: köprü '+TVDIAG.echo+' · TV '+TVDIAG.tv+(TVS.err?(' · tarama: '+TVS.err):'')+'</span>'):'')
     +(S.tvproxy?'':'<br><span style="color:var(--acc)">→ Çözüm: Ayarlar bölümündeki "TV WebSocket proxy URL" alanına wss:// adresini gir</span>'));
  // 2) MUM VERISI: Yahoo -> Twelve Data (birincil basarisizsa yedek)
@@ -2383,13 +2383,14 @@ function tvLiveStart(){
   const url=S.tvproxy?(S.tvproxy.replace(/\/$/,'')+(S.tvproxy.indexOf('?')<0?'?':'&')+'direct=1'):('wss://data.tradingview.com/socket.io/websocket?from=symbols/BIST%2F&date='+Date.now());
   const ws=new WebSocket(url);
   TVL.ws=ws;TVL.state='baglaniyor';TVL.err='';
-  ws.onopen=()=>{if(TVL.ws!==ws)return;TVL.tries=0;TVL.buf='';TVL.state='acik';TVL.err='';TVL.syms={};TVC.cs=null;TVC.key='';TVC.ready=false;TVC.hasSer=false;
+  ws.onopen=()=>{if(TVL.ws!==ws)return;TVL.tries=0;TVL.buf='';TVL.state='yetki';TVL.srvErr='';TVL.rx=0;TVL.err='';TVL.syms={};TVC.cs=null;TVC.key='';TVC.ready=false;TVC.hasSer=false;
    (async()=>{
     let tok=S.tvSession||'';
     if(S.tvproxy){tok=await tvToken();if(TVL.ws!==ws)return}
     tvSend('set_auth_token',[tok||'unauthorized_user_token']);
     tvSend('quote_create_session',[TVL.ses]);
     tvSend('quote_set_fields',[TVL.ses].concat(TVFLD));
+    TVL.state='acik';   // v5.2: hisse/grafik komutlari ancak yetki + oturum hazir olunca gider
     tvLiveSubs();setTimeout(tvLiveSubs,6000);
    })()};
   ws.onmessage=ev=>{if(TVL.ws===ws)tvLiveOnMsg(ev.data)};
@@ -2426,7 +2427,7 @@ async function tvAuth(){
 }
 function tvLiveSubs(){
  try{
-  if(!TVL.ws||TVL.ws.readyState!==1)return;
+  if(!TVL.ws||TVL.ws.readyState!==1||TVL.state!=='acik')return;
   const want={};
   if(S.mode==='bist'&&S.sym)want[S.sym]=1;
   if(S.mode==='bist'&&typeof W==='function')(W()||[]).slice(0,40).forEach(s=>want[s]=1);
@@ -2438,7 +2439,7 @@ function tvLiveSubs(){
  }catch(e){}
 }
 function tvDiag(){
- const st={acik:'açık',kapali:'kapalı',baglaniyor:'bağlanıyor'}[TVL.state]||TVL.state||'-';
+ const st={acik:'açık',kapali:'kapalı',baglaniyor:'bağlanıyor',yetki:'yetki bekleniyor'}[TVL.state]||TVL.state||'-';
  return st+' · yetki '+(TVL.tok?'✓':'✗')+' · gelen '+(TVL.rx||0)+' mesaj'+(TVL.lastM?(' · son: '+TVL.lastM):'')+(TVL.err?(' · '+TVL.err):'')+(TVL.srvErr?(' · TV: '+TVL.srvErr):'');
 }
 function tvLiveOnMsg(data){
@@ -2878,7 +2879,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="5.1";
+  const APP_VER="5.2";
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
