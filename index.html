@@ -741,13 +741,16 @@ function restoreFromFile(input){
  input.value='';
 }
 function restore(){
- const t=$('#bktext').value.trim();
- if(!t.startsWith('BISTT:')){alert('Yedek metni tanınmadı: \'BISTT:\' ile başlamıyor.');return}
+ let t=String($('#bktext').value||'').replace(/[\s\u200B-\u200D\uFEFF]+/g,'').replace(/^["'“”‘’]+|["'“”‘’]+$/g,'');
+ const pi=t.search(/bistt:/i);if(pi>0)t=t.slice(pi);
+ if(!/^bistt:/i.test(t)){alert('Yedek metni tanınmadı: \'BISTT:\' ile başlamıyor.\n\nEn güvenlisi: eski telefonda "Yedeği dosyaya indir", bu telefonda "Dosyadan geri yükle".');return}
+ t='BISTT:'+t.slice(6);
  let b;
  try{b=JSON.parse(decodeURIComponent(escape(atob(t.slice(6)))))}
- catch(e){alert('Yedek metni bozuk — çözülemedi ('+e.message+').');return}
+ catch(e){alert('Yedek metni eksik ya da bozuk ('+Math.round(t.length/1024)+' KB). Kopyalarken kesilmiş olabilir.\n\nEn güvenlisi: eski telefonda "Yedeği dosyaya indir", bu telefonda "Dosyadan geri yükle".');return}
  if(typeof b!=='object'||b===null){alert('Yedek içeriği geçersiz (nesne değil).');return}
  const ALL_KEYS=['wl','alarms','tx','jr','tdkey','src','cap','rskp','sym','mode','tf','ind','ext','sigHist','tgTok','tgChat','tgMin','breadthLog','sentSig','stf','view','blim','seenA','tvproxy','tvUser','algiCfg','algiLog'];
+ window.__noSave=true;
  ALL_KEYS.forEach(k=>{
   if(k==='tdkey'){LS.set('tdkey',b.tdkey||'');return}
   if(b[k]!==undefined)LS.set(k,b[k]);
@@ -2776,7 +2779,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadUnive
  [...$('#viewseg2').children].forEach(x=>x.classList.toggle('on',x.dataset.v===S.view));
  [...$('#autoseg').children].forEach(x=>x.classList.toggle('on',+x.dataset.a===S.autoOn));
  try{await loadUniverse()}catch(e){TVL.gerr='universe: '+(e.message||e)} // KRITIK: bu satir reddederse tum init oluyordu
- const q=S.umap[S.sym];$('#symbtn').innerHTML=S.sym+'<small>'+((q&&q.description)||'BIST').slice(0,20)+'</small>';
+ const q=S.umap[S.sym];$('#symbtn').innerHTML=S.sym+'<small>'+(S.mode==='crypto'?'USDT':((q&&q.description)||'BIST').slice(0,20))+'</small>';
  renderPx();renderOps();
  try{refreshTick()}catch(e){}try{loadCrypto()}catch(e){}try{loadDom()}catch(e){}try{watchLoop()}catch(e){}try{loadCandles()}catch(e){}try{algolabPollLoop()}catch(e){}try{alBadge()}catch(e){}
  try{updateOpenSignals()}catch(e){}setInterval(function(){try{updateOpenSignals()}catch(e){}},60000);
@@ -2851,7 +2854,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="4.7";
+  const APP_VER="4.8";
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -2996,6 +2999,7 @@ function tvReconnectReport(){
  };
  const saveCfg=()=>LS.set('algiCfg',AL.cfg);
  function saveLog(force){
+  if(window.__noSave)return;
   const now=Date.now();
   if(!force&&(!AL.dirty||now-AL.savedAt<10000))return;
   const lim=now-30*864e5;
