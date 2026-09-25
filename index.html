@@ -1613,7 +1613,7 @@ function tvBarsFlush(){
    4) >20 dk gecikmis veri SRCINFO.stale ile isaretlenir, sinyal uretiminde kullanilmaz  5) panelde gosterilir */
 let SRCINFO={src:'-',lagMs:0,stale:false};
 async function getBarsTracked(s,tf,sh){
- const order=(tvBarsBase()?['tv']:[]).concat(['yahoo']);   // v5.3: Twelve Data kaldirildi
+ const order=tvBarsBase()?['tv']:[];   // v5.4: yalnizca TradingView (Twelve Data ve Yahoo kaldirildi)
  let lastErr=null;
  for(let i=0;i<order.length;i++){
   const src2=order[i];
@@ -1625,7 +1625,7 @@ async function getBarsTracked(s,tf,sh){
    return cs;
   }catch(e){lastErr=e;SRCINFO={src:(src2==='tv'?'TradingView':src2)+' (hata)',lagMs:0,stale:true}}
  }
- throw lastErr||new Error('tüm kaynaklar başarısız');
+ throw lastErr||new Error(tvBarsBase()?'TradingView mum verisi alınamadı':'TradingView bağlantısı yok (Ayarlar → proxy URL)');
 }
 const getBars=(s,tf,sh)=>getBarsTracked(s,tf,sh);
 let TVDIAG={at:0};
@@ -1660,8 +1660,8 @@ function renderSrcStatus(){
    :'<span class="dn">○ TV bağlı değil</span> ['+({acik:'açık',kapali:'kapalı',baglaniyor:'bağlanıyor',yetki:'yetki bekleniyor'}[TVL.state]||TVL.state||'-')+(TVL.err?(' · '+TVL.err):'')+' · deneme '+TVL.tries+(TVL.gerr?(' · ⚠'+TVL.gerr):'')+']'
     +(TVDIAG.at?('<br><span style="color:var(--txt2)">tanı: köprü '+TVDIAG.echo+' · TV '+TVDIAG.tv+(TVS.err?(' · tarama: '+TVS.err):'')+'</span>'):'')
     +(S.tvproxy?'':'<br><span style="color:var(--acc)">→ Çözüm: Ayarlar bölümündeki "TV WebSocket proxy URL" alanına wss:// adresini gir</span>'));
- // 2) MUM VERISI: TradingView -> Yahoo (yedek)
- const mumLine='Mum verisi: <b>'+SRCINFO.src+'</b> · son mum ~'+nf(lagMin,0)+' dk önce · sıralama: '+(tvBarsBase()?'TradingView → ':'')+'Yahoo (yalnızca mum yedeği)'+(TVB.err?' · <span class="wrn">TV mum: '+TVB.err+'</span>':'')+(TVC.key&&TVC.ready?' · grafik canlı ⚡':'');
+ // 2) MUM VERISI: yalnizca TradingView
+ const mumLine='Mum verisi: <b>'+SRCINFO.src+'</b> · son mum ~'+nf(lagMin,0)+' dk önce · sıralama: '+'yalnızca TradingView'+(TVB.err?' · <span class="wrn">TV mum: '+TVB.err+'</span>':'')+(TVC.key&&TVC.ready?' · grafik canlı ⚡':'');
  m.innerHTML='<b style="letter-spacing:.5px">VERİ KAYNAĞI SIRASI</b><br>0) '+tvLine+'<br>1) '+midLine+'<br>2) '+mumLine+
  (SRCINFO.stale?'<br><span class="dn">⚠ Gecikmeli veri — sinyal üretiminde kullanılmıyor.</span>':'<br><span class="up">'+(withinMarketHours()?'✓ Mum verisi taze':'✓ Piyasa kapalı — son mum kapanış verisi')+'</span>');
 }
@@ -2879,7 +2879,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="5.3";
+  const APP_VER="5.4";
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
