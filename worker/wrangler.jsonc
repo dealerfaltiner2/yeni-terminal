@@ -8,7 +8,7 @@
   "workers_dev": true,
   "keep_vars": true,
   "kv_namespaces": [
-    { "binding": "DB", "id": "KV_ID_BURAYA" }
+    { "binding": "DB", "id": "3dd092224330451f9674550a592207b0" }
   ],
   "triggers": { "crons": ["* * * * *"] },
   "observability": { "enabled": true }
