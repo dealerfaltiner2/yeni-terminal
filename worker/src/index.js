@@ -1,4 +1,4 @@
-// BIST TV Köprüsü v5.3 — Cloudflare Worker (bist-tv)
+// BIST TV Köprüsü v5.4 — Cloudflare Worker (bist-tv)
 // Yayın: GitHub → Cloudflare Workers Builds (otomatik). Kodu burada değiştir, Cloudflare editöründe değil.
 // Secrets: TV_SESSION, TV_SESSION_SIGN, ACCESS_KEY
 // Terminal ayarı: wss://bist-tv.c8jmvhdm8c.workers.dev/ACCESS_KEY
@@ -94,7 +94,7 @@ async function test(env, url) {
     .split(',').map(s => s.trim()).filter(Boolean).slice(0, 10);
   const token = await getAuth(env, true);
   const rapor = {
-    surum: 'v5.3',
+    surum: 'v5.4',
     kv: !!env.DB,
     cerezVar: !!env.TV_SESSION,
     yetkiliToken: token !== 'unauthorized_user_token',
@@ -297,7 +297,7 @@ async function sync(request, env) {
 async function status(env) {
   const cfg = await kvGet(env, 'cfg', null), st = await kvGet(env, 'st', {});
   return json({
-    ok: true, surum: 'v5.3', kv: !!env.DB, synced: cfg ? cfg.at : null,
+    ok: true, surum: 'v5.4', kv: !!env.DB, synced: cfg ? cfg.at : null,
     telegram: !!(cfg && cfg.tgTok && cfg.chat), alarms: cfg ? cfg.alarms.length : 0, watch: cfg ? cfg.watch : [],
     lastRun: st.lastRun || null, health: st.health || null, hit: st.hit || [],
     today: st.cnt && st.cnt.d === trNow().day ? st.cnt : null, err: st.err || null
@@ -467,6 +467,14 @@ async function cron(env, force = false) {
     }
   }
 
+  // 5) Pine senkronu (5 dk'da bir; sonuc Telegram'a)
+  if (force || T.m % 5 === 2) {
+    try {
+      const ps = await pineSync(env, false);
+      (ps.islenen || []).forEach(o => msgs.push((o.ok ? '📈 <b>TradingView\'e yüklendi</b> · ' : '⚠️ <b>Pine yüklenemedi</b> · ') + esc(o.name) + (o.ok ? '' : '\n' + esc(String(o.derleme !== 'ok' ? o.derleme : o.yanit).slice(0, 300)))));
+    } catch (e) { errs.push('pine: ' + e.message); }
+  }
+
   // 4) gönder + durum yaz
   let tgErr = '';
   for (const m of msgs.slice(0, 10)) { const r = await tgSend(cfg, m); if (!r.ok) tgErr = r.error; }
@@ -572,6 +580,81 @@ async function prefs(request, env) {
   const at = +(await env.DB.get('prefs_at')) || null;
   return json({ ok: true, data: t, at });
 }
+/* ---------- v5.4: PINE — GitHub'daki pine/ klasoru → TradingView hesabindaki "Gostergelerim" ---------- */
+const PF = 'https://pine-facade.tradingview.com/pine-facade';
+const GH = 'https://api.github.com/repos/dealerfaltiner2/yeni-terminal/contents/pine';
+async function pf(env, method, path, fields) {
+  const init = { method, headers: { Cookie: cookieStr(env), Origin: 'https://www.tradingview.com', Referer: 'https://www.tradingview.com/', 'User-Agent': UA } };
+  if (fields) { const fd = new FormData(); for (const k in fields) fd.append(k, fields[k]); init.body = fd; }
+  const r = await fetch(PF + path, init);
+  const t = await r.text();
+  let j = null; try { j = JSON.parse(t); } catch {}
+  return { status: r.status, json: j, text: t.slice(0, 400) };
+}
+function pineTitle(src) {
+  const m = src.match(/^\s*(?:indicator|study|strategy|library)\s*\(\s*(?:title\s*=\s*)?["']([^"']{1,80})["']/m);
+  return m ? m[1] : null;
+}
+async function pineUser(env) {
+  const r = await fetch('https://www.tradingview.com/', { headers: { Cookie: cookieStr(env), 'User-Agent': UA } });
+  const h = await r.text();
+  const m = h.match(/"username":"([^"]+)"/);
+  return m ? m[1] : null;
+}
+async function pineList(env) {
+  const r = await pf(env, 'GET', '/list/?filter=saved');
+  return Array.isArray(r.json) ? r.json.map(x => ({ id: x.scriptIdPart, name: x.scriptName, v: x.version })) : null;
+}
+// Kaydet: ayni isimde varsa uzerine yaz (save/next), yoksa yeni (save/new). Once derleme kontrolu.
+async function pineSave(env, name, src, user) {
+  const out = { name };
+  const tr = await pf(env, 'POST', '/translate_light?user_name=' + encodeURIComponent(user || '') + '&v=3', { source: src });
+  out.derleme = tr.json ? (tr.json.success ? 'ok' : ('HATA: ' + JSON.stringify(tr.json.reason || tr.json.result || tr.json).slice(0, 300))) : ('HTTP ' + tr.status + ' ' + tr.text.slice(0, 120));
+  if (tr.json && tr.json.success === false) { out.ok = false; return out; }
+  const list = await pineList(env) || [];
+  const ex = list.find(x => x.name === name);
+  let r;
+  if (ex) r = await pf(env, 'POST', '/save/next/' + encodeURIComponent(ex.id) + '?allow_create_new=false&name=' + encodeURIComponent(name), { source: src });
+  else r = await pf(env, 'POST', '/save/new/?name=' + encodeURIComponent(name) + '&allow_overwrite=true', { source: src });
+  out.yol = ex ? 'save/next (üzerine yaz)' : 'save/new (yeni)';
+  out.http = r.status;
+  out.yanit = r.json ? JSON.stringify(r.json).slice(0, 300) : r.text.slice(0, 300);
+  out.ok = r.status < 300 && !(r.json && r.json.success === false) && !(r.json && r.json.reason);
+  return out;
+}
+const PINE_TEST = `//@version=6
+indicator("Claude Test", overlay=true)
+plot(ta.ema(close, 20), "EMA 20", color.orange, 2)
+`;
+async function pineTest(env) {
+  const rapor = { adim1_kullanici: null, adim2_liste: null, adim3_kaydet: null };
+  try { rapor.adim1_kullanici = await pineUser(env) || 'bulunamadı (çerez?)'; } catch (e) { rapor.adim1_kullanici = 'hata: ' + e.message; }
+  try { const l = await pineList(env); rapor.adim2_liste = l ? (l.length + ' kayıtlı gösterge: ' + l.slice(0, 12).map(x => x.name).join(', ')) : 'liste alınamadı'; } catch (e) { rapor.adim2_liste = 'hata: ' + e.message; }
+  try { rapor.adim3_kaydet = await pineSave(env, 'Claude Test', PINE_TEST, rapor.adim1_kullanici); } catch (e) { rapor.adim3_kaydet = 'hata: ' + e.message; }
+  rapor.SONUC = rapor.adim3_kaydet && rapor.adim3_kaydet.ok ? 'BAŞARILI ✅ — TradingView → Göstergeler → Göstergelerim → "Claude Test"' : 'olmadı ❌ — bu ekranın görüntüsünü Claude\'a gönder';
+  return json(rapor);
+}
+// GitHub pine/ klasorunu tara, degisenleri kaydet (cron + /pine-sync)
+async function pineSync(env, force) {
+  const r = await fetch(GH, { headers: { 'User-Agent': 'bist-tv', Accept: 'application/vnd.github+json' } });
+  if (r.status === 404) return { ok: true, dosya: 0, not: 'pine klasörü yok' };
+  if (!r.ok) return { ok: false, err: 'GitHub HTTP ' + r.status };
+  const files = (await r.json()).filter(f => f.type === 'file' && /\.pine$/i.test(f.name));
+  const seen = await kvGet(env, 'pine_sha', {});
+  const res = [];
+  let user = null;
+  for (const f of files.slice(0, 10)) {
+    if (!force && (seen[f.path] === f.sha || seen['x:' + f.path] === f.sha)) continue; // basarili ya da ayni surumde zaten hata verdi
+    const src = await (await fetch(f.download_url, { headers: { 'User-Agent': 'bist-tv' } })).text();
+    const name = pineTitle(src) || f.name.replace(/\.pine$/i, '');
+    if (user == null) user = await pineUser(env) || '';
+    const o = await pineSave(env, name, src, user);
+    o.dosya = f.name; res.push(o);
+    if (o.ok) { seen[f.path] = f.sha; delete seen['x:' + f.path]; } else seen['x:' + f.path] = f.sha;
+  }
+  if (res.length) await kvPut(env, 'pine_sha', seen);
+  return { ok: true, dosya: files.length, islenen: res };
+}
 async function tvToken(env) {
   const token = await getAuth(env);
   const ok = token !== 'unauthorized_user_token';
@@ -665,6 +748,8 @@ export default {
       case 'tv-login': return json({ ok: true, session: 'worker' });
       case 'tv-token': return tvToken(env);
       case 'prefs': return prefs(request, env);
+      case 'pine-test': return pineTest(env);
+      case 'pine-sync': return json(await pineSync(env, url.searchParams.get('force') === '1'));
       case 'tv-scan': return tvScan(request, env);
       case 'set-syms': return json({ ok: true });
       case 'pull': return json({});
