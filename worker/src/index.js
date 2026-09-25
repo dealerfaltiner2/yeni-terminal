@@ -1,4 +1,5 @@
 // BIST TV Köprüsü v5.1 — Cloudflare Worker (bist-tv)
+// Yayın: GitHub → Cloudflare Workers Builds (otomatik). Kodu burada değiştir, Cloudflare editöründe değil.
 // Secrets: TV_SESSION, TV_SESSION_SIGN, ACCESS_KEY
 // Terminal ayarı: wss://bist-tv.c8jmvhdm8c.workers.dev/ACCESS_KEY
 // v3: WebSocket bağlantısı anında kabul edilir, TradingView'e arkada bağlanılır.
