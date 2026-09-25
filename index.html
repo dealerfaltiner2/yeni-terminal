@@ -1654,7 +1654,7 @@ function renderSrcStatus(){
   :'<span class="dn">○ Midas yok'+(mid.err?(' ('+mid.err+')'):'')+'</span>';
  const tvOk=(TVL.ok&&Date.now()-TVL.last<15000)||(TVS.ok&&Date.now()-TVS.at<20000);
  const tvLine=tvOk
-  ?('<span class="up">⚡ GERÇEK ANLIK</span>'+((TVL.ok&&Date.now()-TVL.last<15000)?' · anlık akış '+Object.keys(TVL.syms).length+' sembol (~1 sn)':'')+((TVS.ok&&Date.now()-TVS.at<20000)?' · tarama '+TVS.n+' hisse (~4 sn)':'')+(TVL.drops?' · kopma '+TVL.drops:'')+(TVL.delayed?' · <span class="dn">⚠ TV gecikmeli veri gönderiyor ('+TVL.delayed+')</span>':''))
+  ?('<span class="up">⚡ GERÇEK ANLIK</span>'+((TVL.ok&&Date.now()-TVL.last<15000)?' · anlık akış '+Object.keys(TVL.syms).length+' sembol (~1 sn)':'')+((TVS.ok&&Date.now()-TVS.at<20000)?' · tarama '+TVS.n+' hisse (~4 sn)':'')+(TVL.drops?' · kopma '+TVL.drops:'')+(!(TVL.ok&&Date.now()-TVL.last<15000)?' · <span class="wrn">anlık akış yok ['+tvDiag()+']</span>':'')+(TVL.delayed?' · <span class="dn">⚠ TV gecikmeli veri gönderiyor ('+TVL.delayed+')</span>':''))
   :(TVL.state==='acik'
    ?'<span style="color:var(--acc)">◌ TV bağlı, işlem bekleniyor</span> · '+Object.keys(TVL.syms).length+' sembol'
    :'<span class="dn">○ TV bağlı değil</span> ['+({acik:'açık',kapali:'kapalı',baglaniyor:'bağlanıyor'}[TVL.state]||TVL.state||'-')+(TVL.err?(' · '+TVL.err):'')+' · deneme '+TVL.tries+(TVL.gerr?(' · ⚠'+TVL.gerr):'')+']'
@@ -2437,8 +2437,13 @@ function tvLiveSubs(){
   for(let i=0;i<add.length;i+=50){const ch=add.slice(i,i+50);ch.forEach(s=>TVL.syms[s]=1);tvSend('quote_add_symbols',[TVL.ses].concat(ch.map(s=>'BIST:'+s)).concat([{'flags':['force_permission']}]))}
  }catch(e){}
 }
+function tvDiag(){
+ const st={acik:'açık',kapali:'kapalı',baglaniyor:'bağlanıyor'}[TVL.state]||TVL.state||'-';
+ return st+' · yetki '+(TVL.tok?'✓':'✗')+' · gelen '+(TVL.rx||0)+' mesaj'+(TVL.lastM?(' · son: '+TVL.lastM):'')+(TVL.err?(' · '+TVL.err):'')+(TVL.srvErr?(' · TV: '+TVL.srvErr):'');
+}
 function tvLiveOnMsg(data){
- if(typeof data!=='string')return;
+ TVL.rx=(TVL.rx||0)+1;
+ if(typeof data!=='string'){TVL.lastM='ikili veri';return}
  TVL.buf+=data;
  let guard=0,got=false;
  while(guard++<500){
@@ -2462,6 +2467,9 @@ function tvLiveOnMsg(data){
   // standart kalp atisi: ~m~4~m~~h~12 -> aynen geri gonder
   if(payload.slice(0,3)==='~h~'){try{TVL.ws.send('~m~'+payload.length+'~m~'+payload)}catch(e){}continue}
   let msg;try{msg=JSON.parse(payload)}catch(e){continue}
+  TVL.lastM=msg.m||(msg.session_id?'merhaba':'?');
+  if(msg.m==='critical_error'||msg.m==='protocol_error'||msg.m==='symbol_error'||msg.m==='qsd_error'||msg.m==='quote_error')TVL.srvErr=(msg.m+' '+JSON.stringify(msg.p||'')).slice(0,90);
+  if(msg.m==='qsd'&&msg.p&&msg.p[1]&&msg.p[1].s==='error'&&!TVL.srvErr)TVL.srvErr=('qsd hata '+JSON.stringify(msg.p[1]).slice(0,70));
   if((msg.m==='du'||msg.m==='timescale_update'||msg.m==='series_completed')&&msg.p&&TVC.cs&&msg.p[0]===TVC.cs){try{tvChartMsg(msg)}catch(e){}continue}
   if(msg.m!=='qsd'||!msg.p||!msg.p[1])continue;
   const dd=msg.p[1],v=dd.v||{};
@@ -2870,7 +2878,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="5.0";
+  const APP_VER="5.1";
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
