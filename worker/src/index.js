@@ -391,6 +391,16 @@ async function cron(env, force = false) {
   const weekday = T.wd >= 1 && T.wd <= 5;
   const session = force || (weekday && T.m >= 600 && T.m < 1090);           // 10:00–18:10
   const newsWin = force || (weekday && T.m >= 480 && T.m < 1320);           // 08:00–22:00 (KAP akşam da yayımlar)
+  // Pine senkronu: her gun, her saat, 5 dakikada bir (seans/haber penceresinden bagimsiz)
+  if (force || T.m % 5 === 2) {
+    try {
+      const ps = await pineSync(env, false);
+      if ((ps.islenen || []).length) {
+        const c0 = await kvGet(env, 'cfg', null);
+        for (const o of ps.islenen) await tgSend(c0, (o.ok ? '📈 <b>TradingView\'e yüklendi</b> · ' : '⚠️ <b>Pine yüklenemedi</b> · ') + esc(o.name) + (o.ok ? '' : '\n' + esc(String(o.derleme !== 'ok' ? o.derleme : o.yanit).slice(0, 300))));
+      }
+    } catch (e) {}
+  }
   if (!session && !newsWin) return { skip: true };
   const cfg = await kvGet(env, 'cfg', null);
   if (!cfg) return { skip: true, why: 'ayar yok (terminalden Sunucuya gönder)' };
@@ -465,14 +475,6 @@ async function cron(env, force = false) {
         if (fresh.length) { st.seen[w] = [...fresh.map(n => n.id), ...seen].slice(0, 30); dirty = true; }
       } catch (e) { errs.push(w + ': ' + e.message); }
     }
-  }
-
-  // 5) Pine senkronu (5 dk'da bir; sonuc Telegram'a)
-  if (force || T.m % 5 === 2) {
-    try {
-      const ps = await pineSync(env, false);
-      (ps.islenen || []).forEach(o => msgs.push((o.ok ? '📈 <b>TradingView\'e yüklendi</b> · ' : '⚠️ <b>Pine yüklenemedi</b> · ') + esc(o.name) + (o.ok ? '' : '\n' + esc(String(o.derleme !== 'ok' ? o.derleme : o.yanit).slice(0, 300)))));
-    } catch (e) { errs.push('pine: ' + e.message); }
   }
 
   // 4) gönder + durum yaz
