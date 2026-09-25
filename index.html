@@ -2358,7 +2358,7 @@ setInterval(function(){try{
  if(TVC.px){TVC.px=false;try{renderPx()}catch(e){}}
  if(TVC.dirty&&S.tab==='chart'&&!document.hidden){TVC.dirty=false;drawAll()}
 }catch(e){}},1000);
-let TVL={ws:null,ses:'qs_'+Math.random().toString(36).slice(2),buf:'',syms:{},ok:false,last:0,tries:0,throttle:0};
+let TVL={bad:{},q:[],pend:null,okS:{},ws:null,ses:'qs_'+Math.random().toString(36).slice(2),buf:'',syms:{},ok:false,last:0,tries:0,throttle:0};
 const TVFLD=['lp','ch','chp','volume','high','low','open','bid','ask','update_mode'];
 const TV_TOPN=100;
 window.addEventListener('error',e=>{try{TVL.gerr=(e.message||'hata')+' @'+(e.lineno||'?')}catch(_){}});
@@ -2383,7 +2383,7 @@ function tvLiveStart(){
   const url=S.tvproxy?(S.tvproxy.replace(/\/$/,'')+(S.tvproxy.indexOf('?')<0?'?':'&')+'direct=1'):('wss://data.tradingview.com/socket.io/websocket?from=symbols/BIST%2F&date='+Date.now());
   const ws=new WebSocket(url);
   TVL.ws=ws;TVL.state='baglaniyor';TVL.err='';
-  ws.onopen=()=>{if(TVL.ws!==ws)return;TVL.tries=0;TVL.buf='';TVL.state='yetki';TVL.srvErr='';TVL.rx=0;TVL.err='';TVL.syms={};TVC.cs=null;TVC.key='';TVC.ready=false;TVC.hasSer=false;
+  ws.onopen=()=>{if(TVL.ws!==ws)return;TVL.tries=0;TVL.buf='';TVL.state='yetki';TVL.srvErr='';TVL.rx=0;TVL.q=[];TVL.pend=null;TVL.okS={};TVL.recov=0;TVL.err='';TVL.syms={};TVC.cs=null;TVC.key='';TVC.ready=false;TVC.hasSer=false;
    (async()=>{
     let tok=S.tvSession||'';
     if(S.tvproxy){tok=await tvToken();if(TVL.ws!==ws)return}
@@ -2434,13 +2434,44 @@ function tvLiveSubs(){
   want['XU100']=1;
   // radar ve Canli sekmesi icin: gunun en likit hisseleri (anlik akis)
   {(S.uni||[]).filter(o=>o&&o.name&&/^[A-Z0-9]{3,7}$/.test(o.name)&&o.voltl>0).sort((a,b)=>b.voltl-a.voltl).slice(0,TV_TOPN).forEach(o=>want[o.name]=1)}
-  const add=Object.keys(want).filter(s=>!TVL.syms[s]).slice(0,Math.max(0,TV_TOPN+60-Object.keys(TVL.syms).length));
-  for(let i=0;i<add.length;i+=50){const ch=add.slice(i,i+50);ch.forEach(s=>TVL.syms[s]=1);tvSend('quote_add_symbols',[TVL.ses].concat(ch.map(s=>'BIST:'+s)).concat([{'flags':['force_permission']}]))}
+  // v5.5: yalnizca gecerli BIST kodlari (bos/bozuk izleme listesi girdisi TV oturumunu dusuruyordu), bayraksiz, 20'lik paketler
+  const add=Object.keys(want).map(x=>String(x||'').trim().toUpperCase()).filter(x=>/^[A-Z][A-Z0-9]{1,9}$/.test(x)&&!TVL.syms[x]&&!TVL.bad[x]).slice(0,Math.max(0,TV_TOPN+60-Object.keys(TVL.syms).length));
+  add.forEach(s=>TVL.syms[s]=1);
+  for(let i=0;i<add.length;i+=20)TVL.q.push(add.slice(i,i+20));
+  tvPump();
  }catch(e){}
+}
+// v5.5: hisseler SIRAYLA paket paket eklenir. Paket onaylanirsa (qsd gelir ya da 2,5 sn hata olmaz) sonraki gider.
+// TV 'critical_error' verirse: o paket tek tek denenir, bozuk kod atlanir, quote oturumu yeniden kurulur.
+function tvPump(){
+ if(!TVL.ws||TVL.ws.readyState!==1||TVL.state!=='acik')return;
+ const P=TVL.pend;
+ if(P&&Date.now()-P.t<2500)return;
+ if(P){P.ch.forEach(x=>TVL.okS[x]=1);TVL.pend=null}
+ const ch=TVL.q.shift();if(!ch)return;
+ TVL.pend={ch:ch,t:Date.now()};
+ tvSend('quote_add_symbols',[TVL.ses].concat(ch.map(x=>'BIST:'+x)));
+}
+setInterval(()=>{try{tvPump()}catch(e){}},500);
+function tvQuoteRecover(){
+ TVL.recov=(TVL.recov||0)+1;
+ const P=TVL.pend;TVL.pend=null;
+ if(P){
+  if(P.ch.length>1)TVL.q=P.ch.map(x=>[x]).concat(TVL.q);
+  else{TVL.bad[P.ch[0]]=1;delete TVL.syms[P.ch[0]]}
+ }
+ if(TVL.recov>40){TVL.err='TV oturumu tekrar tekrar düştü';return}
+ TVL.ses='qs_'+Math.random().toString(36).slice(2,12);
+ tvSend('quote_create_session',[TVL.ses]);
+ tvSend('quote_set_fields',[TVL.ses].concat(TVFLD));
+ const good=Object.keys(TVL.okS);
+ for(let i=0;i<good.length;i+=20)TVL.q.unshift(good.slice(i,i+20));
+ TVL.okS={};
+ tvPump();
 }
 function tvDiag(){
  const st={acik:'açık',kapali:'kapalı',baglaniyor:'bağlanıyor',yetki:'yetki bekleniyor'}[TVL.state]||TVL.state||'-';
- return st+' · yetki '+(TVL.tok?'✓':'✗')+' · gelen '+(TVL.rx||0)+' mesaj'+(TVL.lastM?(' · son: '+TVL.lastM):'')+(TVL.err?(' · '+TVL.err):'')+(TVL.srvErr?(' · TV: '+TVL.srvErr):'');
+ return st+(Object.keys(TVL.bad).length?(' · atlanan: '+Object.keys(TVL.bad).join(',')):'')+(TVL.recov?(' · onarım '+TVL.recov):'')+' · yetki '+(TVL.tok?'✓':'✗')+' · gelen '+(TVL.rx||0)+' mesaj'+(TVL.lastM?(' · son: '+TVL.lastM):'')+(TVL.err?(' · '+TVL.err):'')+(TVL.srvErr?(' · TV: '+TVL.srvErr):'');
 }
 function tvLiveOnMsg(data){
  TVL.rx=(TVL.rx||0)+1;
@@ -2470,9 +2501,11 @@ function tvLiveOnMsg(data){
   let msg;try{msg=JSON.parse(payload)}catch(e){continue}
   TVL.lastM=msg.m||(msg.session_id?'merhaba':'?');
   if(msg.m==='critical_error'||msg.m==='protocol_error'||msg.m==='symbol_error'||msg.m==='qsd_error'||msg.m==='quote_error')TVL.srvErr=(msg.m+' '+JSON.stringify(msg.p||'')).slice(0,90);
+  if(msg.m==='critical_error'&&msg.p&&msg.p[0]===TVL.ses){try{tvQuoteRecover()}catch(e){}continue}
   if(msg.m==='qsd'&&msg.p&&msg.p[1]&&msg.p[1].s==='error'&&!TVL.srvErr)TVL.srvErr=('qsd hata '+JSON.stringify(msg.p[1]).slice(0,70));
   if((msg.m==='du'||msg.m==='timescale_update'||msg.m==='series_completed')&&msg.p&&TVC.cs&&msg.p[0]===TVC.cs){try{tvChartMsg(msg)}catch(e){}continue}
   if(msg.m!=='qsd'||!msg.p||!msg.p[1])continue;
+  if(TVL.pend&&msg.p[0]===TVL.ses&&TVL.pend.ch.indexOf(String(msg.p[1].n||'').split(':').pop())>=0){TVL.pend.ch.forEach(x=>TVL.okS[x]=1);TVL.pend=null;setTimeout(tvPump,0)}
   const dd=msg.p[1],v=dd.v||{};
   const name=String(dd.n||v.name||'').split(':').pop();if(!name)continue;
   const o=S.umap[name]||{};
@@ -2879,7 +2912,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="5.4";
+  const APP_VER="5.5";
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
