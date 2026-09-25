@@ -1,0 +1,15 @@
+// bist-tv Worker yapılandırması — Cloudflare Workers Builds bu dosyayı kullanır.
+// DİKKAT: name "bist-tv" olmalı. Eski "bist" worker'ına dokunulmaz.
+// Şifreler (TV_SESSION, TV_SESSION_SIGN, ACCESS_KEY) Cloudflare'de saklanır, burada YOK.
+{
+  "name": "bist-tv",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": true,
+  "keep_vars": true,
+  "kv_namespaces": [
+    { "binding": "DB", "id": "KV_ID_BURAYA" }
+  ],
+  "triggers": { "crons": ["* * * * *"] },
+  "observability": { "enabled": true }
+}
