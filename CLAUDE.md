@@ -30,4 +30,4 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
 - Otomatik sunucu senkronu yalnız "Sunucuya gönder"e basılmış cihazda (misafir cihaz ezemez).
 
 ## Sırada
-- Aday strateji yarışı (strat.js, D1 bist_bt tablo bt, ver 's-*'): kazananı Pine'a çevir.
+- Yarış 2 (strat.js MATRIX, ver 'r-{tf}-{g}-{aday}'): 5 dk (~2,5 ay) + 15 dk (~1 yıl), XU100 piyasa filtresi g0/g1/g2. 's-*' ve 'k0-*' sonuçları: hepsi eksi (düşen piyasa, 30 hisse ort. −%5,2).
