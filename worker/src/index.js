@@ -676,8 +676,25 @@ async function btStep(env) {
   };
   // önce endeks mumları
   for (const tf of [5, 15]) if (!cached.has(key('XU100', tf))) { await fetchStore('XU100', tf); return 'XU100@' + tf; }
-  // öncelik: terminal A/B notu ölçümü (15 dk, ~1 yıl)
-  const gsym = BT_SYMS.find(x => !have.has('grade-v1|' + x));
+  // öncelik: terminal A/B notu ölçümü (15 dk, ~1 yıl) — BIST 100 hisseleri
+  await env.BT.prepare('CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT)').run();
+  let u100 = await env.BT.prepare("SELECT v FROM meta WHERE k = 'xu100'").first();
+  if (!u100) {
+    let list = [], src = 'SYML:BIST;XU100';
+    try {
+      const r = await scanRaw(env, JSON.stringify({ symbols: { symbolset: ['SYML:BIST;XU100'] }, columns: ['name'], markets: ['turkey'], range: [0, 200] }));
+      const j = await r.json(); list = (j.data || []).map(x => String(x.s || '').split(':').pop()).filter(Boolean);
+    } catch (e) {}
+    if (list.length < 80) { // yedek: piyasa değerine göre ilk 100 hisse
+      src = 'ilk100-piyasa-degeri';
+      const r = await scanRaw(env, JSON.stringify({ filter: [{ left: 'type', operation: 'equal', right: 'stock' }, { left: 'subtype', operation: 'in_range', right: ['common', 'foreign-issuer'] }], markets: ['turkey'], columns: ['name'], sort: { sortBy: 'market_cap_basic', sortOrder: 'desc' }, range: [0, 100] }));
+      const j = await r.json(); list = (j.data || []).map(x => String(x.s || '').split(':').pop()).filter(Boolean);
+    }
+    await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('xu100', ?), ('xu100_src', ?)").bind(JSON.stringify(list), src).run();
+    return 'xu100 listesi ' + list.length + ' (' + src + ')';
+  }
+  const G_SYMS = JSON.parse(u100.v);
+  const gsym = G_SYMS.find(x => !have.has('grade-v1|' + x));
   if (gsym) {
     if (!cached.has(key(gsym, 15))) { try { await fetchStore(gsym, 15); } catch (e) { await env.BT.prepare('INSERT OR REPLACE INTO bt (ver,sym,tf,bars,first,last,n,wins,gp,gl,net,dd,sumR,trades,err,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').bind('grade-v1', gsym, '15', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '[]', String(e.message || e).slice(0, 200), Date.now()).run(); } return gsym + '@15 (mum)'; }
     // yer tutucu: işlemci limiti aşılırsa kuyruk tıkanmasın (bir sonraki dakika bu hisse atlanır)
