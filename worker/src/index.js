@@ -694,6 +694,24 @@ async function btStep(env) {
     return 'xu100 listesi ' + list.length + ' (' + src + ')';
   }
   const G_SYMS = JSON.parse(u100.v);
+  // ÖNCELİK: yalnız 25.09.2026 cuma — 100 hisse, dakikada 8 hisse (kısa veri: son 300 mum)
+  {
+    const FRI = Math.floor(Date.UTC(2026, 8, 25) / 86400000);
+    const cdone = new Set((((await env.BT.prepare("SELECT sym FROM bt WHERE ver = 'cuma-v1'").all()).results) || []).map(r => r.sym));
+    const todo = G_SYMS.filter(x => !cdone.has(x)).slice(0, 8);
+    if (todo.length) {
+      for (const x of todo) await env.BT.prepare("INSERT OR REPLACE INTO bt (ver,sym,tf,n,trades,err,at) VALUES ('cuma-v1',?,'15',0,'[]','deneniyor',?)").bind(x, Date.now()).run();
+      const got = await fetchBarsTV(env, todo.map(x => 'BIST:' + x), '15', 300, 25000);
+      for (const x of todo) {
+        const st = got['BIST:' + x];
+        const bars = [...st.m.values()].filter(v => v && v.length >= 5).sort((a, b) => a[0] - b[0]).map(v => [v[0], v[1], v[2], v[3], v[4], v[5] || 0]);
+        const ev = bars.length ? gradeEvents(bars).filter(e => Math.floor((e[0] + 10800) / 86400) === FRI) : [];
+        await env.BT.prepare('INSERT OR REPLACE INTO bt (ver,sym,tf,bars,first,last,n,wins,gp,gl,net,dd,sumR,trades,err,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+          .bind('cuma-v1', x, '15', bars.length, bars.length ? bars[0][0] : 0, bars.length ? bars[bars.length - 1][0] : 0, ev.length, ev.filter(e => e[6] === 'hedef').length, 0, 0, 0, 0, ev.reduce((a, e) => a + (e[7] || 0), 0), JSON.stringify(ev), bars.length ? null : (st.err || 'mum gelmedi'), Date.now()).run();
+      }
+      return 'cuma ' + todo.length;
+    }
+  }
   const gsym = G_SYMS.find(x => !have.has('grade-v1|' + x));
   if (gsym) {
     if (!cached.has(key(gsym, 15))) { try { await fetchStore(gsym, 15); } catch (e) { await env.BT.prepare('INSERT OR REPLACE INTO bt (ver,sym,tf,bars,first,last,n,wins,gp,gl,net,dd,sumR,trades,err,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').bind('grade-v1', gsym, '15', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '[]', String(e.message || e).slice(0, 200), Date.now()).run(); } return gsym + '@15 (mum)'; }
