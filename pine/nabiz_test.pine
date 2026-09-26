@@ -1,0 +1,142 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0
+// © Fatih · BIST Terminal — Claude ile yazıldı
+//
+// NABIZ · TEST — NABIZ göstergesinin geçmiş test (strateji) sürümü.
+// Kurallar NABIZ ile birebir aynı: sinyal bar kapanışında, giriş kapanış fiyatından,
+// stop 1 ATR, hedef 2R; VWAP altı kapanış veya EMA 9/21 aşağı kesişimi = çık.
+// Gerçekçi maliyet: işlem başına %0,075 komisyon (gidiş-dönüş ~%0,15) + 1 fiyat adımı kayma.
+// Gün içi: 17:50'den sonra açık pozisyon kapatılır, geceye taşınmaz.
+// Sonuç özeti sağ üstteki tabloda; ayrıntı TradingView "Strateji Test Aracı"nda.
+
+//@version=6
+strategy("NABIZ · TEST", shorttitle = "NABIZ TEST", overlay = true, initial_capital = 100000, default_qty_type = strategy.percent_of_equity, default_qty_value = 100, commission_type = strategy.commission.percent, commission_value = 0.075, slippage = 1, process_orders_on_close = true, pyramiding = 0, max_labels_count = 300)
+
+// ───────────── Ayarlar (NABIZ ile aynı) ─────────────
+grpS = "Sinyal"
+minScore  = input.int(70, "Minimum puan", minval = 40, maxval = 100, group = grpS)
+rvMin     = input.float(2.0, "Hacim patlaması (RVOL ≥)", minval = 1.0, step = 0.1, group = grpS)
+brkLen    = input.int(20, "Kırılım bakış (bar)", minval = 5, group = grpS)
+pressLen  = input.int(5, "Alım baskısı penceresi (bar)", minval = 2, group = grpS)
+extK      = input.float(2.5, "Aşırı uzama sınırı (VWAP'tan ATR katı)", minval = 0.5, step = 0.1, group = grpS)
+lateChg   = input.float(5.0, "Geç kalma sınırı (günlük %)", minval = 1.0, step = 0.5, group = grpS)
+coolBars  = input.int(10, "Sinyaller arası en az bar", minval = 1, group = grpS)
+
+grpR = "Risk"
+stopATR   = input.float(1.0, "Stop (ATR katı)", minval = 0.2, step = 0.1, group = grpR)
+rr        = input.float(2.0, "Hedef (R katı)", minval = 0.5, step = 0.5, group = grpR)
+atrLen    = input.int(14, "ATR uzunluğu", minval = 2, group = grpR)
+useExit   = input.bool(true, "ÇIK kuralını kullan (VWAP altı / EMA kesişimi)", group = grpR)
+eodClose  = input.bool(true, "Gün sonu kapat (17:50)", group = grpR)
+
+grpT = "Üst zaman dilimi"
+htf1      = input.timeframe("60", "Trend 1", group = grpT)
+htf2      = input.timeframe("240", "Trend 2", group = grpT)
+
+// ───────────── Hesaplar (NABIZ ile aynı) ─────────────
+atr = ta.atr(atrLen)
+newDay = timeframe.change("D")
+[vw, vwUp, vwLo] = ta.vwap(hlc3, newDay, 1.0)
+ema9  = ta.ema(close, 9)
+ema21 = ta.ema(close, 21)
+
+volAvg = ta.sma(volume, 20)
+rvol = volAvg > 0 ? volume / volAvg : 0.0
+
+rng = high - low
+clv = rng > 0 ? ((close - low) - (high - close)) / rng : 0.0
+dv = clv * volume
+volSum = math.sum(volume, pressLen)
+press = volSum > 0 ? math.sum(dv, pressLen) / volSum : 0.0
+
+prevHigh = ta.highest(high, brkLen)[1]
+
+var float orH = na
+var float orL = na
+var int dayStart = na
+if newDay
+    dayStart := time
+    orH := high
+    orL := low
+else if not na(dayStart) and time - dayStart < 15 * 60 * 1000
+    orH := math.max(orH, high)
+    orL := math.min(orL, low)
+orDone = not na(dayStart) and time - dayStart >= 15 * 60 * 1000
+
+brkPrev = close > prevHigh
+brkOR = orDone and close > orH and close[1] <= orH
+breakout = brkPrev or brkOR
+
+htfUp(tf) =>
+    request.security(syminfo.tickerid, tf, close[1] > ta.ema(close, 20)[1] and ta.ema(close, 20)[1] > ta.ema(close, 20)[2], lookahead = barmerge.lookahead_on)
+up1 = htfUp(htf1)
+up2 = htfUp(htf2)
+
+prevDayClose = request.security(syminfo.tickerid, "D", close[1], lookahead = barmerge.lookahead_on)
+dayChg = prevDayClose > 0 ? (close / prevDayClose - 1) * 100 : 0.0
+
+sVW    = close > vw ? 15.0 : 0.0
+sEMA   = ema9 > ema21 and ema21 > ema21[1] ? 15.0 : ema9 > ema21 ? 7.0 : 0.0
+sVol   = rvol >= rvMin ? 20.0 : rvol >= rvMin * 0.75 ? 10.0 : 0.0
+sPress = press >= 0.35 ? 20.0 : press >= 0.2 ? 10.0 : 0.0
+sBrk   = breakout ? 15.0 : 0.0
+sHTF   = (up1 ? 7.5 : 0.0) + (up2 ? 7.5 : 0.0)
+
+extended = atr > 0 and (close - vw) > extK * atr
+late = dayChg >= lateChg
+penalty = (extended ? 25.0 : 0.0) + (late ? 20.0 : 0.0)
+score = math.max(0.0, math.min(100.0, sVW + sEMA + sVol + sPress + sBrk + sHTF - penalty))
+
+// Gün sonu penceresi (İstanbul saati)
+hh = hour(time, "Europe/Istanbul")
+mm = minute(time, "Europe/Istanbul")
+lateDay = hh > 17 or (hh == 17 and mm >= 50)
+
+var int lastSig = na
+coolOk = na(lastSig) or bar_index - lastSig >= coolBars
+rawSig = score >= minScore and breakout and close > vw and rvol >= rvMin * 0.75 and press > 0.2 and not extended and not late
+sig = rawSig and coolOk and barstate.isconfirmed and strategy.position_size == 0 and not (eodClose and lateDay)
+
+xDown = ta.crossunder(ema9, ema21)
+
+// ───────────── İşlemler ─────────────
+if sig
+    lastSig := bar_index
+    stopP = close - stopATR * atr
+    tgt = close + rr * (close - stopP)
+    strategy.entry("AL", strategy.long)
+    strategy.exit("STOP/HEDEF", "AL", stop = stopP, limit = tgt)
+
+if strategy.position_size > 0 and useExit and barstate.isconfirmed and (close < vw or xDown)
+    strategy.close("AL", comment = "ÇIK")
+
+if strategy.position_size > 0 and eodClose and lateDay
+    strategy.close("AL", comment = "GÜN SONU")
+
+plot(vw, "VWAP", color.new(#fbbf24, 0), 2)
+plot(ema9, "EMA 9", color.new(#38bdf8, 0), 1)
+plot(ema21, "EMA 21", color.new(#a78bfa, 0), 1)
+
+// ───────────── Sonuç tablosu ─────────────
+var table tb = table.new(position.top_right, 2, 9, bgcolor = color.new(#0b1017, 5), border_color = color.new(#253449, 0), border_width = 1)
+row(r, k, v, c) =>
+    table.cell(tb, 0, r, k, text_color = color.new(#a8b4c3, 0), text_size = size.small, text_halign = text.align_left)
+    table.cell(tb, 1, r, v, text_color = c, text_size = size.small, text_halign = text.align_right)
+if barstate.islast
+    n = strategy.closedtrades
+    w = strategy.wintrades
+    wr = n > 0 ? w * 100.0 / n : 0.0
+    gp = strategy.grossprofit
+    gl = strategy.grossloss
+    pf = gl > 0 ? gp / gl : 0.0
+    avgW = w > 0 ? gp / w : 0.0
+    avgL = strategy.losstrades > 0 ? gl / strategy.losstrades : 0.0
+    firstT = n > 0 ? strategy.closedtrades.entry_time(0) : time
+    row(0, "NABIZ · TEST", syminfo.ticker + " · " + timeframe.period, color.white)
+    row(1, "Dönem", str.format_time(firstT, "dd.MM.yy", "Europe/Istanbul") + " → " + str.format_time(time, "dd.MM.yy", "Europe/Istanbul"), color.new(#a8b4c3, 0))
+    row(2, "İşlem sayısı", str.tostring(n), color.white)
+    row(3, "Başarı oranı", str.tostring(wr, "#.#") + "%", wr >= 45 ? #00d3a0 : wr >= 35 ? #fbbf24 : #ff5566)
+    row(4, "Kâr faktörü", str.tostring(pf, "#.##"), pf >= 1.3 ? #00d3a0 : pf >= 1.0 ? #fbbf24 : #ff5566)
+    row(5, "Net sonuç", str.tostring(strategy.netprofit / strategy.initial_capital * 100, "+#.##;-#.##") + "%", strategy.netprofit >= 0 ? #00d3a0 : #ff5566)
+    row(6, "Ort. kazanç / kayıp", str.tostring(avgW, "#") + " / " + str.tostring(avgL, "#") + " ₺", color.new(#a8b4c3, 0))
+    row(7, "En büyük düşüş", str.tostring(strategy.max_drawdown / strategy.initial_capital * 100, "#.##") + "%", color.new(#a8b4c3, 0))
+    row(8, "Komisyon dahil", "%0,15 + kayma", color.new(#8794a6, 0))
