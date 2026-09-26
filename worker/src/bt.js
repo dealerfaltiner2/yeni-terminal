@@ -6,12 +6,39 @@ export const BT_SYMS = ['THYAO', 'ASELS', 'EREGL', 'KRDMD', 'SISE', 'BIMAS', 'GA
   'ASTOR', 'KONTR', 'ENKAI', 'EKGYO', 'ARCLK', 'TTKOM', 'GUBRF', 'ALARK', 'OYAKC', 'MGROS'];
 
 export const DEF = { minScore: 70, rvMin: 2.0, brkLen: 20, pressLen: 5, extK: 2.5, lateChg: 5.0, coolBars: 10,
-  stopATR: 1.0, rr: 2.0, atrLen: 14, useExit: true, eod: true, comm: 0.075 };
+  stopATR: 1.0, rr: 2.0, atrLen: 14, useExit: true, eod: true, comm: 0.075, minRiskPct: 0, tf: 5 };
+
+// Yarıştırılan ayarlar (ver adı → ayar). nabiz-v1 = göstergenin ilk hali.
+export const VARIANTS = [
+  ['nabiz-v1', {}],
+  ['v2-stop2atr', { stopATR: 2.0 }],
+  ['v3-risk08-cikyok', { stopATR: 1.5, minRiskPct: 0.8, useExit: false }],
+  ['v4-secici', { stopATR: 1.5, minRiskPct: 0.8, useExit: false, minScore: 80, rvMin: 3.0 }],
+  ['v5-15dk', { tf: 15, stopATR: 1.5, minRiskPct: 0.8, useExit: false }],
+  ['v6-15dk-secici', { tf: 15, stopATR: 1.5, minRiskPct: 0.8, useExit: false, minScore: 80, rvMin: 3.0 }],
+  ['v7-dusukkomisyon', { stopATR: 1.5, minRiskPct: 0.8, useExit: false, comm: 0.03 }],
+];
+
+// 5 dk → 15 dk (İstanbul saatine hizalı)
+export function resample(bars, min) {
+  if (min === 5) return bars;
+  const out = []; let cur = null, key = null;
+  for (const b of bars) {
+    const k = Math.floor(b[0] / (min * 60));
+    if (k !== key) { if (cur) out.push(cur); key = k; cur = [k * min * 60, b[1], b[2], b[3], b[4], b[5]]; }
+    else { cur[2] = Math.max(cur[2], b[2]); cur[3] = Math.min(cur[3], b[3]); cur[4] = b[4]; cur[5] += b[5]; }
+  }
+  if (cur) out.push(cur);
+  return out;
+}
 
 const tickOf = p => p < 20 ? .01 : p < 50 ? .02 : p < 100 ? .05 : p < 250 ? .1 : p < 500 ? .25 : p < 1000 ? .5 : p < 2500 ? 1 : 2.5;
 
-export function runNabiz(bars, P = DEF) {
+export function runNabiz(bars0, P0 = {}) {
+  const P = Object.assign({}, DEF, P0);
+  const bars = resample(bars0, P.tf);
   const n = bars.length;
+  const tfSec = P.tf * 60;
   const T = new Array(n), O = new Array(n), H = new Array(n), L = new Array(n), C = new Array(n), V = new Array(n);
   const day = new Array(n), hIst = new Array(n), mIst = new Array(n);
   for (let i = 0; i < n; i++) {
@@ -54,9 +81,9 @@ export function runNabiz(bars, P = DEF) {
   const close = (i, px, why) => { const ent = pos.entry; const net = (px * (1 - c)) / (ent * (1 + c)) - 1; const risk = (ent - pos.stop) / ent; trades.push({ t: T[pos.i], s: T[i], r: net / risk, p: net * 100, why }); pos = null; };
   for (let i = 1; i < n; i++) {
     const newDay = day[i] !== day[i - 1];
-    if (newDay) { dayStart = T[i]; orH = H[i]; } else if (dayStart != null && T[i] - dayStart < 15 * 60) orH = Math.max(orH, H[i]);
-    const orDone = dayStart != null && T[i] - dayStart >= 15 * 60;
-    const lateDay = hIst[i] > 17 || (hIst[i] === 17 && mIst[i] >= 50);
+    if (newDay) { dayStart = T[i]; orH = H[i]; } else if (dayStart != null && T[i] - dayStart < Math.max(15 * 60, tfSec)) orH = Math.max(orH, H[i]);
+    const orDone = dayStart != null && T[i] - dayStart >= Math.max(15 * 60, tfSec);
+    const lateDay = hIst[i] * 60 + mIst[i] + P.tf >= 17 * 60 + 55; // mum kapanışı 17:55 ve sonrası
 
     // açık pozisyon: önce mum içi stop/hedef (aynı mumda ikisi → stop, temkinli)
     if (pos && i > pos.i) {
@@ -87,7 +114,7 @@ export function runNabiz(bars, P = DEF) {
     if (sig) {
       lastSig = i;
       const entry = C[i] + tickOf(C[i]); // 1 fiyat adımı kayma
-      const stop = C[i] - P.stopATR * atr[i];
+      const stop = C[i] - Math.max(P.stopATR * atr[i], C[i] * P.minRiskPct / 100);
       if (stop < entry) pos = { i, entry, stop, tgt: C[i] + P.rr * (C[i] - stop) };
     }
   }
