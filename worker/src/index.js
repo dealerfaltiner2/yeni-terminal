@@ -8,6 +8,7 @@
 //     Gerekenler: KV bağlaması "DB" + Cron tetikleyici "* * * * *". Ayarlar terminalden /sync ile gelir.
 import { summarize, BT_SYMS } from './bt.js';
 import { MATRIX, runMatrix } from './strat.js';
+import { gradeEvents } from './grade.js';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -663,7 +664,7 @@ async function pineSync(env, force) {
 async function btStep(env) {
   if (!env.BT) return null;
   await env.BT.prepare('CREATE TABLE IF NOT EXISTS bars (sym TEXT PRIMARY KEY, data TEXT, at INTEGER)').run();
-  const have = new Set((((await env.BT.prepare("SELECT ver, sym FROM bt WHERE ver LIKE 'r-%'").all()).results) || []).map(r => r.ver + '|' + r.sym));
+  const have = new Set((((await env.BT.prepare("SELECT ver, sym FROM bt WHERE ver LIKE 'r-%' OR ver = 'grade-v1'").all()).results) || []).map(r => r.ver + '|' + r.sym));
   const cached = new Set(((await env.BT.prepare('SELECT sym FROM bars').all()).results || []).map(r => r.sym));
   const key = (sym, tf) => tf === 5 ? sym : sym + '@' + tf;
   const fetchStore = async (sym, tf) => {
@@ -675,6 +676,18 @@ async function btStep(env) {
   };
   // önce endeks mumları
   for (const tf of [5, 15]) if (!cached.has(key('XU100', tf))) { await fetchStore('XU100', tf); return 'XU100@' + tf; }
+  // öncelik: terminal A/B notu ölçümü (15 dk, ~1 yıl)
+  const gsym = BT_SYMS.find(x => !have.has('grade-v1|' + x));
+  if (gsym) {
+    if (!cached.has(key(gsym, 15))) { try { await fetchStore(gsym, 15); } catch (e) { await env.BT.prepare('INSERT OR REPLACE INTO bt (ver,sym,tf,bars,first,last,n,wins,gp,gl,net,dd,sumR,trades,err,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').bind('grade-v1', gsym, '15', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '[]', String(e.message || e).slice(0, 200), Date.now()).run(); } return gsym + '@15 (mum)'; }
+    // yer tutucu: işlemci limiti aşılırsa kuyruk tıkanmasın (bir sonraki dakika bu hisse atlanır)
+    await env.BT.prepare("INSERT OR REPLACE INTO bt (ver,sym,tf,n,trades,err,at) VALUES ('grade-v1',?,'15',0,'[]','deneniyor',?)").bind(gsym, Date.now()).run();
+    const gb = JSON.parse((await env.BT.prepare('SELECT data FROM bars WHERE sym = ?').bind(key(gsym, 15)).first()).data);
+    const ev = gradeEvents(gb);
+    await env.BT.prepare('INSERT OR REPLACE INTO bt (ver,sym,tf,bars,first,last,n,wins,gp,gl,net,dd,sumR,trades,err,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+      .bind('grade-v1', gsym, '15', gb.length, gb[0][0], gb[gb.length - 1][0], ev.length, ev.filter(e => e[6] === 'hedef').length, 0, 0, 0, 0, ev.reduce((a, e) => a + (e[7] || 0), 0), JSON.stringify(ev), null, Date.now()).run();
+    return gsym + ' not';
+  }
   const jobs = [];
   for (const sym of BT_SYMS) for (const [ver, tf] of MATRIX) if (!have.has(ver + '|' + sym)) jobs.push({ sym, ver, tf });
   if (!jobs.length) return null;
@@ -688,7 +701,8 @@ async function btStep(env) {
   }
   const bars = JSON.parse((await env.BT.prepare('SELECT data FROM bars WHERE sym = ?').bind(key(first.sym, first.tf)).first()).data);
   const idx = JSON.parse((await env.BT.prepare('SELECT data FROM bars WHERE sym = ?').bind(key('XU100', first.tf)).first()).data);
-  const mine = jobs.filter(j => j.sym === first.sym && j.tf === first.tf).slice(0, 4);
+  const mine = jobs.filter(j => j.sym === first.sym && j.tf === first.tf).slice(0, first.tf === 15 ? 2 : 4);
+  for (const jb of mine) await env.BT.prepare("INSERT OR REPLACE INTO bt (ver,sym,tf,n,trades,err,at) VALUES (?,?,?,0,'[]','deneniyor',?)").bind(jb.ver, jb.sym, String(jb.tf), Date.now()).run();
   for (const jb of mine) {
     const tr = runMatrix(jb.ver, bars, idx); const sm = summarize(tr);
     await save(jb.ver, jb.sym, jb.tf, { bars: bars.length, first: bars[0][0], last: bars[bars.length - 1][0], ...sm,
