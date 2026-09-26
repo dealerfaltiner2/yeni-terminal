@@ -24,10 +24,12 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
 - Yedek: Midas (15 dk gecikmeli; tavan/taban için). Yahoo ve Twelve Data kaldırıldı.
 
 ## Bilinen dersler
+- D1 ücretsiz: günde 5M satır OKUMA. bars tablosunu json_each ile tarama (~5M satır). Özet tablolar kullan.
 - Ücretsiz Cloudflare: istek başına 10 ms CPU → canlı akış Worker kodundan GEÇMEMELİ (direct=1).
 - TradingView quote_add_symbols: bayrak objesi ekleme; 20'lik paketler, sırayla (tvPump).
 - GitHub Pages yayını ara sıra "deploy" adımında düşer → boş commit ile yeniden tetikle.
 - Otomatik sunucu senkronu yalnız "Sunucuya gönder"e basılmış cihazda (misafir cihaz ezemez).
 
 ## Sırada
+- Yükselenler araştırması: worker/src/rise.js → D1 tablo feat (hisse-gün özellikleri, 10:30'da bilinenler + sonuç), meta 'sector'. Kıyas: yükselen (ret≥4 / rest≥3) vs diğer günler.
 - Yarış 2 (strat.js MATRIX, ver 'r-{tf}-{g}-{aday}'): 5 dk (~2,5 ay) + 15 dk (~1 yıl), XU100 piyasa filtresi g0/g1/g2. 's-*' ve 'k0-*' sonuçları: hepsi eksi (düşen piyasa, 30 hisse ort. −%5,2).
