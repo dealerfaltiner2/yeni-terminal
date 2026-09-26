@@ -6,17 +6,17 @@ export const BT_SYMS = ['THYAO', 'ASELS', 'EREGL', 'KRDMD', 'SISE', 'BIMAS', 'GA
   'ASTOR', 'KONTR', 'ENKAI', 'EKGYO', 'ARCLK', 'TTKOM', 'GUBRF', 'ALARK', 'OYAKC', 'MGROS'];
 
 export const DEF = { minScore: 70, rvMin: 2.0, brkLen: 20, pressLen: 5, extK: 2.5, lateChg: 5.0, coolBars: 10,
-  stopATR: 1.0, rr: 2.0, atrLen: 14, useExit: true, eod: true, comm: 0.075, minRiskPct: 0, tf: 5 };
+  stopATR: 1.0, rr: 2.0, atrLen: 14, useExit: true, eod: true, comm: 0, // Fatih: komisyon yok (yalnız 1 fiyat adımı kayma)
+  minRiskPct: 0, tf: 5 };
 
 // Yarıştırılan ayarlar (ver adı → ayar). nabiz-v1 = göstergenin ilk hali.
 export const VARIANTS = [
-  ['nabiz-v1', {}],
-  ['v2-stop2atr', { stopATR: 2.0 }],
-  ['v3-risk08-cikyok', { stopATR: 1.5, minRiskPct: 0.8, useExit: false }],
-  ['v4-secici', { stopATR: 1.5, minRiskPct: 0.8, useExit: false, minScore: 80, rvMin: 3.0 }],
-  ['v5-15dk', { tf: 15, stopATR: 1.5, minRiskPct: 0.8, useExit: false }],
-  ['v6-15dk-secici', { tf: 15, stopATR: 1.5, minRiskPct: 0.8, useExit: false, minScore: 80, rvMin: 3.0 }],
-  ['v7-dusukkomisyon', { stopATR: 1.5, minRiskPct: 0.8, useExit: false, comm: 0.03 }],
+  ['k0-v1-ilk', {}],
+  ['k0-v2-stop2atr', { stopATR: 2.0 }],
+  ['k0-v3-risk08-cikyok', { stopATR: 1.5, minRiskPct: 0.8, useExit: false }],
+  ['k0-v4-secici', { stopATR: 1.5, minRiskPct: 0.8, useExit: false, minScore: 80, rvMin: 3.0 }],
+  ['k0-v5-15dk', { tf: 15, stopATR: 1.5, minRiskPct: 0.8, useExit: false }],
+  ['k0-v6-15dk-secici', { tf: 15, stopATR: 1.5, minRiskPct: 0.8, useExit: false, minScore: 80, rvMin: 3.0 }],
 ];
 
 // 5 dk → 15 dk (İstanbul saatine hizalı)
