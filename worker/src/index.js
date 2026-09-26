@@ -1,4 +1,4 @@
-// BIST TV Köprüsü v5.4 — Cloudflare Worker (bist-tv)
+// BIST TV Köprüsü v5.5 — Cloudflare Worker (bist-tv)
 // Yayın: GitHub → Cloudflare Workers Builds (otomatik). Kodu burada değiştir, Cloudflare editöründe değil.
 // Secrets: TV_SESSION, TV_SESSION_SIGN, ACCESS_KEY
 // Terminal ayarı: wss://bist-tv.c8jmvhdm8c.workers.dev/ACCESS_KEY
@@ -6,6 +6,7 @@
 // v4: /bars — TradingView'den gerçek zamanlı mum verisi (tek bağlantıda 8 hisseye kadar, kısa önbellekli).
 // v5: 7/24 sunucu — dakikada bir (Cron) alarm, radar, KAP/haber ve bağlantı sağlığı kontrolü, Telegram bildirimi.
 //     Gerekenler: KV bağlaması "DB" + Cron tetikleyici "* * * * *". Ayarlar terminalden /sync ile gelir.
+import { runNabiz, summarize, BT_VER, BT_SYMS } from './bt.js';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -94,7 +95,7 @@ async function test(env, url) {
     .split(',').map(s => s.trim()).filter(Boolean).slice(0, 10);
   const token = await getAuth(env, true);
   const rapor = {
-    surum: 'v5.4',
+    surum: 'v5.5',
     kv: !!env.DB,
     cerezVar: !!env.TV_SESSION,
     yetkiliToken: token !== 'unauthorized_user_token',
@@ -297,7 +298,7 @@ async function sync(request, env) {
 async function status(env) {
   const cfg = await kvGet(env, 'cfg', null), st = await kvGet(env, 'st', {});
   return json({
-    ok: true, surum: 'v5.4', kv: !!env.DB, synced: cfg ? cfg.at : null,
+    ok: true, surum: 'v5.5', kv: !!env.DB, synced: cfg ? cfg.at : null,
     telegram: !!(cfg && cfg.tgTok && cfg.chat), alarms: cfg ? cfg.alarms.length : 0, watch: cfg ? cfg.watch : [],
     lastRun: st.lastRun || null, health: st.health || null, hit: st.hit || [],
     today: st.cnt && st.cnt.d === trNow().day ? st.cnt : null, err: st.err || null
@@ -657,6 +658,28 @@ async function pineSync(env, force) {
   if (res.length) await kvPut(env, 'pine_sha', seen);
   return { ok: true, dosya: files.length, islenen: res };
 }
+/* ---------- v5.5: NABIZ geçmiş testi — dakikada bir hisse, sonuç D1 'bt' tablosuna ---------- */
+async function btStep(env) {
+  if (!env.BT) return null;
+  const done = await env.BT.prepare('SELECT sym FROM bt WHERE ver = ?').bind(BT_VER).all();
+  const have = new Set((done.results || []).map(r => r.sym));
+  const sym = BT_SYMS.find(s => !have.has(s));
+  if (!sym) return null;
+  let row = { bars: 0, first: 0, last: 0, n: 0, wins: 0, gp: 0, gl: 0, net: 0, dd: 0, sumR: 0, trades: '[]', err: null };
+  try {
+    const got = await fetchBarsTV(env, ['BIST:' + sym], '5', 5000, 25000);
+    const st = got['BIST:' + sym];
+    const bars = [...st.m.values()].filter(v => v && v.length >= 5).sort((a, b) => a[0] - b[0]).map(v => [v[0], v[1], v[2], v[3], v[4], v[5] || 0]);
+    if (!bars.length) throw new Error(st.err || 'mum gelmedi');
+    const tr = runNabiz(bars);
+    const sm = summarize(tr);
+    row = { bars: bars.length, first: bars[0][0], last: bars[bars.length - 1][0], ...sm,
+      trades: JSON.stringify(tr.map(t => [t.t, Math.round(t.r * 100) / 100, t.why])).slice(0, 60000), err: null };
+  } catch (e) { row.err = String(e.message || e).slice(0, 200); }
+  await env.BT.prepare('INSERT OR REPLACE INTO bt (ver,sym,tf,bars,first,last,n,wins,gp,gl,net,dd,sumR,trades,err,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+    .bind(BT_VER, sym, '5', row.bars, row.first, row.last, row.n, row.wins, row.gp, row.gl, row.net, row.dd, row.sumR, row.trades, row.err, Date.now()).run();
+  return sym;
+}
 async function tvToken(env) {
   const token = await getAuth(env);
   const ok = token !== 'unauthorized_user_token';
@@ -760,7 +783,11 @@ export default {
     return json({ error: 'bilinmeyen yol: /' + route }, 404);
   },
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(cron(env).catch(async e => {
+    ctx.waitUntil(cron(env).then(async () => {
+      // NABIZ geçmiş testi: seans DIŞINDA, dakikada bir hisse (ağır iş en sona — alarmlar etkilenmesin)
+      const T = trNow(); const inSess = T.wd >= 1 && T.wd <= 5 && T.m >= 590 && T.m < 1095;
+      if (!inSess) { try { await btStep(env); } catch (e) {} }
+    }).catch(async e => {
       try { const st = await kvGet(env, 'st', {}); st.err = 'cron: ' + (e && e.message || e); st.lastRun = Date.now(); await kvPut(env, 'st', st); } catch {}
     }));
   }
