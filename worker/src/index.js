@@ -6,7 +6,8 @@
 // v4: /bars — TradingView'den gerçek zamanlı mum verisi (tek bağlantıda 8 hisseye kadar, kısa önbellekli).
 // v5: 7/24 sunucu — dakikada bir (Cron) alarm, radar, KAP/haber ve bağlantı sağlığı kontrolü, Telegram bildirimi.
 //     Gerekenler: KV bağlaması "DB" + Cron tetikleyici "* * * * *". Ayarlar terminalden /sync ile gelir.
-import { runNabiz, summarize, BT_SYMS, VARIANTS } from './bt.js';
+import { summarize, BT_SYMS } from './bt.js';
+import { CANDIDATES, runCandidate } from './strat.js';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -666,7 +667,7 @@ async function btStep(env) {
   const have = new Set((done.results || []).map(r => r.ver + '|' + r.sym));
   const cached = new Set(((await env.BT.prepare('SELECT sym FROM bars').all()).results || []).map(r => r.sym));
   const jobs = [];
-  for (const sym of BT_SYMS) for (const [ver, P] of VARIANTS) if (!have.has(ver + '|' + sym)) jobs.push({ sym, ver, P });
+  for (const sym of BT_SYMS) for (const [ver] of CANDIDATES) if (!have.has(ver + '|' + sym)) jobs.push({ sym, ver });
   if (!jobs.length) return null;
   const save = (ver, sym, row) => env.BT.prepare('INSERT OR REPLACE INTO bt (ver,sym,tf,bars,first,last,n,wins,gp,gl,net,dd,sumR,trades,err,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
     .bind(ver, sym, String(row.tf || 5), row.bars, row.first, row.last, row.n, row.wins, row.gp, row.gl, row.net, row.dd, row.sumR, row.trades, row.err, Date.now()).run();
@@ -686,8 +687,8 @@ async function btStep(env) {
   const bars = JSON.parse(r.data);
   const mine = jobs.filter(j => j.sym === first.sym).slice(0, 3);
   for (const jb of mine) {
-    const tr = runNabiz(bars, jb.P); const sm = summarize(tr);
-    await save(jb.ver, jb.sym, { tf: jb.P.tf || 5, bars: bars.length, first: bars[0][0], last: bars[bars.length - 1][0], ...sm,
+    const tr = runCandidate(jb.ver, bars); const sm = summarize(tr);
+    await save(jb.ver, jb.sym, { tf: 5, bars: bars.length, first: bars[0][0], last: bars[bars.length - 1][0], ...sm,
       trades: JSON.stringify(tr.map(t => [t.t, Math.round(t.r * 100) / 100, t.why, Math.round(t.p * 1000) / 1000])).slice(0, 60000), err: null });
   }
   return first.sym + ' x' + mine.length;

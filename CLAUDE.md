@@ -17,7 +17,7 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
     tv-token, WebSocket `?direct=1` (doğrudan boru — CPU limiti için), pine-test, pine-sync.
 - `pine/` — Pine v6 göstergeleri. Sunucu 5 dk'da bir değişenleri derleyip kullanıcının
   TradingView "Göstergelerim"ine kaydeder (başarıda mesaj yok, hatada Telegram).
-  İlk gösterge: `pine/nabiz.pine` (NABIZ · BIST Akış Radarı).
+  NABIZ testte başarısız oldu (30 hisse, 6 ayar, hepsi eksi) ve silindi. Yeni göstergeler ÖNCE worker/src/strat.js aday yarışında test edilir, sonra Pine yazılır.
 
 ## Veri
 - Canlı: yalnızca TradingView (kullanıcının gerçek zamanlı BIST yetkisi, Worker üzerinden).
@@ -30,4 +30,4 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
 - Otomatik sunucu senkronu yalnız "Sunucuya gönder"e basılmış cihazda (misafir cihaz ezemez).
 
 ## Sırada
-- NABIZ'ın strateji (backtest) sürümü; seansta canlı kontrol; beğenilirse terminale NABIZ sekmesi.
+- Aday strateji yarışı (strat.js, D1 bist_bt tablo bt, ver 's-*'): kazananı Pine'a çevir.
