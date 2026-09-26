@@ -6,9 +6,6 @@
 // v4: /bars — TradingView'den gerçek zamanlı mum verisi (tek bağlantıda 8 hisseye kadar, kısa önbellekli).
 // v5: 7/24 sunucu — dakikada bir (Cron) alarm, radar, KAP/haber ve bağlantı sağlığı kontrolü, Telegram bildirimi.
 //     Gerekenler: KV bağlaması "DB" + Cron tetikleyici "* * * * *". Ayarlar terminalden /sync ile gelir.
-import { summarize, BT_SYMS } from './bt.js';
-import { MATRIX, runMatrix } from './strat.js';
-import { gradeEvents } from './grade.js';
 import { riseRows } from './rise.js';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
 const CORS = {
@@ -663,110 +660,40 @@ async function pineSync(env, force) {
 }
 /* ---------- v5.5: NABIZ geçmiş testi — dakikada bir hisse, sonuç D1 'bt' tablosuna ---------- */
 async function btStep(env) {
+  // Yalnız "yükselenler" araştırması. Önceki testler (A/B notu, hafta, yarış) iptal edildi.
+  // Okuma bütçesi: iş bitince dakikada 1 satır; iş sürerken dakikada ~5 satır.
   if (!env.BT) return null;
-  await env.BT.prepare('CREATE TABLE IF NOT EXISTS bars (sym TEXT PRIMARY KEY, data TEXT, at INTEGER)').run();
-  const have = new Set((((await env.BT.prepare("SELECT ver, sym FROM bt WHERE ver LIKE 'r-%' OR ver = 'grade-v1'").all()).results) || []).map(r => r.ver + '|' + r.sym));
-  const cached = new Set(((await env.BT.prepare('SELECT sym FROM bars').all()).results || []).map(r => r.sym));
-  const key = (sym, tf) => tf === 5 ? sym : sym + '@' + tf;
-  const fetchStore = async (sym, tf) => {
-    const got = await fetchBarsTV(env, ['BIST:' + sym], String(tf), tf === 5 ? 5000 : 10000, 28000);
-    const st = got['BIST:' + sym];
-    const bars = [...st.m.values()].filter(v => v && v.length >= 5).sort((a, b) => a[0] - b[0]).map(v => [v[0], v[1], v[2], v[3], v[4], Math.round(v[5] || 0)]);
-    if (!bars.length) throw new Error(st.err || 'mum gelmedi');
-    await env.BT.prepare('INSERT OR REPLACE INTO bars (sym,data,at) VALUES (?,?,?)').bind(key(sym, tf), JSON.stringify(bars), Date.now()).run();
-  };
-  // önce endeks mumları
-  for (const tf of [5, 15]) if (!cached.has(key('XU100', tf))) { await fetchStore('XU100', tf); return 'XU100@' + tf; }
-  // "Yükselenler neden yükseldi?" — hisse-gün özellikleri (feat tablosu), 1 hisse/dk
-  {
+  const doneRow = await env.BT.prepare("SELECT v FROM meta WHERE k = 'feat_done'").first();
+  const fdone = new Set(doneRow ? JSON.parse(doneRow.v) : []);
+  const u100 = await env.BT.prepare("SELECT v FROM meta WHERE k = 'xu100'").first();
+  if (!u100) return null;
+  const G_SYMS = JSON.parse(u100.v);
+  const fsym = G_SYMS.find(x => !fdone.has(x));
+  if (!fsym) return null;
+  if (fdone.size === 0) {
     await env.BT.prepare('CREATE TABLE IF NOT EXISTS feat (sym TEXT, d TEXT, ret REAL, rest REAL, gap REAL, r30 REAL, vr30 REAL, d1 REAL, d5 REAL, d20 REAL, dist REAL, sq REAL, vt REAL, above INTEGER, ir REAL, i30 REAL, wd INTEGER, hit INTEGER, PRIMARY KEY (sym, d))').run();
     if (!(await env.BT.prepare("SELECT v FROM meta WHERE k = 'sector'").first())) {
       const r = await scanRaw(env, JSON.stringify({ symbols: { tickers: G_SYMS.map(x => 'BIST:' + x) }, columns: ['name', 'sector'] }));
       const j = await r.json(); const m = {}; (j.data || []).forEach(x => { m[String(x.s).split(':').pop()] = x.d[1]; });
       await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sector', ?)").bind(JSON.stringify(m)).run();
-      return 'sektör listesi';
-    }
-    const fdone = new Set((((await env.BT.prepare("SELECT v FROM meta WHERE k = 'feat_done'").first()) || { v: '[]' }).v && JSON.parse(((await env.BT.prepare("SELECT v FROM meta WHERE k = 'feat_done'").first()) || { v: '[]' }).v)));
-    const fsym = G_SYMS.find(x => !fdone.has(x));
-    if (fsym) {
-      fdone.add(fsym); await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('feat_done', ?)").bind(JSON.stringify([...fdone])).run();
-      if (!cached.has(key(fsym, 15))) { try { await fetchStore(fsym, 15); } catch (e) { return fsym + ' mum hatası'; } }
-      const fb = JSON.parse((await env.BT.prepare('SELECT data FROM bars WHERE sym = ?').bind(key(fsym, 15)).first()).data);
-      const ib = JSON.parse((await env.BT.prepare('SELECT data FROM bars WHERE sym = ?').bind(key('XU100', 15)).first()).data);
-      const rows = riseRows(fb, ib);
-      const st = env.BT.prepare('INSERT OR REPLACE INTO feat (sym,d,ret,rest,gap,r30,vr30,d1,d5,d20,dist,sq,vt,above,ir,i30,wd,hit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-      for (let i = 0; i < rows.length; i += 50) await env.BT.batch(rows.slice(i, i + 50).map(r => st.bind(fsym, ...r)));
-      return fsym + ' özellik ' + rows.length;
     }
   }
-  // öncelik: terminal A/B notu ölçümü (15 dk, ~1 yıl) — BIST 100 hisseleri
-  await env.BT.prepare('CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT)').run();
-  let u100 = await env.BT.prepare("SELECT v FROM meta WHERE k = 'xu100'").first();
-  if (!u100) {
-    let list = [], src = 'SYML:BIST;XU100';
-    try {
-      const r = await scanRaw(env, JSON.stringify({ symbols: { symbolset: ['SYML:BIST;XU100'] }, columns: ['name'], markets: ['turkey'], range: [0, 200] }));
-      const j = await r.json(); list = (j.data || []).map(x => String(x.s || '').split(':').pop()).filter(Boolean);
-    } catch (e) {}
-    if (list.length < 80) { // yedek: piyasa değerine göre ilk 100 hisse
-      src = 'ilk100-piyasa-degeri';
-      const r = await scanRaw(env, JSON.stringify({ filter: [{ left: 'type', operation: 'equal', right: 'stock' }, { left: 'subtype', operation: 'in_range', right: ['common', 'foreign-issuer'] }], markets: ['turkey'], columns: ['name'], sort: { sortBy: 'market_cap_basic', sortOrder: 'desc' }, range: [0, 100] }));
-      const j = await r.json(); list = (j.data || []).map(x => String(x.s || '').split(':').pop()).filter(Boolean);
-    }
-    await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('xu100', ?), ('xu100_src', ?)").bind(JSON.stringify(list), src).run();
-    return 'xu100 listesi ' + list.length + ' (' + src + ')';
+  fdone.add(fsym);
+  await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('feat_done', ?)").bind(JSON.stringify([...fdone])).run();
+  let row = await env.BT.prepare('SELECT data FROM bars WHERE sym = ?').bind(fsym + '@15').first();
+  if (!row) {
+    const got = await fetchBarsTV(env, ['BIST:' + fsym], '15', 10000, 28000);
+    const st = got['BIST:' + fsym];
+    const bars = [...st.m.values()].filter(v => v && v.length >= 5).sort((a, b) => a[0] - b[0]).map(v => [v[0], v[1], v[2], v[3], v[4], Math.round(v[5] || 0)]);
+    if (!bars.length) return fsym + ' mum yok';
+    await env.BT.prepare('INSERT OR REPLACE INTO bars (sym,data,at) VALUES (?,?,?)').bind(fsym + '@15', JSON.stringify(bars), Date.now()).run();
+    row = { data: JSON.stringify(bars) };
   }
-  const G_SYMS = JSON.parse(u100.v);
-  // ÖNCELİK: yalnız 25.09.2026 cuma — 100 hisse, dakikada 8 hisse (kısa veri: son 300 mum)
-  {
-    const D0 = Math.floor(Date.UTC(2026, 8, 21) / 86400000), D1 = Math.floor(Date.UTC(2026, 8, 25) / 86400000); // 21–25 Eylül
-    const cdone = new Set((((await env.BT.prepare("SELECT sym FROM bt WHERE ver = 'hafta-v1'").all()).results) || []).map(r => r.sym));
-    const todo = G_SYMS.filter(x => !cdone.has(x)).slice(0, 8);
-    if (todo.length) {
-      for (const x of todo) await env.BT.prepare("INSERT OR REPLACE INTO bt (ver,sym,tf,n,trades,err,at) VALUES ('hafta-v1',?,'15',0,'[]','deneniyor',?)").bind(x, Date.now()).run();
-      const got = await fetchBarsTV(env, todo.map(x => 'BIST:' + x), '15', 450, 25000);
-      for (const x of todo) {
-        const st = got['BIST:' + x];
-        const bars = [...st.m.values()].filter(v => v && v.length >= 5).sort((a, b) => a[0] - b[0]).map(v => [v[0], v[1], v[2], v[3], v[4], v[5] || 0]);
-        const ev = bars.length ? gradeEvents(bars).filter(e => { const d = Math.floor((e[0] + 10800) / 86400); return d >= D0 && d <= D1; }) : [];
-        await env.BT.prepare('INSERT OR REPLACE INTO bt (ver,sym,tf,bars,first,last,n,wins,gp,gl,net,dd,sumR,trades,err,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
-            .bind('hafta-v1', x, '15', bars.length, bars.length ? bars[0][0] : 0, bars.length ? bars[bars.length - 1][0] : 0, ev.length, ev.filter(e => e[6] === 'hedef').length, 0, 0, 0, 0, ev.reduce((a, e) => a + (e[7] || 0), 0), JSON.stringify(ev), bars.length ? null : (st.err || 'mum gelmedi'), Date.now()).run();
-      }
-      return 'hafta ' + todo.length;
-    }
-  }
-  const gsym = G_SYMS.find(x => !have.has('grade-v1|' + x));
-  if (gsym) {
-    if (!cached.has(key(gsym, 15))) { try { await fetchStore(gsym, 15); } catch (e) { await env.BT.prepare('INSERT OR REPLACE INTO bt (ver,sym,tf,bars,first,last,n,wins,gp,gl,net,dd,sumR,trades,err,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').bind('grade-v1', gsym, '15', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '[]', String(e.message || e).slice(0, 200), Date.now()).run(); } return gsym + '@15 (mum)'; }
-    // yer tutucu: işlemci limiti aşılırsa kuyruk tıkanmasın (bir sonraki dakika bu hisse atlanır)
-    await env.BT.prepare("INSERT OR REPLACE INTO bt (ver,sym,tf,n,trades,err,at) VALUES ('grade-v1',?,'15',0,'[]','deneniyor',?)").bind(gsym, Date.now()).run();
-    const gb = JSON.parse((await env.BT.prepare('SELECT data FROM bars WHERE sym = ?').bind(key(gsym, 15)).first()).data);
-    const ev = gradeEvents(gb);
-    await env.BT.prepare('INSERT OR REPLACE INTO bt (ver,sym,tf,bars,first,last,n,wins,gp,gl,net,dd,sumR,trades,err,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
-      .bind('grade-v1', gsym, '15', gb.length, gb[0][0], gb[gb.length - 1][0], ev.length, ev.filter(e => e[6] === 'hedef').length, 0, 0, 0, 0, ev.reduce((a, e) => a + (e[7] || 0), 0), JSON.stringify(ev), null, Date.now()).run();
-    return gsym + ' not';
-  }
-  const jobs = [];
-  for (const sym of BT_SYMS) for (const [ver, tf] of MATRIX) if (!have.has(ver + '|' + sym)) jobs.push({ sym, ver, tf });
-  if (!jobs.length) return null;
-  const save = (ver, sym, tf, row) => env.BT.prepare('INSERT OR REPLACE INTO bt (ver,sym,tf,bars,first,last,n,wins,gp,gl,net,dd,sumR,trades,err,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
-    .bind(ver, sym, String(tf), row.bars, row.first, row.last, row.n, row.wins, row.gp, row.gl, row.net, row.dd, row.sumR, row.trades, row.err, Date.now()).run();
-  const first = jobs[0];
-  if (!cached.has(key(first.sym, first.tf))) {
-    try { await fetchStore(first.sym, first.tf); }
-    catch (e) { for (const jb of jobs.filter(j => j.sym === first.sym && j.tf === first.tf)) await save(jb.ver, jb.sym, jb.tf, { bars: 0, first: 0, last: 0, n: 0, wins: 0, gp: 0, gl: 0, net: 0, dd: 0, sumR: 0, trades: '[]', err: String(e.message || e).slice(0, 200) }); }
-    return first.sym + '@' + first.tf + ' (mum)';
-  }
-  const bars = JSON.parse((await env.BT.prepare('SELECT data FROM bars WHERE sym = ?').bind(key(first.sym, first.tf)).first()).data);
-  const idx = JSON.parse((await env.BT.prepare('SELECT data FROM bars WHERE sym = ?').bind(key('XU100', first.tf)).first()).data);
-  const mine = jobs.filter(j => j.sym === first.sym && j.tf === first.tf).slice(0, first.tf === 15 ? 2 : 4);
-  for (const jb of mine) await env.BT.prepare("INSERT OR REPLACE INTO bt (ver,sym,tf,n,trades,err,at) VALUES (?,?,?,0,'[]','deneniyor',?)").bind(jb.ver, jb.sym, String(jb.tf), Date.now()).run();
-  for (const jb of mine) {
-    const tr = runMatrix(jb.ver, bars, idx); const sm = summarize(tr);
-    await save(jb.ver, jb.sym, jb.tf, { bars: bars.length, first: bars[0][0], last: bars[bars.length - 1][0], ...sm,
-      trades: JSON.stringify(tr.map(t => [t.t, Math.round(t.r * 100) / 100, t.why, Math.round(t.p * 1000) / 1000])).slice(0, 200000), err: null });
-  }
-  return first.sym + ' x' + mine.length;
+  const ib = JSON.parse((await env.BT.prepare('SELECT data FROM bars WHERE sym = ?').bind('XU100@15').first()).data);
+  const rows = riseRows(JSON.parse(row.data), ib);
+  const st = env.BT.prepare('INSERT OR REPLACE INTO feat (sym,d,ret,rest,gap,r30,vr30,d1,d5,d20,dist,sq,vt,above,ir,i30,wd,hit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+  for (let k = 0; k < rows.length; k += 50) await env.BT.batch(rows.slice(k, k + 50).map(r => st.bind(fsym, ...r)));
+  return fsym + ' özellik ' + rows.length;
 }
 async function tvToken(env) {
   const token = await getAuth(env);

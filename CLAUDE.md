@@ -32,4 +32,4 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
 
 ## Sırada
 - Yükselenler araştırması: worker/src/rise.js → D1 tablo feat (hisse-gün özellikleri, 10:30'da bilinenler + sonuç), meta 'sector'. Kıyas: yükselen (ret≥4 / rest≥3) vs diğer günler.
-- Yarış 2 (strat.js MATRIX, ver 'r-{tf}-{g}-{aday}'): 5 dk (~2,5 ay) + 15 dk (~1 yıl), XU100 piyasa filtresi g0/g1/g2. 's-*' ve 'k0-*' sonuçları: hepsi eksi (düşen piyasa, 30 hisse ort. −%5,2).
+- Önceki testler (A/B notu grade-v1, hafta-v1, yarış r-*) Fatih'in isteğiyle İPTAL edildi (D1 okuma sınırı). btStep artık yalnız feat işini yapar.
