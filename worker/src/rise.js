@@ -50,8 +50,12 @@ export function riseRows(bars, idxBars) {
       const pct = v => isFinite(v) ? (v / x.c30 - 1) * 100 : null;
       const rng30 = isFinite(x.h30) ? (x.h30 - x.l30) / pc * 100 : null;
       let adr = 0; for (let j = i - 20; j < i; j++) adr += rng(j); adr = adr / 20 * 100;
+      // v3: simetrik hedef/stop (±%1, ±%1,5, ±%2) — hangisi önce? 1 = hedef, 2 = stop, 0 = ikisi de yok (kapanış).
+      //     Aynı 15 dk mumda ikisi birden varsa stop sayılır (temkinli).
+      const race = K => { const up = x.c30 * (1 + K / 100), dn = x.c30 * (1 - K / 100);
+        for (const [, ph, pl] of x.post) { if (pl <= dn) return 2; if (ph >= up) return 1; } return 0; };
       out.push([new Date(x.d * 86400000).toISOString().slice(0, 10), r2(ret), r2(rest), r2(gap), r2(r30), r2(vr30), r2(d1), r2(d5), r2(d20), r2(dist), r2(sq), r2(vt), above, r2(ir), r2(i30), wd, x.hiT,
-        r2(pct(mfe)), r2(pct(mae)), t3, r2(pct(dd3)), r2(rng30), r2(adr)]);
+        r2(pct(mfe)), r2(pct(mae)), t3, r2(pct(dd3)), r2(rng30), r2(adr), race(1), race(1.5), race(2)]);
     }
     e20 = e20 == null ? x.c : k * x.c + (1 - k) * e20; // bugünün kapanışı yarının "dün EMA20"si
   }
