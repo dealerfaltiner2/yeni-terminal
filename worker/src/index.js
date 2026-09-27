@@ -660,10 +660,10 @@ async function pineSync(env, force) {
 }
 /* ---------- v5.5: NABIZ geçmiş testi — dakikada bir hisse, sonuç D1 'bt' tablosuna ---------- */
 async function btStep(env) {
-  // Yalnız "yükselenler" araştırması. Önceki testler (A/B notu, hafta, yarış) iptal edildi.
-  // Okuma bütçesi: iş bitince dakikada 1 satır; iş sürerken dakikada ~5 satır.
+  // Yalnız "yükselenler" araştırması (v2: 10:30 sonrası en yüksek/en düşük, +%3 zamanı, sabah oynaklığı).
+  // Önceki testler (A/B notu, hafta, yarış) iptal edildi. Okuma bütçesi: hisse başına birkaç satır.
   if (!env.BT) return null;
-  const doneRow = await env.BT.prepare("SELECT v FROM meta WHERE k = 'feat_done'").first();
+  const doneRow = await env.BT.prepare("SELECT v FROM meta WHERE k = 'feat2_done'").first();
   const fdone = new Set(doneRow ? JSON.parse(doneRow.v) : []);
   const u100 = await env.BT.prepare("SELECT v FROM meta WHERE k = 'xu100'").first();
   if (!u100) return null;
@@ -671,27 +671,24 @@ async function btStep(env) {
   const fsym = G_SYMS.find(x => !fdone.has(x));
   if (!fsym) return null;
   if (fdone.size === 0) {
-    await env.BT.prepare('CREATE TABLE IF NOT EXISTS feat (sym TEXT, d TEXT, ret REAL, rest REAL, gap REAL, r30 REAL, vr30 REAL, d1 REAL, d5 REAL, d20 REAL, dist REAL, sq REAL, vt REAL, above INTEGER, ir REAL, i30 REAL, wd INTEGER, hit INTEGER, PRIMARY KEY (sym, d))').run();
-    if (!(await env.BT.prepare("SELECT v FROM meta WHERE k = 'sector'").first())) {
-      const r = await scanRaw(env, JSON.stringify({ symbols: { tickers: G_SYMS.map(x => 'BIST:' + x) }, columns: ['name', 'sector'] }));
-      const j = await r.json(); const m = {}; (j.data || []).forEach(x => { m[String(x.s).split(':').pop()] = x.d[1]; });
-      await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sector', ?)").bind(JSON.stringify(m)).run();
+    for (const c of ['mfe REAL', 'mae REAL', 't3 INTEGER', 'dd3 REAL', 'rng30 REAL', 'adr REAL']) {
+      try { await env.BT.prepare('ALTER TABLE feat ADD COLUMN ' + c).run(); } catch (e) {}
     }
   }
   fdone.add(fsym);
-  await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('feat_done', ?)").bind(JSON.stringify([...fdone])).run();
+  await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('feat2_done', ?)").bind(JSON.stringify([...fdone])).run();
   let row = await env.BT.prepare('SELECT data FROM bars WHERE sym = ?').bind(fsym + '@15').first();
   if (!row) {
     const got = await fetchBarsTV(env, ['BIST:' + fsym], '15', 10000, 28000);
     const st = got['BIST:' + fsym];
-    const bars = [...st.m.values()].filter(v => v && v.length >= 5).sort((a, b) => a[0] - b[0]).map(v => [v[0], v[1], v[2], v[3], v[4], Math.round(v[5] || 0)]);
+    const bars = st ? [...st.m.values()].filter(v => v && v.length >= 5).sort((a, b) => a[0] - b[0]).map(v => [v[0], v[1], v[2], v[3], v[4], Math.round(v[5] || 0)]) : [];
     if (!bars.length) return fsym + ' mum yok';
     await env.BT.prepare('INSERT OR REPLACE INTO bars (sym,data,at) VALUES (?,?,?)').bind(fsym + '@15', JSON.stringify(bars), Date.now()).run();
     row = { data: JSON.stringify(bars) };
   }
   const ib = JSON.parse((await env.BT.prepare('SELECT data FROM bars WHERE sym = ?').bind('XU100@15').first()).data);
   const rows = riseRows(JSON.parse(row.data), ib);
-  const st = env.BT.prepare('INSERT OR REPLACE INTO feat (sym,d,ret,rest,gap,r30,vr30,d1,d5,d20,dist,sq,vt,above,ir,i30,wd,hit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+  const st = env.BT.prepare('INSERT OR REPLACE INTO feat (sym,d,ret,rest,gap,r30,vr30,d1,d5,d20,dist,sq,vt,above,ir,i30,wd,hit,mfe,mae,t3,dd3,rng30,adr) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
   for (let k = 0; k < rows.length; k += 50) await env.BT.batch(rows.slice(k, k + 50).map(r => st.bind(fsym, ...r)));
   return fsym + ' özellik ' + rows.length;
 }
