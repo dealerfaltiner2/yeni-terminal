@@ -703,6 +703,7 @@ async function ownerClaim(env) {
 async function devEnsure(env) {
   if (devReady) return;
   await env.BT.prepare('CREATE TABLE IF NOT EXISTS dev (id TEXT PRIMARY KEY, name TEXT, ua TEXT, city TEXT, ver TEXT, app INTEGER, first INTEGER, last INTEGER, hits INTEGER, blocked INTEGER DEFAULT 0)').run();
+  try { await env.BT.prepare('ALTER TABLE dev ADD COLUMN diag TEXT').run(); } catch (e) {} // v6.4: son bağlantı kapanmaları (teşhis)
   devReady = true;
 }
 function uaShort(ua) {
@@ -726,8 +727,9 @@ async function devTouch(request, env, url) {
     const cf = request.cf || {};
     const city = String(cf.city || cf.country || '').slice(0, 30);
     const now = Date.now();
-    const r = await env.BT.prepare('INSERT INTO dev (id,name,ua,city,ver,app,first,last,hits) VALUES (?,?,?,?,?,?,?,?,1) ON CONFLICT(id) DO UPDATE SET name = CASE WHEN excluded.name <> \'\' THEN excluded.name ELSE dev.name END, ua = excluded.ua, city = excluded.city, ver = excluded.ver, app = excluded.app, last = excluded.last, hits = dev.hits + 1 RETURNING blocked')
-      .bind(id, name, uaShort(ua), city, ver, url.searchParams.get('app') === '1' ? 1 : 0, now, now).first();
+    const dg = String(url.searchParams.get('dg') || '').replace(/[^0-9a-z:.\-]/gi, '').slice(0, 200);
+    const r = await env.BT.prepare('INSERT INTO dev (id,name,ua,city,ver,app,first,last,hits,diag) VALUES (?,?,?,?,?,?,?,?,1,?) ON CONFLICT(id) DO UPDATE SET name = CASE WHEN excluded.name <> \'\' THEN excluded.name ELSE dev.name END, ua = excluded.ua, city = excluded.city, ver = excluded.ver, app = excluded.app, last = excluded.last, hits = dev.hits + 1, diag = CASE WHEN excluded.diag <> \'\' THEN excluded.diag ELSE dev.diag END RETURNING blocked')
+      .bind(id, name, uaShort(ua), city, ver, url.searchParams.get('app') === '1' ? 1 : 0, now, now, dg).first();
     return !!(r && r.blocked);
   } catch (e) { return false; }
 }
