@@ -29,7 +29,7 @@
 - v6.1 Sinyal Karnesi: radar (sunucu), Algı, Fırsat A/B sinyalleri D1 sig'e; seans sonrası 1 dk mumlarla ±%1/±%1,5 sonucu; 18:20 Telegram özeti.
 - v6.2 Algı karnesi komisyonsuz (%0,05 kayma).
 - v6.3 KAP Haber: KAP'ın kendi API'si, dakikada bir, sınıflandırma, Telegram, 09:30 gece özeti, tepki ölçümü, terminalde Menü → KAP Haber.
-- v6.6 Misafir modu: ana cihaz kodu olmayan cihazda Telegram + Yedek bölümleri gizli; eski kopyalanmış Telegram bilgisi bir kez silinir (LS guestWiped).
+- v6.7 Misafir modu: ana cihaz kodu olmayan cihazda Telegram + Yedek bölümleri gizli; eski kopyalanmış Telegram bilgisi bir kez silinir (LS guestWiped).
 - v6.4 Kopma teşhisi (arka plan / gerçek ayrımı). v6.5 Algı radarı okunur kart görünümü.
 - Karne mesajı sadeleştirildi; devre kesici bildirimleri karneden çıkarıldı.
 
