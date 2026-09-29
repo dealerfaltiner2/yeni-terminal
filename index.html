@@ -577,6 +577,7 @@ td.fl-up,td.fl-dn{border-radius:4px}
     <b>MİDAS CANLI VERİ</b>
     <div id="midasmsg" class="note">Yükleniyor...</div>
     <div class="note">Midas verisi <b>15 dk gecikmelidir</b>. Anlık fiyat, hacim ve alış/satış her zaman TradingView (Worker) akışından gelir. Midas yalnızca tavan/taban bilgisi için ve TradingView bağlantısı tamamen koparsa <b>“15 dk”</b> etiketli yedek fiyat olarak kullanılır; bu durumda CANLI rozeti yanmaz.</div>
+    <div id="tgsec">
     <b>OTOMATİK TARAMA + TELEGRAM</b>
     <div class="frow" style="padding:2px 0"><label>Durum</label><div class="seg" id="autoseg"><button data-a="0" class="on">Kapalı</button><button data-a="1">Açık</button></div></div>
     <input id="tgtok" placeholder="Telegram bot token" oninput="saveTg(true)">
@@ -587,6 +588,8 @@ td.fl-up,td.fl-dn{border-radius:4px}
     <button class="g" onclick="autoRun(true)">Şimdi tara ve gönder</button>
     <div id="tgmsg" class="note"></div>
     <div class="note">Bot oluşturma: Telegram'da <b>@BotFather</b> → /newbot → gelen token'ı yukarı yapıştır. Chat ID için botuna bir mesaj at, sonra <b>@userinfobot</b>'a yaz — sana ID'ni verir.<br><br>Tarama 15dk kurulumlarını üretir, 4 saatlik trend teyidini arar, ilk 10 adayı mum bazında doğrular ve sadece daha önce gönderilmemiş sinyalleri yollar. Yalnızca hafta içi 10:00–18:10 arasında çalışır. <b>Sayfa açık kalmalıdır</b> — iPhone arka plandaki sayfayı dondurur. Kalıcı otomasyon için worker.js (bulut cron) sürümünü kullan.</div>
+    </div>
+    <div id="tgguest" class="note" style="display:none"><b>OTOMATİK TARAMA + TELEGRAM</b><br>🔒 Telegram ayarları yalnız ana cihazda görünür.</div>
     <b>ALGOLAB · ANLIK VERİ (BETA)</b>
     <div id="albadge" class="note" style="padding-top:0">Bağlı değil</div>
     <input id="alkey" placeholder="API Key (Algolab panelinden)">
@@ -619,6 +622,7 @@ td.fl-up,td.fl-dn{border-radius:4px}
     <b>SÜRÜM</b>
     <div id="vermsg" class="note" style="padding-top:0">Kontrol ediliyor…</div>
     <button class="g" onclick="appUpdate()">🔄 Şimdi güncelle</button>
+    <div id="yedeksec">
     <b>YEDEK</b>
     <button class="g pri" onclick="cloudSave()">☁️ Ayarlarımı sunucuya kaydet</button>
     <button class="g" onclick="cloudLoad()">☁️ Sunucudan ayarları yükle</button>
@@ -629,6 +633,8 @@ td.fl-up,td.fl-dn{border-radius:4px}
     <button class="g" onclick="restore()">Geri yükle</button>
     <input type="file" id="bkfile" accept=".txt" style="display:none" onchange="restoreFromFile(this)">
     <button class="g" onclick="document.getElementById('bkfile').click()">Dosyadan geri yükle</button>
+    </div>
+    <div id="yedekguest" class="note" style="display:none"><b>YEDEK</b><br>🔒 Yedek alma ve yükleme yalnız ana cihazda yapılabilir.</div>
     <div class="note">Tarama verisi bist-tv Worker üzerinden TradingView hesabınla gerçek zamanlı gelir (Worker'a ulaşılamazsa ~15 dk gecikmeli doğrudan TradingView'e düşer); grafik mumları da TradingView'den gelir; Midas yalnızca yedektir. Kurulum eşikleri geçmiş test edilmemiştir. Yatırım tavsiyesi değildir.</div>
     <button class="g danger" onclick="if(confirm('Tüm yerel veriler (ayarlar, izleme listesi, alarmlar, günlük) silinsin mi? Bu geri alınamaz.')){localStorage.clear();location.reload()}">Yerel verileri sıfırla</button>
    </div>
@@ -781,13 +787,13 @@ function backupObj(){
   breadthLog:S.breadthLog,sentSig:S.sentSig,stf:S.stf,view:S.view,blim:S.blim,seenA:S.seenA,
   savedAt:new Date().toISOString(),v:BACKUP_VER};
 }
-function backup(){
+function backup(){if(typeof isGuest==='function'&&isGuest()){alert(GUEST_MSG);return}
  const t='BISTT:'+btoa(unescape(encodeURIComponent(JSON.stringify(backupObj()))));
  $('#bktext').value=t;
  if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>alert('Panoya kopyalandı')).catch(()=>alert('Kutudaki metni elle kopyala'));
  else alert('Kutudaki metni elle kopyala');
 }
-function backupToFile(){
+function backupToFile(){if(typeof isGuest==='function'&&isGuest()){alert(GUEST_MSG);return}
  const t='BISTT:'+btoa(unescape(encodeURIComponent(JSON.stringify(backupObj()))));
  const blob=new Blob([t],{type:'text/plain'});
  const url=URL.createObjectURL(blob);
@@ -796,7 +802,7 @@ function backupToFile(){
  document.body.appendChild(a);a.click();document.body.removeChild(a);
  setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
-function restoreFromFile(input){
+function restoreFromFile(input){if(typeof isGuest==='function'&&isGuest()){alert(GUEST_MSG);return}
  const f=input.files&&input.files[0];if(!f)return;
  const r=new FileReader();
  r.onload=()=>{$('#bktext').value=String(r.result||'').trim();restore()};
@@ -804,7 +810,7 @@ function restoreFromFile(input){
  r.readAsText(f);
  input.value='';
 }
-function restore(){
+function restore(){if(typeof isGuest==='function'&&isGuest()){alert(GUEST_MSG);return}
  let t=String($('#bktext').value||'').replace(/[\s\u200B-\u200D\uFEFF]+/g,'').replace(/^["'“”‘’]+|["'“”‘’]+$/g,'');
  const pi=t.search(/bistt:/i);if(pi>0)t=t.slice(pi);
  if(!/^bistt:/i.test(t)){alert('Yedek metni tanınmadı: \'BISTT:\' ile başlamıyor.\n\nEn güvenlisi: eski telefonda "Yedeği dosyaya indir", bu telefonda "Dosyadan geri yükle".');return}
@@ -838,9 +844,24 @@ function qAdd(u,q){return q?(u+(u.indexOf('?')<0?'?':'&')+q):u}
 function sigPost(o){try{if(!LS.get('ownTok',''))return;const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||!o||!(o.px>0))return;
  const d=new Date(Date.now()+3*3600e3),m=d.getUTCHours()*60+d.getUTCMinutes(),wd=d.getUTCDay();if(wd<1||wd>5||m<600||m>=1080)return;
  o.t=o.t||Date.now();fetch(qAdd(b+'/siglog?'+devQ(),ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(o)}).catch(()=>{})}catch(e){}}
+// v6.6: MİSAFİR MODU — ana cihaz belirlenmişse ve bu cihazda kod yoksa: Telegram + yedek gizli, eski kopyalanmış Telegram bilgisi bir kez silinir
+function isGuest(){return !!LS.get('ownClaimed',0)&&!LS.get('ownTok','')}
+function guestApply(){
+ const g=isGuest();
+ [['tgsec','tgguest'],['yedeksec','yedekguest']].forEach(([a,b])=>{const x=document.getElementById(a),y=document.getElementById(b);if(x)x.style.display=g?'none':'';if(y)y.style.display=g?'':'none'});
+ if(g&&!LS.get('guestWiped',0)){
+  try{S.tgTok='';S.tgChat='';LS.set('tgTok','');LS.set('tgChat','');const ac=LS.get('algiCfg',{});ac.chat='';ac.tg=0;LS.set('algiCfg',ac);
+   if(S.algi&&S.algi.cfg){S.algi.cfg.chat='';S.algi.cfg.tg=0}const t=document.getElementById('tgtok'),c=document.getElementById('tgchat');if(t)t.value='';if(c)c.value=''}catch(e){}
+  LS.set('guestWiped',1);
+ }
+}
+async function guestCheck(){try{const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b))return;const j=await (await fetch(qAdd(b+'/owner-check',ownQ()))).json();
+ if(j&&j.ok){LS.set('ownClaimed',j.claimed?1:0);if(LS.get('ownTok','')&&!j.owner)LS.set('ownTok','');guestApply()}}catch(e){}}
+setTimeout(()=>{guestApply();guestCheck()},1500);
+const GUEST_MSG='🔒 Bu cihaz misafir. Telegram ve yedek ayarları yalnız ana cihazda.';
 const OWN_MSG='Bu işlem yalnız ana cihazdan yapılabilir.\n\nAna cihaz sensen: Ayarlar → "Ana cihaz" bölümünden kodunu gir.';
 function isApp(){try{return !!(navigator.standalone||matchMedia('(display-mode: standalone)').matches)}catch(e){return false}}
-async function cloudSave(){
+async function cloudSave(){if(typeof isGuest==='function'&&isGuest()){alert(GUEST_MSG);return}
  const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)){alert('Önce Ayarlar → "TV WebSocket proxy URL" alanına sunucu adresini gir.');return}
  const t='BISTT:'+btoa(unescape(encodeURIComponent(JSON.stringify(backupObj()))));
  try{const r=await fetch(qAdd(b+'/prefs',ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:t});if(r.status===403)return alert(OWN_MSG);const d=await r.json();
@@ -925,8 +946,8 @@ async function ownRender(){
  if(!m)return;if(nm&&document.activeElement!==nm)nm.value=LS.get('devName','');
  const b=ownBase();if(!/^https:\/\//.test(b)){m.innerHTML='<span class="wrn">Sunucu adresi yok.</span>';bt.innerHTML='';dl.innerHTML='';return}
  const tok=LS.get('ownTok','');
- try{const j=await (await fetch(qAdd(b+'/owner-check',ownQ()))).json();OWN.claimed=!!j.claimed;
-  if(tok&&!j.owner){m.innerHTML='<span class="dn">Bu cihazdaki ana cihaz kodu geçersiz.</span> Doğru kodu gir.';LS.set('ownTok','');}
+ try{const j=await (await fetch(qAdd(b+'/owner-check',ownQ()))).json();OWN.claimed=!!j.claimed;LS.set('ownClaimed',j.claimed?1:0);
+  if(tok&&!j.owner){m.innerHTML='<span class="dn">Bu cihazdaki ana cihaz kodu geçersiz.</span> Doğru kodu gir.';LS.set('ownTok','');guestApply();}
   else if(tok){m.innerHTML='<span class="up">👑 Bu cihaz ana cihaz.</span> Sunucu ayarları (alarm, Telegram, yedek) yalnız buradan değişir.'}
   else m.innerHTML=j.claimed?'Bu cihaz <b>misafir</b>. Canlı veri ve tüm ekranlar normal çalışır; sunucu ayarlarını yalnız ana cihaz değiştirir.':'<span class="wrn">Ana cihaz henüz belirlenmedi.</span> Sunucunun sahibi sensen aşağıdaki düğmeye bas.';
  }catch(e){m.innerHTML='<span class="dn">Sunucuya ulaşılamadı.</span>';bt.innerHTML='';dl.innerHTML='';return}
@@ -937,7 +958,7 @@ async function ownClaim(){
  if(!confirm('Bu cihaz ANA CİHAZ olsun mu?\n\nSunucu ayarlarını (alarm, Telegram, yedek) bundan sonra yalnız bu cihaz ve kodu girdiğin cihazlar değiştirebilir.'))return;
  try{const r=await fetch(ownBase()+'/owner-claim',{method:'POST'});const j=await r.json();
   if(!j.ok)return alert(j.error||('HTTP '+r.status));
-  LS.set('ownTok',j.tok);
+  LS.set('ownTok',j.tok);LS.set('ownClaimed',1);guestApply();
   try{await navigator.clipboard.writeText(j.tok)}catch(e){}
   alert('👑 Tamam, bu cihaz ana cihaz.\n\nAna cihaz kodun panoya kopyalandı. Bir yere (Notlar) kaydet; ana ekran uygulamasında ya da başka telefonunda "Ana cihaz kodunu gir"e yapıştıracaksın.\n\nKimseyle paylaşma.');
   srvSync(false);ownRender();
@@ -947,7 +968,7 @@ async function ownEnter(){
  const c=(prompt('Ana cihaz kodunu yapıştır:')||'').trim();if(!c)return;
  try{const j=await (await fetch(ownBase()+'/owner-check?own='+encodeURIComponent(c))).json();
   if(!j.owner)return alert('Kod yanlış.');
-  LS.set('ownTok',c);alert('👑 Tamam, bu cihaz da ana cihaz.');ownRender();
+  LS.set('ownTok',c);LS.set('ownClaimed',1);guestApply();alert('👑 Tamam, bu cihaz da ana cihaz. Telegram ve yedek ayarları açıldı.');ownRender();
  }catch(e){alert('Sunucuya ulaşılamadı')}
 }
 async function ownCopy(){const t=LS.get('ownTok','');if(!t)return;try{await navigator.clipboard.writeText(t);alert('Kod kopyalandı. Kimseyle paylaşma.')}catch(e){prompt('Kodu kopyala:',t)}}
@@ -3149,7 +3170,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="6.5";window.APPV=APP_VER;
+  const APP_VER="6.6";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3647,6 +3668,7 @@ function tvReconnectReport(){
    '<div class="frow"><label>Min skor</label><select id="algimin">'+[60,65,70,75,80,85].map(v=>'<option '+(v===c.minSc?'selected':'')+'>'+v+'</option>').join('')+'</select></div>'+
    '<div class="frow"><label>Kalibrasyon</label>'+seg('auto','Kapalı','Otomatik')+'</div>'+
    '<div class="note">Otomatik: 30+ tamamlanan sinyalden sonra ölçüm ağırlıkları isabete göre ayarlanır; 20+ sinyalde ortalama R&#39;si negatif olan skor aralığının Telegram mesajları susturulur (ekranda görünmeye devam eder).</div>'+
+   (isGuest()?'<b>TELEGRAM · KİŞİSEL SOHBET</b><div class="note">🔒 Telegram ayarları yalnız ana cihazda görünür.</div><div style="display:none">':'')+
    '<b>TELEGRAM · KİŞİSEL SOHBET</b>'+
    '<div class="frow"><label>Bildirim</label>'+seg('tg','Kapalı','Açık')+'</div>'+
    '<input id="algichat" placeholder="Kişisel Chat ID (senin kullanıcı ID&#39;n)" value="'+htmlEsc(c.chat)+'">'+
@@ -3654,7 +3676,7 @@ function tvReconnectReport(){
    '<div class="note" id="algitgmsg">Mevcut botun (Ayarlar’daki token) kullanılır. Önce Telegram’da bota <b>özelden</b> /start yaz, sonra “Chat ID’mi bul”a bas. Grup bildirimleri etkilenmez.</div>'+
    '<div class="frow"><label>Teyit/Hedef</label>'+seg('sOk','Kapalı','Açık')+'</div>'+
    '<div class="frow"><label>Sönme</label>'+seg('sFade','Kapalı','Açık')+'</div>'+
-   '<div class="frow"><label>Stop</label>'+seg('sFail','Kapalı','Açık')+'</div>'+
+   '<div class="frow"><label>Stop</label>'+seg('sFail','Kapalı','Açık')+'</div>'+(isGuest()?'</div>':'')+
    '<b>KAYIT</b>'+
    '<button class="g" id="algiclr">Radar kayıtlarını sıfırla</button>'+
    '<div class="note">Radar yalnızca terminal ekranda açıkken çalışır; iPhone arka plandaki sekmeyi uyutur. Ara verilen sinyaller “eksik veri” sayılır ve karneye girmez.</div>'+

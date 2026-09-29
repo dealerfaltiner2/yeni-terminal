@@ -52,6 +52,8 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
 - v6.5 ALGI RADARI kart görünümü (algiCard): durum etiketi, skor çubuğu, düz Türkçe açıklama, 💬 yorum, "nasıl okunur".
 - KARNE mesajı (sigSummary): sade Türkçe (kazandı/kaybetti → %), sabit sıra A/B/Algı/Radar, KAP türleri Türkçe, 'kap-devre' hariç
   (devre kesici haber değil; kap.js karneye yazmaz). Özeti yeniden göndermek: D1 meta 'sigsum' satırını sil (18:20 sonrası cron yeniden yollar).
+- v6.6 MİSAFİR MODU (isGuest = LS ownClaimed && !ownTok): Telegram (#tgsec, Algı Telegram) ve Yedek (#yedeksec) gizli, backup/restore/cloudSave kilitli,
+  misafirde tgTok/tgChat/algiCfg.chat bir kez silinir (LS guestWiped). Kod girilince guestApply() bölümleri açar.
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.
