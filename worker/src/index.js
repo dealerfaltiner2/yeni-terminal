@@ -8,6 +8,7 @@
 //     Gerekenler: KV bağlaması "DB" + Cron tetikleyici "* * * * *". Ayarlar terminalden /sync ile gelir.
 import { riseRows } from './rise.js';
 import { sigAdd, sigLog, sigEval, sigSummary } from './sig.js';
+import { kapPoll, kapMorning, kapList } from './kap.js';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -462,24 +463,7 @@ async function cron(env, force = false) {
     for (const k in st.sent) if (now - st.sent[k] > 6 * 3600e3) { delete st.sent[k]; dirty = true; }
   }
 
-  // 3) KAP / haber (izleme listesi, 5 dakikada bir)
-  if (newsWin && opt.kap && cfg.watch.length && (force || T.m % 5 === 0)) {
-    for (const w of cfg.watch.slice(0, 8)) {
-      const sym = 'BIST:' + w;
-      try {
-        const v = await fetchNews(sym);
-        const seen = st.seen[w] || null;
-        const items = v.items.filter(n => isKap(n)).slice(0, 10);
-        if (seen === null) { st.seen[w] = items.map(n => n.id).slice(0, 30); dirty = true; continue; } // ilk tur: sadece işaretle
-        const fresh = items.filter(n => !seen.includes(n.id) && (!n.t || now / 1000 - n.t < 6 * 3600));
-        fresh.slice(0, 3).forEach(n => {
-          st.cnt.kap++;
-          msgs.push('📰 <b>KAP · ' + esc(w) + '</b>' + (n.t ? ' · ' + new Date(n.t * 1000 + TR).toISOString().slice(11, 16) : '') + '\n' + esc(n.title) + (n.link ? '\n' + esc(n.link) : ''));
-        });
-        if (fresh.length) { st.seen[w] = [...fresh.map(n => n.id), ...seen].slice(0, 30); dirty = true; }
-      } catch (e) { errs.push(w + ': ' + e.message); }
-    }
-  }
+  // 3) KAP: v5.8'den beri kap.js (tüm şirketler, dakikada bir) — scheduled() içinde
 
   // 4) gönder + durum yaz
   let tgErr = '';
@@ -759,29 +743,6 @@ async function devBlock(env, url) {
   await env.BT.prepare('UPDATE dev SET blocked = ? WHERE id = ?').bind(url.searchParams.get('b') === '1' ? 1 : 0, id).run();
   return json({ ok: true });
 }
-/* ---------- v5.8 (geçici): haber kaynağı denemesi — sonucu D1 meta 'newsprobe' ---------- */
-async function newsProbe(env) {
-  if (!env.BT) return;
-  if (await env.BT.prepare("SELECT 1 FROM meta WHERE k = 'newsprobe'").first()) return;
-  const out = { at: new Date().toISOString() };
-  const day = new Date(Date.now() + TR).toISOString().slice(0, 10);
-  const tryIt = async (name, url, init) => {
-    const t0 = Date.now();
-    try {
-      const ac = new AbortController(); const tm = setTimeout(() => ac.abort(), 12000);
-      const r = await fetch(url, Object.assign({ signal: ac.signal }, init)); clearTimeout(tm);
-      const txt = await r.text();
-      let n = null, first = txt.slice(0, 1800);
-      try { const j = JSON.parse(txt); const arr = Array.isArray(j) ? j : (j.items || j.data || []); n = arr.length; first = JSON.stringify(arr.slice(0, 2)).slice(0, 1800); out[name + '_keys'] = Array.isArray(j) ? 'array' : Object.keys(j).join(','); } catch (e) {}
-      out[name] = { status: r.status, ms: Date.now() - t0, n, first };
-    } catch (e) { out[name] = { err: String(e && e.message || e), ms: Date.now() - t0 }; }
-  };
-  const kapH = { 'Content-Type': 'application/json', Accept: 'application/json', Referer: 'https://www.kap.org.tr/tr/bildirim-sorgu', Origin: 'https://www.kap.org.tr', 'User-Agent': UA };
-  await tryIt('kap', 'https://www.kap.org.tr/tr/api/disclosure/members/byCriteria', { method: 'POST', headers: kapH, body: JSON.stringify({ fromDate: day, toDate: day, mkkMemberOidList: [], subjectList: [] }) });
-  await tryIt('tvflow', 'https://news-mediator.tradingview.com/news-flow/v2/news?filter=lang%3Atr&filter=provider%3Akap&client=screener&streaming=false', { headers: { 'User-Agent': UA, Origin: 'https://www.tradingview.com', Referer: 'https://www.tradingview.com/' } });
-  await tryIt('tvflow2', 'https://news-mediator.tradingview.com/news-flow/v2/news?filter=lang%3Atr&filter=market%3Abist&client=screener&streaming=false', { headers: { 'User-Agent': UA, Origin: 'https://www.tradingview.com', Referer: 'https://www.tradingview.com/' } });
-  await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('newsprobe', ?)").bind(JSON.stringify(out).slice(0, 12000)).run();
-}
 async function tvToken(env) {
   const token = await getAuth(env);
   const ok = token !== 'unauthorized_user_token';
@@ -872,6 +833,7 @@ export default {
       case 'owner-claim': if (request.method === 'POST') return ownerClaim(env); break;
       case 'owner-check': { const o = await ownerTok(env); return json({ ok: true, claimed: !!o, owner: !!o && url.searchParams.get('own') === o }); }
       case 'hello': return json({ ok: true, blocked: await devTouch(request, env, url) });
+      case 'kap': return kapList(env, url, json);
       case 'devices': return devices(env);
       case 'dev-block': return devBlock(env, url);
       case 'siglog': if (request.method === 'POST') return sigLog(request, env, url, json); break;
@@ -904,7 +866,14 @@ export default {
   },
   async scheduled(event, env, ctx) {
     ctx.waitUntil(cron(env).then(async () => {
-      try { await newsProbe(env); } catch (e) {}
+      // KAP: dakikada bir, her gün (gece gelenler sabah 09:30 özetinde)
+      try {
+        const kr = await kapPoll(env, { UA, tgSend, kvGet, esc, scanRaw });
+        const mr = await kapMorning(env, { tgSend, kvGet, esc });
+        const n = (kr && kr.telegram || 0) + (mr && mr.ozet ? 1 : 0);
+        if (n) { const st = await kvGet(env, 'st', {}); if (st.cnt) { st.cnt.kap = (st.cnt.kap || 0) + n; await kvPut(env, 'st', st); } }
+        if (kr && kr.yeni) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_st', ?)").bind(JSON.stringify({ at: Date.now(), ...kr })).run();
+      } catch (e) { try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_err', ?)").bind(new Date().toISOString() + ' ' + String(e && e.message || e).slice(0, 300)).run(); } catch {} }
       // NABIZ geçmiş testi: seans DIŞINDA, dakikada bir hisse (ağır iş en sona — alarmlar etkilenmesin)
       const T = trNow(); const inSess = T.wd >= 1 && T.wd <= 5 && T.m >= 590 && T.m < 1095;
       if (!inSess) { try { await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf); } catch (e) {} try { await btStep(env); } catch (e) {} }

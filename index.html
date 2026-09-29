@@ -337,6 +337,7 @@ td.sym{font-size:13.5px;letter-spacing:.2px}
 .why{font-size:11px}
 .note{font-size:12.5px;line-height:1.6;color:var(--dim)}
 .sett{gap:10px}
+.kaprow{padding:10px 12px;margin:8px 10px;border:1px solid var(--line);border-left:4px solid #64748b;border-radius:10px;font-size:13px;line-height:1.45}.kaprow.y1{border-left-color:#10b981}.kaprow.y-1{border-left-color:#ef4444}.kaprow .kh{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.kaprow .kh b{font-size:14.5px;cursor:pointer;text-decoration:underline dotted}.kaprow .kt{margin-left:auto;color:var(--dim);font-size:11.5px}.kaprow .kg{font-size:11px;padding:1px 7px;border-radius:9px;background:rgba(148,163,184,.15)}.kaprow .ks{color:var(--txt2);margin-top:4px}.kaprow .km{margin-top:6px;font-size:11.5px;color:var(--dim)}.kaprow .km a{color:#60a5fa}
 .devrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;margin:6px 0;border:1px solid var(--line);border-radius:10px;font-size:13px}.devrow small{color:var(--dim);font-size:11.5px;line-height:1.5}.devrow .g{width:auto;flex:none;padding:7px 10px;font-size:12px;margin:0}.devrow.blk{opacity:.6;border-color:#c53030}
 .sett>b{font-size:11px;color:var(--txt2);letter-spacing:1.1px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
 .sett>b:first-child{margin-top:0;padding-top:0;border-top:0}
@@ -500,6 +501,11 @@ td.fl-up,td.fl-dn{border-radius:4px}
   <div class="tab" id="t-brief"><div id="briefbody"></div></div>
   <div class="tab" id="t-lab"><div id="labbody"></div></div>
 
+  <div class="tab" id="t-kap">
+   <div class="bar"><div class="seg" id="kapseg"><button data-f="onemli">Önemli</button><button data-f="hepsi">Tümü</button><button data-f="takip">Takibim</button></div><button onclick="loadKap(true)">↻ Yenile</button></div>
+   <div id="kapbody"></div>
+  </div>
+
   <div class="tab" id="t-cal">
    <div class="bar"><div class="seg" id="calseg"><button data-c="TR" class="on">Türkiye</button><button data-c="US">ABD</button><button data-c="TR,US,EU">Hepsi</button></div><button onclick="loadCal()">↻ Yenile</button><span id="calmsg" style="color:var(--dim);font-size:9.5px"></span></div>
    <div id="calbody"></div>
@@ -637,7 +643,7 @@ td.fl-up,td.fl-dn{border-radius:4px}
   <button data-more="1" id="morebtn" style="--tc:#e2e8f0"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8"/></svg></span><span class="lbl">Menü</span></button>
  </div>
 </div>
-<div id="more"><div class="bd"></div><div class="sh"><div class="grab"></div><div class="mhead"><b>Tüm bölümler</b><button class="mclose" aria-label="Kapat">✕</button></div><div class="mgrid"><button data-t="brief" style="--tc:#fde047"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg><span>Özet</span></button><button data-t="lab" style="--tc:#a78bfa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9z"/><polyline points="9 13.5 11.3 15.8 15.5 11.5"/></svg><span>Karne</span></button><button data-t="reg" style="--tc:#38bdf8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 18a8.5 8.5 0 1 1 17 0"/><line x1="12" y1="18" x2="16.2" y2="11.2"/><circle cx="12" cy="18" r="1.2" fill="currentColor"/></svg><span>Piyasa</span></button><button data-t="mov" style="--tc:#c084fc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 20V5M4 9l4-4 4 4M16 4v15M12 15l4 4 4-4"/></svg><span>Hareket</span></button><button data-t="heat" style="--tc:#fb923c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="10" rx="1.5"/><rect x="14.5" y="3.5" width="6" height="6" rx="1.5"/><rect x="14.5" y="11.5" width="6" height="9" rx="1.5"/><rect x="3.5" y="15.5" width="9" height="5" rx="1.5"/></svg><span>Isı Haritası</span></button><button data-t="cal" style="--tc:#f472b6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Takvim</span></button><button data-t="alarm" style="--tc:#ff5d6c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.8 2H4.2z"/><path d="M10 21h4"/></svg><span>Alarm</span></button><button data-t="jr" style="--tc:#4ade80"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg><span>Günlük</span></button><button data-t="perf" style="--tc:#34d399"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg><span>Performans</span></button><button data-t="risk" style="--tc:#22d3ee"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 8v5M12 16v.5"/></svg><span>Risk</span></button><button data-t="port" style="--tc:#818cf8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4"/></svg><span>Portföy</span></button><button data-t="crypto" style="--tc:#f59e0b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 7.5h4a2.2 2.2 0 0 1 0 4.4h-4zM9.5 11.9h4.6a2.3 2.3 0 0 1 0 4.6H9.5zM9.5 7.5v9M11 6v1.5M11 16.5V18"/></svg><span>Kripto</span></button><button data-t="set" style="--tc:#94a3b8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>Ayarlar</span></button></div></div></div>
+<div id="more"><div class="bd"></div><div class="sh"><div class="grab"></div><div class="mhead"><b>Tüm bölümler</b><button class="mclose" aria-label="Kapat">✕</button></div><div class="mgrid"><button data-t="brief" style="--tc:#fde047"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg><span>Özet</span></button><button data-t="lab" style="--tc:#a78bfa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9z"/><polyline points="9 13.5 11.3 15.8 15.5 11.5"/></svg><span>Karne</span></button><button data-t="reg" style="--tc:#38bdf8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 18a8.5 8.5 0 1 1 17 0"/><line x1="12" y1="18" x2="16.2" y2="11.2"/><circle cx="12" cy="18" r="1.2" fill="currentColor"/></svg><span>Piyasa</span></button><button data-t="mov" style="--tc:#c084fc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 20V5M4 9l4-4 4 4M16 4v15M12 15l4 4 4-4"/></svg><span>Hareket</span></button><button data-t="heat" style="--tc:#fb923c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="10" rx="1.5"/><rect x="14.5" y="3.5" width="6" height="6" rx="1.5"/><rect x="14.5" y="11.5" width="6" height="9" rx="1.5"/><rect x="3.5" y="15.5" width="9" height="5" rx="1.5"/></svg><span>Isı Haritası</span></button><button data-t="kap" style="--tc:#60a5fa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h13v13a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v9.5a2 2 0 0 1-2 2"/><path d="M7.5 9h6M7.5 12.5h6M7.5 16h4"/></svg><span>KAP Haber</span></button><button data-t="cal" style="--tc:#f472b6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Takvim</span></button><button data-t="alarm" style="--tc:#ff5d6c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.8 2H4.2z"/><path d="M10 21h4"/></svg><span>Alarm</span></button><button data-t="jr" style="--tc:#4ade80"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg><span>Günlük</span></button><button data-t="perf" style="--tc:#34d399"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg><span>Performans</span></button><button data-t="risk" style="--tc:#22d3ee"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 8v5M12 16v.5"/></svg><span>Risk</span></button><button data-t="port" style="--tc:#818cf8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4"/></svg><span>Portföy</span></button><button data-t="crypto" style="--tc:#f59e0b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 7.5h4a2.2 2.2 0 0 1 0 4.4h-4zM9.5 11.9h4.6a2.3 2.3 0 0 1 0 4.6H9.5zM9.5 7.5v9M11 6v1.5M11 16.5V18"/></svg><span>Kripto</span></button><button data-t="set" style="--tc:#94a3b8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>Ayarlar</span></button></div></div></div>
 <div id="pal" onclick="if(event.target.id==='pal')closePal()"><div id="palbox"><input id="palin" placeholder="Hisse veya kripto ara" autocomplete="off"><div id="pallist"></div></div></div>
 
 <script>
@@ -765,7 +771,7 @@ setInterval(()=>{if(S.autoOn)autoRun(false)},15*60*1000);
 function saveCap(){S.cap=+$('#cap').value||0;S.rskp=+$('#rsk').value||1;LS.set('cap',S.cap);LS.set('rskp',S.rskp);renderRisk();alert('Kaydedildi')}
 async function testSrc(){const m=$('#srcmsg');m.textContent='test...';try{const cs=await getBars('THYAO','15min');m.innerHTML='<b class="up">Çalışıyor</b> — '+cs.length+' mum'}catch(e){m.innerHTML='<b class="dn">Başarısız</b> — '+e.message}}
 function mark(t){if(S.tab===t)draw(t);else S.dirty[t]=1}
-function draw(t){S.dirty[t]=0;const f={op:function(){try{renderOps()}catch(e){$('#oplist').innerHTML='<div class="note"><b class="dn">Ekran hatası:</b> '+String(e.message||e)+'</div>'}},live:renderLive,reg:renderReg,brief:renderBrief,lab:renderLab,watch:renderWatch,cal:calTab,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,crypto:renderCrypto,jr:renderJr,perf:renderPerf,risk:renderRisk}[t];if(f)f()}
+function draw(t){S.dirty[t]=0;const f={op:function(){try{renderOps()}catch(e){$('#oplist').innerHTML='<div class="note"><b class="dn">Ekran hatası:</b> '+String(e.message||e)+'</div>'}},live:renderLive,reg:renderReg,brief:renderBrief,lab:renderLab,watch:renderWatch,cal:calTab,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,kap:function(){loadKap(false)},crypto:renderCrypto,jr:renderJr,perf:renderPerf,risk:renderRisk}[t];if(f)f()}
 const BACKUP_VER=12;
 function backupObj(){
  return {wl:WL,alarms:S.alarms,tx:S.tx,jr:S.jr,tdkey:S.key,src:S.src,cap:S.cap,rskp:S.rskp,
@@ -869,6 +875,41 @@ function appSetup(){
  }
 }
 setTimeout(appSetup,1200);
+
+/* ================= v6.3 KAP HABER (sunucu: KAP'ın kendi verisi, dakikada bir) ================= */
+const KAPS={f:LS.get('kapF','onemli'),list:null,at:0,lf:'',err:''};
+async function loadKap(force){
+ const b=srvBase(S.tvproxy);
+ if(!/^https:\/\//.test(b)){KAPS.err='Sunucu adresi yok (Ayarlar → proxy URL).';return renderKap()}
+ if(!force&&KAPS.list&&KAPS.lf===KAPS.f&&Date.now()-KAPS.at<60000)return renderKap();
+ if(!KAPS.list||KAPS.lf!==KAPS.f){KAPS.list=null;renderKap()}
+ try{
+  let u=b+'/kap?f='+(KAPS.f==='onemli'?'onemli':'hepsi');
+  if(KAPS.f==='takip'){const w=W().filter(x=>/^[A-Z0-9]{3,6}$/.test(x)).slice(0,30);if(!w.length){KAPS.list=[];KAPS.lf=KAPS.f;KAPS.err='';return renderKap()}u+='&s='+w.join(',')}
+  const r=await fetch(u);const j=await r.json();if(!j.ok)throw new Error(j.error||('HTTP '+r.status));
+  KAPS.list=j.list||[];KAPS.at=Date.now();KAPS.lf=KAPS.f;KAPS.err='';
+ }catch(e){KAPS.err='Yüklenemedi: '+(e.message||e)}
+ renderKap();
+}
+function renderKap(){
+ const el=document.getElementById('kapbody');if(!el)return;
+ document.querySelectorAll('#kapseg button').forEach(x=>{x.classList.toggle('on',x.dataset.f===KAPS.f);x.onclick=()=>{KAPS.f=x.dataset.f;LS.set('kapF',KAPS.f);loadKap(true)}});
+ if(KAPS.err){el.innerHTML='<div class="note"><span class="dn">'+htmlEsc(KAPS.err)+'</span></div>';return}
+ if(!KAPS.list){el.innerHTML='<div class="note">Yükleniyor…</div>';return}
+ const head='<div class="note" style="padding-bottom:0">'+(KAPS.f==='onemli'?'Son 7 günün <b>önemli</b> KAP bildirimleri':KAPS.f==='takip'?'İzleme listendeki hisselerin KAP bildirimleri':'Son 7 günün tüm hisse bildirimleri')+' · 🟢 olumlu · 🔴 olumsuz · ⚪ yönü belirsiz. Tepki ölçümü seans kapanınca eklenir.</div>';
+ if(!KAPS.list.length){el.innerHTML=head+'<div class="note">Henüz bildirim yok.</div>';return}
+ const sp=x=>x==null?'-':(x>=0?'+':'−')+'%'+nf(Math.abs(x),2);
+ el.innerHTML=head+KAPS.list.map(r=>{
+  const d=new Date(r.t),hm=d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}),dm=d.toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit'});
+  const syms=String(r.syms||'').split(',').filter(Boolean);
+  const ic=r.yon>0?'🟢':r.yon<0?'🔴':'⚪';
+  const o=r.olcum;
+  const ol=o?('<b>Tepki</b> (giriş '+(o.pre!=null?'önceki kapanışa göre '+sp(o.pre)+', ':'')+'sonra): 15 dk '+sp(o.r15)+' · 1 sa '+sp(o.r60)+' · kapanış '+sp(o.rc)+' · en yüksek '+sp(o.mfe)+(o.o10===1?' · ✅ +%1 önce':o.o10===2?' · ❌ −%1 önce':'')+'<br>'):'';
+  return '<div class="kaprow y'+(r.yon||0)+'"><div class="kh">'+ic+' '+(syms.length?syms.map(x=>'<b onclick="selectSym(\''+x+'\',\'bist\')">'+x+'</b>').join(' '):'<b style="text-decoration:none">'+htmlEsc(String(r.title||'').slice(0,30))+'</b>')+' <span class="kg">'+htmlEsc(r.ad||r.tip)+'</span><span class="kt">'+hm+' · '+dm+'</span></div>'+
+   '<div class="ks">'+htmlEsc(r.subj||'')+(r.summ&&r.summ!==r.subj?' — '+htmlEsc(String(r.summ).slice(0,240)):'')+'</div>'+
+   '<div class="km">'+ol+'<a href="https://www.kap.org.tr/tr/Bildirim/'+r.idx+'" target="_blank" rel="noopener">KAP\'ta aç ↗</a></div></div>'}).join('');
+}
+setInterval(()=>{if(!document.hidden&&S.tab==='kap')loadKap(false)},60000);
 
 /* ================= v6.0 ana cihaz + bağlı cihazlar ================= */
 const OWN={claimed:null,list:null,err:''};
@@ -3102,7 +3143,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="6.2";window.APPV=APP_VER;
+  const APP_VER="6.3";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');

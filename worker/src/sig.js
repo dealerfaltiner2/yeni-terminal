@@ -6,7 +6,13 @@ const trMin = ms => { const d = new Date(ms + TRMS); return d.getUTCHours() * 60
 let ready = false;
 export async function sigEnsure(env) {
   if (ready) return;
-  await env.BT.prepare('CREATE TABLE IF NOT EXISTS sig (id INTEGER PRIMARY KEY AUTOINCREMENT, d TEXT, t INTEGER, src TEXT, sym TEXT, dir TEXT, px REAL, sc REAL, dev TEXT, meta TEXT, done INTEGER DEFAULT 0, o10 INTEGER, o15 INTEGER, r15 REAL, r60 REAL, rc REAL, mfe REAL, mae REAL, idx REAL, err TEXT)').run();
+  await env.BT.batch([
+    env.BT.prepare('CREATE TABLE IF NOT EXISTS sig (id INTEGER PRIMARY KEY AUTOINCREMENT, d TEXT, t INTEGER, src TEXT, sym TEXT, dir TEXT, px REAL, sc REAL, dev TEXT, meta TEXT, done INTEGER DEFAULT 0, o10 INTEGER, o15 INTEGER, r15 REAL, r60 REAL, rc REAL, mfe REAL, mae REAL, idx REAL, err TEXT)'),
+    env.BT.prepare('CREATE INDEX IF NOT EXISTS sig_done ON sig(done, t)'),
+    env.BT.prepare('CREATE INDEX IF NOT EXISTS sig_d ON sig(d)'),
+    env.BT.prepare('CREATE INDEX IF NOT EXISTS sig_t ON sig(t)')
+  ]);
+  try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN pre REAL').run(); } catch (e) {} // giriş fiyatı ↔ önceki kapanış (haber etkisi girişten önce mi?)
   ready = true;
 }
 export async function sigAdd(env, s) {
@@ -42,7 +48,9 @@ export function sigOutcome(bars, r, ib) {
   const s0 = Math.floor(r.t / 60000) * 60;                     // sinyal dakikası (sn)
   const B = bars.filter(b => b[0] >= s0 + 60 && trDay(b[0] * 1000) === r.d); // sinyalden SONRAKİ tam mumlar, aynı gün
   if (!B.length) return { err: 'mum yok' };
-  const up = r.dir !== 'SAT', sg = up ? 1 : -1, px = r.px;
+  const up = r.dir !== 'SAT', sg = up ? 1 : -1;
+  const px = r.px > 0 ? r.px : B[0][1];                          // fiyatsız sinyal (KAP) → sinyalden sonraki ilk mumun açılışı
+  let pc = null; for (const b of bars) { if (trDay(b[0] * 1000) < r.d) pc = b[4]; else break; }
   const race = K => {
     const tg = px * (1 + sg * K / 100), sl = px * (1 - sg * K / 100);
     for (const b of B) {
@@ -62,14 +70,14 @@ export function sigOutcome(bars, r, ib) {
     if (cur != null && prev) idx = (cur / prev - 1) * 100;
   }
   const r2 = v => v == null || !isFinite(v) ? null : Math.round(v * 100) / 100;
-  return { o10: race(1), o15: race(1.5), r15: r2(at(15)), r60: r2(at(60)), rc: r2(sg * (B[B.length - 1][4] / px - 1) * 100), mfe: r2(mfe), mae: r2(mae), idx: r2(idx) };
+  return { px: r2(px), pre: pc ? r2((px / pc - 1) * 100) : null, o10: race(1), o15: race(1.5), r15: r2(at(15)), r60: r2(at(60)), rc: r2(sg * (B[B.length - 1][4] / px - 1) * 100), mfe: r2(mfe), mae: r2(mae), idx: r2(idx) };
 }
 // Seans dışında her dakika: bekleyen sinyallerden 5 hisseyi ölç; hepsi bitince özeti gönder
 export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
   if (!env.BT) return null;
   await sigEnsure(env);
   const now = Date.now(), today = trDay(now), m = trMin(now);
-  const rows = (await env.BT.prepare('SELECT id,d,t,sym,dir,px FROM sig WHERE done = 0 ORDER BY t LIMIT 80').all()).results || [];
+  const rows = (await env.BT.prepare('SELECT id,d,t,sym,dir,px FROM sig WHERE done = 0 AND t < ? ORDER BY t LIMIT 80').bind(now).all()).results || [];
   const ready = rows.filter(r => r.d < today || m >= 1095);       // bugünün sinyalleri 18:15'ten sonra
   if (!ready.length) return sigSummary(env, tgSend, kvGet, esc, nf);
   const old = ready.filter(r => now - r.t > 4 * 86400e3);
@@ -86,8 +94,8 @@ export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
     // bağlantı sorunu → işaretleme, sonraki dakikada yeniden dene (4 gün sonra 'çok eski' olarak kapanır)
     if (!bars.length && !(st && /^(symbol_error|series_error)/.test(st.err || ''))) continue;
     const o = bars.length ? sigOutcome(bars, r, ib) : { err: st.err };
-    await env.BT.prepare('UPDATE sig SET done = 1, o10 = ?, o15 = ?, r15 = ?, r60 = ?, rc = ?, mfe = ?, mae = ?, idx = ?, err = ? WHERE id = ?')
-      .bind(o.o10 ?? null, o.o15 ?? null, o.r15 ?? null, o.r60 ?? null, o.rc ?? null, o.mfe ?? null, o.mae ?? null, o.idx ?? null, o.err || null, r.id).run();
+    await env.BT.prepare('UPDATE sig SET done = 1, px = coalesce(px, ?), pre = ?, o10 = ?, o15 = ?, r15 = ?, r60 = ?, rc = ?, mfe = ?, mae = ?, idx = ?, err = ? WHERE id = ?')
+      .bind(o.px ?? null, o.pre ?? null, o.o10 ?? null, o.o15 ?? null, o.r15 ?? null, o.r60 ?? null, o.rc ?? null, o.mfe ?? null, o.mae ?? null, o.idx ?? null, o.err || null, r.id).run();
     n++;
   }
   return { olculen: n, hisse: syms };
@@ -110,12 +118,18 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
   const pc = (a, b) => b ? Math.round(a / b * 100) : 0;
   const spx = x => x == null ? '-' : (x >= 0 ? '+' : '−') + '%' + nf(Math.abs(x), 2);
   let msg = '📊 <b>SİNYAL KARNESİ · ' + today.split('-').reverse().join('.') + '</b>\n<i>±%1 hedef/stop · hangisi önce geldi</i>\n';
-  for (const r of R) {
+  const K = R.filter(r => String(r.src).startsWith('kap-'));
+  for (const r of R.filter(r => !String(r.src).startsWith('kap-'))) {
     const a = A.find(x => x.src === r.src) || {};
     const ok = r.h + r.s;
     msg += '\n<b>' + esc(SRC_AD[r.src] || r.src) + '</b>: ' + r.n + ' sinyal · ✅ ' + r.h + ' · ❌ ' + r.s + ' · — ' + r.y +
       (ok ? ' · başarı <b>%' + pc(r.h, ok) + '</b>' : '') + '\n   kapanışa ort. ' + spx(r.rc) + ' · en fazla yükseliş ort. ' + spx(r.mfe) +
       (a.n > r.n ? '\n   <i>şimdiye kadar: ' + a.n + ' sinyal · başarı %' + pc(a.h, a.h + a.s) + ' · kapanış ort. ' + spx(a.rc) + '</i>' : '');
+  }
+ if (K.length) {
+    const kn = K.reduce((a, r) => a + r.n, 0), kh = K.reduce((a, r) => a + r.h, 0), ks = K.reduce((a, r) => a + r.s, 0);
+    msg += '\n\n<b>📰 KAP haberleri</b>: ' + kn + ' · ✅ ' + kh + ' · ❌ ' + ks + (kh + ks ? ' · başarı %' + pc(kh, kh + ks) : '');
+    K.slice(0, 6).forEach(r => { msg += '\n   ' + esc(r.src.slice(4)) + ': ' + r.n + ' · ✅ ' + r.h + ' ❌ ' + r.s + ' · kapanış ort. ' + spx(r.rc); });
   }
   if (best.length) msg += '\n\n🏆 ' + best.map(b => esc(b.sym) + ' ' + spx(b.mfe)).join(' · ');
   const cfg = await kvGet(env, 'cfg', null);
