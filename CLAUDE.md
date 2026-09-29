@@ -28,7 +28,9 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
 - Ücretsiz Cloudflare: istek başına 10 ms CPU → canlı akış Worker kodundan GEÇMEMELİ (direct=1).
 - TradingView quote_add_symbols: bayrak objesi ekleme; 20'lik paketler, sırayla (tvPump).
 - GitHub Pages yayını ara sıra "deploy" adımında düşer → boş commit ile yeniden tetikle.
-- Otomatik sunucu senkronu yalnız "Sunucuya gönder"e basılmış cihazda (misafir cihaz ezemez).
+- v6.0 ANA CİHAZ: sahip kodu D1 meta k='owner' (sıfırlamak için o satırı sil). Yalnız sahip: sync, prefs, cron-test, pine-sync, devices, dev-block (?own=KOD).
+  Kod yokken (sahip belirlenmeden) eski davranış. Cihazlar D1 tablo dev (hello, tv-token, WS direct'te kaydedilir; blocked=1 → canlı akış kesilir).
+  Terminal: LS devId/devName/ownTok; Ayarlar → "Ana cihaz · bağlı cihazlar".
 
 ## Sırada
 - Yükselenler araştırması: worker/src/rise.js → D1 tablo feat (hisse-gün özellikleri, 10:30'da bilinenler + sonuç), meta 'sector'. Kıyas: yükselen (ret≥4 / rest≥3) vs diğer günler.

@@ -337,6 +337,7 @@ td.sym{font-size:13.5px;letter-spacing:.2px}
 .why{font-size:11px}
 .note{font-size:12.5px;line-height:1.6;color:var(--dim)}
 .sett{gap:10px}
+.devrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;margin:6px 0;border:1px solid var(--line);border-radius:10px;font-size:13px}.devrow small{color:var(--dim);font-size:11.5px;line-height:1.5}.devrow .g{width:auto;flex:none;padding:7px 10px;font-size:12px;margin:0}.devrow.blk{opacity:.6;border-color:#c53030}
 .sett>b{font-size:11px;color:var(--txt2);letter-spacing:1.1px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
 .sett>b:first-child{margin-top:0;padding-top:0;border-top:0}
 .sett .note b{font-size:inherit;color:var(--txt);letter-spacing:.2px;margin:0;padding:0;border:0}
@@ -592,6 +593,11 @@ td.fl-up,td.fl-dn{border-radius:4px}
     <div id="almsg" class="note"></div>
     <button class="g" onclick="algolabDisconnect()">Bağlantıyı kes</button>
     <div class="note">Bağlandığında üstteki fiyat, İzleme listesi ve Alarm kontrolleri seçili semboller için <b>gerçek zamanlı</b> olur (Fırsat taraması TradingView Worker bağlantından gelir — AlgoLab'ın hız sınırı toplu taramaya uygun değil, sadece tek tek fiyat sorgusuna uygun).<br><br>Şifren ve TC kimlik no hiçbir yerde saklanmaz, sadece oturum açarken kullanılır. Oturum anahtarı (hash) telefonunda kalır. AlgoLab bazı hesaplarda her oturumda yeniden SMS isteyebilir — bağlantı koparsa buradan tekrar giriş yap.<br><br><b>Not:</b> Bu, henüz gerçek bir hesapla test edilmedi. İlk bağlantıda veri alanları uyuşmazsa (fiyat görünmezse) ham yanıtı konsoldan kontrol edip birlikte düzeltiriz.</div>
+    <b>ANA CİHAZ · BAĞLI CİHAZLAR</b>
+    <div id="ownmsg" class="note" style="padding-top:0">Kontrol ediliyor…</div>
+    <input id="devname" placeholder="Bu cihazın adı (ör. Ahmet iPhone)" maxlength="24" autocapitalize="words" onchange="devNameSave(this.value)">
+    <div id="ownbtns"></div>
+    <div id="devlist"></div>
     <b>SUNUCU · TELEFON KAPALIYKEN DE</b>
     <div id="srvmsg" class="note" style="padding-top:0">Kontrol ediliyor…</div>
     <div class="frow" style="padding:2px 0"><label>Alarmlar</label><div class="seg srvseg" data-k="al"><button data-v="0">Kapalı</button><button data-v="1">Açık</button></div></div>
@@ -816,11 +822,17 @@ function restore(){
 
 /* ================= v5.6 UYGULAMA MODU: sunucu yedegi + kurulum ================= */
 function srvBase(u){return String(u||'').trim().replace(/^ws/i,'http').replace(/\?.*$/,'').replace(/\/+$/,'')}
+// v6.0: cihaz kimliği (bağlı cihazlar listesi) + ana cihaz kodu (sunucu ayarlarını yalnız sahibi değiştirir)
+function devId(){let d=LS.get('devId','');if(!/^[a-z0-9]{12,32}$/.test(d)){d=((crypto&&crypto.randomUUID)?crypto.randomUUID():(Math.random().toString(36)+Math.random().toString(36)+Date.now().toString(36))).replace(/[^a-z0-9]/gi,'').toLowerCase().slice(0,24);LS.set('devId',d)}return d}
+function devQ(){return 'dev='+devId()+'&name='+encodeURIComponent(LS.get('devName',''))+'&v='+(window.APPV||'')+'&app='+(isApp()?1:0)}
+function ownQ(){const t=LS.get('ownTok','');return t?('own='+encodeURIComponent(t)):''}
+function qAdd(u,q){return q?(u+(u.indexOf('?')<0?'?':'&')+q):u}
+const OWN_MSG='Bu işlem yalnız ana cihazdan yapılabilir.\n\nAna cihaz sensen: Ayarlar → "Ana cihaz" bölümünden kodunu gir.';
 function isApp(){try{return !!(navigator.standalone||matchMedia('(display-mode: standalone)').matches)}catch(e){return false}}
 async function cloudSave(){
  const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)){alert('Önce Ayarlar → "TV WebSocket proxy URL" alanına sunucu adresini gir.');return}
  const t='BISTT:'+btoa(unescape(encodeURIComponent(JSON.stringify(backupObj()))));
- try{const r=await fetch(b+'/prefs',{method:'POST',headers:{'Content-Type':'text/plain'},body:t});const d=await r.json();
+ try{const r=await fetch(qAdd(b+'/prefs',ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:t});if(r.status===403)return alert(OWN_MSG);const d=await r.json();
   if(d.ok)alert('✓ Ayarların sunucuya kaydedildi ('+d.kb+' KB).\n\nDiğer cihazda / uygulamada: Ayarlar → "Sunucudan ayarları yükle".');
   else alert('Kaydedilemedi: '+(d.error||('HTTP '+r.status)));
  }catch(e){alert('Sunucuya ulaşılamadı: '+(e.message||e))}
@@ -829,7 +841,9 @@ async function cloudLoad(addr){
  let u=addr||S.tvproxy;
  if(!u){u=prompt('Sunucu adresin (Safari\'deki terminalde Ayarlar → proxy URL alanındaki wss://… adresi):','wss://');if(!u)return}
  const b=srvBase(u);if(!/^https:\/\//.test(b)){alert('Adres wss:// ile başlamalı');return}
- try{const r=await fetch(b+'/prefs');const d=await r.json();
+ try{let r=await fetch(qAdd(b+'/prefs',ownQ()));
+  if(r.status===403){const c=prompt('Ayarlar yalnız ana cihaz kodu ile yüklenir.\nKodu yapıştır (ana cihazda: Ayarlar → Ana cihaz → Kodu kopyala):');if(!c)return;LS.set('ownTok',c.trim());r=await fetch(qAdd(b+'/prefs',ownQ()));if(r.status===403){LS.set('ownTok','');return alert('Kod yanlış.')}}
+  const d=await r.json();
   if(!d.ok){alert(d.error==='sunucuda kayıtlı ayar yok'?'Sunucuda kayıtlı ayar yok. Önce ayarların dolu olduğu yerde (Safari) "Ayarlarımı sunucuya kaydet"e bas.':('Yüklenemedi: '+(d.error||('HTTP '+r.status))));return}
   if(!confirm('Sunucudaki ayarlar yüklensin mi?'+(d.at?('\n(kaydedilme: '+new Date(d.at).toLocaleString('tr-TR')+')'):'')+'\nBu cihazdaki ayarların yerine geçer.'))return;
   $('#bktext').value=d.data;restore();
@@ -851,6 +865,66 @@ function appSetup(){
  }
 }
 setTimeout(appSetup,1200);
+
+/* ================= v6.0 ana cihaz + bağlı cihazlar ================= */
+const OWN={claimed:null,list:null,err:''};
+function ownBase(){return srvBase(S.tvproxy)}
+function devNameSave(v){LS.set('devName',String(v||'').replace(/[<>"'&]/g,'').trim().slice(0,24));devHello()}
+async function devHello(){const b=ownBase();if(!/^https:\/\//.test(b))return;try{const j=await (await fetch(b+'/hello?'+devQ())).json();if(j&&j.blocked)TVL.err='bu cihaz engellendi'}catch(e){}}
+setTimeout(devHello,3000);
+setInterval(()=>{if(!document.hidden)devHello()},10*60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now()-(OWN.helloAt||0)>5*60000){OWN.helloAt=Date.now();devHello()}});
+async function ownRender(){
+ const m=document.getElementById('ownmsg'),bt=document.getElementById('ownbtns'),dl=document.getElementById('devlist'),nm=document.getElementById('devname');
+ if(!m)return;if(nm&&document.activeElement!==nm)nm.value=LS.get('devName','');
+ const b=ownBase();if(!/^https:\/\//.test(b)){m.innerHTML='<span class="wrn">Sunucu adresi yok.</span>';bt.innerHTML='';dl.innerHTML='';return}
+ const tok=LS.get('ownTok','');
+ try{const j=await (await fetch(qAdd(b+'/owner-check',ownQ()))).json();OWN.claimed=!!j.claimed;
+  if(tok&&!j.owner){m.innerHTML='<span class="dn">Bu cihazdaki ana cihaz kodu geçersiz.</span> Doğru kodu gir.';LS.set('ownTok','');}
+  else if(tok){m.innerHTML='<span class="up">👑 Bu cihaz ana cihaz.</span> Sunucu ayarları (alarm, Telegram, yedek) yalnız buradan değişir.'}
+  else m.innerHTML=j.claimed?'Bu cihaz <b>misafir</b>. Canlı veri ve tüm ekranlar normal çalışır; sunucu ayarlarını yalnız ana cihaz değiştirir.':'<span class="wrn">Ana cihaz henüz belirlenmedi.</span> Sunucunun sahibi sensen aşağıdaki düğmeye bas.';
+ }catch(e){m.innerHTML='<span class="dn">Sunucuya ulaşılamadı.</span>';bt.innerHTML='';dl.innerHTML='';return}
+ if(LS.get('ownTok','')){bt.innerHTML='<button class="g pri" onclick="devList()">🔄 Bağlı cihazları göster</button><button class="g" onclick="ownCopy()">📋 Ana cihaz kodunu kopyala</button>';devList()}
+ else{bt.innerHTML=(OWN.claimed?'':'<button class="g pri" onclick="ownClaim()">👑 Bu cihazı ana cihaz yap</button>')+'<button class="g" onclick="ownEnter()">🔑 Ana cihaz kodunu gir</button>';dl.innerHTML=''}
+}
+async function ownClaim(){
+ if(!confirm('Bu cihaz ANA CİHAZ olsun mu?\n\nSunucu ayarlarını (alarm, Telegram, yedek) bundan sonra yalnız bu cihaz ve kodu girdiğin cihazlar değiştirebilir.'))return;
+ try{const r=await fetch(ownBase()+'/owner-claim',{method:'POST'});const j=await r.json();
+  if(!j.ok)return alert(j.error||('HTTP '+r.status));
+  LS.set('ownTok',j.tok);
+  try{await navigator.clipboard.writeText(j.tok)}catch(e){}
+  alert('👑 Tamam, bu cihaz ana cihaz.\n\nAna cihaz kodun panoya kopyalandı. Bir yere (Notlar) kaydet; ana ekran uygulamasında ya da başka telefonunda "Ana cihaz kodunu gir"e yapıştıracaksın.\n\nKimseyle paylaşma.');
+  srvSync(false);ownRender();
+ }catch(e){alert('Olmadı: '+(e.message||e))}
+}
+async function ownEnter(){
+ const c=(prompt('Ana cihaz kodunu yapıştır:')||'').trim();if(!c)return;
+ try{const j=await (await fetch(ownBase()+'/owner-check?own='+encodeURIComponent(c))).json();
+  if(!j.owner)return alert('Kod yanlış.');
+  LS.set('ownTok',c);alert('👑 Tamam, bu cihaz da ana cihaz.');ownRender();
+ }catch(e){alert('Sunucuya ulaşılamadı')}
+}
+async function ownCopy(){const t=LS.get('ownTok','');if(!t)return;try{await navigator.clipboard.writeText(t);alert('Kod kopyalandı. Kimseyle paylaşma.')}catch(e){prompt('Kodu kopyala:',t)}}
+async function devList(){
+ const dl=document.getElementById('devlist');if(!dl)return;dl.innerHTML='<div class="note">Yükleniyor…</div>';
+ try{const r=await fetch(qAdd(ownBase()+'/devices',ownQ()));if(r.status===403){dl.innerHTML='<div class="note dn">Kod geçersiz.</div>';return}
+  const j=await r.json();if(!j.ok)throw new Error(j.error||'hata');
+  const now=j.now||Date.now(),me=devId(),L=j.list||[];
+  const d0=new Date();d0.setHours(0,0,0,0);
+  const open=L.filter(x=>now-x.last<20*60000).length,today=L.filter(x=>x.last>=d0.getTime()).length;
+  const ago=t=>{const m=Math.round((now-t)/60000);return m<1?'şimdi':m<60?m+' dk önce':m<1440?Math.round(m/60)+' sa önce':Math.round(m/1440)+' gün önce'};
+  const dt=t=>new Date(t).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit'});
+  dl.innerHTML='<div class="note" style="padding-top:0"><b>Şu an açık: '+open+'</b> · Bugün giren: '+today+' · Toplam cihaz: '+L.length+'</div>'+
+   L.map(x=>{const on=now-x.last<20*60000,it=x.id===me;
+    return '<div class="devrow'+(x.blocked?' blk':'')+'"><div><b>'+(on?'🟢 ':'⚪ ')+htmlEsc(x.name||(x.id[0]==='x'?'eski sürüm':'isimsiz'))+(it?' <span class="up">(bu cihaz)</span>':'')+'</b><br><small>'+htmlEsc(x.ua||'')+(x.app?' · uygulama':'')+(x.city?' · '+htmlEsc(x.city):'')+(x.ver&&x.ver!=='eski'?' · v'+htmlEsc(x.ver):'')+'<br>son: '+ago(x.last)+' · ilk: '+dt(x.first)+' · '+x.hits+' giriş'+(x.blocked?' · <span class="dn">ENGELLİ</span>':'')+'</small></div>'+
+     (it?'':'<button class="g" onclick="devBlock(\''+x.id+'\','+(x.blocked?0:1)+')">'+(x.blocked?'Engeli kaldır':'Engelle')+'</button>')+'</div>'}).join('');
+ }catch(e){dl.innerHTML='<div class="note dn">Liste alınamadı: '+htmlEsc(e.message||e)+'</div>'}
+}
+async function devBlock(id,b){
+ if(b&&!confirm('Bu cihaz engellensin mi? Canlı veri akışı kesilir (grafikler gecikmeli kalır). İstediğin zaman kaldırabilirsin.'))return;
+ try{await fetch(qAdd(ownBase()+'/dev-block?id='+id+'&b='+b,ownQ()))}catch(e){}
+ devList();
+}
 
 /* ================= zaman dilimleri ================= */
 const TFDEF=[
@@ -2480,7 +2554,7 @@ async function tvToken(){
  try{
   const base=S.tvproxy.replace(/^wss:/,'https:').replace(/\?.*$/,'').replace(/\/$/,'');
   const ac=new AbortController();const t=setTimeout(()=>ac.abort(),6000);
-  const r=await fetch(base+'/tv-token',{signal:ac.signal});clearTimeout(t);
+  const r=await fetch(base+'/tv-token?'+devQ(),{signal:ac.signal});clearTimeout(t);
   const d=await r.json();
   if(d&&d.ok&&d.token){TVL.tok=d.token;TVL.tokAt=Date.now();return d.token}
   TVL.err='yetki alınamadı'+(d&&d.err?(': '+String(d.err).slice(0,60)):'');
@@ -2491,7 +2565,7 @@ function tvLiveStart(){
  TVL.tries++;
  try{
   if(TVL.ws&&(TVL.ws.readyState===0||TVL.ws.readyState===1))return;
-  const url=S.tvproxy?(S.tvproxy.replace(/\/$/,'')+(S.tvproxy.indexOf('?')<0?'?':'&')+'direct=1'):('wss://data.tradingview.com/socket.io/websocket?from=symbols/BIST%2F&date='+Date.now());
+  const url=S.tvproxy?(S.tvproxy.replace(/\/$/,'')+(S.tvproxy.indexOf('?')<0?'?':'&')+'direct=1&'+devQ()):('wss://data.tradingview.com/socket.io/websocket?from=symbols/BIST%2F&date='+Date.now());
   const ws=new WebSocket(url);
   TVL.ws=ws;TVL.state='baglaniyor';TVL.err='';
   ws.onopen=()=>{if(TVL.ws!==ws)return;TVL.tries=0;TVL.buf='';TVL.state='yetki';TVL.srvErr='';TVL.rx=0;TVL.q=[];TVL.pend=null;TVL.okS={};TVL.recov=0;TVL.err='';TVL.syms={};TVC.cs=null;TVC.key='';TVC.ready=false;TVC.hasSer=false;
@@ -3023,7 +3097,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="5.9";
+  const APP_VER="6.0";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3097,13 +3171,14 @@ function tvReconnectReport(){
    render();
   }
   window.srvSync=async function(manual){
-   // v5.9: yalniz 'Sunucuya gonder'e en az bir kez basilmis cihaz sunucu ayarlarini degistirir (misafir cihaz ezemez)
-   if(manual)LS.set('srvOwner',1);else if(!LS.get('srvOwner',0))return;
+   // v6.0: sunucu ayarlarını yalnız ana cihaz (kodu olan) değiştirir; misafir cihaz hiç göndermez
+   if(!LS.get('ownTok','')){if(manual)alert(OWN_MSG);return}
    if(!base()||SRV.busy)return;SRV.busy=true;
    const p=payload(),sig=JSON.stringify(p);
    try{
-    const r=await fetch(base()+'/sync',{method:'POST',headers:{'Content-Type':'text/plain'},body:sig});
+    const r=await fetch(qAdd(base()+'/sync',ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:sig});
     if(r.status===404)throw new Error('Worker v5 yüklenmemiş');
+    if(r.status===403)throw new Error('ana cihaz kodu geçersiz (Ayarlar → Ana cihaz)');
     const j=await r.json();if(!j.ok)throw new Error(j.error||'hata');
     SRV.sig=sig;SRV.err='';applyHits(j.hit);
     if(manual)alert('Sunucuya gönderildi: '+j.alarms+' alarm, '+j.watch+' izleme hissesi'+(j.telegram?'':'\n⚠ Telegram ayarı eksik (token/Chat ID)'));
@@ -3112,8 +3187,9 @@ function tvReconnectReport(){
   };
   window.srvTest=async function(){
    if(!base())return alert('Önce proxy adresini gir');
+   if(!LS.get('ownTok',''))return alert(OWN_MSG);
    await srvSync(false);
-   try{const j=await (await fetch(base()+'/cron-test?force=1&tg=1')).json();
+   try{const j=await (await fetch(qAdd(base()+'/cron-test?force=1&tg=1',ownQ()))).json();
     alert(j.telegramTest&&j.telegramTest.ok?'✅ Telegram\'a test mesajı gitti.\nBağlantı: '+(j.health?(j.health.ok?'gerçek zamanlı ✓':'⚠ '+j.health.why):'-')+' · taranan hisse: '+(j.scanned||0):'❌ '+((j.telegramTest&&j.telegramTest.error)||j.why||j.err||'test başarısız'))}
    catch(e){alert('❌ '+(e.message||e))}
    status();
@@ -3122,7 +3198,7 @@ function tvReconnectReport(){
   setInterval(()=>{try{if(!base()||document.hidden)return;const sig=JSON.stringify(payload());if(sig!==SRV.sig)srvSync(false)}catch(e){}},15000);
   setInterval(()=>{if(!document.hidden&&(S.tab==='set'||S.tab==='alarm'))status()},60000);
   setTimeout(()=>{segs();status();try{const sig=JSON.stringify(payload());if(sig!==SRV.sig)srvSync(false)}catch(e){}},5000);
-  const _st2=window.showTab;window.showTab=function(t){_st2.apply(this,arguments);if(t==='set'){segs();status()}};
+  const _st2=window.showTab;window.showTab=function(t){_st2.apply(this,arguments);if(t==='set'){segs();status();try{ownRender()}catch(e){}}};
 
   // ---- grafik: son KAP / haberler ----
   async function newsFor(sym){

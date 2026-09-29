@@ -692,6 +692,70 @@ async function btStep(env) {
   for (let k = 0; k < rows.length; k += 50) await env.BT.batch(rows.slice(k, k + 50).map(r => st.bind(fsym, ...r)));
   return fsym + ' özellik ' + rows.length;
 }
+/* ---------- v5.6: ana cihaz (sahip) kilidi + bağlı cihazlar (D1: meta 'owner', tablo dev) ---------- */
+// Sahip kodu D1'de durur → gerekirse Claude D1'den sıfırlayabilir. Kod yokken (ilk kurulum) eski davranış sürer.
+const OWN_ROUTES = new Set(['sync', 'prefs', 'cron-test', 'pine-sync', 'devices', 'dev-block']);
+let ownerCache = { v: undefined, at: 0 }, devReady = false;
+async function ownerTok(env) {
+  if (!env.BT) return null;
+  if (ownerCache.v !== undefined && Date.now() - ownerCache.at < 60000) return ownerCache.v;
+  const r = await env.BT.prepare("SELECT v FROM meta WHERE k = 'owner'").first();
+  ownerCache = { v: r ? r.v : null, at: Date.now() };
+  return ownerCache.v;
+}
+async function ownerClaim(env) {
+  if (!env.BT) return json({ ok: false, error: 'D1 bağlaması (BT) yok' }, 500);
+  ownerCache.v = undefined;
+  if (await ownerTok(env)) return json({ ok: false, error: 'Ana cihaz zaten belirlenmiş. O cihazdaki kodu bu cihaza gir.' }, 403);
+  const tok = (crypto.randomUUID() + crypto.randomUUID()).replace(/-/g, '').slice(0, 40);
+  const r = await env.BT.prepare("INSERT OR IGNORE INTO meta (k, v) VALUES ('owner', ?)").bind(tok).run();
+  ownerCache.v = undefined;
+  if (!r.meta || !r.meta.changes) return json({ ok: false, error: 'Ana cihaz zaten belirlenmiş.' }, 403);
+  return json({ ok: true, tok });
+}
+async function devEnsure(env) {
+  if (devReady) return;
+  await env.BT.prepare('CREATE TABLE IF NOT EXISTS dev (id TEXT PRIMARY KEY, name TEXT, ua TEXT, city TEXT, ver TEXT, app INTEGER, first INTEGER, last INTEGER, hits INTEGER, blocked INTEGER DEFAULT 0)').run();
+  devReady = true;
+}
+function uaShort(ua) {
+  ua = ua || '';
+  return /iPad/.test(ua) ? 'iPad' : /iPhone/.test(ua) ? 'iPhone' : /Android/.test(ua) ? 'Android' : /Macintosh/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : 'diğer';
+}
+// Cihaz ziyaretini kaydet; engelliyse true döner. Hata olursa sessizce geçer (canlı veri asla bu yüzden kesilmez).
+async function devTouch(request, env, url) {
+  try {
+    if (!env.BT) return false;
+    await devEnsure(env);
+    let id = String(url.searchParams.get('dev') || '').toLowerCase();
+    const ua = request.headers.get('User-Agent') || '';
+    if (!/^[a-z0-9]{8,32}$/.test(id)) {
+      const ip = request.headers.get('CF-Connecting-IP') || '';
+      const h = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(ip + '|' + ua));
+      id = 'x' + [...new Uint8Array(h)].slice(0, 6).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    const name = String(url.searchParams.get('name') || '').replace(/[<>"'&]/g, '').trim().slice(0, 24);
+    const ver = String(url.searchParams.get('v') || (id[0] === 'x' ? 'eski' : '')).replace(/[^0-9a-z.]/gi, '').slice(0, 8);
+    const cf = request.cf || {};
+    const city = String(cf.city || cf.country || '').slice(0, 30);
+    const now = Date.now();
+    const r = await env.BT.prepare('INSERT INTO dev (id,name,ua,city,ver,app,first,last,hits) VALUES (?,?,?,?,?,?,?,?,1) ON CONFLICT(id) DO UPDATE SET name = CASE WHEN excluded.name <> \'\' THEN excluded.name ELSE dev.name END, ua = excluded.ua, city = excluded.city, ver = excluded.ver, app = excluded.app, last = excluded.last, hits = dev.hits + 1 RETURNING blocked')
+      .bind(id, name, uaShort(ua), city, ver, url.searchParams.get('app') === '1' ? 1 : 0, now, now).first();
+    return !!(r && r.blocked);
+  } catch (e) { return false; }
+}
+async function devices(env) {
+  await devEnsure(env);
+  const r = await env.BT.prepare('SELECT id,name,ua,city,ver,app,first,last,hits,blocked FROM dev ORDER BY last DESC LIMIT 100').all();
+  return json({ ok: true, now: Date.now(), list: r.results || [] });
+}
+async function devBlock(env, url) {
+  await devEnsure(env);
+  const id = String(url.searchParams.get('id') || '').toLowerCase();
+  if (!/^[a-z0-9]{7,32}$/.test(id)) return json({ ok: false, error: 'geçersiz cihaz' }, 400);
+  await env.BT.prepare('UPDATE dev SET blocked = ? WHERE id = ?').bind(url.searchParams.get('b') === '1' ? 1 : 0, id).run();
+  return json({ ok: true });
+}
 async function tvToken(env) {
   const token = await getAuth(env);
   const ok = token !== 'unauthorized_user_token';
@@ -765,12 +829,25 @@ export default {
 
     if (isWS) {
       if (route === 'ws-echo') return echoWS();
-      if (url.searchParams.get('direct') === '1') return pipeTV(env);
+      if (url.searchParams.get('direct') === '1') {
+        if (await devTouch(request, env, url)) return json({ error: 'bu cihaz engellendi' }, 403);
+        return pipeTV(env);
+      }
       return relay(env, ctx);
+    }
+
+    if (OWN_ROUTES.has(route)) {
+      const o = await ownerTok(env);
+      if (o && url.searchParams.get('own') !== o) return json({ ok: false, error: 'Bu işlem yalnız ana cihazdan yapılabilir' }, 403);
     }
 
     switch (route) {
       case '': return new Response('OK', { headers: CORS });
+      case 'owner-claim': if (request.method === 'POST') return ownerClaim(env); break;
+      case 'owner-check': { const o = await ownerTok(env); return json({ ok: true, claimed: !!o, owner: !!o && url.searchParams.get('own') === o }); }
+      case 'hello': return json({ ok: true, blocked: await devTouch(request, env, url) });
+      case 'devices': return devices(env);
+      case 'dev-block': return devBlock(env, url);
       case 'test': return test(env, url);
       case 'bars': return bars(env, url);
       case 'news': return news(url);
@@ -783,7 +860,10 @@ export default {
       }
       case 'tv-test': return tvTest(env);
       case 'tv-login': return json({ ok: true, session: 'worker' });
-      case 'tv-token': return tvToken(env);
+      case 'tv-token': {
+        if (await devTouch(request, env, url)) return json({ ok: false, token: '', err: 'bu cihaz engellendi' });
+        return tvToken(env);
+      }
       case 'prefs': return prefs(request, env);
       case 'pine-test': return pineTest(env);
       case 'pine-sync': return json(await pineSync(env, url.searchParams.get('force') === '1'));
