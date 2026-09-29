@@ -916,13 +916,22 @@ export default {
   },
   async scheduled(event, env, ctx) {
     ctx.waitUntil(cron(env).then(async () => {
-      // v6.8: TEK SEFERLİK DUYURU — D1 meta k='announce' varsa Telegram'a bir kez gönderilir, satır silinir, sonuç 'announce_res'e yazılır
+      // v6.8: TEK SEFERLİK DUYURU — D1 meta k='announce' varsa Telegram'a gönderilir; başarıda satır silinir.
+      // Gönderilemezse (token geçersiz vb.) ayarlar sunucuya yeniden kaydedilince (cfg.at değişince) tekrar denenir; en çok 20 deneme.
       try {
         const an = await env.BT.prepare("SELECT v FROM meta WHERE k = 'announce'").first();
         if (an && an.v) {
-          await env.BT.prepare("DELETE FROM meta WHERE k = 'announce'").run();
-          const r = await tgSend(await kvGet(env, 'cfg', null), an.v);
-          await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('announce_res', ?)").bind(new Date().toISOString() + ' ' + JSON.stringify(r).slice(0, 200)).run();
+          const cfg = await kvGet(env, 'cfg', null);
+          const sr = await env.BT.prepare("SELECT v FROM meta WHERE k = 'announce_n'").first();
+          const s = sr ? JSON.parse(sr.v) : { n: 0, at: -1 };
+          const cat = cfg ? cfg.at || 0 : 0;
+          if (!sr || cat !== s.at) {
+            const r = await tgSend(cfg, an.v);
+            s.n++; s.at = cat;
+            if (r.ok || s.n >= 20) await env.BT.prepare("DELETE FROM meta WHERE k IN ('announce', 'announce_n')").run();
+            else await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('announce_n', ?)").bind(JSON.stringify(s)).run();
+            await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('announce_res', ?)").bind(new Date().toISOString() + ' ' + JSON.stringify(r).slice(0, 200)).run();
+          }
         }
       } catch (e) {}
       // KAP: dakikada bir, her gün (gece gelenler sabah 09:30 özetinde)
