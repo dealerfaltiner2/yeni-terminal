@@ -337,6 +337,7 @@ td.sym{font-size:13.5px;letter-spacing:.2px}
 .why{font-size:11px}
 .note{font-size:12.5px;line-height:1.6;color:var(--dim)}
 .sett{gap:10px}
+.alc{margin:8px 10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;cursor:pointer;font-size:13px;line-height:1.5}.alh{display:flex;align-items:center;gap:8px}.als{font-size:15.5px;letter-spacing:.3px}.alt{font-size:11.5px;font-weight:700;border:1px solid;border-radius:10px;padding:1px 8px}.alg{margin-left:auto;font-weight:700}.alb{position:relative;height:8px;border-radius:5px;background:rgba(148,163,184,.18);margin:8px 34px 6px 0}.alf{height:100%;border-radius:5px}.alm{position:absolute;top:-3px;width:2px;height:14px;background:#e2e8f0;opacity:.7}.alb span{position:absolute;right:-32px;top:-6px;font-weight:800;font-size:13px}.alx{color:var(--txt2)}.alok{color:#34d399;margin-top:4px;font-size:12.5px}.albad{color:#fbbf24;margin-top:4px;font-size:12.5px}.alw{margin-top:6px;color:var(--dim);font-size:12.5px}.alhelp{margin:10px 12px;font-size:12.5px;color:var(--dim);line-height:1.6}.alhelp summary{cursor:pointer;color:var(--txt2);font-weight:700;padding:6px 0}
 .kaprow{padding:10px 12px;margin:8px 10px;border:1px solid var(--line);border-left:4px solid #64748b;border-radius:10px;font-size:13px;line-height:1.45}.kaprow.y1{border-left-color:#10b981}.kaprow.y-1{border-left-color:#ef4444}.kaprow .kh{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.kaprow .kh b{font-size:14.5px;cursor:pointer;text-decoration:underline dotted}.kaprow .kt{margin-left:auto;color:var(--dim);font-size:11.5px}.kaprow .kg{font-size:11px;padding:1px 7px;border-radius:9px;background:rgba(148,163,184,.15)}.kaprow .ks{color:var(--txt2);margin-top:4px}.kaprow .km{margin-top:6px;font-size:11.5px;color:var(--dim)}.kaprow .km a{color:#60a5fa}
 .devrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;margin:6px 0;border:1px solid var(--line);border-radius:10px;font-size:13px}.devrow small{color:var(--dim);font-size:11.5px;line-height:1.5}.devrow .g{width:auto;flex:none;padding:7px 10px;font-size:12px;margin:0}.devrow.blk{opacity:.6;border-color:#c53030}
 .sett>b{font-size:11px;color:var(--txt2);letter-spacing:1.1px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
@@ -3148,7 +3149,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="6.4";window.APPV=APP_VER;
+  const APP_VER="6.5";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3552,7 +3553,7 @@ function tvReconnectReport(){
   const H=Object.keys(AL.h).length;
   const warm=AL.firstAt?Math.min(60,Math.round((now-AL.firstAt)/1000)):0;
   const src='TradingView anlık';
-  const ag=(typeof TVL!=='undefined'&&TVL.drops?' · kopma '+TVL.drops:'');
+  const ag=(typeof TVL!=='undefined'&&(TVL.drops||TVL.bgDrops)?' · kopma '+(TVL.drops||0)+(TVL.bgDrops?' (+'+TVL.bgDrops+' arka planda)':''):'');
   let s;
   if(!AL.cfg.on)s='<span class="dn">○ Radar kapalı</span> — ⚙ Ayar’dan aç';
   else if(!se.open)s='<span style="color:var(--dim)">○ Piyasa kapalı</span> — radar 10:00–18:00 arası, sayfa açıkken çalışır';
@@ -3569,14 +3570,52 @@ function tvReconnectReport(){
    const q=S.umap[e.s];const now=q&&q.close?(q.close/e.p0-1)*100:null;
    const stt=e.res?RES[e.res]:(e.fade?'<b style="color:#fb923c">🟠 sönüyor</b>':e.conf?'<b class="up">✅ teyit</b>':'<span class="wrn">⏳ açık</span>');
    return '<tr class="row" onclick="algiGo(\''+e.s+'\')"><td class="sym">'+e.s+(e.mute?' 🔇':'')+(e.f&&e.f.sh?' ⚠':'')+'</td><td>'+hm(e.t)+'</td><td>'+nf(e.p0)+'</td><td class="'+cls(now)+'">'+(now!=null?pct(now):'-')+'</td><td class="up">'+pct((e.hi/e.p0-1)*100)+'</td><td>'+stt+'</td><td>'+e.sc+'</td></tr>'}).join('')+'</table>';
-  h+='<div class="note" style="padding:10px 12px 2px"><b style="color:#7dd3fc">RADAR</b> · ⚡ ateşlendi · ◔ teyit bekliyor (3×5 sn) · 👀 uyanış (akış var, fiyat henüz kıpırdamadı)</div>';
+  // v6.4: okunur kart görünümü (simge yerine düz Türkçe)
+  h+='<div class="note" style="padding:10px 12px 2px"><b style="color:#7dd3fc">RADAR · ŞU AN İZLENENLER</b> — skor '+AL.cfg.minSc+' ve üstüne çıkıp şartlar tutunca sinyal verir</div>';
   const r=AL.rows;
   if(!r.length)h+='<div class="note">'+(sess().open?'Veri birikiyor — ilk ölçümler ~1 dk içinde gelir.':'Piyasa açılınca liste dolar.')+'</div>';
-  else h+='<table><tr><th>Sembol</th><th></th><th>Skor</th><th>Akış</th><th>RVOL</th><th>Alım</th><th>5dk</th><th>Gün</th><th>İz</th></tr>'+r.map(x=>{
-   const f=x.f,fl=(f.fd?'▲':'')+(f.fe?'⤒':f.brk?'↑':'')+(x.g>=2?'◆':'')+(!(x.o.voltl>=1e7)?'⚠':'')+(f.late?'⌛':'');
-   return '<tr class="row" onclick="algiGo(\''+x.s+'\')"><td class="sym">'+x.s+'</td><td>'+STG[x.stage]+'</td><td><b style="color:'+(x.sc>=AL.cfg.minSc?'#ffb020':'var(--txt2)')+'">'+x.sc+'</b></td><td>'+(f.fa!=null?nf(f.fa,1)+'x':'-')+'</td><td>'+(f.rv!=null?nf(f.rv,1)+'x':'-')+'</td><td>'+(f.fc!=null?'%'+nf(f.fc*100,0):'-')+'</td><td class="'+cls(f.mv5)+'">'+pct(f.mv5)+'</td><td class="'+cls(f.ch)+'">'+pct(f.ch)+'</td><td>'+fl+'</td></tr>'}).join('')+'</table>';
-  h+='<div class="note">İz: ▲ bid tırmanıyor · ⤒ kırılım + VWAP üstü · ◆ sektörde tema · ⚠ sığ hisse · ⌛ geç kalınmış (gün ≥%5 ya da tavana ≤%4)<br>Satıra dokun → grafik açılır.</div>';
+  else h+=r.map(x=>algiCard(x)).join('');
+  h+='<details class="alhelp"><summary>❔ Bu ekran nasıl okunur?</summary><div>'+
+   '<b>Durum:</b> 👀 <b>İzlemede</b> = para girmeye başladı ama fiyat henüz tepki vermedi · ⏳ <b>Hazırlanıyor</b> = bütün şartlar tuttu, 15 sn teyit bekleniyor · ⚡ <b>AL sinyali</b> = sinyal verildi (giriş/stop/hedef Telegram\'da).<br>'+
+   '<b>Skor çubuğu:</b> 0–100. Dikey çizgi sinyal eşiği ('+AL.cfg.minSc+'). Gri = zayıf, sarı = ilgi var, yeşil = sinyal bölgesi.<br>'+
+   '<b>Anlık hacim:</b> son 1 dakikadaki TL hacmi, günün dakika ortalamasının kaç katı. <b>Günlük hacim:</b> bugünkü hacim normal güne göre kaç kat. <b>Alıcılar:</b> son işlemlerin yüzde kaçı satış kademesinden (alıcı istekli) yapıldı — %65 üstü güçlü.<br>'+
+   'Karta dokun → grafik açılır.</div></details>';
   return h;
+ }
+ function algiCard(x){
+  const f=x.f,o=x.o,sc=x.sc,min=AL.cfg.minSc;
+  const LBL={ates:['⚡ AL sinyali','#10b981'],hazir:['⏳ Hazırlanıyor','#fbbf24'],uyanis:['👀 İzlemede','#7dd3fc'],'':['Takipte','#94a3b8']}[x.stage||''];
+  const col=sc>=min?'#10b981':sc>=40?'#f59e0b':'#64748b';
+  const sp=v=>v==null?'-':(v>=0?'+':'−')+'%'+nf(Math.abs(v),2);
+  const m=[];
+  if(f.fa!=null)m.push('Anlık hacim <b>'+nf(f.fa,1)+' kat</b>');
+  if(f.rv!=null)m.push('Günlük hacim <b>'+nf(f.rv,1)+' kat</b>');
+  if(f.fc!=null)m.push('Alıcılar <b class="'+(f.fc>=.65?'up':f.fc<.45?'dn':'')+'">%'+nf(f.fc*100,0)+'</b>');
+  m.push('Son 5 dk <b class="'+cls(f.mv5)+'">'+sp(f.mv5)+'</b>');
+  const ok=[],bad=[];
+  if(f.fd)ok.push('Alıcılar fiyatı yukarı itiyor (alış kademesi yükseliyor)');
+  if(f.fe)ok.push('Zirveyi kırdı ve VWAP\'ın üstünde');else if(f.brk)ok.push('Zirveyi kırdı (ama VWAP\'ın altında)');
+  if(x.g>=2)ok.push('Sektöründe '+x.g+' hisse daha hareketli');
+  if(!(o.voltl>=1e7))bad.push('Sığ hisse (günlük işlem 10 Mn ₺ altı) — manipülasyon riski');
+  if(f.late)bad.push(f.ch!=null&&f.ch>=5?'Geç kalınmış: zaten '+sp(f.ch)+' yükselmiş':'Tavana çok yakın ('+(f.upD!=null?'%'+nf(f.upD,1):'')+' kaldı)');
+  const flow=f.fa>=2.5||(f.rv!=null&&f.rv>=2);
+  let why;
+  if(x.stage==='ates')why='Sinyal verdi. Giriş, stop ve hedef Telegram mesajında; sonucu “Sinyaller” sekmesinde izle.';
+  else if(x.stage==='hazir')why='Bütün şartlar tuttu, birkaç saniyelik teyit bekleniyor.';
+  else if(f.late)why='Hareketin büyük kısmı olmuş; buradan kovalamak riskli.';
+  else if(f.ch!=null&&f.ch<=-3&&f.rv!=null&&f.rv>=2&&f.fc>=.55)why='Düşen hissede yoğun alım var — dipten dönüş denemesi olabilir, fiyat tepki verene kadar bekle.';
+  else if(f.fa>=3&&f.fc!=null&&f.fc>=.55&&f.fc<.65)why='Anlık hacim patladı ('+nf(f.fa,1)+' kat), alıcılar hafif önde (%'+nf(f.fc*100,0)+'). Alıcılar %65\'i geçip fiyat zirveyi kırarsa sinyal gelebilir.';
+  else if(flow&&f.fc!=null&&f.fc<.55)why='Hacim yüksek ama alıcılar baskın değil; satıcılar da güçlü. Yön belli değil.';
+  else if(flow&&f.fc>=.65&&!f.fd&&!f.fe)why='Para girişi ve alım baskısı var; fiyatın zirveyi kırması ya da alış kademesinin yükselmesi bekleniyor.';
+  else if(f.fa!=null&&f.fa<1&&f.rv!=null&&f.rv>=2)why='Gün içinde hacim yüksekti ama şu an sakin; hareket geride kalmış olabilir.';
+  else why=sc>=min?'Skor eşiğin üstünde; diğer şartların tutması bekleniyor.':'Takipte. Skor '+min+'\'e çıkarsa sinyal hazırlığı başlar (şu an '+sc+').';
+  return '<div class="alc" onclick="algiGo(\''+x.s+'\')">'+
+   '<div class="alh"><b class="als">'+x.s+'</b><span class="alt" style="color:'+LBL[1]+';border-color:'+LBL[1]+'">'+LBL[0]+'</span><span class="alg '+cls(f.ch)+'">Gün '+sp(f.ch)+'</span></div>'+
+   '<div class="alb"><div class="alf" style="width:'+Math.max(3,Math.min(100,sc))+'%;background:'+col+'"></div><div class="alm" style="left:'+min+'%"></div><span>'+sc+'</span></div>'+
+   '<div class="alx">'+m.join(' · ')+'</div>'+
+   (ok.length?'<div class="alok">'+ok.map(t=>'✓ '+t).join('<br>')+'</div>':'')+
+   (bad.length?'<div class="albad">'+bad.map(t=>'⚠ '+t).join('<br>')+'</div>':'')+
+   '<div class="alw">💬 '+why+'</div></div>';
  }
  function vKayit(){
   const ev=AL.log.slice().reverse().slice(0,120);
