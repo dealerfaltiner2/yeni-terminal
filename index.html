@@ -339,7 +339,7 @@ td.sym{font-size:13.5px;letter-spacing:.2px}
 .sett{gap:10px}
 .alc{margin:8px 10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;cursor:pointer;font-size:13px;line-height:1.5}.alh{display:flex;align-items:center;gap:8px}.als{font-size:15.5px;letter-spacing:.3px}.alt{font-size:11.5px;font-weight:700;border:1px solid;border-radius:10px;padding:1px 8px}.alg{margin-left:auto;font-weight:700}.alb{position:relative;height:8px;border-radius:5px;background:rgba(148,163,184,.18);margin:8px 34px 6px 0}.alf{height:100%;border-radius:5px}.alm{position:absolute;top:-3px;width:2px;height:14px;background:#e2e8f0;opacity:.7}.alb span{position:absolute;right:-32px;top:-6px;font-weight:800;font-size:13px}.alx{color:var(--txt2)}.alok{color:#34d399;margin-top:4px;font-size:12.5px}.albad{color:#fbbf24;margin-top:4px;font-size:12.5px}.alw{margin-top:6px;color:var(--dim);font-size:12.5px}.alhelp{margin:10px 12px;font-size:12.5px;color:var(--dim);line-height:1.6}.alhelp summary{cursor:pointer;color:var(--txt2);font-weight:700;padding:6px 0}
 .kaprow{padding:10px 12px;margin:8px 10px;border:1px solid var(--line);border-left:4px solid #64748b;border-radius:10px;font-size:13px;line-height:1.45}.kaprow.y1{border-left-color:#10b981}.kaprow.y-1{border-left-color:#ef4444}.kaprow .kh{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.kaprow .kh b{font-size:14.5px;cursor:pointer;text-decoration:underline dotted}.kaprow .kt{margin-left:auto;color:var(--dim);font-size:11.5px}.kaprow .kg{font-size:11px;padding:1px 7px;border-radius:9px;background:rgba(148,163,184,.15)}.kaprow .ks{color:var(--txt2);margin-top:4px}.kaprow .km{margin-top:6px;font-size:11.5px;color:var(--dim)}.kaprow .km a{color:#60a5fa}
-.devrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;margin:6px 0;border:1px solid var(--line);border-radius:10px;font-size:13px}.devrow small{color:var(--dim);font-size:11.5px;line-height:1.5}.devrow .g{width:auto;flex:none;padding:7px 10px;font-size:12px;margin:0}.devrow.blk{opacity:.6;border-color:#c53030}
+.devrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;margin:6px 0;border:1px solid var(--line);border-radius:10px;font-size:13px}.devrow small{color:var(--dim);font-size:11.5px;line-height:1.5}.devrow .g{width:auto;flex:none;padding:7px 10px;font-size:12px;margin:0}.devrow.blk{opacity:.6;border-color:#c53030}.devbtns{display:flex;flex-direction:column;gap:6px;flex:none}
 .sett>b{font-size:11px;color:var(--txt2);letter-spacing:1.1px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
 .sett>b:first-child{margin-top:0;padding-top:0;border-top:0}
 .sett .note b{font-size:inherit;color:var(--txt);letter-spacing:.2px;margin:0;padding:0;border:0}
@@ -699,7 +699,8 @@ window.addEventListener('error',function(e){
  }catch(x){}
 });
 $('#autoseg').onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;S.autoOn=+b.dataset.a;LS.set('autoOn',S.autoOn);[...$('#autoseg').children].forEach(x=>x.classList.toggle('on',x===b));$('#tgmsg').textContent=S.autoOn?'Otomatik tarama açık. Sayfa açık kaldığı sürece hafta içi 10:00–18:10 arası 15 dakikada bir çalışır.':''};
-function htmlEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function htmlEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+function safeUrl(u){u=String(u||'');return /^https?:\/\//i.test(u)?u:'#'}
 async function tgSend(text){
  if(!S.tgTok||!S.tgChat)throw new Error('Token/Chat ID girilmemiş');
  const r=await fetch('https://api.telegram.org/bot'+S.tgTok+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:S.tgChat,text,parse_mode:'HTML',disable_web_page_preview:true})});
@@ -854,6 +855,13 @@ function guestApply(){
    if(S.algi&&S.algi.cfg){S.algi.cfg.chat='';S.algi.cfg.tg=0}const t=document.getElementById('tgtok'),c=document.getElementById('tgchat');if(t)t.value='';if(c)c.value=''}catch(e){}
   LS.set('guestWiped',1);
  }
+ // v6.8: misafirde elle girilmiş TradingView oturum bilgisi de bir kez silinir (sunucu zaten kendi oturumunu kullanır)
+ if(g&&!LS.get('guestWiped2',0)){
+  // (kutu doluysa tüm piyasa taraması açılır → gerçek oturum yerine 'worker' yazılır, tarama aynı kalır)
+  try{const had=!!(S.tvMan||S.tvSession);if(had&&S.tvMan!=='worker'){S.tvMan='worker';LS.set('tvman','worker')}S.tvMan2='';S.tvSession='';LS.set('tvman2','');LS.set('tvsession','');
+   const a=document.getElementById('tvman'),b=document.getElementById('tvman2');if(a)a.value=S.tvMan;if(b)b.value=''}catch(e){}
+  LS.set('guestWiped2',1);
+ }
 }
 async function guestCheck(){try{const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b))return;const j=await (await fetch(qAdd(b+'/owner-check',ownQ()))).json();
  if(j&&j.ok){LS.set('ownClaimed',j.claimed?1:0);if(LS.get('ownTok','')&&!j.owner)LS.set('ownTok','');guestApply()}}catch(e){}}
@@ -937,7 +945,10 @@ setInterval(()=>{if(!document.hidden&&S.tab==='kap')loadKap(false)},60000);
 const OWN={claimed:null,list:null,err:''};
 function ownBase(){return srvBase(S.tvproxy)}
 function devNameSave(v){LS.set('devName',String(v||'').replace(/[<>"'&]/g,'').trim().slice(0,24));devHello()}
-async function devHello(){const b=ownBase();if(!/^https:\/\//.test(b))return;try{const j=await (await fetch(b+'/hello?'+devQ())).json();if(j&&j.blocked)TVL.err='bu cihaz engellendi'}catch(e){}}
+const WAIT_MSG='bu cihaz ana cihazın onayını bekliyor';
+async function devHello(){const b=ownBase();if(!/^https:\/\//.test(b))return;try{const j=await (await fetch(qAdd(b+'/hello?'+devQ(),ownQ()))).json();OWN.wait=!!(j&&j.wait);if(j&&j.blocked)TVL.err='bu cihaz engellendi';else if(j&&j.wait)TVL.err=WAIT_MSG}catch(e){}}
+// v6.8: sunucu veri yollarına cihaz kimliği (yeni cihaz onayı)
+function dq(u){return qAdd(u,'dev='+devId())}
 setTimeout(devHello,3000);
 setInterval(()=>{if(!document.hidden)devHello()},10*60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now()-(OWN.helloAt||0)>5*60000){OWN.helloAt=Date.now();devHello()}});
@@ -981,11 +992,17 @@ async function devList(){
   const open=L.filter(x=>now-x.last<20*60000).length,today=L.filter(x=>x.last>=d0.getTime()).length;
   const ago=t=>{const m=Math.round((now-t)/60000);return m<1?'şimdi':m<60?m+' dk önce':m<1440?Math.round(m/60)+' sa önce':Math.round(m/1440)+' gün önce'};
   const dt=t=>new Date(t).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit'});
-  dl.innerHTML='<div class="note" style="padding-top:0"><b>Şu an açık: '+open+'</b> · Bugün giren: '+today+' · Toplam cihaz: '+L.length+'</div>'+
+  const wn=L.filter(x=>!x.ok&&!x.blocked).length;
+  dl.innerHTML=(wn?'<div class="note dn" style="padding-top:0"><b>'+wn+' yeni cihaz onayını bekliyor.</b> Tanıdığın biriyse "Onayla"ya bas; tanımıyorsan "Engelle".</div>':'')+'<div class="note" style="padding-top:0"><b>Şu an açık: '+open+'</b> · Bugün giren: '+today+' · Toplam cihaz: '+L.length+'</div>'+
    L.map(x=>{const on=now-x.last<20*60000,it=x.id===me;
-    return '<div class="devrow'+(x.blocked?' blk':'')+'"><div><b>'+(on?'🟢 ':'⚪ ')+htmlEsc(x.name||(x.id[0]==='x'?'eski sürüm':'isimsiz'))+(it?' <span class="up">(bu cihaz)</span>':'')+'</b><br><small>'+htmlEsc(x.ua||'')+(x.app?' · uygulama':'')+(x.city?' · '+htmlEsc(x.city):'')+(x.ver&&x.ver!=='eski'?' · v'+htmlEsc(x.ver):'')+'<br>son: '+ago(x.last)+' · ilk: '+dt(x.first)+' · '+x.hits+' giriş'+(x.blocked?' · <span class="dn">ENGELLİ</span>':'')+'</small></div>'+
-     (it?'':'<button class="g" onclick="devBlock(\''+x.id+'\','+(x.blocked?0:1)+')">'+(x.blocked?'Engeli kaldır':'Engelle')+'</button>')+'</div>'}).join('');
+    return '<div class="devrow'+(x.blocked?' blk':'')+'"><div><b>'+(on?'🟢 ':'⚪ ')+htmlEsc(x.name||(x.id[0]==='x'?'eski sürüm':'isimsiz'))+(it?' <span class="up">(bu cihaz)</span>':'')+'</b><br><small>'+htmlEsc(x.ua||'')+(x.app?' · uygulama':'')+(x.city?' · '+htmlEsc(x.city):'')+(x.ver&&x.ver!=='eski'?' · v'+htmlEsc(x.ver):'')+'<br>son: '+ago(x.last)+' · ilk: '+dt(x.first)+' · '+x.hits+' giriş'+(x.blocked?' · <span class="dn">ENGELLİ</span>':(!x.ok?' · <span class="dn">ONAY BEKLİYOR</span>':''))+'</small></div><div class="devbtns">'+
+     (!x.ok&&!x.blocked?'<button class="g pri" onclick="devOk(\''+x.id+'\',1)">Onayla</button>':'')+
+     (it?'':'<button class="g" onclick="devBlock(\''+x.id+'\','+(x.blocked?0:1)+')">'+(x.blocked?'Engeli kaldır':'Engelle')+'</button>')+'</div></div>'}).join('');
  }catch(e){dl.innerHTML='<div class="note dn">Liste alınamadı: '+htmlEsc(e.message||e)+'</div>'}
+}
+async function devOk(id,b){
+ try{await fetch(qAdd(ownBase()+'/dev-ok?id='+id+'&b='+b,ownQ()))}catch(e){}
+ devList();
 }
 async function devBlock(id,b){
  if(b&&!confirm('Bu cihaz engellensin mi? Canlı veri akışı kesilir (grafikler gecikmeli kalır). İstediğin zaman kaldırabilirsin.'))return;
@@ -1030,7 +1047,7 @@ async function tvScan(ep,body){
  if(S.tvproxy&&/^wss?:\/\//.test(S.tvproxy)){
   try{
    const base=S.tvproxy.replace(/^ws/,'http').replace(/\/+$/,'');
-   const r=await fetch(base+'/scan?market='+encodeURIComponent(ep),{method:'POST',headers:{'Content-Type':'text/plain'},body:js});
+   const r=await fetch(dq(base+'/scan?market='+encodeURIComponent(ep)),{method:'POST',headers:{'Content-Type':'text/plain'},body:js});
    if(r.ok){const j=await r.json();S.scanVia='worker';return j}
    if(r.status===400){let t='';try{t=(await r.text()).slice(0,90)}catch(e){}throw new Error('HTTP 400 · '+t)}
   }catch(e){if(String(e.message||'').indexOf('HTTP 400')===0)throw e}
@@ -1849,7 +1866,7 @@ function tvBarsFlush(){
   for(let i=0;i<syms.length;i+=8){
    const part=syms.slice(i,i+8),mine=items.filter(x=>part.indexOf(x.sym)>=0);
    const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),16000);TVB.n++;
-   fetch(tvBarsBase()+'/bars?s='+encodeURIComponent(part.join(','))+'&tf='+TVTF[tf][0]+'&n='+n,{signal:ctl.signal})
+   fetch(dq(tvBarsBase()+'/bars?s='+encodeURIComponent(part.join(','))+'&tf='+TVTF[tf][0]+'&n='+n),{signal:ctl.signal})
     .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
     .then(j=>{clearTimeout(to);TVB.err='';
      mine.forEach(x=>{const d=j&&j.data&&j.data[(x.sym.indexOf(':')>0?x.sym:'BIST:'+x.sym)];
@@ -2224,7 +2241,7 @@ function briefText(b){
  }
  if(b.today&&b.today.length){
   h+='<div class="note" style="padding-bottom:0;letter-spacing:.5px">BUGÜNKÜ TAKVİM</div>'+
-  b.today.map(x=>'<div class="cal-row'+(x.imp>=1?' hi':'')+'"><div class="cal-t">'+x.t+'</div><div class="cal-m"><div class="cal-n"><span class="imp imp'+Math.min(3,x.imp+1)+'"></span>'+x.title+'</div><div class="cal-s">'+x.country+'</div></div></div>').join('');
+  b.today.map(x=>'<div class="cal-row'+(x.imp>=1?' hi':'')+'"><div class="cal-t">'+x.t+'</div><div class="cal-m"><div class="cal-n"><span class="imp imp'+Math.min(3,x.imp+1)+'"></span>'+htmlEsc(x.title)+'</div><div class="cal-s">'+htmlEsc(x.country)+'</div></div></div>').join('');
  }else if(b.calEmpty){h+='<div class="note">Takvim yüklenemedi — Takvim sekmesinden ↻ ile yenile.</div>'}
  if(b.journal){
   h+='<div class="bigreg" style="padding-top:0"><div class="note" style="padding:0 0 6px;letter-spacing:.5px">GÜNLÜĞÜNDEN</div>'+
@@ -2506,7 +2523,7 @@ function renderCal(){
    const dt=new Date(x.date),imp=(x.importance!=null?x.importance:0)+1;
    const hi=x.importance>=1;
    h+='<div class="cal-row'+(hi?' hi':'')+'"><div class="cal-t">'+dt.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})+'</div>'+
-    '<div class="cal-m"><div class="cal-n"><span class="imp imp'+Math.min(3,Math.max(1,imp))+'"></span>'+(x.title||'')+'</div>'+
+    '<div class="cal-m"><div class="cal-n"><span class="imp imp'+Math.min(3,Math.max(1,imp))+'"></span>'+htmlEsc(x.title||'')+'</div>'+
     '<div class="cal-s">'+(x.country||'')+(x.period?' · '+x.period:'')+(x.unit?' · '+x.unit:'')+'</div></div>'+
     '<div class="cal-v">'+(x.actual!=null?'<b>'+x.actual+'</b>':'<span style="color:var(--dim)">—</span>')+
     '<br><span style="color:var(--dim)">bek '+(x.forecast!=null?x.forecast:'—')+' · önc '+(x.previous!=null?x.previous:'—')+'</span></div></div>';
@@ -2806,7 +2823,7 @@ async function tvScanOnce(){
   if(all.length>40&&Date.now()-(TVS.fullAt||0)>20000){TVS.fullAt=Date.now();use=all.map(s=>'BIST:'+s)}
  }
  try{
-  const r=await fetch(base+'/tv-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbols:use,session:SESS,sign:S.tvMan2||''})});
+  const r=await fetch(dq(base+'/tv-scan'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbols:use})});
   const d=await r.json();
   if(d&&d.ok===false){TVS.ok=false;TVS.err='scan http'+d.http+': '+(d.body||d.error||'?').slice(0,80);return}
   if(d&&Array.isArray(d.data)){
@@ -3170,7 +3187,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="6.7";window.APPV=APP_VER;
+  const APP_VER="6.8";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3237,7 +3254,7 @@ function tvReconnectReport(){
    sg.onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;SRV.opt[k]=+b.dataset.v;LS.set('srvOpt',SRV.opt);segs();srvSync(false)}})}
   async function status(){
    if(!base())return render();
-   try{const r=await fetch(base()+'/status');
+   try{const r=await fetch(dq(base()+'/status'));
     if(r.status===404){SRV.err='Worker v5 yüklenmemiş (bist-tv kodunu güncelle)';return render()}
     const j=await r.json();if(!j.ok)throw new Error(j.error||'hata');SRV.last=j;SRV.err='';applyHits(j.hit)}
    catch(e){SRV.err='Sunucuya ulaşılamadı: '+(e.message||e)}
@@ -3279,12 +3296,12 @@ function tvReconnectReport(){
    if(!base()||S.mode!=='bist'||!sym){bar.classList.remove('on');return}
    const c=SRV.news[sym];let items;
    if(c&&Date.now()-c.t<120000)items=c.items;
-   else{try{const j=await (await fetch(base()+'/news?s='+encodeURIComponent(sym))).json();const d=j&&j.data&&j.data['BIST:'+sym];items=(d&&d.items)||[];SRV.news[sym]={t:Date.now(),items}}catch(e){items=[]}}
+   else{try{const j=await (await fetch(dq(base()+'/news?s='+encodeURIComponent(sym)))).json();const d=j&&j.data&&j.data['BIST:'+sym];items=(d&&d.items)||[];SRV.news[sym]={t:Date.now(),items}}catch(e){items=[]}}
    if(S.sym!==sym)return;
    const list=items.slice(0,3);
    if(!list.length){bar.classList.remove('on');bar.innerHTML='';return}
    const dt=t=>t?new Date(t*1000).toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
-   bar.innerHTML=list.map(n=>'<a href="'+htmlEsc(n.link||'#')+'" target="_blank" rel="noopener">'+(n.kap?'<b>KAP</b>':'<b style="color:var(--c1)">HABER</b>')+'<i>'+dt(n.t)+'</i>'+htmlEsc(n.title)+'</a>').join('');
+   bar.innerHTML=list.map(n=>'<a href="'+htmlEsc(safeUrl(n.link))+'" target="_blank" rel="noopener">'+(n.kap?'<b>KAP</b>':'<b style="color:var(--c1)">HABER</b>')+'<i>'+dt(n.t)+'</i>'+htmlEsc(n.title)+'</a>').join('');
    bar.classList.add('on');
   }
   const _lc=window.loadCandles;

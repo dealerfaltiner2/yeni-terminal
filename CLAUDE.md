@@ -54,6 +54,9 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   (devre kesici haber değil; kap.js karneye yazmaz). Özeti yeniden göndermek: D1 meta 'sigsum' satırını sil (18:20 sonrası cron yeniden yollar).
 - v6.7 MİSAFİR MODU (isGuest = LS ownClaimed && !ownTok): Telegram (#tgsec, Algı Telegram) ve Yedek (#yedeksec) gizli, backup/restore/cloudSave kilitli,
   misafirde tgTok/tgChat/algiCfg.chat bir kez silinir (LS guestWiped). Kod girilince guestApply() bölümleri açar.
+- v6.8 YENİ CİHAZ ONAYI: D1 dev.ok. Ana cihaz varken onaysız/engelli cihaz canlı akış, tv-token, bars, scan, tv-scan, news, status, test alamaz (403).
+  Mevcut cihazlar geçişte onaylandı; own kodu gelen cihaz otomatik onaylı. Onay: Ayarlar → bağlı cihazlar → Onayla (/dev-ok, sahip).
+  ?dev= olmadan veri isteği 6 Ekim 2026'ya kadar serbest (DEV_GRACE). pine-test artık sahip yolu. Repo herkese açık → asla sır yazma.
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.

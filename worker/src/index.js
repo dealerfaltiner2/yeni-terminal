@@ -681,7 +681,13 @@ async function btStep(env) {
 }
 /* ---------- v5.6: ana cihaz (sahip) kilidi + bağlı cihazlar (D1: meta 'owner', tablo dev) ---------- */
 // Sahip kodu D1'de durur → gerekirse Claude D1'den sıfırlayabilir. Kod yokken (ilk kurulum) eski davranış sürer.
-const OWN_ROUTES = new Set(['sync', 'prefs', 'cron-test', 'pine-sync', 'devices', 'dev-block', 'siglog', 'sig-eval']);
+const OWN_ROUTES = new Set(['sync', 'prefs', 'cron-test', 'pine-sync', 'pine-test', 'devices', 'dev-block', 'dev-ok', 'siglog', 'sig-eval']);
+// v6.8 YENİ CİHAZ ONAYI: ana cihaz belirlenmişse, onaylanmamış (ok=0) cihaz canlı veri / tarama / mum alamaz.
+// Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
+// Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
+const DEV_GRACE = Date.UTC(2026, 9, 6); // 6 Ekim 2026
+const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test']);
+const devCache = new Map();
 let ownerCache = { v: undefined, at: 0 }, devReady = false;
 async function ownerTok(env) {
   if (!env.BT) return null;
@@ -698,23 +704,29 @@ async function ownerClaim(env) {
   const r = await env.BT.prepare("INSERT OR IGNORE INTO meta (k, v) VALUES ('owner', ?)").bind(tok).run();
   ownerCache.v = undefined;
   if (!r.meta || !r.meta.changes) return json({ ok: false, error: 'Ana cihaz zaten belirlenmiş.' }, 403);
+  try { await devEnsure(env); await env.BT.prepare('UPDATE dev SET ok = 1').run(); devCache.clear(); } catch (e) {}
   return json({ ok: true, tok });
 }
 async function devEnsure(env) {
   if (devReady) return;
   await env.BT.prepare('CREATE TABLE IF NOT EXISTS dev (id TEXT PRIMARY KEY, name TEXT, ua TEXT, city TEXT, ver TEXT, app INTEGER, first INTEGER, last INTEGER, hits INTEGER, blocked INTEGER DEFAULT 0)').run();
   try { await env.BT.prepare('ALTER TABLE dev ADD COLUMN diag TEXT').run(); } catch (e) {} // v6.4: son bağlantı kapanmaları (teşhis)
+  // v6.8: onay sütunu — ilk eklendiğinde mevcut tüm cihazlar onaylı sayılır (arkadaşlar etkilenmez)
+  try { await env.BT.prepare('ALTER TABLE dev ADD COLUMN ok INTEGER DEFAULT 0').run(); await env.BT.prepare('UPDATE dev SET ok = 1').run(); } catch (e) {}
   devReady = true;
 }
 function uaShort(ua) {
   ua = ua || '';
   return /iPad/.test(ua) ? 'iPad' : /iPhone/.test(ua) ? 'iPhone' : /Android/.test(ua) ? 'Android' : /Macintosh/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : 'diğer';
 }
-// Cihaz ziyaretini kaydet; engelliyse true döner. Hata olursa sessizce geçer (canlı veri asla bu yüzden kesilmez).
+// Cihaz ziyaretini kaydet; '' (serbest) | 'blocked' (engelli) | 'wait' (onay bekliyor) döner.
+// Hata olursa sessizce geçer (canlı veri asla sunucu hatası yüzünden kesilmez).
 async function devTouch(request, env, url) {
   try {
-    if (!env.BT) return false;
+    if (!env.BT) return '';
     await devEnsure(env);
+    const own = await ownerTok(env);
+    const isOwn = !!own && url.searchParams.get('own') === own;
     let id = String(url.searchParams.get('dev') || '').toLowerCase();
     const ua = request.headers.get('User-Agent') || '';
     if (!/^[a-z0-9]{8,32}$/.test(id)) {
@@ -728,14 +740,35 @@ async function devTouch(request, env, url) {
     const city = String(cf.city || cf.country || '').slice(0, 30);
     const now = Date.now();
     const dg = String(url.searchParams.get('dg') || '').replace(/[^0-9a-z:.\-]/gi, '').slice(0, 200);
-    const r = await env.BT.prepare('INSERT INTO dev (id,name,ua,city,ver,app,first,last,hits,diag) VALUES (?,?,?,?,?,?,?,?,1,?) ON CONFLICT(id) DO UPDATE SET name = CASE WHEN excluded.name <> \'\' THEN excluded.name ELSE dev.name END, ua = excluded.ua, city = excluded.city, ver = excluded.ver, app = excluded.app, last = excluded.last, hits = dev.hits + 1, diag = CASE WHEN excluded.diag <> \'\' THEN excluded.diag ELSE dev.diag END RETURNING blocked')
-      .bind(id, name, uaShort(ua), city, ver, url.searchParams.get('app') === '1' ? 1 : 0, now, now, dg).first();
-    return !!(r && r.blocked);
-  } catch (e) { return false; }
+    const r = await env.BT.prepare('INSERT INTO dev (id,name,ua,city,ver,app,first,last,hits,diag,ok) VALUES (?,?,?,?,?,?,?,?,1,?,?) ON CONFLICT(id) DO UPDATE SET name = CASE WHEN excluded.name <> \'\' THEN excluded.name ELSE dev.name END, ua = excluded.ua, city = excluded.city, ver = excluded.ver, app = excluded.app, last = excluded.last, hits = dev.hits + 1, diag = CASE WHEN excluded.diag <> \'\' THEN excluded.diag ELSE dev.diag END, ok = CASE WHEN excluded.ok = 1 THEN 1 ELSE dev.ok END RETURNING blocked, ok')
+      .bind(id, name, uaShort(ua), city, ver, url.searchParams.get('app') === '1' ? 1 : 0, now, now, dg, isOwn ? 1 : 0).first();
+    const st = !r ? '' : r.blocked ? 'blocked' : (own && !r.ok) ? 'wait' : '';
+    devCache.set(id, { st, at: Date.now() });
+    return st;
+  } catch (e) { return ''; }
 }
+// Veri yolları için hafif kontrol (yazma yok; sonuç 60 sn önbellekte).
+async function devGate(env, url) {
+  try {
+    if (!env.BT) return '';
+    const own = await ownerTok(env);
+    if (!own || url.searchParams.get('own') === own) return '';
+    const id = String(url.searchParams.get('dev') || '').toLowerCase();
+    if (!/^[a-z0-9]{8,32}$/.test(id)) return Date.now() < DEV_GRACE ? '' : 'wait';
+    const c = devCache.get(id);
+    if (c && Date.now() - c.at < 60000) return c.st;
+    await devEnsure(env);
+    const r = await env.BT.prepare('SELECT blocked, ok FROM dev WHERE id = ?').bind(id).first();
+    const st = !r ? 'wait' : r.blocked ? 'blocked' : r.ok ? '' : 'wait';
+    if (devCache.size > 500) devCache.clear();
+    devCache.set(id, { st, at: Date.now() });
+    return st;
+  } catch (e) { return ''; }
+}
+const DEV_MSG = { blocked: 'bu cihaz engellendi', wait: 'bu cihaz ana cihazın onayını bekliyor' };
 async function devices(env) {
   await devEnsure(env);
-  const r = await env.BT.prepare('SELECT id,name,ua,city,ver,app,first,last,hits,blocked FROM dev ORDER BY last DESC LIMIT 100').all();
+  const r = await env.BT.prepare('SELECT id,name,ua,city,ver,app,first,last,hits,blocked,ok FROM dev ORDER BY last DESC LIMIT 100').all();
   return json({ ok: true, now: Date.now(), list: r.results || [] });
 }
 async function devBlock(env, url) {
@@ -743,6 +776,15 @@ async function devBlock(env, url) {
   const id = String(url.searchParams.get('id') || '').toLowerCase();
   if (!/^[a-z0-9]{7,32}$/.test(id)) return json({ ok: false, error: 'geçersiz cihaz' }, 400);
   await env.BT.prepare('UPDATE dev SET blocked = ? WHERE id = ?').bind(url.searchParams.get('b') === '1' ? 1 : 0, id).run();
+  devCache.delete(id);
+  return json({ ok: true });
+}
+async function devOk(env, url) {
+  await devEnsure(env);
+  const id = String(url.searchParams.get('id') || '').toLowerCase();
+  if (!/^[a-z0-9]{7,32}$/.test(id)) return json({ ok: false, error: 'geçersiz cihaz' }, 400);
+  await env.BT.prepare('UPDATE dev SET ok = ? WHERE id = ?').bind(url.searchParams.get('b') === '0' ? 0 : 1, id).run();
+  devCache.delete(id);
   return json({ ok: true });
 }
 async function tvToken(env) {
@@ -818,10 +860,10 @@ export default {
 
     if (isWS) {
       if (route === 'ws-echo') return echoWS();
-      if (url.searchParams.get('direct') === '1') {
-        if (await devTouch(request, env, url)) return json({ error: 'bu cihaz engellendi' }, 403);
-        return pipeTV(env);
-      }
+      // v6.8: iki yol da cihaz kontrolünden geçer (eski 'relay' yolu arka kapı olmasın)
+      const dst = await devTouch(request, env, url);
+      if (dst) return json({ error: DEV_MSG[dst] }, 403);
+      if (url.searchParams.get('direct') === '1') return pipeTV(env);
       return relay(env, ctx);
     }
 
@@ -829,15 +871,20 @@ export default {
       const o = await ownerTok(env);
       if (o && url.searchParams.get('own') !== o) return json({ ok: false, error: 'Bu işlem yalnız ana cihazdan yapılabilir' }, 403);
     }
+    if (DATA_ROUTES.has(route)) {
+      const g = await devGate(env, url);
+      if (g) return json({ ok: false, error: DEV_MSG[g], err: DEV_MSG[g], wait: g === 'wait' }, 403);
+    }
 
     switch (route) {
       case '': return new Response('OK', { headers: CORS });
       case 'owner-claim': if (request.method === 'POST') return ownerClaim(env); break;
       case 'owner-check': { const o = await ownerTok(env); return json({ ok: true, claimed: !!o, owner: !!o && url.searchParams.get('own') === o }); }
-      case 'hello': return json({ ok: true, blocked: await devTouch(request, env, url) });
+      case 'hello': { const st = await devTouch(request, env, url); return json({ ok: true, blocked: st === 'blocked', wait: st === 'wait' }); }
       case 'kap': return kapList(env, url, json);
       case 'devices': return devices(env);
       case 'dev-block': return devBlock(env, url);
+      case 'dev-ok': return devOk(env, url);
       case 'siglog': if (request.method === 'POST') return sigLog(request, env, url, json); break;
       case 'sig-eval': return json(url.searchParams.get('sum') === '1' ? await sigSummary(env, tgSend, kvGet, esc, nf, true) : await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf));
       case 'test': return test(env, url);
@@ -853,7 +900,8 @@ export default {
       case 'tv-test': return tvTest(env);
       case 'tv-login': return json({ ok: true, session: 'worker' });
       case 'tv-token': {
-        if (await devTouch(request, env, url)) return json({ ok: false, token: '', err: 'bu cihaz engellendi' });
+        const st = await devTouch(request, env, url);
+        if (st) return json({ ok: false, token: '', err: DEV_MSG[st], wait: st === 'wait' });
         return tvToken(env);
       }
       case 'prefs': return prefs(request, env);
