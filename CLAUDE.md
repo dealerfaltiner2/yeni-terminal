@@ -44,6 +44,19 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   Terminal: Menü → KAP Haber (/kap?f=onemli|hepsi&s=A,B). Eski 8 hisselik TV KAP takibi kaldırıldı.
   Ücretsiz plan: 50 dış istek / 1000 iç (D1) istek her çalışmada; sig/kap tablolarında indeks var (okuma sınırı!).
 
+- v6.4 KOPMA TEŞHİSİ: terminal kapanmaları arka plan (iOS) / gerçek ayırır (TVL.dlog, drops, bgDrops); D1 dev.diag = 'dD bB:SSDD-kod-bg-süre…'.
+  29.09 sonucu: gerçek kopmaların sebebi seans içi push'lardı; push olmayınca gerçek kopma ~0.
+- v6.5 ALGI RADARI kart görünümü (algiCard): durum etiketi, skor çubuğu, düz Türkçe açıklama, 💬 yorum, "nasıl okunur".
+- KARNE mesajı (sigSummary): sade Türkçe (kazandı/kaybetti → %), sabit sıra A/B/Algı/Radar, KAP türleri Türkçe, 'kap-devre' hariç
+  (devre kesici haber değil; kap.js karneye yazmaz). Özeti yeniden göndermek: D1 meta 'sigsum' satırını sil (18:20 sonrası cron yeniden yollar).
+- Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
+
 ## Sırada
-- Yükselenler araştırması: worker/src/rise.js → D1 tablo feat (hisse-gün özellikleri, 10:30'da bilinenler + sonuç), meta 'sector'. Kıyas: yükselen (ret≥4 / rest≥3) vs diğer günler.
-- Önceki testler (A/B notu grade-v1, hafta-v1, yarış r-*) Fatih'in isteğiyle İPTAL edildi (D1 okuma sınırı). btStep artık yalnız feat işini yapar.
+- 2–3 hafta Sinyal Karnesi biriktir → hangi kaynak/puan/KAP türü tutuyor; tutmayanları kapat/sıkılaştır. Hedef ±%1'de %60 başarı.
+- %60 araması için veri hazır: D1 feat tablosunda o10/o15/o20 (±%1/1,5/2 hedef-stop yarışı, 10:30 girişi, 92 hisse, ~13 ay).
+  Tarama SQL'de YAPILAMAZ (okuma sınırı); veriyi sıkıştırıp buraya al, yerelde tara (eski dönemde ara, yeni dönemde doğrula).
+- 'Güçlü koşucu' (d20≥25, zirveye yakın, oynaklık≥4, endeks≥0) geçmişte artıydı ama Fatih reddetti (çok yükselmiş hisse).
+- Derinlik verisi: TradingView'da BIST derinliği yok. Aday: İdeal (ideAlgo, C# robot, Sistem.DerinlikVerisiOku) — Fatih almayı düşünüyor;
+  gerekirse robot her dakika derinlik özetini sunucuya POST eder. Windows PC gerekir.
+- Sosyal medya şimdilik yok (manipülasyon riski); ileride 'anormal ilgi uyarısı' olabilir.
+- İçeriden alım-satım KAP'ında alış/satış ayrımı yok (detay uç noktası: /tr/api/notification/attachment-detail/{idx}).
