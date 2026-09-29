@@ -4,6 +4,9 @@ Sahibi: Fatih (İstanbul, BIST gün içi / scalp). iPhone'dan çalışır; Türk
 basit anlatım ister. Önce plan, sonra uygulama. Kod verilecekse tek parça.
 Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
 
+**ÖNCE `docs/DEVIR.md` DOSYASINI BAŞTAN SONA OKU** — ayrıntılı geçmiş, kararlar, denenip tutmayanlar ve sıradaki işlerin nasıl yapılacağı orada.
+%60 araması için hazır araçlar: `tools/feat_pack.py` + `tools/feat_search.py`.
+
 ## Parçalar
 - `index.html` — tek dosyalık terminal (GitHub Pages: https://dealerfaltiner2.github.io/yeni-terminal/).
   `APP_VER` sürüm numarası; her değişiklikte artır (güncelleme bandı buna bakar).
