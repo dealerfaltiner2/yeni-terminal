@@ -21,6 +21,7 @@
 - KV `DB`: cfg (alarm, Telegram, izleme listesi), st (sunucu durumu), prefs (yedek). MCP ile KV okunamıyor.
 - Sandbox'tan Worker'a ve kap.org.tr'ye curl ile ulaşılamıyor. Sunucuda bir şey denemek için: kodu cron'a geçici "prob" olarak koy, sonucu D1 meta'ya yazdır, D1'den oku (29.09'da KAP API böyle doğrulandı).
 - Yerel test: `npx wrangler@3 dev --local` + sahte veri; terminal için Playwright (Chromium kurulu). LightweightCharts CDN'i sandbox'ta yüklenmez — o hata normal.
+  sig.js için hızlı yol: node:sqlite ile sahte D1 + sahte fetchBarsTV (29.09'da böyle test edildi); derleme kontrolü `npx wrangler@3 deploy --dry-run --outdir <geçici>`.
 
 ## 3. Ne yapıldı (sürümler)
 - v5.x: canlı akış doğrudan boru (?direct=1), PWA, Pine otomatik yükleme, Telegram düzeltmesi, Yahoo/TwelveData kaldırıldı.
@@ -47,6 +48,12 @@
 - Endeks 10:30'da 0…−%0,5 arasındaysa günün en kötü grubu.
 - Tavan kapanan hisse ertesi gün ortalama +%1,8…2,1 açılıyor, %76 yukarı açılış (tavanda satma, ertesi açılışta sat mantığı).
 - Raporlar: /mnt/user-data/outputs/Yukselenler-Arastirmasi.pdf ve -v2.pdf (bu sohbetin çıktıları).
+- 29.09 akşamı FİLTRE TESTİ (100 hisse, her gün 10:30'da al, ±%1 önce hangisi; eski = 15.03.2026 öncesi / yeni = sonrası; sadece sonuçlananlar):
+  hepsi %46 / %44 · endeks artıda %48 / %46 · endeks ekside %41 / %42 · oynaklık <%4 %45 / %43 · oynaklık ≥%6 %49 / %49 ·
+  endeks artı + kovalamasız + oynaklık ≥%5 → %50 / %48. Endeks etkisi 14 ayın 11'inde tutarlı (en güvenilir bulgu).
+  Kovalama (r30≥4 veya vr30≥4) bu ölçümde belirgin fark YOK. Hiçbir filtre tek başına %60'a getirmiyor; işe yarayan yanı kötü günleri elemek.
+  Not: i30 günlük bir değer → etkin örnek sayısı gün sayısıdır (eski ~148, yeni ~132 gün), satır sayısı değil.
+  Yöntem: bu testler D1'de TEK gruplama sorgusuyla yapılabilir (her biri ~55 bin okuma) — veri aktarmaya gerek yok. Tam kombinasyon araması için yine feat_pack/feat_search.
 
 ## 6. SIRADAKİ İŞ: %60 başarı araması — NASIL YAPILIR
 Hedef: hedef = stop (±%1, ±%1,5, ±%2) iken %60+ tutan, 10:30'da bilinebilen şartlardan oluşan kural. (Başa baş %50.)
@@ -62,7 +69,8 @@ Hedef: hedef = stop (±%1, ±%1,5, ±%2) iken %60+ tutan, 10:30'da bilinebilen �
   rest (10:30→kapanış), mfe/mae/t3/dd3.
 
 ## 7. Bekleyen / fikir
-- Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1.
+- Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
+- v6.6 (29.09 akşamı): karne özetinde "Filtre kontrolü" — endeks artı/eksi ve oynak/sakin ayrımı kendi sinyallerimizde. 1–2 hafta sonra bak; tutarsa sinyal kapısı öner.
 - İçeriden alım-satım KAP'larında alış/satış ayrımı yok → detay uç noktası `/tr/api/notification/attachment-detail/{idx}` ile çözülebilir.
 - Derinlik: TradingView'da BIST derinliği yok. İdeal (ideAlgo, C# robot, `Sistem.DerinlikVerisiOku`) — Fatih almayı düşünüyor; Windows PC gerekir.
   Önce sorulacaklar: hisse için kaç kademe (5 mi 25 mi), robottan HTTP isteği atılabiliyor mu, fiyat.

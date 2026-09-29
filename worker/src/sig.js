@@ -13,7 +13,16 @@ export async function sigEnsure(env) {
     env.BT.prepare('CREATE INDEX IF NOT EXISTS sig_t ON sig(t)')
   ]);
   try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN pre REAL').run(); } catch (e) {} // giriş fiyatı ↔ önceki kapanış (haber etkisi girişten önce mi?)
+  try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN adr REAL').run(); } catch (e) {} // v6.6: hissenin son 20 gün ortalama günlük aralığı % (oynaklık)
   ready = true;
+}
+// v6.6: son 20 tamamlanmış günün ortalama günlük aralığı (%), feat tablosundaki 'adr' ile aynı formül: ort((yüksek−düşük)/kapanış)
+export function adrOf(daily, d) {
+  if (!daily || !daily.length) return null;
+  const prev = daily.filter(b => trDay(b[0] * 1000) < d && b[4] > 0).slice(-20);
+  if (prev.length < 10) return null;
+  const v = prev.reduce((a, b) => a + (b[2] - b[3]) / b[4], 0) / prev.length * 100;
+  return isFinite(v) ? Math.round(v * 100) / 100 : null;
 }
 export async function sigAdd(env, s) {
   try {
@@ -88,20 +97,39 @@ export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
   const got = await fetchBarsTV(env, [...syms.map(s => 'BIST:' + s), 'BIST:XU100'], '1', 2500, 25000);
   const toBars = st => st ? [...st.m.values()].filter(v => v && v.length >= 5).sort((a, b) => a[0] - b[0]) : [];
   const ib = toBars(got['BIST:XU100']);
+  // v6.6: günlük mumlar → oynaklık (adr). Ayrı bağlantı, sırayla; gelmezse adr boş kalır, ölçüm yine yapılır.
+  let gd = {};
+  try { gd = await fetchBarsTV(env, syms.map(s => 'BIST:' + s), '1D', 30, 10000); } catch (e) { gd = {}; }
   let n = 0;
   for (const r of todo.filter(x => syms.includes(x.sym))) {
     const st = got['BIST:' + r.sym], bars = toBars(st);
     // bağlantı sorunu → işaretleme, sonraki dakikada yeniden dene (4 gün sonra 'çok eski' olarak kapanır)
     if (!bars.length && !(st && /^(symbol_error|series_error)/.test(st.err || ''))) continue;
     const o = bars.length ? sigOutcome(bars, r, ib) : { err: st.err };
-    await env.BT.prepare('UPDATE sig SET done = 1, px = coalesce(px, ?), pre = ?, o10 = ?, o15 = ?, r15 = ?, r60 = ?, rc = ?, mfe = ?, mae = ?, idx = ?, err = ? WHERE id = ?')
-      .bind(o.px ?? null, o.pre ?? null, o.o10 ?? null, o.o15 ?? null, o.r15 ?? null, o.r60 ?? null, o.rc ?? null, o.mfe ?? null, o.mae ?? null, o.idx ?? null, o.err || null, r.id).run();
+    const adr = adrOf(toBars(gd['BIST:' + r.sym]), r.d);
+    await env.BT.prepare('UPDATE sig SET done = 1, px = coalesce(px, ?), pre = ?, o10 = ?, o15 = ?, r15 = ?, r60 = ?, rc = ?, mfe = ?, mae = ?, idx = ?, adr = ?, err = ? WHERE id = ?')
+      .bind(o.px ?? null, o.pre ?? null, o.o10 ?? null, o.o15 ?? null, o.r15 ?? null, o.r60 ?? null, o.rc ?? null, o.mfe ?? null, o.mae ?? null, o.idx ?? null, adr, o.err || null, r.id).run();
     n++;
   }
   return { olculen: n, hisse: syms };
 }
 const SRC_AD = { radar: '📡 Sunucu radarı', algi: '⚡ Algı', 'firsat-A': '🅰️ Fırsat A', 'firsat-B': '🅱️ Fırsat B' };
 const KAP_TR = { is: 'Yeni iş/sözleşme', ihale: 'İhale', geri: 'Geri alım', bedelsiz: 'Bedelsiz', bedelli: 'Bedelli', tahsisli: 'Sermaye artırımı', teklif: 'Pay alım teklifi', birlesme: 'Birleşme/devir', tesvik: 'Teşvik', temettu: 'Temettü', bilanco: 'Bilanço', not: 'Kredi notu', icerden: 'İçeriden alım-satım', yatirim: 'Yatırım', varlik: 'Varlık alım/satım', ozel: 'Özel durum', risk: 'Risk (konkordato vb.)', kisit: 'İşlem kısıtı', ceza: 'Ceza/dava' };
+// v6.6 FİLTRE KONTROLÜ — araştırmada bulunan iki filtre kendi sinyallerimizde de tutuyor mu? (tüm günler, yalnız AL, KAP hariç)
+// Endeks: sinyal anında XU100 önceki kapanışa göre artıda mı (idx ≥ 0). Oynaklık: son 20 gün ortalama günlük aralık %5 ve üstü mü (adr).
+export async function filterBlock(env, pc) {
+  try {
+    await sigEnsure(env);
+    const f = await env.BT.prepare("SELECT sum(idx >= 0 AND o10 = 1) eah, sum(idx >= 0 AND o10 = 2) eas, sum(idx < 0 AND o10 = 1) eeh, sum(idx < 0 AND o10 = 2) ees, sum(adr >= 5 AND o10 = 1) oyh, sum(adr >= 5 AND o10 = 2) oys, sum(adr < 5 AND o10 = 1) sah, sum(adr < 5 AND o10 = 2) sas FROM sig WHERE done = 1 AND err IS NULL AND dir = 'AL' AND src NOT LIKE 'kap-%'").first();
+    if (!f) return '';
+    const v = k => +f[k] || 0;
+    const ln = (ad, h, s) => '\n   ' + ad + ': ' + (h + s ? (h + s) + ' sinyal → <b>%' + pc(h, h + s) + '</b>' : 'henüz yok');
+    if (!(v('eah') + v('eas') + v('eeh') + v('ees'))) return '';
+    return '\n\n🔎 <b>Filtre kontrolü</b> <i>(tüm günler, Fırsat/Algı/Radar)</i>' +
+      ln('Endeks artıdayken', v('eah'), v('eas')) + ln('Endeks ekside iken', v('eeh'), v('ees')) +
+      ln('Oynak hisselerde (günde %5 ve üstü)', v('oyh'), v('oys')) + ln('Sakin hisselerde (günde %5 altı)', v('sah'), v('sas'));
+  } catch (e) { return ''; }
+}
 export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
   const now = Date.now(), today = trDay(now), m = trMin(now), wd = new Date(now + TRMS).getUTCDay();
   if (!force && !(wd >= 1 && wd <= 5 && m >= 1100)) return null;   // 18:20 sonrası
@@ -133,6 +161,7 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
     K.filter(r => r.h + r.s > 0).slice(0, 5).forEach(r => { msg += '\n   ' + esc(KAP_TR[r.src.slice(4)] || r.src.slice(4)) + ': ' + r.n + ' → %' + pc(r.h, r.h + r.s); });
   }
   if (best.length) msg += '\n\n🏆 <b>Günün en iyileri</b>: ' + best.map(b => esc(b.sym) + ' +%' + Math.round(b.mfe)).join(' · ');
+  msg += await filterBlock(env, pc);
   const cfg = await kvGet(env, 'cfg', null);
   const t = await tgSend(cfg, msg);
   return { gonderildi: !!(t && t.ok), msg };
