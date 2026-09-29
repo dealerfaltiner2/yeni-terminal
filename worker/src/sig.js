@@ -111,10 +111,10 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
     if (p && p.n) return null;
     await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sigsum', ?)").bind(today).run();
   }
-  const R = (await env.BT.prepare('SELECT src, count(*) n, sum(o10 = 1) h, sum(o10 = 2) s, sum(o10 = 0) y, avg(rc) rc, avg(mfe) mfe FROM sig WHERE d = ? AND err IS NULL AND done = 1 GROUP BY src ORDER BY n DESC').bind(today).all()).results || [];
+  const R = (await env.BT.prepare('SELECT src, count(*) n, sum(o10 = 1) h, sum(o10 = 2) s, sum(o10 = 0) y, avg(rc) rc, avg(mfe) mfe FROM sig WHERE d = ? AND err IS NULL AND done = 1 AND src <> \'kap-devre\' GROUP BY src ORDER BY n DESC').bind(today).all()).results || [];
   if (!R.length) return { mesaj: 'bugün sinyal yok' };
-  const A = (await env.BT.prepare('SELECT src, count(*) n, sum(o10 = 1) h, sum(o10 = 2) s, avg(rc) rc FROM sig WHERE err IS NULL AND done = 1 GROUP BY src').bind().all()).results || [];
-  const best = (await env.BT.prepare('SELECT sym, src, mfe, rc FROM sig WHERE d = ? AND err IS NULL AND done = 1 ORDER BY mfe DESC LIMIT 3').bind(today).all()).results || [];
+  const A = (await env.BT.prepare('SELECT src, count(*) n, sum(o10 = 1) h, sum(o10 = 2) s, avg(rc) rc FROM sig WHERE err IS NULL AND done = 1 AND src <> \'kap-devre\' GROUP BY src').bind().all()).results || [];
+  const best = (await env.BT.prepare('SELECT sym, max(mfe) mfe FROM sig WHERE d = ? AND err IS NULL AND done = 1 AND src <> \'kap-devre\' GROUP BY sym ORDER BY mfe DESC LIMIT 3').bind(today).all()).results || [];
   const pc = (a, b) => b ? Math.round(a / b * 100) : 0;
   const spx = x => x == null ? '-' : (x >= 0 ? '+' : '−') + '%' + nf(Math.abs(x), 2);
   let msg = '📊 <b>SİNYAL KARNESİ · ' + today.split('-').reverse().join('.') + '</b>\n<i>±%1 hedef/stop · hangisi önce geldi</i>\n';

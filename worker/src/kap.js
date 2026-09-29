@@ -119,7 +119,7 @@ export async function kapPoll(env, h) {
   await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_last', ?)").bind(String(last)).run();
   // Karne: önem ≥ 1 olan her hisse haberi ölçülsün (ilk çalışmada da — sadece Telegram atlanır)
   for (const r0 of rows) {
-    if (r0.onem < 1 || !r0.syms) continue;
+    if (r0.onem < 1 || !r0.syms || r0.tip === 'devre') continue; // devre kesici haber değil, hareketin sonucu → karneye yazılmaz
     const te = kapEntry(r0.t);
     for (const s of r0.syms.split(',').slice(0, 2)) await sigAdd(env, { src: 'kap-' + r0.tip, sym: s, dir: 'AL', px: null, sc: r0.onem, t: te, meta: { idx: r0.idx, yon: r0.yon, pub: r0.t } });
   }
