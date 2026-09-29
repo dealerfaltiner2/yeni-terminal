@@ -827,6 +827,10 @@ function devId(){let d=LS.get('devId','');if(!/^[a-z0-9]{12,32}$/.test(d)){d=((c
 function devQ(){return 'dev='+devId()+'&name='+encodeURIComponent(LS.get('devName',''))+'&v='+(window.APPV||'')+'&app='+(isApp()?1:0)}
 function ownQ(){const t=LS.get('ownTok','');return t?('own='+encodeURIComponent(t)):''}
 function qAdd(u,q){return q?(u+(u.indexOf('?')<0?'?':'&')+q):u}
+// v6.1: SİNYAL KARNESİ — ana cihazdaki sinyaller sunucuya yazılır, seans sonrası sonucu ölçülür
+function sigPost(o){try{if(!LS.get('ownTok',''))return;const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||!o||!(o.px>0))return;
+ const d=new Date(Date.now()+3*3600e3),m=d.getUTCHours()*60+d.getUTCMinutes(),wd=d.getUTCDay();if(wd<1||wd>5||m<600||m>=1080)return;
+ o.t=o.t||Date.now();fetch(qAdd(b+'/siglog?'+devQ(),ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(o)}).catch(()=>{})}catch(e){}}
 const OWN_MSG='Bu işlem yalnız ana cihazdan yapılabilir.\n\nAna cihaz sensen: Ayarlar → "Ana cihaz" bölümünden kodunu gir.';
 function isApp(){try{return !!(navigator.standalone||matchMedia('(display-mode: standalone)').matches)}catch(e){return false}}
 async function cloudSave(){
@@ -2195,6 +2199,7 @@ function sigRecord(sym,dir,a){
  S.sigHist.unshift({k:key,sym:sym,dir:dir,ts:Date.now(),close:o.close||null,atrP:(a&&a.atrPct!=null)?a.atrPct:null,setups:Object.keys((S.deep[sym]&&S.deep[sym].fl)||{}),regime:S.reg?S.reg.mode:'-',grade:a?a.grade:null});
  if(S.sigHist.length>200)S.sigHist.length=200;
  LS.set('sigHist',S.sigHist);
+ if(a&&a.side===dir&&(a.grade==='A'||a.grade==='B'))sigPost({src:'firsat-'+a.grade,sym:sym,dir:dir,px:o.close,sc:a.pts!=null?a.pts:null,meta:{atr:(a&&a.atrPct!=null)?+(+a.atrPct).toFixed(2):null,kurulum:Object.keys((S.deep[sym]&&S.deep[sym].fl)||{}).slice(0,6),rejim:S.reg?S.reg.mode:'-'}});
 }
 /* ================= sinyal → işlem günlüğü bağlantısı ================= */
 function seenAAdd(sym,dir){
@@ -3097,7 +3102,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="6.0";window.APPV=APP_VER;
+  const APP_VER="6.1";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3439,6 +3444,7 @@ function tvReconnectReport(){
      AL.log.push(e);AL.dirty=true;saveLog(true);
      st.cnt=0;st.cool=now+30*60000;stage='ates';
      if(!e.mute)tg(msgFire(e,f,o));
+     sigPost({src:'algi',sym:sym,t:now,px:p0,sc:sc,dir:'AL',meta:{fa:f.fa!=null?+(+f.fa).toFixed(1):null,rv:f.rv!=null?+(+f.rv).toFixed(1):null,fc:f.fc!=null?+(+f.fc).toFixed(2):null,ch:f.ch!=null?+(+f.ch).toFixed(2):null,brk:!!f.brk,abv:!!f.abv,bid:!!f.fd,tema:!!gOk,endeks:!!hOk,sig:!(o.voltl>=1e7),sessiz:!!e.mute}});
      try{notify('⚡ Algı: '+sym,'Skor '+sc+' · '+nf(f.p))}catch(x){}
     }
     if(now<st.cool&&stage!=='ates')stage=stage||'';

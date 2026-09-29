@@ -32,6 +32,10 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   Kod yokken (sahip belirlenmeden) eski davranış. Cihazlar D1 tablo dev (hello, tv-token, WS direct'te kaydedilir; blocked=1 → canlı akış kesilir).
   Terminal: LS devId/devName/ownTok; Ayarlar → "Ana cihaz · bağlı cihazlar".
 
+- v6.1 SİNYAL KARNESİ (worker/src/sig.js): D1 tablo sig. Kaynaklar: radar (sunucu), algi + firsat-A/B (yalnız ana cihaz, /siglog).
+  Seans dışında cron sigEval: 1 dk mumlarla o10/o15 (±%1/±%1,5 hangisi önce; aynı mumda ikisi → stop), r15, r60, rc, mfe, mae, idx.
+  18:20 sonrası Telegram özeti (meta 'sigsum'). Elle: /sig-eval?own=KOD (&sum=1 özet). Bağlantı hatasında sinyal bekletilir.
+
 ## Sırada
 - Yükselenler araştırması: worker/src/rise.js → D1 tablo feat (hisse-gün özellikleri, 10:30'da bilinenler + sonuç), meta 'sector'. Kıyas: yükselen (ret≥4 / rest≥3) vs diğer günler.
 - Önceki testler (A/B notu grade-v1, hafta-v1, yarış r-*) Fatih'in isteğiyle İPTAL edildi (D1 okuma sınırı). btStep artık yalnız feat işini yapar.

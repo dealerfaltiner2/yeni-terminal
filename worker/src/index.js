@@ -7,6 +7,7 @@
 // v5: 7/24 sunucu — dakikada bir (Cron) alarm, radar, KAP/haber ve bağlantı sağlığı kontrolü, Telegram bildirimi.
 //     Gerekenler: KV bağlaması "DB" + Cron tetikleyici "* * * * *". Ayarlar terminalden /sync ile gelir.
 import { riseRows } from './rise.js';
+import { sigAdd, sigLog, sigEval, sigSummary } from './sig.js';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -452,7 +453,9 @@ async function cron(env, force = false) {
       if (sc < (opt.rdMin || 60)) continue;
       cands.push({ s, o, rv, vw, sc });
     }
-    cands.sort((a, b) => b.sc - a.sc).slice(0, 4).forEach(c => {
+    const top = cands.sort((a, b) => b.sc - a.sc).slice(0, 4);
+    for (const c of top) await sigAdd(env, { src: 'radar', sym: c.s, px: c.o.close, sc: c.sc, t: now, meta: { rv: Math.round(c.rv * 10) / 10, vwd: Math.round((c.o.close / c.vw - 1) * 1000) / 10, chg: Math.round(c.o.change * 100) / 100 } });
+    top.forEach(c => {
       st.sent[c.s] = now; st.cnt.radar++; dirty = true;
       msgs.push('📡 <b>SUNUCU RADAR · ' + esc(c.s) + '</b> · skor ' + c.sc + '\nFiyat ' + nf(c.o.close) + ' · Gün ' + sp(c.o.change) + ' · 5dk RVOL ' + nf(c.rv, 1) + 'x\nVWAP üstü ' + sp((c.o.close / c.vw - 1) * 100) + ' · gün zirvesinde' + (c.o.sector ? '\n' + esc(String(c.o.sector).slice(0, 30)) : ''));
     });
@@ -694,7 +697,7 @@ async function btStep(env) {
 }
 /* ---------- v5.6: ana cihaz (sahip) kilidi + bağlı cihazlar (D1: meta 'owner', tablo dev) ---------- */
 // Sahip kodu D1'de durur → gerekirse Claude D1'den sıfırlayabilir. Kod yokken (ilk kurulum) eski davranış sürer.
-const OWN_ROUTES = new Set(['sync', 'prefs', 'cron-test', 'pine-sync', 'devices', 'dev-block']);
+const OWN_ROUTES = new Set(['sync', 'prefs', 'cron-test', 'pine-sync', 'devices', 'dev-block', 'siglog', 'sig-eval']);
 let ownerCache = { v: undefined, at: 0 }, devReady = false;
 async function ownerTok(env) {
   if (!env.BT) return null;
@@ -848,6 +851,8 @@ export default {
       case 'hello': return json({ ok: true, blocked: await devTouch(request, env, url) });
       case 'devices': return devices(env);
       case 'dev-block': return devBlock(env, url);
+      case 'siglog': if (request.method === 'POST') return sigLog(request, env, url, json); break;
+      case 'sig-eval': return json(url.searchParams.get('sum') === '1' ? await sigSummary(env, tgSend, kvGet, esc, nf, true) : await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf));
       case 'test': return test(env, url);
       case 'bars': return bars(env, url);
       case 'news': return news(url);
@@ -878,7 +883,7 @@ export default {
     ctx.waitUntil(cron(env).then(async () => {
       // NABIZ geçmiş testi: seans DIŞINDA, dakikada bir hisse (ağır iş en sona — alarmlar etkilenmesin)
       const T = trNow(); const inSess = T.wd >= 1 && T.wd <= 5 && T.m >= 590 && T.m < 1095;
-      if (!inSess) { try { await btStep(env); } catch (e) {} }
+      if (!inSess) { try { await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf); } catch (e) {} try { await btStep(env); } catch (e) {} }
     }).catch(async e => {
       try { const st = await kvGet(env, 'st', {}); st.err = 'cron: ' + (e && e.message || e); st.lastRun = Date.now(); await kvPut(env, 'st', st); } catch {}
     }));
