@@ -916,6 +916,15 @@ export default {
   },
   async scheduled(event, env, ctx) {
     ctx.waitUntil(cron(env).then(async () => {
+      // v6.8: TEK SEFERLİK DUYURU — D1 meta k='announce' varsa Telegram'a bir kez gönderilir, satır silinir, sonuç 'announce_res'e yazılır
+      try {
+        const an = await env.BT.prepare("SELECT v FROM meta WHERE k = 'announce'").first();
+        if (an && an.v) {
+          await env.BT.prepare("DELETE FROM meta WHERE k = 'announce'").run();
+          const r = await tgSend(await kvGet(env, 'cfg', null), an.v);
+          await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('announce_res', ?)").bind(new Date().toISOString() + ' ' + JSON.stringify(r).slice(0, 200)).run();
+        }
+      } catch (e) {}
       // KAP: dakikada bir, her gün (gece gelenler sabah 09:30 özetinde)
       try {
         const kr = await kapPoll(env, { UA, tgSend, kvGet, esc, scanRaw });
