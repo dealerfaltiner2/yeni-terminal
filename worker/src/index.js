@@ -759,6 +759,29 @@ async function devBlock(env, url) {
   await env.BT.prepare('UPDATE dev SET blocked = ? WHERE id = ?').bind(url.searchParams.get('b') === '1' ? 1 : 0, id).run();
   return json({ ok: true });
 }
+/* ---------- v5.8 (geçici): haber kaynağı denemesi — sonucu D1 meta 'newsprobe' ---------- */
+async function newsProbe(env) {
+  if (!env.BT) return;
+  if (await env.BT.prepare("SELECT 1 FROM meta WHERE k = 'newsprobe'").first()) return;
+  const out = { at: new Date().toISOString() };
+  const day = new Date(Date.now() + TR).toISOString().slice(0, 10);
+  const tryIt = async (name, url, init) => {
+    const t0 = Date.now();
+    try {
+      const ac = new AbortController(); const tm = setTimeout(() => ac.abort(), 12000);
+      const r = await fetch(url, Object.assign({ signal: ac.signal }, init)); clearTimeout(tm);
+      const txt = await r.text();
+      let n = null, first = txt.slice(0, 1800);
+      try { const j = JSON.parse(txt); const arr = Array.isArray(j) ? j : (j.items || j.data || []); n = arr.length; first = JSON.stringify(arr.slice(0, 2)).slice(0, 1800); out[name + '_keys'] = Array.isArray(j) ? 'array' : Object.keys(j).join(','); } catch (e) {}
+      out[name] = { status: r.status, ms: Date.now() - t0, n, first };
+    } catch (e) { out[name] = { err: String(e && e.message || e), ms: Date.now() - t0 }; }
+  };
+  const kapH = { 'Content-Type': 'application/json', Accept: 'application/json', Referer: 'https://www.kap.org.tr/tr/bildirim-sorgu', Origin: 'https://www.kap.org.tr', 'User-Agent': UA };
+  await tryIt('kap', 'https://www.kap.org.tr/tr/api/disclosure/members/byCriteria', { method: 'POST', headers: kapH, body: JSON.stringify({ fromDate: day, toDate: day, mkkMemberOidList: [], subjectList: [] }) });
+  await tryIt('tvflow', 'https://news-mediator.tradingview.com/news-flow/v2/news?filter=lang%3Atr&filter=provider%3Akap&client=screener&streaming=false', { headers: { 'User-Agent': UA, Origin: 'https://www.tradingview.com', Referer: 'https://www.tradingview.com/' } });
+  await tryIt('tvflow2', 'https://news-mediator.tradingview.com/news-flow/v2/news?filter=lang%3Atr&filter=market%3Abist&client=screener&streaming=false', { headers: { 'User-Agent': UA, Origin: 'https://www.tradingview.com', Referer: 'https://www.tradingview.com/' } });
+  await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('newsprobe', ?)").bind(JSON.stringify(out).slice(0, 12000)).run();
+}
 async function tvToken(env) {
   const token = await getAuth(env);
   const ok = token !== 'unauthorized_user_token';
@@ -881,6 +904,7 @@ export default {
   },
   async scheduled(event, env, ctx) {
     ctx.waitUntil(cron(env).then(async () => {
+      try { await newsProbe(env); } catch (e) {}
       // NABIZ geçmiş testi: seans DIŞINDA, dakikada bir hisse (ağır iş en sona — alarmlar etkilenmesin)
       const T = trNow(); const inSess = T.wd >= 1 && T.wd <= 5 && T.m >= 590 && T.m < 1095;
       if (!inSess) { try { await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf); } catch (e) {} try { await btStep(env); } catch (e) {} }
