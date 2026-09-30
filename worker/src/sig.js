@@ -82,6 +82,7 @@ export function sigOutcome(bars, r, ib) {
   return { px: r2(px), pre: pc ? r2((px / pc - 1) * 100) : null, o10: race(1), o15: race(1.5), r15: r2(at(15)), r60: r2(at(60)), rc: r2(sg * (B[B.length - 1][4] / px - 1) * 100), mfe: r2(mfe), mae: r2(mae), idx: r2(idx) };
 }
 // Seans dışında her dakika: bekleyen sinyallerden 5 hisseyi ölç; hepsi bitince özeti gönder
+const FAIL = new Map();   // hisse → art arda veri gelmeme sayısı (bu çalışma örneğinde)
 export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
   if (!env.BT) return null;
   await sigEnsure(env);
@@ -92,7 +93,9 @@ export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
   const old = ready.filter(r => now - r.t > 4 * 86400e3);
   for (const r of old) await env.BT.prepare("UPDATE sig SET done = 1, err = 'çok eski' WHERE id = ?").bind(r.id).run();
   const todo = ready.filter(r => now - r.t <= 4 * 86400e3);
-  const syms = [...new Set(todo.map(r => r.sym))].slice(0, 5);
+  // Art arda 3 kez veri gelmeyen hisse sıranın sonuna atılır (diğerlerini kilitlemesin)
+  const all = [...new Set(todo.map(r => r.sym))];
+  const syms = [...all.filter(x => (FAIL.get(x) || 0) < 3), ...all.filter(x => (FAIL.get(x) || 0) >= 3)].slice(0, 5);
   if (!syms.length) return { eski: old.length };
   const got = await fetchBarsTV(env, [...syms.map(s => 'BIST:' + s), 'BIST:XU100'], '1', 2500, 25000);
   const toBars = st => st ? [...st.m.values()].filter(v => v && v.length >= 5).sort((a, b) => a[0] - b[0]) : [];
@@ -100,18 +103,23 @@ export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
   // v6.6: günlük mumlar → oynaklık (adr). Ayrı bağlantı, sırayla; gelmezse adr boş kalır, ölçüm yine yapılır.
   let gd = {};
   try { gd = await fetchBarsTV(env, syms.map(s => 'BIST:' + s), '1D', 30, 10000); } catch (e) { gd = {}; }
-  let n = 0;
+  let n = 0, bos = 0;
+  if (FAIL.size > 300) FAIL.clear();
   for (const r of todo.filter(x => syms.includes(x.sym))) {
     const st = got['BIST:' + r.sym], bars = toBars(st);
     // bağlantı sorunu → işaretleme, sonraki dakikada yeniden dene (4 gün sonra 'çok eski' olarak kapanır)
-    if (!bars.length && !(st && /^(symbol_error|series_error)/.test(st.err || ''))) continue;
+    if (!bars.length && !(st && /^(symbol_error|series_error)/.test(st.err || ''))) { FAIL.set(r.sym, (FAIL.get(r.sym) || 0) + 1); bos++; continue; }
+    FAIL.delete(r.sym);
     const o = bars.length ? sigOutcome(bars, r, ib) : { err: st.err };
     const adr = adrOf(toBars(gd['BIST:' + r.sym]), r.d);
     await env.BT.prepare('UPDATE sig SET done = 1, px = coalesce(px, ?), pre = ?, o10 = ?, o15 = ?, r15 = ?, r60 = ?, rc = ?, mfe = ?, mae = ?, idx = ?, adr = ?, err = ? WHERE id = ?')
       .bind(o.px ?? null, o.pre ?? null, o.o10 ?? null, o.o15 ?? null, o.r15 ?? null, o.r60 ?? null, o.rc ?? null, o.mfe ?? null, o.mae ?? null, o.idx ?? null, adr, o.err || null, r.id).run();
     n++;
   }
-  return { olculen: n, hisse: syms };
+  // 21:00'den sonra ölçülemeyen sinyal kalsa da rapor çıksın (sigSummary kendisi 'bugün gönderildi mi' bakar)
+  let rapor = null;
+  if (m >= 1260) { try { rapor = await sigSummary(env, tgSend, kvGet, esc, nf); } catch (e) {} }
+  return { olculen: n, verisiz: bos, kalan: ready.length - n, hisse: syms, rapor: rapor ? !!rapor.gonderildi : null };
 }
 const SRC_AD = { radar: '📡 Sunucu radarı', algi: '⚡ Algı', 'firsat-A': '🅰️ Fırsat A', 'firsat-B': '🅱️ Fırsat B' };
 const KAP_TR = { is: 'Yeni iş/sözleşme', ihale: 'İhale', geri: 'Geri alım', bedelsiz: 'Bedelsiz', bedelli: 'Bedelli', tahsisli: 'Sermaye artırımı', teklif: 'Pay alım teklifi', birlesme: 'Birleşme/devir', tesvik: 'Teşvik', temettu: 'Temettü', bilanco: 'Bilanço', not: 'Kredi notu', icerden: 'İçeriden alım-satım', yatirim: 'Yatırım', varlik: 'Varlık alım/satım', ozel: 'Özel durum', risk: 'Risk (konkordato vb.)', kisit: 'İşlem kısıtı', ceza: 'Ceza/dava' };
@@ -131,17 +139,26 @@ export async function filterBlock(env, pc) {
   } catch (e) { return ''; }
 }
 export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
+  let pend = 0, tryN = 0;
   const now = Date.now(), today = trDay(now), m = trMin(now), wd = new Date(now + TRMS).getUTCDay();
   if (!force && !(wd >= 1 && wd <= 5 && m >= 1100)) return null;   // 18:20 sonrası
   if (!force) {
     const f = await env.BT.prepare("SELECT v FROM meta WHERE k = 'sigsum'").first();
     if (f && f.v === today) return null;
+    // Tüm sinyaller ölçülene kadar bekle; ama en geç 21:00'de ölçülenlerle gönder (veri gelmeyen sinyal raporu kilitlemesin)
     const p = await env.BT.prepare('SELECT count(*) n FROM sig WHERE d = ? AND done = 0').bind(today).first();
-    if (p && p.n) return null;
-    await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sigsum', ?)").bind(today).run();
+    pend = p ? +p.n || 0 : 0;
+    if (pend && m < 1260) return null;
+    // Gönderim başarısızsa (Telegram reddi vb.) 10 dk'da bir yeniden dene, en çok 12 kez
+    const tr = await env.BT.prepare("SELECT v FROM meta WHERE k = 'sigsum_try'").first();
+    const tt = tr ? JSON.parse(tr.v) : null;
+    if (tt && tt.d === today && (tt.n >= 12 || now - tt.at < 10 * 60e3)) return null;
+    tryN = tt && tt.d === today ? tt.n + 1 : 1;
+    // kilit: aynı anda çalışan ikinci bir cron ikinci kez göndermesin
+    await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sigsum_try', ?)").bind(JSON.stringify({ d: today, n: tryN, at: now })).run();
   }
   const R = (await env.BT.prepare("SELECT src, count(*) n, sum(o10 = 1) h, sum(o10 = 2) s FROM sig WHERE d = ? AND err IS NULL AND done = 1 AND src <> 'kap-devre' GROUP BY src ORDER BY n DESC").bind(today).all()).results || [];
-  if (!R.length) return { mesaj: 'bugün sinyal yok' };
+  if (!R.length) { if (!force) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sigsum', ?)").bind(today).run(); return { mesaj: 'bugün sinyal yok' }; }
   const A = (await env.BT.prepare("SELECT src, count(*) n, sum(o10 = 1) h, sum(o10 = 2) s, count(DISTINCT d) g FROM sig WHERE err IS NULL AND done = 1 AND src <> 'kap-devre' GROUP BY src").bind().all()).results || [];
   const best = (await env.BT.prepare("SELECT sym, max(mfe) mfe FROM sig WHERE d = ? AND err IS NULL AND done = 1 AND src <> 'kap-devre' GROUP BY sym ORDER BY mfe DESC LIMIT 3").bind(today).all()).results || [];
   const pc = (a, b) => b ? Math.round(a / b * 100) : 0;
@@ -162,7 +179,14 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
   }
   if (best.length) msg += '\n\n🏆 <b>Günün en iyileri</b>: ' + best.map(b => esc(b.sym) + ' +%' + Math.round(b.mfe)).join(' · ');
   msg += await filterBlock(env, pc);
+  if (pend) msg += '\n\n⏳ ' + pend + ' sinyal için veri gelmedi; ölçülünce genel toplamlara eklenecek.';
   const cfg = await kvGet(env, 'cfg', null);
   const t = await tgSend(cfg, msg);
+  if (!force) {
+    if (t && t.ok) await env.BT.batch([
+      env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sigsum', ?)").bind(today),
+      env.BT.prepare("DELETE FROM meta WHERE k = 'sigsum_try'")]);
+    else await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sigsum_try', ?)").bind(JSON.stringify({ d: today, n: tryN, at: now, err: String(t && t.error || '').slice(0, 120) })).run();
+  }
   return { gonderildi: !!(t && t.ok), msg };
 }

@@ -52,6 +52,9 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
 - v6.5 ALGI RADARI kart görünümü (algiCard): durum etiketi, skor çubuğu, düz Türkçe açıklama, 💬 yorum, "nasıl okunur".
 - KARNE mesajı (sigSummary): sade Türkçe (kazandı/kaybetti → %), sabit sıra A/B/Algı/Radar, KAP türleri Türkçe, 'kap-devre' hariç
   (devre kesici haber değil; kap.js karneye yazmaz). Özeti yeniden göndermek: D1 meta 'sigsum' satırını sil (18:20 sonrası cron yeniden yollar).
+  30.09 düzeltmesi: 'sigsum' yalnız BAŞARILI gönderimde yazılır; başarısızsa 10 dk'da bir yeniden (en çok 12, meta 'sigsum_try').
+  Ölçülemeyen sinyal varsa rapor en geç 21:00'de ölçülenlerle gider ('⏳ n sinyal için veri gelmedi'). Veri gelmeyen hisse 3 denemeden sonra sıranın sonuna atılır.
+  Teşhis: meta 'sig_st' = son ölçüm çalışmasının sonucu (süre, ölçülen, verisiz, kalan).
 - v6.7 MİSAFİR MODU (isGuest = LS ownClaimed && !ownTok): Telegram (#tgsec, Algı Telegram) ve Yedek (#yedeksec) gizli, backup/restore/cloudSave kilitli,
   misafirde tgTok/tgChat/algiCfg.chat bir kez silinir (LS guestWiped). Kod girilince guestApply() bölümleri açar.
 - v6.8 YENİ CİHAZ ONAYI: D1 dev.ok. Ana cihaz varken onaysız/engelli cihaz canlı akış, tv-token, bars, scan, tv-scan, news, status, test alamaz (403).
