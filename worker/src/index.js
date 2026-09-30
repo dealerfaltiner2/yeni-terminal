@@ -944,7 +944,8 @@ export default {
       } catch (e) { try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_err', ?)").bind(new Date().toISOString() + ' ' + String(e && e.message || e).slice(0, 300)).run(); } catch {} }
       // NABIZ geçmiş testi: seans DIŞINDA, dakikada bir hisse (ağır iş en sona — alarmlar etkilenmesin)
       const T = trNow(); const inSess = T.wd >= 1 && T.wd <= 5 && T.m >= 590 && T.m < 1095;
-      if (!inSess) { try { await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf); } catch (e) {} try { await btStep(env); } catch (e) {} }
+      if (!inSess) { const t0 = Date.now(); let sr; try { sr = await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf); } catch (e) { sr = { hata: String(e && e.message || e).slice(0, 200) }; }
+        try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sig_st', ?)").bind(new Date().toISOString() + ' ' + (Date.now() - t0) + 'ms ' + JSON.stringify(sr ?? null).slice(0, 300)).run(); } catch (e) {} try { await btStep(env); } catch (e) {} }
     }).catch(async e => {
       try { const st = await kvGet(env, 'st', {}); st.err = 'cron: ' + (e && e.message || e); st.lastRun = Date.now(); await kvPut(env, 'st', st); } catch {}
     }));
