@@ -8,6 +8,7 @@
 //     Gerekenler: KV bağlaması "DB" + Cron tetikleyici "* * * * *". Ayarlar terminalden /sync ile gelir.
 import { riseRows } from './rise.js';
 import { sigAdd, sigLog, sigEval, sigSummary, sigStats } from './sig.js';
+import { errAdd, errLogRoute } from './err.js';
 import { kapPoll, kapMorning, kapList } from './kap.js';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
 const CORS = {
@@ -686,7 +687,7 @@ const OWN_ROUTES = new Set(['sync', 'prefs', 'cron-test', 'pine-sync', 'pine-tes
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
 const DEV_GRACE = Date.UTC(2026, 9, 6); // 6 Ekim 2026
-const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats']);
+const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog']);
 const devCache = new Map();
 let ownerCache = { v: undefined, at: 0 }, devReady = false;
 async function ownerTok(env) {
@@ -883,6 +884,7 @@ export default {
       case 'hello': { const st = await devTouch(request, env, url); return json({ ok: true, blocked: st === 'blocked', wait: st === 'wait' }); }
       case 'kap': return kapList(env, url, json);
       case 'sigstats': return json(await sigStats(env));
+      case 'errlog': if (request.method === 'POST') return errLogRoute(request, env, url, json); break;
       case 'devices': return devices(env);
       case 'dev-block': return devBlock(env, url);
       case 'dev-ok': return devOk(env, url);
@@ -923,7 +925,7 @@ export default {
     ctx.waitUntil((async () => {
       await hb('1-başladı');
       try { await cron(env); }
-      catch (e) { try { const st = await kvGet(env, 'st', {}); st.err = 'cron: ' + (e && e.message || e); st.lastRun = Date.now(); await kvPut(env, 'st', st); } catch {} }
+      catch (e) { await errAdd(env, 'sunucu', 'hata', 'cron: ' + String(e && e.message || e), 'alarm/radar'); try { const st = await kvGet(env, 'st', {}); st.err = 'cron: ' + (e && e.message || e); st.lastRun = Date.now(); await kvPut(env, 'st', st); } catch {} }
       await hb('2-alarm/radar bitti');
       // v6.8: TEK SEFERLİK DUYURU — D1 meta k='announce' varsa Telegram'a gönderilir; başarıda satır silinir.
       // Gönderilemezse (token geçersiz vb.) ayarlar sunucuya yeniden kaydedilince (cfg.at değişince) tekrar denenir; en çok 20 deneme.
@@ -946,7 +948,7 @@ export default {
       const T = trNow(); const inSess = T.wd >= 1 && T.wd <= 5 && T.m >= 590 && T.m < 1095;
       if (!inSess) {
         const t0 = Date.now(); let sr;
-        try { sr = await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf); } catch (e) { sr = { hata: String(e && e.message || e).slice(0, 200) }; }
+        try { sr = await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf); } catch (e) { sr = { hata: String(e && e.message || e).slice(0, 200) }; await errAdd(env, 'sunucu', 'hata', 'karne: ' + sr.hata, 'sigEval'); }
         try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sig_st', ?)").bind(new Date().toISOString() + ' ' + (Date.now() - t0) + 'ms ' + JSON.stringify(sr ?? null).slice(0, 300)).run(); } catch (e) {}
         await hb('3-karne bitti');
       }
@@ -957,10 +959,10 @@ export default {
         const n = (kr && kr.telegram || 0) + (mr && mr.ozet ? 1 : 0);
         if (n) { const st = await kvGet(env, 'st', {}); if (st.cnt) { st.cnt.kap = (st.cnt.kap || 0) + n; await kvPut(env, 'st', st); } }
         if (kr && kr.yeni) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_st', ?)").bind(JSON.stringify({ at: Date.now(), ...kr })).run();
-      } catch (e) { try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_err', ?)").bind(new Date().toISOString() + ' ' + String(e && e.message || e).slice(0, 300)).run(); } catch {} }
+      } catch (e) { await errAdd(env, 'sunucu', 'hata', 'KAP: ' + String(e && e.message || e).slice(0, 200), 'kapPoll'); try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_err', ?)").bind(new Date().toISOString() + ' ' + String(e && e.message || e).slice(0, 300)).run(); } catch {} }
       await hb('4-KAP bitti');
       // NABIZ/özellik geçmiş testi: seans DIŞINDA (ağır iş en sona)
-      if (!inSess) { try { await btStep(env); } catch (e) {} }
+      if (!inSess) { try { await btStep(env); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'btStep: ' + String(e && e.message || e).slice(0, 200), 'btStep'); } }
       await hb('5-tamam');
     })());
   }

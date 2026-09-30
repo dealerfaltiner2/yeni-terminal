@@ -82,6 +82,7 @@ export function sigOutcome(bars, r, ib) {
   return { px: r2(px), pre: pc ? r2((px / pc - 1) * 100) : null, o10: race(1), o15: race(1.5), r15: r2(at(15)), r60: r2(at(60)), rc: r2(sg * (B[B.length - 1][4] / px - 1) * 100), mfe: r2(mfe), mae: r2(mae), idx: r2(idx) };
 }
 // Seans dışında her dakika: bekleyen sinyallerden 5 hisseyi ölç; hepsi bitince özeti gönder
+import { errAdd } from './err.js';
 const FAIL = new Map();   // hisse → art arda veri gelmeme sayısı (bu çalışma örneğinde)
 export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
   if (!env.BT) return null;
@@ -108,7 +109,7 @@ export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
   for (const r of todo.filter(x => syms.includes(x.sym))) {
     const st = got['BIST:' + r.sym], bars = toBars(st);
     // bağlantı sorunu → işaretleme, sonraki dakikada yeniden dene (4 gün sonra 'çok eski' olarak kapanır)
-    if (!bars.length && !(st && /^(symbol_error|series_error)/.test(st.err || ''))) { FAIL.set(r.sym, (FAIL.get(r.sym) || 0) + 1); bos++; continue; }
+    if (!bars.length && !(st && /^(symbol_error|series_error)/.test(st.err || ''))) { FAIL.set(r.sym, (FAIL.get(r.sym) || 0) + 1); bos++; if (FAIL.get(r.sym) === 3) await errAdd(env, 'sunucu', 'toparlama', 'veri gelmeyen hisse sıranın sonuna alındı: ' + r.sym, 'karne ölçümü'); continue; }
     FAIL.delete(r.sym);
     const o = bars.length ? sigOutcome(bars, r, ib) : { err: st.err };
     const adr = adrOf(toBars(gd['BIST:' + r.sym]), r.d);
@@ -186,7 +187,7 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
     if (t && t.ok) await env.BT.batch([
       env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sigsum', ?)").bind(today),
       env.BT.prepare("DELETE FROM meta WHERE k = 'sigsum_try'")]);
-    else await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sigsum_try', ?)").bind(JSON.stringify({ d: today, n: tryN, at: now, err: String(t && t.error || '').slice(0, 120) })).run();
+    else { await errAdd(env, 'sunucu', 'hata', 'karne raporu gönderilemedi: ' + String(t && t.error || '?').slice(0, 120), 'sigSummary'); await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sigsum_try', ?)").bind(JSON.stringify({ d: today, n: tryN, at: now, err: String(t && t.error || '').slice(0, 120) })).run(); }
   }
   return { gonderildi: !!(t && t.ok), msg };
 }

@@ -71,6 +71,10 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   sigToast(): Algı ateşlemesi ve derin tarama A notunda üstten kayan kart (20 sn). sparkFor(sym): 15dk önbellek ya da S.tvHis mini çizgi.
   Renk kuralı: yeşil/kırmızı = yön, sarı = seçili/yapılacak, mavi = bilgi (sekme/menü/kurulum etiketleri nötr).
   DİKKAT: kstatLoad sonuç gelmezse 60 sn yeniden denemez ve çağıranlar yalnız sonuç gelince yeniden çizer (v6.9'da sonsuz döngü vardı).
+- v7.2 KENDİNİ TOPARLAMA + AKŞAM BAKIMI: terminal hataları ve toparlamalar → /errlog → D1 tablo `err` (d,src,kind,msg,loc; tekrarında n artar; fixed = bakım notu).
+  Sunucu hataları da err'e yazılır (cron, KAP, karne, rapor gönderimi, veri gelmeyen hisse). Terminal: ekran hata verirse bir kez yeniden çizer; seansta veri 60 sn gelmezse bağlantıyı yeniler.
+  TESTLER: `bash tests/run.sh` (sözdizimi + karne mantığı + Playwright arayüz 34 kontrol + yerel Worker). HER DEĞİŞİKLİKTEN SONRA ÇALIŞTIR; geçmeden yayınlama.
+  Akşam bakımı = zamanlanmış görev (hafta içi 18:53): err + meta durumlarını okur, düzeltir, test eder, geçerse yayınlar. Fatih TELEGRAM İSTEMİYOR — sonuç yalnız Claude bildirimi.
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.

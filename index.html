@@ -694,7 +694,8 @@ window.addEventListener('error',function(e){
  try{
   const box=document.createElement('div');
   box.style.cssText='position:fixed;left:8px;right:8px;bottom:60px;background:#3a0d12;color:#ffb4bb;border:1px solid #ff4d5e;padding:8px 10px;border-radius:8px;font-family:monospace;font-size:11px;z-index:999;max-height:30vh;overflow:auto';
-  box.innerHTML='<b>Sayfa hatası:</b> '+e.message+' ('+ (e.filename||'') +':'+e.lineno+')<br><button onclick="this.parentNode.remove()" style="margin-top:6px;background:#fff;color:#3a0d12;border:0;padding:4px 10px;border-radius:5px">Kapat</button>';
+  if(/ResizeObserver loop|^Script error/i.test(String(e.message||'')))return;
+  box.innerHTML='<b>Sayfa hatası:</b> '+htmlEsc(e.message)+' ('+htmlEsc(String(e.filename||'').split('/').pop())+':'+e.lineno+')<br><small style="opacity:.8">Hata deftere yazıldı; akşam bakımında düzeltilecek.</small><br><button onclick="this.parentNode.remove()" style="margin-top:6px;background:#fff;color:#3a0d12;border:0;padding:4px 10px;border-radius:5px">Kapat</button>';
   document.body.appendChild(box);
  }catch(x){}
 });
@@ -3200,7 +3201,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="7.1";window.APPV=APP_VER;
+  const APP_VER="7.2";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4267,5 +4268,39 @@ function stJr(){const o=stCur;if(!o)return;if(o.jrDone){stClose();showTab('jr');
 .alh .spk{margin-left:auto}.alh .spk+.alg{margin-left:6px}
 .card.v6 .crow>.spk{align-self:center;opacity:.95}
 </style>
+<script>
+/* ================= v7.2 KENDİNİ TOPARLAMA + HATA DEFTERİ =================
+   - Her hata (aynısı bir kez) sunucudaki hata defterine yazılır (/errlog → D1 err). Akşam bakımı bu defteri okur.
+   - Bir ekran çizilirken hata verirse 0,8 sn sonra bir kez yeniden çizilir (30 sn'de en çok bir).
+   - Seansta canlı veri 60 sn gelmezse bağlantı yenilenir (2 dk'da en çok bir). Toparlamalar da deftere 'toparlama' olarak yazılır. */
+const HEAL={sent:{},n:0,q:[],last:{},tm:null};
+const HEAL_SKIP=/ResizeObserver loop|^Script error\.?$/i;
+function errLog(kind,msg,where){try{
+ msg=String(msg||'').slice(0,300);if(!msg||HEAL_SKIP.test(msg))return;
+ const key=kind+'|'+msg+'|'+(where||'');if(HEAL.sent[key])return;HEAL.sent[key]=1;if(++HEAL.n>30)return;
+ HEAL.q.push({k:kind,m:msg,w:String(where||'').slice(0,120),tab:S&&S.tab||'',v:window.APPV||''});
+ clearTimeout(HEAL.tm);HEAL.tm=setTimeout(errFlush,3000)}catch(e){}}
+function errFlush(){try{const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||!HEAL.q.length)return;const items=HEAL.q.splice(0,20);
+ fetch(dq(b+'/errlog'),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({items})}).catch(()=>{})}catch(e){}}
+window.addEventListener('error',e=>{try{errLog('hata',e.message,String(e.filename||'').split('/').pop()+':'+e.lineno+':'+e.colno)}catch(x){}});
+window.addEventListener('unhandledrejection',e=>{try{const r=e.reason;errLog('hata',(r&&r.message)||String(r),'promise')}catch(x){}});
+(function(){
+ // ekran koruması: hata veren ekran bir kez yeniden çizilir
+ const _d=draw;window.draw=draw=function(t){try{return _d.apply(this,arguments)}catch(e){
+  errLog('hata',e&&e.message,'ekran:'+t);
+  if(Date.now()-(HEAL.last['d'+t]||0)>30000){HEAL.last['d'+t]=Date.now();setTimeout(()=>{try{_d(t);errLog('toparlama','ekran yeniden çizildi','ekran:'+t)}catch(x){}},800)}}};
+ // canlı veri bekçisi
+ setInterval(()=>{try{
+  if(document.hidden||!S.tvproxy||typeof TVL==='undefined'||!(TVL.last>0))return;
+  if(typeof nowSess==='function'&&!nowSess().open)return;
+  const last=Math.max(TVL.last||0,(typeof TVS!=='undefined'&&TVS.at)||0);
+  if(Date.now()-last>60000&&Date.now()-(HEAL.last.ws||0)>120000){HEAL.last.ws=Date.now();
+   errLog('toparlama','canlı veri 60 sn gelmedi, bağlantı yenilendi','canlı akış');
+   try{if(TVL.ws)TVL.ws.close()}catch(e){}setTimeout(()=>{try{tvLiveStart()}catch(e){}},700)}
+ }catch(e){}},15000);
+ // sayfa kapanırken bekleyen kayıtları gönder
+ document.addEventListener('visibilitychange',()=>{if(document.hidden&&HEAL.q.length)errFlush()});
+})();
+</script>
 </body>
 </html>

@@ -33,6 +33,7 @@
 - v6.8 Güvenlik: YENİ CİHAZ ONAYI (dev.ok; özellik gelince kayıtlı tüm cihazlar onaylı sayıldı; ana cihaz kodu gelen cihaz kendiliğinden onaylı). Onaysız/engelli cihaz: WS (direct ve eski relay), tv-token, bars, scan, tv-scan, news, status, test → 403 'onay bekliyor'. Veri yollarında ?dev= yoksa 6 Ekim 2026'ya kadar izin (eski sürümler güncellensin), sonra ret (tarayıcıdan /test için &own=KOD ekle). pine-test ve dev-ok yalnız ana cihaz. Terminal: Ayarlar → bağlı cihazlar'da 'ONAY BEKLİYOR' + Onayla. htmlEsc tırnakları da kaçırır, haber linki yalnız http(s), takvim başlıkları kaçırılır. tv-scan artık oturum bilgisi göndermez; misafirde elle girilmiş TV oturumu 'worker' yapılır (guestWiped2).
 - v6.9–7.0 Tasarım: her bölümde 'Bu nedir?' bilgi kartı (IC{}), Algı/Fırsat 'neden sinyal' çipleri, gruplu menü, Karne sekmesinde sunucu karnesi (/sigstats), kompakt görünüm katmanı. Fırsat ⓘ eşik yazıları koda uyduruldu; günlükte Kapat düğmesi; Canlı 'Hız' = lot/sn.
 - v7.1: 'Şimdi' ana ekranı (ilk sekme), üstten kayan sinyal kartı, mini fiyat çizgileri, renk düzeni, kapalı piyasa ekranları. Karne yükleyicisindeki sonsuz döngü düzeltildi (sunucuya ulaşılamazsa sayfa donuyordu).
+- v7.2: Hata defteri (D1 err) + terminalde kendini toparlama + kalıcı testler (tests/run.sh) + akşam bakımı zamanlanmış görevi (hata bul → düzelt → test → yayınla; yalnız Claude bildirimi, Telegram yok).
 - v6.4 Kopma teşhisi (arka plan / gerçek ayrımı). v6.5 Algı radarı okunur kart görünümü.
 - Karne mesajı sadeleştirildi; devre kesici bildirimleri karneden çıkarıldı.
 
