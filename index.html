@@ -1577,12 +1577,12 @@ function cardHtml(o,ix){const dir=S.dir,tf=S.stf;
    (p.share!=null?'<tr><td>Günlük hacmin</td><td style="text-align:right;color:'+(p.share>2?'var(--dn)':'var(--txt2)')+'">'+nf(p.share,2)+'%'+(p.share>2?' · doldurmak zor':'')+'</td></tr>':'')+
    '</table>'):'';
   const detail='<button class="planbtn detbtn" onclick="togglePlan(\''+o.name+'\')">Detay'+(p?' · İşlem planı':'')+' <span>▾</span></button>'+
-   '<div class="plan" id="pl_'+o.name+'">'+wrest+'<div class="dsub">Göstergeler</div><div class="why">'+whyText(o,tf)+'</div><div class="dsub">Bağlam</div>'+ctx+planT+'</div>';
+   '<div class="plan" id="pl_'+o.name+'">'+mtfStrip(o)+meters+wrest+'<div class="dsub">Göstergeler</div><div class="why">'+whyText(o,tf)+'</div><div class="dsub">Bağlam</div>'+ctx+planT+'</div>';
   return '<div class="card v6'+(ix<3?' top':'')+'" onclick="selectSym(\''+o.name+'\',\'bist\')">'+
    '<div class="crow"><div class="cl"><div class="cn"><span class="cname">'+o.name+'</span>'+badge+alb+(isNew?'<span class="newtag">YENİ</span>':'')+(rise?'<span class="rise">▲ güçleniyor</span>':'')+'</div>'+
    '<div class="cdesc">'+(o.description||'').slice(0,30)+'</div></div>'+
    '<div class="cprice"><b>'+nf(o.close)+'</b><i class="'+cls(o.change)+'">'+pct(o.change)+'</i><i class="vol">'+big(o.voltl)+' ₺</i></div></div>'+
-   '<div class="tags">'+tags+'</div>'+whyChips(o,dir,al,m,pr)+mtfStrip(o)+meters+w0+detail+'</div>';
+   '<div class="tags">'+tags+'</div>'+whyChips(o,dir,al,m,pr)+w0+detail+'</div>';
 }
 // v6.9: "Neden listede?" — puanı en çok etkileyen bulgular düz Türkçe (✓ lehte / ○ eksik)
 function whyChips(o,dir,al,m,pr){try{
@@ -3197,7 +3197,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="6.9";window.APPV=APP_VER;
+  const APP_VER="7.0";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4000,6 +4000,57 @@ function kstatHtml(){
  return h+'</div>';
 }
 </script>
+
+<style>
+/* ============ v7.0 · KOMPAKT MODERN KATMAN (yalnız görünüm; hiçbir işlev değişmez) ============ */
+:root{--card:rgba(255,255,255,.028);--card2:rgba(255,255,255,.05);--r:14px}
+/* alt sekme çubukları: hap düğmeler, yatay kaydırma */
+.bar{padding:4px 12px 8px;gap:6px;border-bottom:0}
+.sechd+.bar,.sechd+div>.bar:first-child{padding-top:0}
+.bar button,.bar select,.bar input{min-height:34px;border-radius:17px;padding:0 13px;font:600 12.5px var(--sans);background:var(--card);border:1px solid var(--line2);color:var(--txt2);box-shadow:none}
+.bar select{padding:0 10px}
+.bar button.on{background:rgba(245,165,36,.16);border-color:rgba(245,165,36,.5);color:#fbbf24;font-weight:700;box-shadow:none}
+.bar button.gAL.on{background:rgba(0,211,160,.16);border-color:rgba(0,211,160,.55);color:var(--up);box-shadow:none}
+.bar button.gSAT.on{background:rgba(255,85,102,.15);border-color:rgba(255,85,102,.55);color:#ff7a88;box-shadow:none}
+.bar button.deep.on{background:rgba(139,92,246,.18);border-color:rgba(167,139,250,.6);color:#c4b5fd;box-shadow:none}
+/* bölümlü seçici (15dk / 1 Saat … , AL / SAT) */
+.seg{background:var(--card);border:1px solid var(--line2);border-radius:12px;box-shadow:none;padding:2px}
+.seg button{min-height:30px!important;padding:6px 12px!important;border-radius:9px!important;font:600 12.5px var(--sans)!important}
+.seg button.on{background:rgba(245,165,36,.18)!important;color:#fbbf24!important;font-weight:700}
+/* tablolar: sıkı satır, sade başlık */
+th,td{padding:8px 8px}
+th{font-size:10px;letter-spacing:.7px;color:var(--dim);font-weight:700;background:var(--bg);border-bottom:1px solid var(--line2)}
+th:first-child{background:var(--bg)}
+td{border-bottom:1px solid rgba(255,255,255,.045)}
+tr.row:active td{background:var(--card2)}
+/* kartlar: yuvarlak köşeli, hafif zemin, aralıklı */
+.card,.card.v6{margin:0 12px 8px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:12px 12px 11px}
+.card.top,.card.v6.top{border-color:rgba(245,165,36,.45);border-left:1px solid rgba(245,165,36,.45);background:linear-gradient(180deg,rgba(245,165,36,.07),var(--card) 55%);padding-left:12px}
+.card:active{background:var(--card2)}
+.card.v6 .cname{font-size:17px}
+.alc,.kaprow{margin:0 12px 8px;border-radius:var(--r);background:var(--card)}
+.kaprow{border-left-width:3px}
+#oplist,#algibody,#kapbody{padding-top:2px}
+/* bilgi notları */
+.note{padding:8px 14px}
+/* istatistik kutuları */
+.grid{gap:8px;background:none;padding:4px 12px 8px}
+.grid div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
+.grid .k{font-size:10px;letter-spacing:.4px}
+.grid .v{font-size:16px}
+/* ayar sayfaları */
+.sett{padding:4px 14px 16px}
+.sett>b{font-size:10.5px;letter-spacing:.8px;color:var(--dim)}
+.sett input,.sett textarea,.sett select{border-radius:12px;background:rgba(0,0,0,.25)}
+.sett button{border-radius:12px}
+.sett button.pri{box-shadow:none}
+/* ana sekmeler arası geçişte hafif belirme */
+.tab.on{animation:tabIn .18s ease-out}
+#setbar{background:none;border-bottom:0;min-height:0}
+.card.v6 .whyh{margin-top:9px}
+@keyframes tabIn{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.tab.on{animation:none}}
+</style>
 
 </body>
 </html>

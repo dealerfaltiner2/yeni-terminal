@@ -31,6 +31,7 @@
 - v6.3 KAP Haber: KAP'ın kendi API'si, dakikada bir, sınıflandırma, Telegram, 09:30 gece özeti, tepki ölçümü, terminalde Menü → KAP Haber.
 - v6.7 Misafir modu: ana cihaz kodu olmayan cihazda Telegram + Yedek bölümleri gizli; eski kopyalanmış Telegram bilgisi bir kez silinir (LS guestWiped).
 - v6.8 Güvenlik: YENİ CİHAZ ONAYI (dev.ok; özellik gelince kayıtlı tüm cihazlar onaylı sayıldı; ana cihaz kodu gelen cihaz kendiliğinden onaylı). Onaysız/engelli cihaz: WS (direct ve eski relay), tv-token, bars, scan, tv-scan, news, status, test → 403 'onay bekliyor'. Veri yollarında ?dev= yoksa 6 Ekim 2026'ya kadar izin (eski sürümler güncellensin), sonra ret (tarayıcıdan /test için &own=KOD ekle). pine-test ve dev-ok yalnız ana cihaz. Terminal: Ayarlar → bağlı cihazlar'da 'ONAY BEKLİYOR' + Onayla. htmlEsc tırnakları da kaçırır, haber linki yalnız http(s), takvim başlıkları kaçırılır. tv-scan artık oturum bilgisi göndermez; misafirde elle girilmiş TV oturumu 'worker' yapılır (guestWiped2).
+- v6.9–7.0 Tasarım: her bölümde 'Bu nedir?' bilgi kartı (IC{}), Algı/Fırsat 'neden sinyal' çipleri, gruplu menü, Karne sekmesinde sunucu karnesi (/sigstats), kompakt görünüm katmanı. Fırsat ⓘ eşik yazıları koda uyduruldu; günlükte Kapat düğmesi; Canlı 'Hız' = lot/sn.
 - v6.4 Kopma teşhisi (arka plan / gerçek ayrımı). v6.5 Algı radarı okunur kart görünümü.
 - Karne mesajı sadeleştirildi; devre kesici bildirimleri karneden çıkarıldı.
 

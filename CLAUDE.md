@@ -60,6 +60,11 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
 - v6.8 YENİ CİHAZ ONAYI: D1 dev.ok. Ana cihaz varken onaysız/engelli cihaz canlı akış, tv-token, bars, scan, tv-scan, news, status, test alamaz (403).
   Mevcut cihazlar geçişte onaylandı; own kodu gelen cihaz otomatik onaylı. Onay: Ayarlar → bağlı cihazlar → Onayla (/dev-ok, sahip).
   ?dev= olmadan veri isteği 6 Ekim 2026'ya kadar serbest (DEV_GRACE). pine-test artık sahip yolu. Repo herkese açık → asla sır yazma.
+- v6.9–7.0 TASARIM (index.html sonundaki 3 blok): IC{} = 19 bölümün 'Bu nedir?' bilgi kartı (infoOpen(key), #infosheet; eşikler koddan — kod değişirse IC metnini de güncelle!).
+  Her sekmenin başına .sechd başlık otomatik eklenir (chart hariç). Menü IC_GRP ile gruplu (SİNYAL VE HABER / PİYASA / BENİM), kutudaki ⓘ kartı açar.
+  Algı kartı: 4 şart çipi (✓/○). Fırsat kartı: whyChips 'Neden listede?'; zaman dilimi şeridi + ölçerler Detay içinde.
+  Karne sekmesi üstünde SUNUCU KARNESİ: Worker /sigstats (sig.js sigStats, son 10 iş günü, 5 dk önbellek, cihaz onayı gerekir); KSTAT bilgi kartlarına karne rozeti verir.
+  v7.0 kompakt katman: hap alt sekmeler, yuvarlak kartlar, sıkı tablolar (yalnız CSS).
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.
