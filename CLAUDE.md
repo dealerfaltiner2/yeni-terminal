@@ -65,6 +65,12 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   Algı kartı: 4 şart çipi (✓/○). Fırsat kartı: whyChips 'Neden listede?'; zaman dilimi şeridi + ölçerler Detay içinde.
   Karne sekmesi üstünde SUNUCU KARNESİ: Worker /sigstats (sig.js sigStats, son 10 iş günü, 5 dk önbellek, cihaz onayı gerekir); KSTAT bilgi kartlarına karne rozeti verir.
   v7.0 kompakt katman: hap alt sekmeler, yuvarlak kartlar, sıkı tablolar (yalnız CSS).
+- v7.1 ŞİMDİ + BİLDİRİM: ilk sekme 'now' (renderNow, 5 sn'de bir; draw sarmalanır). Alt menü: Şimdi|Fırsat|Algı|Grafik|İzleme|Menü; Canlı menüye taşındı.
+  Seans açık: canlı sinyaller (S.algi.rows ates/hazır + bugünkü AL.log + briefData Fırsat A + /kap önem≥2 son 3 sa), karne, açık pozisyonlar.
+  Kapalı: son günün karnesi, seans sonrası KAP, 'Yarın izlenecekler' (hacim≥20Mn, %1,5–7 artı, zirveye ≤%1, RVOL≥1,3 — sinyal değil).
+  sigToast(): Algı ateşlemesi ve derin tarama A notunda üstten kayan kart (20 sn). sparkFor(sym): 15dk önbellek ya da S.tvHis mini çizgi.
+  Renk kuralı: yeşil/kırmızı = yön, sarı = seçili/yapılacak, mavi = bilgi (sekme/menü/kurulum etiketleri nötr).
+  DİKKAT: kstatLoad sonuç gelmezse 60 sn yeniden denemez ve çağıranlar yalnız sonuç gelince yeniden çizer (v6.9'da sonsuz döngü vardı).
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.
