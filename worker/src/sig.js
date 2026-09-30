@@ -190,3 +190,22 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
   }
   return { gonderildi: !!(t && t.ok), msg };
 }
+// v6.9 KARNE EKRANI — terminalin Karne sekmesi için son ~2 haftanın özeti (5 dk önbellek; okuma sınırı için sig_d indeksi kullanılır)
+let statCache = { at: 0, v: null };
+export async function sigStats(env) {
+  if (!env.BT) return { ok: false, error: 'D1 yok' };
+  if (statCache.v && Date.now() - statCache.at < 5 * 60e3) return statCache.v;
+  await sigEnsure(env);
+  const from = trDay(Date.now() - 16 * 86400e3);
+  const rows = (await env.BT.prepare("SELECT d, src, count(*) n, sum(o10 = 1) h, sum(o10 = 2) s FROM sig WHERE d >= ? AND done = 1 AND err IS NULL AND src <> 'kap-devre' GROUP BY d, src").bind(from).all()).results || [];
+  const days = [...new Set(rows.map(r => r.d))].sort().reverse().slice(0, 10);
+  const src = {};
+  for (const r of rows) if (days.includes(r.d)) { const x = src[r.src] || (src[r.src] = { n: 0, h: 0, s: 0 }); x.n += r.n; x.h += r.h || 0; x.s += r.s || 0; }
+  const byDay = days.map(d => ({ d, src: Object.fromEntries(rows.filter(r => r.d === d).map(r => [r.src, { n: r.n, h: r.h || 0, s: r.s || 0 }])) }));
+  const last = days[0] || null;
+  const list = last ? ((await env.BT.prepare("SELECT t, src, sym, o10, mfe, rc FROM sig WHERE d = ? AND done = 1 AND err IS NULL AND src NOT LIKE 'kap-%' ORDER BY t DESC LIMIT 40").bind(last).all()).results || []) : [];
+  const pend = await env.BT.prepare('SELECT count(*) n FROM sig WHERE done = 0 AND t < ?').bind(Date.now()).first();
+  const v = { ok: true, at: Date.now(), gun: days.length, days: byDay, src, last, list, bekleyen: pend ? pend.n : 0 };
+  statCache = { at: Date.now(), v };
+  return v;
+}

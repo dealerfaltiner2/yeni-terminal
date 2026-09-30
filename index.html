@@ -2474,7 +2474,7 @@ function saveExt(){
 }
 function renderLab(){
  const st=S.healthStats;
- let h='<div class="note" style="padding-bottom:0;letter-spacing:.5px">📋 SİNYAL KARNESİ</div>';
+ let h=(typeof kstatHtml==='function'?kstatHtml():'')+'<div class="note" style="padding-bottom:0;letter-spacing:.5px">📋 YEREL KARNE · derin tarama sinyallerinin 1/3/5 gün sonrası</div>';
  if(st&&st.overall){
   h+='<div class="grid"><div><span class="k">SİNYAL</span><span class="v">'+st.overall.n+'</span></div><div><span class="k">KAZANMA</span><span class="v">%'+nf(st.overall.win,0)+'</span></div><div><span class="k">BEKLENTİ</span><span class="v '+cls(st.overall.exp)+'">'+nf(st.overall.exp,2)+'R</span></div></div>';
   (st.tips||[]).forEach(t=>{h+='<div class="note"'+(t.charAt(0)!=='✓'?' style="color:var(--warn)"':'')+'>'+t+'</div>'});
@@ -3934,6 +3934,71 @@ document.getElementById('infosheet').addEventListener('click',e=>{if(e.target.cl
   more.addEventListener('click',e=>{const q=e.target.closest('.q[data-i]');if(q){e.stopPropagation();e.preventDefault();infoOpen(q.dataset.i)}},true);
  }catch(e){}
 })();
+</script>
+
+<style>
+/* v6.9 SUNUCU KARNESİ (Karne sekmesi) */
+.ks{padding:2px 12px 6px}
+.ksh{display:flex;align-items:baseline;gap:8px;margin:6px 2px 2px}
+.ksh b{font-size:12px;letter-spacing:.5px;color:var(--txt)}
+.ksh small{color:var(--dim);font-size:11px;margin-left:auto}
+.kss{color:var(--dim);font-size:11.5px;margin:0 2px 9px}
+.kg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kc{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:14px;padding:10px 11px}
+.kc .kn{font-size:12px;font-weight:700;color:var(--txt2)}
+.kc .kp{font-size:22px;font-weight:800;margin:2px 0 1px;font-variant-numeric:tabular-nums}
+.kc .kd{font-size:11px;color:var(--dim)}
+.kc .kbar{height:5px;border-radius:3px;background:rgba(255,255,255,.06);margin-top:7px;position:relative;overflow:visible}
+.kc .kbar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px}
+.kc .kbar u{position:absolute;left:60%;top:-3px;bottom:-3px;width:2px;background:rgba(255,255,255,.55)}
+.kc.kw{grid-column:1/-1}
+.ksec{color:var(--dim);font-size:10.5px;font-weight:800;letter-spacing:.6px;margin:14px 2px 6px}
+.ks table{width:100%;border-collapse:collapse;font-size:12px}
+.ks th{color:var(--dim);font-weight:600;font-size:10.5px;text-align:right;padding:5px 4px;border-bottom:1px solid var(--line)}
+.ks th:first-child,.ks td:first-child{text-align:left}
+.ks td{text-align:right;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.03);font-variant-numeric:tabular-nums}
+.ks td small{color:var(--dim);font-size:10px}
+.kempty{color:var(--dim);font-size:12px;padding:8px 2px}
+</style>
+<script>
+/* ================= v6.9 SUNUCU KARNESİ ================= */
+const KSRC=[['firsat-A','🅰️ Fırsat A'],['firsat-B','🅱️ Fırsat B'],['algi','⚡ Algı'],['radar','📡 Sunucu radarı']];
+const KAPTR={is:'Yeni iş/sözleşme',ihale:'İhale',geri:'Geri alım',bedelsiz:'Bedelsiz',bedelli:'Bedelli',tahsisli:'Sermaye artırımı',teklif:'Pay alım teklifi',birlesme:'Birleşme/devir',tesvik:'Teşvik',temettu:'Temettü',bilanco:'Bilanço',not:'Kredi notu',icerden:'İçeriden alım-satım',yatirim:'Yatırım',varlik:'Varlık alım/satım',ozel:'Özel durum',risk:'Risk',kisit:'İşlem kısıtı',ceza:'Ceza/dava'};
+let KST_LOADING=null;
+function kstatLoad(force){
+ if(KST_LOADING)return KST_LOADING;
+ if(!force&&window.KSTAT&&Date.now()-(KSTAT._t||0)<5*60e3)return Promise.resolve(KSTAT);
+ const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b))return Promise.resolve(null);
+ KST_LOADING=fetch(dq(b+'/sigstats')).then(r=>r.json()).then(j=>{if(j&&j.ok){j._t=Date.now();window.KSTAT=j}else window.KSTAT_ERR=(j&&j.error)||'alınamadı';return window.KSTAT}).catch(e=>{window.KSTAT_ERR=e.message||'bağlantı yok';return null}).finally(()=>{KST_LOADING=null});
+ return KST_LOADING;
+}
+function kAgg(keys,obj){let h=0,s=0,n=0;for(const [k,v] of Object.entries(obj||{})){const kap=k.startsWith('kap-');if(keys.includes(k)||(keys.includes('kap')&&kap&&k!=='kap-devre')){h+=v.h||0;s+=v.s||0;n+=v.n||0}}return{h,s,n}}
+function kCol(p,m){return m<5?'var(--dim)':p>=60?'var(--up)':p>=50?'var(--acc)':'var(--dn)'}
+function kCell(a){const m=a.h+a.s;if(!a.n)return '<span style="color:var(--dim)">–</span>';if(!m)return '<small>'+a.n+' sinyal</small>';const p=Math.round(a.h/m*100);return '<b style="color:'+kCol(p,m)+'">%'+p+'</b> <small>'+m+'</small>'}
+function kstatHtml(){
+ const K=window.KSTAT;
+ if(!K){if(!KST_LOADING)kstatLoad().then(()=>{if(S.tab==='lab')renderLab()});
+  return '<div class="ks"><div class="ksh"><b>📊 SUNUCU KARNESİ</b></div><div class="kempty">'+(window.KSTAT_ERR?'Karne alınamadı: '+htmlEsc(KSTAT_ERR)+' · <a href="#" onclick="kstatLoad(true).then(renderLab);return false">tekrar dene</a>':'Yükleniyor…')+'</div></div>'}
+ if(Date.now()-(K._t||0)>5*60e3&&!KST_LOADING)kstatLoad().then(()=>{if(S.tab==='lab')renderLab()});
+ if(!K.gun)return '<div class="ks"><div class="ksh"><b>📊 SUNUCU KARNESİ</b></div><div class="kempty">Henüz ölçülmüş sinyal yok. Sinyaller her akşam 18:15\'ten sonra ölçülür.</div></div>';
+ const card=(ad,a,w)=>{const m=a.h+a.s,p=m?Math.round(a.h/m*100):0;
+  return '<div class="kc'+(w?' kw':'')+'"><div class="kn">'+ad+'</div><div class="kp" style="color:'+kCol(p,m)+'">'+(m?'%'+p:'–')+'</div><div class="kd">'+(m?'✅ '+a.h+' kazandı · ❌ '+a.s+' kaybetti':a.n?a.n+' sinyal, sonuçlanan yok':'sinyal yok')+(m&&m<5?' · az veri':'')+'</div><div class="kbar"><i style="width:'+p+'%;background:'+kCol(p,m)+'"></i><u></u></div></div>'};
+ let h='<div class="ks"><div class="ksh"><b>📊 SUNUCU KARNESİ · SON '+K.gun+' İŞ GÜNÜ</b><small>'+new Date(K.at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})+'</small></div>'+
+  '<div class="kss">Her sinyalden sonra önce +%1 mi geldi, −%1 mi? Çizgi = %60 hedef.'+(K.bekleyen?' · '+K.bekleyen+' sinyal ölçüm bekliyor':'')+'</div><div class="kg">';
+ for(const [k,ad] of KSRC)h+=card(ad,kAgg([k],K.src));
+ h+=card('📰 KAP haberleri',kAgg(['kap'],K.src),1)+'</div>';
+ // KAP türleri
+ const kt=Object.entries(K.src).filter(([k,v])=>k.startsWith('kap-')&&k!=='kap-devre'&&(v.h+v.s)>=3).sort((a,b)=>(b[1].h+b[1].s)-(a[1].h+a[1].s)).slice(0,8);
+ if(kt.length)h+='<div class="ksec">KAP HABER TÜRÜNE GÖRE</div><table><tr><th>Tür</th><th>Haber</th><th>Başarı</th></tr>'+kt.map(([k,v])=>'<tr><td>'+(KAPTR[k.slice(4)]||k.slice(4))+'</td><td>'+v.n+'</td><td>'+kCell(v)+'</td></tr>').join('')+'</table>';
+ // gün gün
+ h+='<div class="ksec">GÜN GÜN</div><table><tr><th>Gün</th><th>Fırsat A</th><th>Fırsat B</th><th>Algı</th><th>Radar</th><th>KAP</th></tr>'+
+  K.days.map(x=>'<tr><td>'+x.d.slice(8)+'.'+x.d.slice(5,7)+'</td>'+['firsat-A','firsat-B','algi','radar','kap'].map(k=>'<td>'+kCell(kAgg([k],x.src))+'</td>').join('')+'</tr>').join('')+'</table>';
+ // son günün sinyalleri
+ if(K.list&&K.list.length){const SN={'firsat-A':'Fırsat A','firsat-B':'Fırsat B',algi:'Algı',radar:'Radar'};
+  h+='<div class="ksec">'+K.last.slice(8)+'.'+K.last.slice(5,7)+' SİNYALLERİ</div><table><tr><th>Saat</th><th>Hisse</th><th>Kaynak</th><th>Sonuç</th><th>En yüksek</th></tr>'+
+   K.list.map(r=>'<tr onclick="selectSym(\''+htmlEsc(r.sym)+'\',\'bist\')"><td>'+new Date(r.t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})+'</td><td class="sym">'+htmlEsc(r.sym)+'</td><td>'+(SN[r.src]||htmlEsc(r.src))+'</td><td>'+(r.o10===1?'<span class="up">✅ +%1</span>':r.o10===2?'<span class="dn">❌ −%1</span>':'<span style="color:var(--dim)">—</span>')+'</td><td class="'+cls(r.mfe)+'">'+(r.mfe!=null?pct(r.mfe):'-')+'</td></tr>').join('')+'</table>';}
+ return h+'</div>';
+}
 </script>
 
 </body>
