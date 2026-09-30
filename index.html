@@ -1137,22 +1137,22 @@ const DEEPSET={vcp:1,pull:1,kvw:1,poc:1};
 const SNAME={},SCOL={};SETUPS.forEach(s=>{SNAME[s.id]=s.n;SCOL[s.id]=s.c});
 SNAME.manual='Elle (kurulum yok)';
 const INFO={
- all:{t:'Tüm kurulumlar',s:'GENEL BAKIŞ',p:'Seçili zaman diliminde en az bir kurulumu tetikleyen tüm hisseler. Puan; kaç kurulumun aynı anda uyduğu, trend uyumu, hacim, ADX ve piyasa rejimi ile hesaplanır. Aynı hissede birden fazla etiket varsa sinyal daha güçlüdür.',l:['Eşikler sabit değil: hacim, trend gücü ve oynaklık o anki 625 hisselik dağılımdan yüzdelik olarak ölçülür','Rozetlerdeki sayı yüzdeliktir — hacim 92 demek, piyasanın %92\'sinden hareketli demek','hiza +4: dört zaman dilimi de aynı yönde; 0: dilimler çelişiyor','✓ yeşil satırlar lehte, ⚠ kırmızı satırlar aleyhte bulgulardır','▾ işlem planı: giriş, stop, hedef, R/Ö, lot ve doldurulabilirlik'],w:'Puan yüksek diye giriş yapma; grafiğe bakmadan işlem açma.'},
- vwap:{t:'VWAP dönüşü',s:'ORTALAMAYA DÖNÜŞ · GÜN İÇİ',p:'Fiyat, günün hacim ağırlıklı ortalamasının (VWAP) doğru tarafında ama ondan henüz uzaklaşmamış. Kurumsal emirlerin referans aldığı seviyeden dönüş yakalamayı hedefler.',l:['AL: fiyat VWAP üstünde, uzaklık %0–1,2','EMA20 > EMA50 (kısa vade yukarı)','Üst zaman dilimi trendi aynı yönde','Göreli hacim ≥ 1,2x'],w:'VWAP\'tan %2\'den fazla uzaklaşmışsa geç kalınmıştır; bu kurulum orada çalışmaz. Yalnızca 15dk ve 1 saatte anlamlıdır.'},
- ema:{t:'EMA yaslanma',s:'TREND TAKİBİ · GERİ ÇEKİLME',p:'Düzgün dizilmiş EMA şeridinde fiyat, EMA20\'ye geri çekilip yaslanmış. Trend devam ederken ucuz giriş noktası arar; stop mesafesi kısa olur.',l:['AL: EMA20 > EMA50 > EMA200 dizilimi','Fiyat EMA20\'nin %1 yakınında','Üst zaman dilimi trendi yukarı','ADX ≥ 18 (trend gerçekten var)'],w:'ADX düşükken bu kurulum yatay piyasada sürekli yanlış sinyal verir. Rejim YATAY ise dikkatli ol.'},
- brk:{t:'Kırılım',s:'MOMENTUM · BANT KIRILIMI',p:'Fiyat Bollinger üst bandını hacimle kırdı. Sıkışmadan çıkan ani hareketin ilk aşamasını yakalamayı hedefler.',l:['AL: kapanış BB üst bandının üstünde','Göreli hacim ≥ 1,5x','Üst zaman dilimi trendi yukarı'],w:'Kırılımların önemli kısmı yalancıdır. Hacim yoksa girme; stopu bandın altına koy, geniş tutma.'},
- sik:{t:'Sıkışma',s:'HAZIRLIK · PATLAMA ÖNCESİ',p:'Bollinger bandı daralmış, ADX düşük, ama hissede yeterli oynaklık var. Henüz yön yok; kırılım öncesi izleme listesi kurulumudur.',l:['Bant genişliği ≤ %1,6','ADX < 20 (yön belirsiz)','ATR% ≥ 0,8 (ölü hisse değil)'],w:'Bu bir giriş sinyali DEĞİL. Alarm kur, kırılım gelince gir. Yönü önceden tahmin etmeye çalışma.'},
- hac:{t:'Hacim patlaması',s:'MOMENTUM · OLAĞANDIŞI İLGİ',p:'Normalin iki katından fazla hacimle hareket eden hisseler. Haber, bilanço veya kurumsal giriş işareti olabilir.',l:['Göreli hacim ≥ 2x','Fiyat yönü hacimle aynı','Üst zaman dilimi trendi aynı yönde'],w:'Hacmin sebebini bilmiyorsan pozisyonu küçült. Manipülasyon ve tek seferlik blok işlemler burada sık görülür.'},
- h52:{t:'52 hafta ucu',s:'TREND GÜCÜ · YENİ ZİRVE/DİP',p:'Fiyat 52 haftalık zirveye (AL) veya dibe (SAT) çok yakın. Yeni zirveler momentum stratejilerinin klasik av alanıdır.',l:['AL: zirveye %2\'den yakın','Göreli hacim ≥ 1,2x'],w:'Zirvede satış baskısı da yoğundur. Kırılım teyidi olmadan alma; dipte "ucuzladı" diye alma.'},
+ all:{t:'Tüm kurulumlar',s:'GENEL BAKIŞ',p:'Seçili zaman diliminde en az bir kurulumu tetikleyen tüm hisseler. Puan; kaç kurulumun aynı anda uyduğu, trend uyumu, hacim, ADX ve piyasa rejimi ile hesaplanır. Aynı hissede birden fazla etiket varsa sinyal daha güçlüdür.',l:['Eşikler sabit değil: hacim, trend gücü ve oynaklık o anki likit hisselerin (günlük hacmi 5 Mn ₺ üstü) dağılımından yüzdelik olarak ölçülür','Rozetlerdeki sayı yüzdeliktir — hacim 92 demek, piyasanın %92\'sinden hareketli demek','hiza +4: dört zaman dilimi de aynı yönde; 0: dilimler çelişiyor','✓ yeşil satırlar lehte, ⚠ kırmızı satırlar aleyhte bulgulardır','▾ işlem planı: giriş, stop, hedef, R/Ö, lot ve doldurulabilirlik'],w:'Puan yüksek diye giriş yapma; grafiğe bakmadan işlem açma.'},
+ vwap:{t:'VWAP dönüşü',s:'ORTALAMAYA DÖNÜŞ · GÜN İÇİ',p:'Fiyat, günün hacim ağırlıklı ortalamasının (VWAP) doğru tarafında ama ondan henüz uzaklaşmamış. Kurumsal emirlerin referans aldığı seviyeden dönüş yakalamayı hedefler.',l:['AL: fiyat VWAP üstünde, uzaklık %0–1,2','EMA20 > EMA50 (kısa vade yukarı)','Üst zaman dilimi trendi aynı yönde','Hacim piyasadaki hisselerin en hareketli %30\'unda (yüzdelik ≥ 70)'],w:'VWAP\'tan %2\'den fazla uzaklaşmışsa geç kalınmıştır; bu kurulum orada çalışmaz. Yalnızca 15dk ve 1 saatte anlamlıdır.'},
+ ema:{t:'EMA yaslanma',s:'TREND TAKİBİ · GERİ ÇEKİLME',p:'Düzgün dizilmiş EMA şeridinde fiyat, EMA20\'ye geri çekilip yaslanmış. Trend devam ederken ucuz giriş noktası arar; stop mesafesi kısa olur.',l:['AL: EMA20 > EMA50 > EMA200 dizilimi','Fiyat EMA20\'nin %1 yakınında','Üst zaman dilimi trendi yukarı','Trend gücü (ADX) piyasanın üst yarısında (yüzdelik ≥ 55)'],w:'ADX düşükken bu kurulum yatay piyasada sürekli yanlış sinyal verir. Rejim YATAY ise dikkatli ol.'},
+ brk:{t:'Kırılım',s:'MOMENTUM · BANT KIRILIMI',p:'Fiyat Bollinger üst bandını hacimle kırdı. Sıkışmadan çıkan ani hareketin ilk aşamasını yakalamayı hedefler.',l:['AL: kapanış BB üst bandının üstünde','Hacim piyasanın en hareketli %12\'sinde (yüzdelik ≥ 88)','Üst zaman dilimi trendi yukarı'],w:'Kırılımların önemli kısmı yalancıdır. Hacim yoksa girme; stopu bandın altına koy, geniş tutma.'},
+ sik:{t:'Sıkışma',s:'HAZIRLIK · PATLAMA ÖNCESİ',p:'Bollinger bandı daralmış, ADX düşük, ama hissede yeterli oynaklık var. Henüz yön yok; kırılım öncesi izleme listesi kurulumudur.',l:['Bant genişliği piyasanın en dar %25\'inde','Trend gücü (ADX) alt %35\'te (yön belirsiz)','Oynaklık (ATR%) alt %30\'un üstünde (ölü hisse değil)'],w:'Bu bir giriş sinyali DEĞİL. Alarm kur, kırılım gelince gir. Yönü önceden tahmin etmeye çalışma.'},
+ hac:{t:'Hacim patlaması',s:'MOMENTUM · OLAĞANDIŞI İLGİ',p:'Normalin iki katından fazla hacimle hareket eden hisseler. Haber, bilanço veya kurumsal giriş işareti olabilir.',l:['Hacim piyasanın en hareketli %12\'sinde (yüzdelik ≥ 88)','Fiyat yönü hacimle aynı','Üst zaman dilimi trendi aynı yönde'],w:'Hacmin sebebini bilmiyorsan pozisyonu küçült. Manipülasyon ve tek seferlik blok işlemler burada sık görülür.'},
+ h52:{t:'52 hafta ucu',s:'TREND GÜCÜ · YENİ ZİRVE/DİP',p:'Fiyat 52 haftalık zirveye (AL) veya dibe (SAT) çok yakın. Yeni zirveler momentum stratejilerinin klasik av alanıdır.',l:['AL: zirveye %2\'den yakın','Hacim piyasanın en hareketli %30\'unda (yüzdelik ≥ 70)'],w:'Zirvede satış baskısı da yoğundur. Kırılım teyidi olmadan alma; dipte "ucuzladı" diye alma.'},
  tep:{t:'Aşırı tepki',s:'ORTALAMAYA DÖNÜŞ · KARŞI YÖN',p:'RSI aşırı satım/alım bölgesinde ama uzun vadeli trend hâlâ sağlam. Panik satışı sonrası toparlanma arar.',l:['AL: RSI ≤ 28 ve fiyat günlük EMA200 üstünde','SAT: RSI ≥ 72 ve fiyat günlük EMA200 altında'],w:'Trende karşı işlemdir, en riskli kurulumdur. Pozisyonu küçült, hedefi kısa tut, stopu sıkı koy.'},
  trm:{t:'Trend + Momentum',s:'TREND TAKİBİ · ANLIK',p:'EMA şeridi düzgün dizilmiş, MACD sinyalin üstünde ve histogram pozitif, hacim piyasa ortalamasının üstünde. Confluence projesinin klasik ön ayarı; trend sürerken devam hareketi arar.',l:['EMA20 > EMA50 > EMA200','MACD > sinyal ve histogram pozitif','Hacim yüzdeliği ≥ 70','Üst zaman dilimi aynı yönde'],w:'Hareket başladıktan sonra tetiklenir; geç giriş riski taşır. Canlı testlerde saf momentum girişleri komisyonla birlikte negatif R vermişti — bu yüzden Geri çekilme sürümü genelde daha iyidir.'},
  fbrk:{t:'Taze kırılım',s:'MOMENTUM · YENİ KESİŞİM',p:'MACD histogramı yeni pozitife dönmüş — kesişim taze. Histogramın büyüklüğü, o anda pozitif histogramı olan tüm hisseler arasında alt dilimde; yani hareket henüz yeni başlamış.',l:['Histogram pozitif ama piyasadaki pozitiflerin alt %40\'ında','Fiyat EMA20 üstünde','Üst zaman dilimi yukarı'],w:'Tazelik, doğruluk garantisi değil. Yatay piyasada MACD sürekli sıfır etrafında kesişir; rejim YATAY ise bu kurulumu atla.'},
  dip:{t:'Dipten dönüş',s:'ORTALAMAYA DÖNÜŞ · STOCHASTIC',p:'Stochastic %K, %D\'yi aşağıdan kesmiş ve hâlâ düşük bölgede; RSI da toparlanma başlangıcında. Uzun vadeli trend korunuyorsa (fiyat günlük EMA200 üstünde) tepki alımı arar.',l:['%K > %D ve %K < 38','RSI < 48','Fiyat günlük EMA200 üstünde'],w:'Düşen trendde bu kurulum sürekli erken sinyal verir. EMA200 şartı tam da bunu engellemek için var; şartı gevşetme.'},
  vcp:{t:'VCP — Volatilite daralması',s:'HAZIRLIK · ⚡ DERİN TARAMA',p:'Minervini/O\'Neil tarzı: fiyat ardışık daralan bacaklar çiziyor, her düzeltme bir öncekinden sığ, hacim kuruyor. Arz tükeniyor demektir; pivot kırılımı geldiğinde hareket sert olur. Birlikte geliştirdiğimiz VCP indikatörünün terminal sürümü.',l:['Son 3 bacakta toplam daralma ≥ %25','Son 8 barın hacmi ortalamanın altında (kuruma)','Fiyat pivot zirvesinin %2,5 yakınında ya da kırmış','Kart etiketinde bacak sayısı, daralma yüzdesi ve KIRDI bilgisi görünür'],w:'Kırılım gelmeden alma — "KIRDI" etiketi yoksa bu bir izleme kurulumudur. SASA örneğinde işe yaramıştı ama tek örnek istatistik değildir.'},
- pull:{t:'Geri çekilme (v2)',s:'TREND TAKİBİ · ⚡ DERİN TARAMA',p:'Confluence v2 chart indikatörünün giriş mantığı: yükselen dizilimde fiyat EMA20\'ye geri çekilmiş ve son barlarda tekrar üstüne çıkmış. Durum değil, olay yakalar — bu yüzden mum verisi gerekir.',l:['EMA 9 > 21 > 50 dizilimi','Son 6 barda EMA20 yukarı kesilmiş (geri alma olayı)','EMA20\'den uzaklık %2,2\'den az (aşırı uzama guard\'ı)','Kart etiketinde kaç bar önce geri alındığı yazar'],w:'Bu, momentum kırılımının negatif R vermesi üzerine geliştirilen sürümdü. Geri alma 5-6 bardan eskiyse tazelik kaybolmuştur.'},
- tuk:{t:'Tükeniş mumu',s:'GÜN İÇİ · ANLIK · DÖNÜŞ',p:'RSI gibi göstergeler birden çok mumun ortalamasına bakar; bu kurulum tek bir günün karakterine bakar. Gün içinde anormal geniş bir aralıkta, anormal yüksek hacimle hareket etmiş ama kapanışı günün ucundan uzakta kalmış hisseleri yakalar — "çılgınlığın tükendiği" anı.',l:['Günlük aralık (yüksek−düşük), piyasadaki hisselerin üst %25\'inde','Hacim, piyasanın üst %25\'inde','AL: kapanış günün alt %38\'inden yukarıda (satıcı tükenişi, güçlü toparlanma)','SAT: kapanış günün üst %38\'inden aşağıda (alıcı tükenişi, günü zayıf kapatma)'],w:'Güçlü trend sırasında bu mumlar birkaç gün üst üste tekrarlanabilir; tek görülmesi dönüş garantisi değildir, ertesi gün teyit iste.'},
+ pull:{t:'Geri çekilme (v2)',s:'TREND TAKİBİ · ⚡ DERİN TARAMA',p:'Confluence v2 chart indikatörünün giriş mantığı: yükselen dizilimde fiyat EMA21\'e geri çekilmiş ve son barlarda tekrar üstüne çıkmış. Durum değil, olay yakalar — bu yüzden mum verisi gerekir.',l:['EMA 9 > 21 > 50 dizilimi','Son 6 barda EMA21 yukarı kesilmiş (geri alma olayı)','EMA21\'den uzaklık %2,2\'den az (aşırı uzama engeli)','Kart etiketinde kaç bar önce geri alındığı yazar'],w:'Bu, momentum kırılımının negatif R vermesi üzerine geliştirilen sürümdü. Geri alma 5-6 bardan eskiyse tazelik kaybolmuştur.'},
+ tuk:{t:'Tükeniş mumu',s:'GÜN İÇİ · ANLIK · DÖNÜŞ',p:'RSI gibi göstergeler birden çok mumun ortalamasına bakar; bu kurulum tek bir günün karakterine bakar. Gün içinde anormal geniş bir aralıkta, anormal yüksek hacimle hareket etmiş ama kapanışı günün ucundan uzakta kalmış hisseleri yakalar — "çılgınlığın tükendiği" anı.',l:['Günlük aralık (yüksek−düşük), piyasadaki hisselerin üst %25\'inde','Hacim, piyasanın üst %25\'inde','AL: fiyat günün aralığının üst %38\'inde (satıcı tükenişi, güçlü toparlanma)','SAT: fiyat günün aralığının alt %38\'inde (alıcı tükenişi, günü zayıf kapatma)'],w:'Güçlü trend sırasında bu mumlar birkaç gün üst üste tekrarlanabilir; tek görülmesi dönüş garantisi değildir, ertesi gün teyit iste.'},
  kvw:{t:'Keskin VWAP',s:'ORTALAMAYA DÖNÜŞ · ⚡ DERİN TARAMA',p:'VWAP web tarayıcısı projesinden: fiyat VWAP\'ı test edip geri dönmüş ve üst üste 3 bar doğru tarafta kapanmış. Volatilite filtresi ölü hisseleri eler.',l:['Son 8 barda VWAP\'a dokunma (retest)','Ardından 3 bar üst üste doğru tarafta kapanış','ATR% ≥ 0,30 (yeterli oynaklık)','Sıkışma varsa etikette belirtilir'],w:'3 bar teyit gecikme demektir; hızlı scalp\'te girişi kaçırabilirsin. Buna karşılık yanlış sinyali belirgin azaltır — backtestte AL tarafında kazanma oranını %56\'dan %61\'e çıkarmıştı.'},
- poc:{t:'POC / Değer alanı',s:'HACİM PROFİLİ · DERİN TARAMA',p:'Dünkü seansın en çok işlem gören fiyatı (POC) ve %70 değer alanı hesaplanır. Fiyatın bu referanslara dönüp tutması güçlü destek/direnç işaretidir.',l:['⚡ Derin tara ile hesaplanır, mum verisi gerekir','AL: fiyat POC veya VAL\'e %0,6\'dan yakın','EMA50 ve VWAP\'ın doğru tarafında'],w:'Yalnız başına kullanma; EMA veya VWAP kurulumuyla üst üste geldiğinde değerlidir.'}
+ poc:{t:'POC / Değer alanı',s:'HACİM PROFİLİ · DERİN TARAMA',p:'Dünkü seansın en çok işlem gören fiyatı (POC) ve %70 değer alanı hesaplanır. Fiyatın bu referanslara dönüp tutması güçlü destek/direnç işaretidir.',l:['⚡ Derin tara ile hesaplanır, mum verisi gerekir','AL: fiyat POC veya VAL\'e %0,6\'dan yakın','Fiyat EMA50\'nin ters tarafındaysa puan düşer'],w:'Yalnız başına kullanma; EMA veya VWAP kurulumuyla üst üste geldiğinde değerlidir.'}
 };
 function setupsOf(o,tfId){
  const m=tfmOf(o,tfId),t=TFMAP[tfId],out={AL:[],SAT:[]};
@@ -1535,7 +1535,7 @@ function cardHtml(o,ix){const dir=S.dir,tf=S.stf;
    (dpm&&dp.poc?'<span class="tag t3">POC '+nf(dp.pocD,2)+'%</span>':'')+
    (dpm&&dp.cross&&dp.cross!=='-'?'<span class="tag">9/21 '+dp.cross+'·'+dp.bars+'b</span>':'')+
    (dpm&&dp.fl&&dp.fl.vcp?'<span class="tag t2">⚡VCP '+dp.fl.vcp.legs+' bacak · daralma %'+nf(dp.fl.vcp.shrink,0)+(dp.fl.vcp.brk?' · KIRDI':'')+'</span>':'')+
-   (dpm&&dp.fl&&dp.fl.pull?'<span class="tag t4">⚡Geri çekilme · '+dp.fl.pull.bars+'b önce EMA20 geri alındı</span>':'')+
+   (dpm&&dp.fl&&dp.fl.pull?'<span class="tag t4">⚡Geri çekilme · '+dp.fl.pull.bars+'b önce EMA21 geri alındı</span>':'')+
    (dpm&&dp.fl&&dp.fl.kvw?'<span class="tag t1">⚡Keskin VWAP · '+dp.fl.kvw.conf+' bar teyit'+(dp.fl.kvw.sq?' · sıkışma':'')+'</span>':'')+extBadges(o.name);
   const badge=dpm?'<span class="sc sc'+(dp.grade==='A'?(dir==='AL'?'A':'As'):dp.grade)+'">'+dp.grade+'</span>':'<span class="sc scC">'+Math.round(o._sc)+'</span>';
   const alc=(dir==='AL'?al.sum:-al.sum);
@@ -1582,8 +1582,18 @@ function cardHtml(o,ix){const dir=S.dir,tf=S.stf;
    '<div class="crow"><div class="cl"><div class="cn"><span class="cname">'+o.name+'</span>'+badge+alb+(isNew?'<span class="newtag">YENİ</span>':'')+(rise?'<span class="rise">▲ güçleniyor</span>':'')+'</div>'+
    '<div class="cdesc">'+(o.description||'').slice(0,30)+'</div></div>'+
    '<div class="cprice"><b>'+nf(o.close)+'</b><i class="'+cls(o.change)+'">'+pct(o.change)+'</i><i class="vol">'+big(o.voltl)+' ₺</i></div></div>'+
-   '<div class="tags">'+tags+'</div>'+mtfStrip(o)+meters+w0+detail+'</div>';
+   '<div class="tags">'+tags+'</div>'+whyChips(o,dir,al,m,pr)+mtfStrip(o)+meters+w0+detail+'</div>';
 }
+// v6.9: "Neden listede?" — puanı en çok etkileyen bulgular düz Türkçe (✓ lehte / ○ eksik)
+function whyChips(o,dir,al,m,pr){try{
+ const sg=dir==='AL'?1:-1,up=dir==='AL',c=[];const n=(o._ss||[]).length,ac=sg*al.sum;
+ c.push([n>=2,n+' kurulum aynı anda']);
+ const nd=(al.det||[]).filter(v=>v===sg).length;c.push([nd>=3,'Zaman dilimi uyumu '+nd+'/4 '+(up?'yükselişte':'düşüşte')]);
+ if(m&&m.htf)c.push([m.htf===sg,'Üst zaman dilimi '+(m.htf===sg?'aynı yönde':'ters yönde')]);
+ if(pr.rv!=null)c.push([pr.rv>=70,'Hacim gücü '+pr.rv+'/100']);
+ if(pr.rs!=null)c.push([up?pr.rs>=70:pr.rs<=30,up?(pr.rs>=50?'Endeksten güçlü':'Endeksten zayıf'):(pr.rs<=50?'Endeksten zayıf':'Endeksten güçlü')]);
+ return '<div class="whyh">NEDEN LİSTEDE?</div><div class="chips">'+c.map(x=>'<span class="chip '+(x[0]?'ok':'no')+'">'+x[1]+'</span>').join('')+'</div>';
+}catch(e){return ''}}
 /* ================= derin tarama ================= */
 async function deepScan(){
  if(S.scanning){S.scanning=false;$('#deepbtn').textContent='⚡ Derin';return}
@@ -2156,9 +2166,9 @@ function renderLive(){
  const bar=$('#livebar');if(bar&&!bar._built){bar.innerHTML=LIVEMOD.map(x=>'<button data-lm="'+x[0]+'" class="'+(x[0]===S.liveMode?'on':'')+'">'+x[1]+'</button>').join('')+'<span style="flex:1"></span><span style="color:var(--dim);font-size:9.5px">◉ TradingView anlık · ~5 sn</span>';bar._built=1;
   bar.onclick=e=>{const b=e.target.closest('[data-lm]');if(!b)return;S.liveMode=b.dataset.lm;[...bar.children].forEach(x=>x.classList.toggle('on',x===b));renderLive()}}
  const r=liveRows();if(!r.d.length){$('#live').innerHTML='<div class="note">Canlı veri birikiyor — birkaç dakika içinde momentum ve hacim hızı hesaplanır. Liste TradingView anlık akışındaki en likit hisselerden üretilir.</div>';return}
- $('#live').innerHTML='<table><tr><th>#</th><th>Sembol</th><th>Son</th><th>Değ%</th><th>'+r.eh+'</th><th>VWAP</th><th>Hız</th><th>Spread</th></tr>'+
+ $('#live').innerHTML='<table><tr><th>#</th><th>Sembol</th><th>Son</th><th>Değ%</th><th>'+r.eh+'</th><th>VWAP</th><th>Hız (lot/sn)</th><th>Spread</th></tr>'+
  r.d.slice(0,60).map((o,i)=>{const l=midasLive(o);
-  return '<tr class="row" onclick="selectSym(\''+o.name+'\',\'bist\')"><td style="color:var(--dim)">'+(i+1)+'</td><td class="sym">'+o.name+'</td><td>'+nf(o.close)+'</td><td class="'+cls(o.change)+'">'+pct(o.change)+'</td><td>'+r.ex(o)+'</td><td>'+(l&&l.vw?nf(l.vw)+' <i class="'+cls(l.vd)+'" style="font-style:normal;font-size:9px">'+pct(l.vd)+'</i>':'-')+'</td><td>'+(l?big(l.vrate)+'/s':'-')+'</td><td>'+(l&&l.spd!=null?nf(l.spd,2)+'%':'-')+'</td></tr>'}).join('')+'</table>';
+  return '<tr class="row" onclick="selectSym(\''+o.name+'\',\'bist\')"><td style="color:var(--dim)">'+(i+1)+'</td><td class="sym">'+o.name+'</td><td>'+nf(o.close)+'</td><td class="'+cls(o.change)+'">'+pct(o.change)+'</td><td>'+r.ex(o)+'</td><td>'+(l&&l.vw?nf(l.vw)+' <i class="'+cls(l.vd)+'" style="font-style:normal;font-size:9px">'+pct(l.vd)+'</i>':'-')+'</td><td>'+(l?big(l.vrate):'-')+'</td><td>'+(l&&l.spd!=null?nf(l.spd,2)+'%':'-')+'</td></tr>'}).join('')+'</table>';
 }
 
 /* ================= gün özeti ================= */
@@ -2470,7 +2480,7 @@ function renderLab(){
   (st.tips||[]).forEach(t=>{h+='<div class="note"'+(t.charAt(0)!=='✓'?' style="color:var(--warn)"':'')+'>'+t+'</div>'});
   const ents=Object.entries(st.setupAgg).sort((a,b)=>b[1].exp-a[1].exp);
   if(ents.length)h+='<table><tr><th>Kurulum</th><th>N</th><th>Kazanma</th><th>Beklenti</th></tr>'+ents.map(([k,v])=>'<tr><td>'+(SNAME[k]||k)+'</td><td>'+v.n+'</td><td>%'+nf(v.win,0)+'</td><td class="'+cls(v.exp)+'">'+nf(v.exp,2)+'R</td></tr>').join('')+'</table>';
- }else h+='<div class="note">Henüz yeterli sinyal geçmişi yok. Birkaç gün ⚡ derin tarama çalıştır, sonra ↻ yenile. Sistem, verdiği A sinyallerinin 1/3/5 gün sonrasını ölçer.</div>';
+ }else h+='<div class="note">Henüz yeterli sinyal geçmişi yok. Birkaç gün ⚡ derin tarama çalıştır, sonra ↻ yenile. Sistem, derin taramada not alan her sinyalin (A, B ve C) 1/3/5 gün sonrasını ölçer.</div>';
  h+='<button class="btn" onclick="refreshHealth()">↻ Karneyi Yenile</button>';
  h+='<div class="note" style="padding:10px 0 0;letter-spacing:.5px">📊 BACKTEST</div>';
  h+='<div class="seg" style="margin-bottom:6px"><button class="'+(S.btDir==='AL'?'on':'')+'" onclick="S.btDir=\'AL\';renderLab()">AL</button><button class="'+(S.btDir==='SAT'?'on':'')+'" onclick="S.btDir=\'SAT\';renderLab()">SAT</button></div>';
@@ -2478,7 +2488,7 @@ function renderLab(){
  h+='<label>Süre (ay, günlükte)<select onchange="S.btM=this.value">'+[3,6,12].map(t=>'<option'+(String(S.btM)===String(t)?' selected':'')+'>'+t+'</option>').join('')+'</select></label>';
  h+='<label>Evren (en likit N)<select onchange="S.btN=this.value">'+[50,100,200,400].map(t=>'<option'+(String(S.btN)===String(t)?' selected':'')+'>'+t+'</option>').join('')+'</select></label></div>';
  h+='<button class="btn" onclick="runBacktest()">▶ Testi Çalıştır</button>';
- h+='<div class="note">Bu test, canlı sistemin kurulum tanımlarına yaklaşık (mutlak eşikli) bir sürümünü kullanır — canlı sistemdeki yüzdelik eşikler o anki 625 hisselik piyasaya göre hesaplandığı için, geçmişe dönük tek hisse verisiyle birebir tekrarlanamaz. Aynı tetik ardışık barlarda tekrar sayılmaz, giriş bir sonraki mumun açılışından yapılır, ~%0,05 kayma düşülür (komisyon yok). Yön/kurulum karışıklığı ve iki kuruluma birden uyan işlemlerin çift sayılması düzeltildi.</div>';
+ h+='<div class="note">Bu test, canlı sistemin kurulum tanımlarına yaklaşık (mutlak eşikli) bir sürümünü kullanır — canlı sistemdeki yüzdelik eşikler o anki o anki bütün piyasaya göre hesaplandığı için, geçmişe dönük tek hisse verisiyle birebir tekrarlanamaz. Aynı tetik ardışık barlarda tekrar sayılmaz, giriş bir sonraki mumun açılışından yapılır, ~%0,05 kayma düşülür (komisyon yok). Yön/kurulum karışıklığı ve iki kuruluma birden uyan işlemlerin çift sayılması düzeltildi.</div>';
  if(S.btBusy)h+='<div class="prog" style="margin:8px 0"><div style="width:'+(S.btProg||0)+'%"></div></div><div class="note">Test çalışıyor... %'+(S.btProg||0)+'</div>';
  if(S.btResult){
   const r=S.btResult;
@@ -2584,7 +2594,7 @@ async function maeMfe(i){
   j.mae=mae;j.mfe=mfe;LS.set('jr',S.jr);renderJr();
  }catch(e){console.warn('MAE/MFE '+j.s+': '+(e.message||e))}
 }
-function delJr(i){S.jr.splice(i,1);LS.set('jr',S.jr);renderJr();mark('perf')}
+function delJr(i){if(!confirm('Bu işlem günlükten silinsin mi?'))return;S.jr.splice(i,1);LS.set('jr',S.jr);renderJr();mark('perf')}
 function journalFromBox(){const b=S.box;if(!b){alert('Önce AL/SAT kutusu kur');return}
  let k=S.setup;
  if(k==='all'){
@@ -2961,7 +2971,7 @@ function renderJr(){
  $('#jrlist').innerHTML='<div class="note" style="padding-bottom:0;letter-spacing:.5px">İŞLEMLER</div><table><tr><th>Sembol</th><th>Tür/Kurulum</th><th>Yön</th><th>Giriş</th><th>SL</th><th>TP1</th><th>TP2</th><th>K/Z%</th><th>R</th><th>Durum</th><th></th></tr>'+
   S.jr.map((j,i)=>{const st=j.status||(j.x?'kapandı':'açık');
    const stc=(st==='TP2'||st==='TP1')?'var(--up)':st==='stop'?'var(--dn)':'var(--dim)';
-   return '<tr><td class="sym">'+j.s+'</td><td style="color:var(--dim)">'+(j.type==='auto'?'📨 ':'')+(SNAME[j.k]||j.k)+'</td><td class="'+(j.d==='AL'?'up':'dn')+'">'+j.d+'</td><td>'+nf(j.e)+'</td><td>'+nf(j.l)+'</td><td>'+(j.t?nf(j.t):'-')+'</td><td>'+(j.tp2v?nf(j.tp2v):'-')+'</td><td class="'+cls(j.pct)+'">'+(j.pct!=null?pct(j.pct):'-')+'</td><td class="'+cls(j.r)+'">'+(j.r!=null?nf(j.r,2)+'R':(j._r!=null?'<span style="color:var(--dim)">'+nf(j._r,2)+'R</span>':'-'))+'</td><td style="color:'+stc+';font-weight:700">'+st+(j.closeD?' · '+j.closeD.slice(5):'')+'</td><td><button class="xbtn" onclick="delJr('+i+')">✕</button></td></tr>'}).reverse().join('')+'</table>';
+   return '<tr><td class="sym">'+j.s+'</td><td style="color:var(--dim)">'+(j.type==='auto'?'📨 ':'')+(SNAME[j.k]||j.k)+'</td><td class="'+(j.d==='AL'?'up':'dn')+'">'+j.d+'</td><td>'+nf(j.e)+'</td><td>'+nf(j.l)+'</td><td>'+(j.t?nf(j.t):'-')+'</td><td>'+(j.tp2v?nf(j.tp2v):'-')+'</td><td class="'+cls(j.pct)+'">'+(j.pct!=null?pct(j.pct):'-')+'</td><td class="'+cls(j.r)+'">'+(j.r!=null?nf(j.r,2)+'R':(j._r!=null?'<span style="color:var(--dim)">'+nf(j._r,2)+'R</span>':'-'))+'</td><td style="color:'+stc+';font-weight:700">'+st+(j.closeD?' · '+j.closeD.slice(5):'')+'</td><td style="white-space:nowrap">'+(j.r==null?'<button class="xbtn" style="width:auto;padding:0 7px;color:var(--acc)" onclick="closeJr('+i+')">Kapat</button> ':'')+'<button class="xbtn" onclick="delJr('+i+')">✕</button></td></tr>'}).reverse().join('')+'</table>';
 }
 function renderRisk(){
  const q=curQuote(),b=S.box;
@@ -3181,13 +3191,13 @@ function tvReconnectReport(){
    const sec=MAIN.indexOf(t)<0;mb.classList.toggle('on',sec);
    const tile=more.querySelector('.mgrid [data-t="'+t+'"]');
    mb.style.setProperty('--tc',sec&&tile?tile.style.getPropertyValue('--tc'):'#e2e8f0');
-   mb.querySelector('.lbl').textContent=sec&&tile?tile.textContent:'Menü';
+   mb.querySelector('.lbl').textContent=sec&&tile?((tile.querySelector('span')||tile).textContent):'Menü';
    more.querySelectorAll('.mgrid [data-t]').forEach(x=>x.classList.toggle('on',x.dataset.t===t));
   }catch(e){}};
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="6.8";window.APPV=APP_VER;
+  const APP_VER="6.9";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3637,6 +3647,17 @@ function tvReconnectReport(){
   if(!(o.voltl>=1e7))bad.push('Sığ hisse (günlük işlem 10 Mn ₺ altı) — manipülasyon riski');
   if(f.late)bad.push(f.ch!=null&&f.ch>=5?'Geç kalınmış: zaten '+sp(f.ch)+' yükselmiş':'Tavana çok yakın ('+(f.upD!=null?'%'+nf(f.upD,1):'')+' kaldı)');
   const flow=f.fa>=2.5||(f.rv!=null&&f.rv>=2);
+  // v6.9: sinyalin 4 şartı tek tek (✓ tuttu / ○ eksik) + ek bulgular
+  const C4=[
+   [flow,f.fa!=null&&f.fa>=2.5?'Anlık hacim normalin '+nf(f.fa,1)+' katı':f.rv!=null&&f.rv>=2?'Günlük hacim normalin '+nf(f.rv,1)+' katı':'Hacim '+(f.fa!=null?nf(f.fa,1)+' kat':'ölçülüyor')+' (en az 2,5 gerekli)'],
+   [f.fc!=null&&f.fc>=.65,f.fc!=null?'Alıcı oranı %'+nf(f.fc*100,0)+(f.fc>=.65?'':' (en az %65)'):'Alıcı oranı ölçülüyor'],
+   [!!(f.fd||f.fe),f.fd?'Alış kademesi yükseliyor':f.fe?'30 dk zirvesini VWAP üstünde kırdı':f.brk?'Zirveyi kırdı ama VWAP altında':'Kırılım ya da kademe yükselişi yok'],
+   [sc>=min,'Skor '+sc+' (eşik '+min+')']];
+  const nOk=C4.filter(c=>c[0]).length;
+  const extra=[];if(x.g>=2)extra.push(['ok','Sektöründe '+x.g+' hisse daha hareketli']);if(f.mv5!=null)extra.push(['','Son 5 dk '+sp(f.mv5)]);
+  const chipH='<div class="whyh">'+(x.stage==='ates'||x.stage==='hazir'?'NEDEN SİNYAL VERDİ?':'SİNYAL İÇİN 4 ŞART · '+nOk+'/4 tuttu')+'</div><div class="chips">'+
+   C4.map(c=>'<span class="chip '+(c[0]?'ok':'no')+'">'+c[1]+'</span>').join('')+extra.map(c=>'<span class="chip '+c[0]+'">'+c[1]+'</span>').join('')+
+   bad.map(t=>'<span class="chip bad">'+t+'</span>').join('')+'</div>';
   let why;
   if(x.stage==='ates')why='Sinyal verdi. Giriş, stop ve hedef Telegram mesajında; sonucu “Sinyaller” sekmesinde izle.';
   else if(x.stage==='hazir')why='Bütün şartlar tuttu, birkaç saniyelik teyit bekleniyor.';
@@ -3650,9 +3671,7 @@ function tvReconnectReport(){
   return '<div class="alc" onclick="algiGo(\''+x.s+'\')">'+
    '<div class="alh"><b class="als">'+x.s+'</b><span class="alt" style="color:'+LBL[1]+';border-color:'+LBL[1]+'">'+LBL[0]+'</span><span class="alg '+cls(f.ch)+'">Gün '+sp(f.ch)+'</span></div>'+
    '<div class="alb"><div class="alf" style="width:'+Math.max(3,Math.min(100,sc))+'%;background:'+col+'"></div><div class="alm" style="left:'+min+'%"></div><span>'+sc+'</span></div>'+
-   '<div class="alx">'+m.join(' · ')+'</div>'+
-   (ok.length?'<div class="alok">'+ok.map(t=>'✓ '+t).join('<br>')+'</div>':'')+
-   (bad.length?'<div class="albad">'+bad.map(t=>'⚠ '+t).join('<br>')+'</div>':'')+
+   chipH+
    '<div class="alw">💬 '+why+'</div></div>';
  }
  function vKayit(){
@@ -3748,6 +3767,172 @@ function tvReconnectReport(){
  setInterval(run,5000);
  document.addEventListener('visibilitychange',()=>{if(document.hidden)saveLog(true)});
  window.addEventListener('pagehide',()=>saveLog(true));
+})();
+</script>
+
+<style>
+/* v6.9 BİLGİ KARTLARI + BÖLÜM BAŞLIKLARI + GRUPLU MENÜ */
+.sechd{display:flex;align-items:center;gap:10px;padding:10px 14px 8px}
+.sechd .st{min-width:0;flex:1}
+.sechd h1{font-size:19px;font-weight:800;letter-spacing:-.2px;color:#fff;line-height:1.15;margin:0}
+.sechd .ss{color:var(--dim);font-size:11.5px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ibtn{flex:none;display:inline-flex;align-items:center;gap:6px;background:rgba(56,189,248,.10);color:#7dd3fc;border:1px solid rgba(56,189,248,.28);border-radius:20px;padding:6px 11px 6px 7px;font:700 12px var(--sans);white-space:nowrap;cursor:pointer}
+.ibtn i{font-style:normal;width:17px;height:17px;border-radius:50%;background:#38bdf8;color:#06090e;display:grid;place-items:center;font-size:11px;font-weight:900;font-family:Georgia,serif}
+.ibtn:active{transform:scale(.96)}
+#infosheet{position:fixed;inset:0;z-index:70;display:none}
+#infosheet.on{display:block}
+#infosheet .bd{position:absolute;inset:0;background:rgba(3,5,9,.6);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);opacity:0;transition:opacity .22s}
+#infosheet.open .bd{opacity:1}
+#infosheet .sh{position:absolute;left:0;right:0;bottom:0;max-height:86vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:linear-gradient(180deg,#111a27,#0b111b);border-top:1px solid var(--line2);
+ border-radius:22px 22px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .26s cubic-bezier(.2,.8,.2,1);box-shadow:0 -18px 50px rgba(0,0,0,.55);max-width:640px;margin:0 auto;font-family:var(--sans)}
+#infosheet.open .sh{transform:none}
+#infosheet .grab{width:42px;height:5px;border-radius:3px;background:var(--line2);margin:2px auto 12px}
+.ish{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.ish .ic{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-size:22px;flex:none}
+.ish h2{font-size:18px;font-weight:800;color:#fff;margin:0;line-height:1.2}
+.ish p{color:var(--dim);font-size:12px;margin:2px 0 0}
+.ish .kb{margin-left:auto;text-align:right;flex:none}.ish .kb+.x{margin-left:10px}
+.ish .kb small{display:block;color:var(--dim);font-size:10px}
+.ish .kb b{font-size:18px}
+.ish .x{margin-left:auto;flex:none;background:rgba(255,255,255,.06);border:1px solid var(--line2);color:var(--txt2);width:32px;height:32px;border-radius:16px;font-size:13px}
+.isec{background:rgba(255,255,255,.025);border:1px solid var(--line);border-radius:14px;padding:11px 12px;margin-bottom:9px}
+.isec h3{font-size:11.5px;letter-spacing:.5px;color:#7dd3fc;margin:0 0 6px;font-weight:800}
+.isec p{color:var(--txt2);font-size:13px;line-height:1.55;margin:0}
+.isec ol,.isec ul{margin:0;padding-left:18px;color:var(--txt2);font-size:13px;line-height:1.55}
+.isec li{margin:2px 0}
+.isec b{color:#fff}
+.isec.w h3{color:var(--wrn,#f5a524)}
+.irel{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.irel button{background:rgba(255,255,255,.05);border:1px solid var(--line2);color:var(--txt);border-radius:10px;padding:7px 10px;font:600 12px var(--sans)}
+/* neden sinyal çipleri */
+.whyh{font-size:10.5px;font-weight:800;letter-spacing:.5px;color:var(--txt2);margin:8px 0 5px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-size:11.5px;line-height:1.3;padding:4px 8px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--txt)}
+.chip.ok:before{content:"✓ ";color:var(--up);font-weight:900}
+.chip.no{color:var(--dim)}.chip.no:before{content:"○ "}
+.chip.bad{color:#fbbf24;border-color:rgba(245,165,36,.3)}.chip.bad:before{content:"⚠ "}
+/* gruplu menü */
+#more .sh{max-height:88vh;overflow-y:auto}
+#more .mgrp{color:var(--dim);font-size:10.5px;font-weight:800;letter-spacing:.6px;margin:12px 4px 7px}
+#more .mgrp:first-of-type{margin-top:0}
+#more .mgrid.g3{grid-template-columns:repeat(3,1fr);gap:8px}
+#more .mgrid.g3 button{align-items:flex-start;text-align:left;padding:11px 10px 10px;gap:5px;position:relative;min-height:88px}
+#more .mgrid.g3 button svg{width:23px;height:23px}
+#more .mgrid.g3 button span{font-size:12.5px;font-weight:700}
+#more .mgrid.g3 button small{font-size:10.5px;font-weight:500;color:var(--dim);line-height:1.3}
+#more .mgrid.g3 button .q{position:absolute;top:7px;right:7px;width:22px;height:22px;border-radius:50%;border:1px solid rgba(56,189,248,.4);color:#7dd3fc;font:900 11px Georgia,serif;display:grid;place-items:center;font-style:normal}
+</style>
+<div id="infosheet"><div class="bd"></div><div class="sh" id="infobody"></div></div>
+<script>
+/* ================= v6.9 BİLGİ KARTLARI ================= */
+// Her bölüm için: nedir, ne zaman sinyal verir / neyi gösterir, nasıl kullanılır, dikkat. Eşikler koddan birebir alınmıştır.
+const IC={
+ op:{ic:'🎯',c:'#ffb020',t:'Fırsat',s:'Kurulum tarayıcı · tüm BIST',k:['firsat-A','firsat-B'],sec:[
+  ['NEDİR?','Günlük hacmi yeterli bütün BIST hisselerini seçtiğin zaman diliminde (15 dk, 1 saat, 4 saat, günlük) tarar. AL ya da SAT yönünde bir <b>kurulum</b> oluşan hisseleri puanlayıp sıralar. Liste 30 saniyede bir yenilenir.'],
+  ['NE ZAMAN LİSTEYE GİRER?',['11 kurulumdan <b>en az biri</b> tutmalı: VWAP dönüşü, EMA yaslanma, kırılım, sıkışma, hacim patlaması, 52 hafta ucu, aşırı tepki, tükeniş mumu, trend+momentum, taze kırılım, dipten dönüş. Her birinin şartı için Fırsat ekranındaki <b>ⓘ</b> düğmesine bak.',
+   '<b>Puan</b>: tutan kurulum sayısı, zaman dilimleri uyumu, hacim, endekse göre güç, trend gücü ve sektör sıralamasından toplanır. Günde %3,5–5\'ten fazla gitmiş, sığ ya da hareketsiz hisselerde puan düşer.',
+   '<b>Hiza</b>: 4 zaman diliminden kaçında fiyat EMA20\'nin üstünde ve ortalamalar sıralı. +4 = hepsi yükselişte, 0 = çelişiyor.',
+   '<b>⚡ Derin tara</b>: ilk 25 hisseyi 15 dk mumlarla inceler ve not verir. Şart: fiyat EMA50 ve VWAP\'ın doğru tarafında. <b>A</b> = şu 6 maddeden en az 5\'i, <b>B</b> = 3–4\'ü: EMA 9>21>50 sıralı · son 3 mumda 9/21 kesişimi · hacim ortalamanın 1,2 katı · POC/VAL\'a %0,6 yakın · VWAP\'ın %0–1,5 üstü · 2+ kurulum.']],
+  ['NASIL KULLANIRIM?','Önce yönü (AL/SAT) ve zaman dilimini seç. Karta dokununca işlem planı açılır: giriş, stop (en yakın desteğin 0,3 ATR altı), hedef ve risk ayarına göre lot. A ve B notları ana cihazdan <b>Karne</b>\'ye yazılır.'],
+  ['DİKKAT','Kartın altındaki uyarılar önemli: <b>Hareket tamamlandı</b> (%5+), <b>Bilanço yakın</b>, <b>Likidite</b>, <b>Çelişki</b>. Yüksek puan tek başına yeterli değil; Karne\'deki başarı oranına bak.',1]]},
+ live:{ic:'⚡',c:'#00e5a0',t:'Canlı',s:'Anlık hareket · ~5 sn',sec:[
+  ['NEDİR?','TradingView canlı akışından en hacimli ~100 hisseyi 5 saniyede bir örnekler. Günlük hacmi 5 Mn ₺ üstü hisselerden ilk 60\'ı listelenir.'],
+  ['SEKMELER',['<b>Yükselen / Düşen</b>: günlük değişime göre','<b>Hacim ₺</b>: bugünkü TL hacmine göre','<b>Momentum</b>: son ~50 saniyedeki fiyat değişimi','<b>Tavana / Tabana yakın</b>: sınıra %3\'ten az kalanlar']],
+  ['SÜTUNLAR',['<b>VWAP</b>: günün hacim ağırlıklı ortalaması ve fiyatın ona uzaklığı','<b>Hız</b>: saniyede el değiştiren lot','<b>Spread</b>: alış ile satış kademesi arasındaki fark (%)']],
+  ['DİKKAT','Bu ekran sinyal vermez, anlık tablodur. Momentum listesinin başındakiler çok hızlı hareket ediyor olabilir; kovalamadan önce Algı\'ya bak.',1]]},
+ watch:{ic:'⭐',c:'#fbbf24',t:'İzleme',s:'Kendi listen · 15 dk analiz',sec:[
+  ['NEDİR?','Kendi hisse listen. Her hisse 15 dakikalık mumlarla ~5 dakikada bir analiz edilir ve Fırsat\'taki gibi <b>A / B / C</b> notu alır. A\'lar en üste dizilir. Listenin ilk 40 hissesi canlı fiyat akışına bağlanır.'],
+  ['SÜTUNLAR',['<b>NOT</b>: A/B/C. Yeşil = AL yönlü, kırmızı = SAT yönlü','<b>BÖLGE</b>: dünkü değer alanına göre yer. VAH↑ üstünde, VA içinde, VAL↓ altında','<b>POC</b>: en çok işlem gören fiyata uzaklık (%)','<b>9/21</b>: EMA9 ile EMA21\'in son kesişimi (EMA50 ile uyumluysa) ve kaç mum önce olduğu','<b>RVOL</b>: son 15 dk mumunun hacmi ÷ ortalama hacim']],
+  ['NASIL KULLANIRIM?','Üstteki <b>+ Liste</b> ile yeni liste aç, <b>★ Ekle</b> ile grafikteki hisseyi ekle. Satıra dokununca grafik açılır.']]},
+ algi:{ic:'⚡',c:'#ff7a45',t:'Algı',s:'Ani para girişi radarı · sayfa açıkken',k:['algi'],rel:['radar'],sec:[
+  ['NEDİR?','Seans boyunca en çok işlem gören hisseleri birkaç saniyede bir tarar. Bir hisseye birden para girmeye başladığında, fiyat henüz fazla kıpırdamadan uyarır. Yalnız <b>AL</b> yönlü, 10:00–18:00 arası ve <b>terminal açıkken</b> çalışır.'],
+  ['NE ZAMAN SİNYAL VERİR?',['Son 1 dakikanın işlem hacmi günün normalinin <b>en az 2,5 katı</b> (ya da günlük göreli hacim 2 kat)','İşlemlerin <b>en az %65\'i alıcıdan</b> (satış kademesinden alınıyor)','Alış kademesi yükseliyor <b>ya da</b> fiyat son 30 dakikanın zirvesini VWAP üstünde kırıyor','Skor <b>eşiğin üstünde</b> (varsayılan 70, Ayar\'dan değişir) ve şartlar <b>3 tur üst üste</b> (~10–15 sn) tutuyor'],'ol'],
+  ['SKOR NASIL HESAPLANIR?','100 üzerinden: anlık hacim 25, alıcı baskısı 20, günlük hacim 15, kırılım+VWAP 15, kademe yükselişi 10, sektörde 2+ hareketli hisse 10, endeks son 15 dk\'da düşmüyor 5. Sığ hisse (−20), geniş spread (−10), açılışın ilk 10 dk\'sı ve 17:50 sonrası (−15), geç kalınmış hareket (−25) puan kırar.'],
+  ['NASIL KULLANIRIM?','Durumlar: 👀 <b>İzlemede</b> → ⏳ <b>Hazırlanıyor</b> → ⚡ <b>AL sinyali</b>. Sinyalde giriş, stop (en az %0,5) ve hedef (stopun 2 katı) Telegram\'a gelir. 5 dakika içinde hedefin yarısı gelirse ✅ teyit mesajı düşer. Aynı hisse 30 dk tekrar sinyal vermez.'],
+  ['DİKKAT','Günde %5\'ten fazla yükselmiş ya da tavana %4\'ten yakın hissede sinyal vermez. Telefon kilitlenirse radar durur; sayfa kapalıyken <b>Sunucu radarı</b> çalışır.',1]]},
+ radar:{ic:'📡',c:'#38bdf8',t:'Sunucu radarı',s:'Terminal kapalıyken de çalışır',k:['radar'],rel:['algi'],sec:[
+  ['NEDİR?','Sunucuda dakikada bir çalışan tarama. Terminal kapalı olsa bile 10:10–17:55 arası bütün BIST\'e bakar, bulduğunu Telegram\'a <b>📡 SUNUCU RADAR</b> olarak yollar. Ayarlar → Sunucu bölümünden açılıp kapanır.'],
+  ['NE ZAMAN SİNYAL VERİR?',['Bugünkü işlem hacmi <b>en az 20 Mn ₺</b>','Son 5 dakikanın göreli hacmi <b>en az 3 kat</b>','Günlük değişim <b>%0,5 ile %5 arası</b> (geç kalınmamış)','Fiyat 15 dakikalık <b>VWAP ve EMA20\'nin üstünde</b>','Fiyat gün zirvesine <b>%0,3\'ten yakın</b>','Puan 60 ve üstü; dakikada en çok 4 hisse, aynı hisse 90 dakikada bir'],'ol'],
+  ['ALGI\'DAN FARKI','Algı saniyeleri izler, alıcı/satıcı ayrımı ve kademe hareketine bakar ama sayfa açık olmalı. Sunucu radarı dakikaları izler, daha kaba ama her zaman çalışır.']]},
+ lab:{ic:'📊',c:'#a78bfa',t:'Karne',s:'Sinyaller gerçekten tuttu mu?',k:['*'],rel:['radar','algi','op'],sec:[
+  ['NEDİR?','Verilen her sinyalin sonradan tutup tutmadığını ölçer. Sunucu her akşam 18:15\'ten sonra sinyalleri 1 dakikalık mumlarla tek tek kontrol eder: sinyalden sonra <b>önce +%1 mi geldi, yoksa −%1 mi?</b>'],
+  ['NASIL ÖLÇÜLÜR?',['Kaynaklar: Fırsat A/B, Algı, Sunucu radarı ve KAP haberleri','<b>Kazandı</b> = önce +%1 geldi · <b>Kaybetti</b> = önce −%1 geldi · aynı mumda ikisi birden varsa kaybetti sayılır','Gün sonuna kadar ikisi de gelmeyenler başarı oranına katılmaz','Rapor 18:20 ile 21:00 arası Telegram\'a gelir']],
+  ['HEDEF','±%1\'de <b>%60 başarı</b>. 2–3 hafta veri biriktikten sonra tutmayan kaynaklar kapatılacak ya da sıkılaştırılacak.'],
+  ['ALTTAKİ BÖLÜMLER','<b>Yerel karne</b>: derin taramada not alan sinyallerin 1/3/5 gün sonrası. <b>Backtest</b>: kurulumları geçmiş veride dener (5 mum tut, stop 1,5 ATR, hedef 3 ATR).'],
+  ['DİKKAT','Birkaç günlük sonuç yanıltır. Bir kaynak hakkında karar vermeden önce en az 30 sinyal birikmesini bekle.',1]]},
+ brief:{ic:'☀️',c:'#fde047',t:'Özet',s:'Günün tek ekranlık özeti',sec:[
+  ['NEYİ GÖSTERİR?',['Piyasa rejimi (Trend / Yatay / Zayıf) ve genişlik','Bugün en güçlü 3 sektör','Son 8 saatte derin taramada A notu alan sinyaller','Portföy durumu ve fiyata %2,5\'ten yakın alarmlar','Bugünkü ekonomik takvim ve işlem günlüğü istatistiği']],
+  ['DİKKAT','Özet otomatik üretilir, yatırım tavsiyesi değildir.',1]]},
+ reg:{ic:'🧭',c:'#38bdf8',t:'Piyasa',s:'Trend mi, yatay mı, zayıf mı?',sec:[
+  ['NEDİR?','Piyasanın genel havası. Günlük hacmi 10 Mn ₺ üstü hisselerden hesaplanır ve Fırsat puanına da eklenir.'],
+  ['NASIL KARAR VERİR?',['<b>TREND</b>: hisselerin %58\'i ya da fazlası günlük EMA20\'nin üstünde ve %52\'si ya da fazlası artıda','<b>ZAYIF</b>: %38 ya da azı EMA20 üstünde ve %45 ya da azı artıda','Diğer durumlar <b>YATAY</b>','<b>Toplama günü</b>: hacim dünden %5 fazla ve hisselerin %55\'i artıda. <b>Dağıtım günü</b>: aynı hacim artışında %45 ya da azı artıda (son 25 gün)']],
+  ['NASIL KULLANIRIM?','TREND\'de AL sinyalleri daha güvenilir. ZAYIF\'ta pozisyon küçült. 5 ve üstü dağıtım günü kurumsal satış işaretidir. Sektör rotasyonu tablosu paranın hangi sektöre aktığını gösterir.']]},
+ mov:{ic:'🚀',c:'#c084fc',t:'Hareket',s:'Günün öne çıkanları',sec:[
+  ['NEYİ GÖSTERİR?',['<b>Yükselen / Düşen</b>: günlük değişime göre','<b>Hacim</b>: göreli hacmi 1,5 katın üstünde olanlar','<b>Gap</b>: açılışı dünkü kapanıştan %1\'den fazla farklı olanlar','<b>52h zirve / dip</b>: 52 haftalık zirveye ya da dibe %2\'den yakın olanlar']],
+  ['DİKKAT','Günlük hacmi 10 Mn ₺ üstü hisseler, ilk 50. Sinyal değil, tarama listesidir.',1]]},
+ heat:{ic:'🟩',c:'#fb923c',t:'Isı Haritası',s:'Sektörler tek bakışta',sec:[
+  ['NEYİ GÖSTERİR?','Piyasa değeri en büyük 200 hisse, sektörlerine göre gruplanır. <b>Kutu büyüklüğü</b> piyasa değerini, <b>renk</b> günlük değişimi gösterir (±%5\'te en koyu). Kutuya dokununca grafik açılır.']]},
+ kap:{ic:'📰',c:'#60a5fa',t:'KAP Haber',s:'Önemli bildirimler ve piyasa tepkisi',k:['kap'],sec:[
+  ['NEDİR?','KAP\'a düşen bütün bildirimleri dakikada bir çeker, türünü (iş anlaşması, geri alım, bilanço…), yönünü ve önemini otomatik belirler. Son 7 gün listelenir.'],
+  ['NE ZAMAN TELEGRAM\'A GELİR?',['<b>Önem 3</b> (yeni iş, bedelsiz, pay alım teklifi, konkordato gibi riskler): her hisse için','<b>Önem 2</b> (geri alım, bilanço, ihale, sermaye artırımı…): XU100 hisselerinde','İzleme listendeki hisselerde önem 1 ve üstü hepsi','Yalnız <b>15 dakikadan taze</b> haberler; gece gelenler sabah 09:30 özetinde']],
+  ['TEPKİ SATIRI','Her haberin altında haberden sonra 15 dakika, 1 saat ve kapanışta ne olduğu ve önce +%1 mi −%1 mi geldiği yazar. Hangi haber türünün gerçekten fiyatı oynattığını buradan görürsün.'],
+  ['DİKKAT','Tür, başlıktaki kelimelere göre otomatik belirlenir; bazen yanılabilir. Karar vermeden önce "KAP\'ta aç" ile asıl metni oku.',1]]},
+ cal:{ic:'📅',c:'#f472b6',t:'Takvim',s:'Ekonomik veri günleri',sec:[
+  ['NEYİ GÖSTERİR?','TradingView ekonomik takviminden şimdiden 7 gün sonrasına kadar Türkiye, ABD ve Avrupa verileri. <b>Kırmızı nokta</b> = yüksek önem. Açıklanan, beklenti ve önceki değer yan yana.'],
+  ['DİKKAT','Enflasyon ve faiz kararı gibi önemli veri saatlerinde oynaklık artar; o dakikalarda yeni işleme girmemek daha güvenlidir.',1]]},
+ alarm:{ic:'🔔',c:'#ff5d6c',t:'Alarm',s:'Fiyat gelince haber ver',sec:[
+  ['NASIL ÇALIŞIR?',['Seviye şu anki fiyatın üstündeyse <b>yukarı</b>, altındaysa <b>aşağı</b> alarmı olur','Terminal açıkken ~4 saniyede bir kontrol edilir; ses, titreşim ve bildirim verir','Ana cihazdan kaydedilen alarmlar <b>sunucuda da</b> 10:00–18:10 arası dakikada bir kontrol edilir; terminal kapalıyken de Telegram\'a gelir']]]},
+ jr:{ic:'📒',c:'#4ade80',t:'Günlük',s:'İşlem defteri',sec:[
+  ['NEDİR?','Yaptığın işlemlerin defteri. Elle ekleyebilirsin; derin taramada A notu alan sinyaller 📨 işaretiyle otomatik eklenir (stop 1 ATR, hedefler 1,5R ve 2,5R).'],
+  ['NASIL ÇALIŞIR?',['Açık işlemler dakikada bir kontrol edilir: stop gelirse −1R, hedef gelirse +1,5R ya da +2,5R ile kendiliğinden kapanır','<b>Kapat</b> düğmesiyle çıkış fiyatını yazıp elle kapatabilirsin','<b>R</b> = riske ettiğin tutar. +2R = riskinin 2 katı kazanç']]]},
+ perf:{ic:'📈',c:'#34d399',t:'Performans',s:'Günlükteki işlemlerin sonucu',sec:[
+  ['NEYİ GÖSTERİR?',['Kazanma oranı, ortalama R, kâr faktörü (toplam kazanç ÷ toplam kayıp)','Toplam R eğrisi: zaman içinde birikmiş kazanç','Kurulum bazında sonuç: hangi kurulum sana kazandırıyor','18:10 sonrası gün sonu raporu Telegram\'a']]]},
+ risk:{ic:'🛡️',c:'#22d3ee',t:'Risk',s:'Kaç lot almalıyım?',sec:[
+  ['NASIL HESAPLAR?','Riske edilecek para = sermaye × risk yüzdesi (varsayılan 100.000 ₺ ve %1). Lot = bu tutar ÷ (giriş − stop). Giriş ve stop, grafikteki AL/SAT kutusundan gelir.'],
+  ['DİKKAT','Sermayenin %80\'inden fazlası pozisyondaysa uyarı kırmızıya döner.',1]]},
+ port:{ic:'💼',c:'#818cf8',t:'Portföy',s:'Pozisyonlar ve kâr/zarar',sec:[
+  ['NEDİR?','Alış ve satışlarını gir; ortalama maliyet, gerçekleşen ve açık kâr/zarar, sektör dağılımı hesaplanır. Tek bir sektör portföyün %40\'ını geçerse uyarır.']]},
+ crypto:{ic:'🪙',c:'#f59e0b',t:'Kripto',s:'Büyük kripto paralar',sec:[
+  ['NEYİ GÖSTERİR?','Büyük kripto paraların fiyatı, 24 saatlik ve 7 günlük değişimi, hacmi. Satıra dokununca grafik açılır.']]},
+ set:{ic:'⚙️',c:'#94a3b8',t:'Ayarlar',s:'Bağlantı, Telegram, cihazlar',rel:['radar'],sec:[
+  ['NELER VAR?',['<b>Veri bağlantısı</b>: sunucu adresi ve bağlantı testi','<b>Telegram</b>: bot ve sohbet ayarı (yalnız ana cihazda)','<b>Ana cihaz · bağlı cihazlar</b>: kimlerin girdiği, yeni cihaz onayı, engelleme','<b>Sunucu</b>: sunucu radarı, alarm ve KAP bildirimleri','<b>Yedek</b>: ayarlarını dosyaya ya da sunucuya kaydet (yalnız ana cihazda)']]]},
+};
+const IC_GRP=[['SİNYAL VE HABER',['lab','kap','mov']],['PİYASA',['brief','reg','heat','cal','crypto','alarm']],['BENİM',['jr','perf','port','risk','set']]];
+const IC_TD={lab:'Sinyaller tuttu mu?',kap:'Bildirimler ve tepkisi',mov:'Gap, zirve, hacim',alarm:'Fiyat gelince haber ver',brief:'Günün kısa özeti',reg:'Trend mi, yatay mı?',heat:'Sektörler tek bakışta',cal:'Veri ve faiz günleri',crypto:'Büyük kriptolar',jr:'İşlem defteri',perf:'Kazanç/kayıp istatistiği',risk:'Kaç lot almalıyım?',port:'Pozisyon ve kâr/zarar',set:'Bağlantı, Telegram, cihaz'};
+window.KSTAT=null; // 2. aşama: sunucu karnesi (kaynak → {h,s})
+function icKarne(c){
+ try{if(!c.k||!window.KSTAT||!KSTAT.src)return '';
+  let h=0,s=0;for(const [k,v] of Object.entries(KSTAT.src)){if(c.k.includes('*')||c.k.includes(k)||(c.k.includes('kap')&&k.startsWith('kap-')&&k!=='kap-devre')){h+=v.h||0;s+=v.s||0}}
+  if(h+s<3)return '';const p=Math.round(h/(h+s)*100);
+  return '<div class="kb"><small>Karnesi ('+(KSTAT.gun||10)+' gün)</small><b style="color:'+(p>=60?'var(--up)':p>=50?'var(--acc)':'var(--dn)')+'">%'+p+'</b><small>'+(h+s)+' sinyal</small></div>';
+ }catch(e){return ''}}
+function infoOpen(key){
+ const c=IC[key];if(!c)return;const box=document.getElementById('infosheet'),b=document.getElementById('infobody');
+ const sec=c.sec.map(x=>{const body=Array.isArray(x[1])?('<'+(x[2]==='ol'?'ol':'ul')+'>'+x[1].map(t=>'<li>'+t+'</li>').join('')+'</'+(x[2]==='ol'?'ol':'ul')+'>'):'<p>'+x[1]+'</p>';
+  return '<div class="isec'+(x[2]===1?' w':'')+'"><h3>'+x[0]+'</h3>'+body+'</div>'}).join('');
+ const rel=c.rel&&c.rel.length?'<div class="isec"><h3>İLGİLİ</h3><div class="irel">'+c.rel.map(r=>'<button onclick="infoOpen(\''+r+'\')">'+IC[r].ic+' '+IC[r].t+'</button>').join('')+'</div></div>':'';
+ b.innerHTML='<div class="grab"></div><div class="ish"><div class="ic" style="background:'+c.c+'22">'+c.ic+'</div><div><h2>'+c.t+'</h2><p>'+c.s+'</p></div>'+icKarne(c)+'<button class="x" onclick="infoClose()" aria-label="Kapat">✕</button></div>'+sec+rel;
+ b.scrollTop=0;box.classList.add('on');requestAnimationFrame(()=>requestAnimationFrame(()=>box.classList.add('open')));
+ try{if(c.k&&!window.KSTAT&&typeof kstatLoad==='function')kstatLoad().then(()=>{if(box.classList.contains('open')&&window.KSTAT){const kb=b.querySelector('.ish .kb');if(!kb){const x=b.querySelector('.ish .x');if(x)x.insertAdjacentHTML('beforebegin',icKarne(c))}}})}catch(e){}
+}
+function infoClose(){const box=document.getElementById('infosheet');box.classList.remove('open');setTimeout(()=>box.classList.remove('on'),260)}
+document.getElementById('infosheet').addEventListener('click',e=>{if(e.target.classList.contains('bd'))infoClose()});
+// Bölüm başlıkları: her sekmenin en üstüne ad + kısa açıklama + "Bu nedir?"
+(function(){
+ for(const k of Object.keys(IC)){const t=document.getElementById('t-'+k);if(!t||t.querySelector(':scope>.sechd'))continue;const c=IC[k];
+  t.insertAdjacentHTML('afterbegin','<div class="sechd"><div class="st"><h1>'+c.t+'</h1><div class="ss">'+c.s+'</div></div><button class="ibtn" onclick="infoOpen(\''+k+'\')"><i>i</i>Bu nedir?</button></div>')}
+ // Gruplu menü: kutular SİNYAL / PİYASA / BENİM altında, her kutuda kısa açıklama ve ⓘ
+ try{const g=document.querySelector('#more .mgrid');if(!g)return;const tiles={};g.querySelectorAll('button[data-t]').forEach(b=>tiles[b.dataset.t]=b);
+  const frag=document.createDocumentFragment();
+  for(const [ad,ks] of IC_GRP){const h=document.createElement('div');h.className='mgrp';h.textContent=ad;frag.appendChild(h);
+   const gr=document.createElement('div');gr.className='mgrid g3';
+   for(const k of ks){const b=tiles[k];if(!b)continue;delete tiles[k];b.insertAdjacentHTML('beforeend','<small>'+(IC_TD[k]||'')+'</small><i class="q" data-i="'+k+'">i</i>');gr.appendChild(b)}
+   frag.appendChild(gr)}
+  const rest=Object.values(tiles);if(rest.length){const gr=document.createElement('div');gr.className='mgrid g3';rest.forEach(b=>gr.appendChild(b));frag.appendChild(gr)}
+  g.replaceWith(frag);
+  const more=document.getElementById('more');
+  more.addEventListener('click',e=>{const q=e.target.closest('.q[data-i]');if(q){e.stopPropagation();e.preventDefault();infoOpen(q.dataset.i)}},true);
+ }catch(e){}
 })();
 </script>
 
