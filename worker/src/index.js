@@ -915,7 +915,15 @@ export default {
     return json({ error: 'bilinmeyen yol: /' + route }, 404);
   },
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(cron(env).then(async () => {
+    // Dakikalık iş. Sıra: alarm/radar (cron) → duyuru → karne ölçümü (seans dışı) → KAP → geçmiş test.
+    // Karne KAP'tan ÖNCE: ay sonu gibi yoğun günlerde KAP listesi büyüyüp çalışma süresini aşarsa karne yine de çalışsın.
+    // Teşhis: meta 'cron_hb' = son çalışmanın saati + ulaştığı adım (iş yarıda kesilirse nerede kaldığı görünür).
+    const hb = async st => { try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('cron_hb', ?)").bind(trNow().hm + ' ' + st).run(); } catch (e) {} };
+    ctx.waitUntil((async () => {
+      await hb('1-başladı');
+      try { await cron(env); }
+      catch (e) { try { const st = await kvGet(env, 'st', {}); st.err = 'cron: ' + (e && e.message || e); st.lastRun = Date.now(); await kvPut(env, 'st', st); } catch {} }
+      await hb('2-alarm/radar bitti');
       // v6.8: TEK SEFERLİK DUYURU — D1 meta k='announce' varsa Telegram'a gönderilir; başarıda satır silinir.
       // Gönderilemezse (token geçersiz vb.) ayarlar sunucuya yeniden kaydedilince (cfg.at değişince) tekrar denenir; en çok 20 deneme.
       try {
@@ -934,6 +942,13 @@ export default {
           }
         }
       } catch (e) {}
+      const T = trNow(); const inSess = T.wd >= 1 && T.wd <= 5 && T.m >= 590 && T.m < 1095;
+      if (!inSess) {
+        const t0 = Date.now(); let sr;
+        try { sr = await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf); } catch (e) { sr = { hata: String(e && e.message || e).slice(0, 200) }; }
+        try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sig_st', ?)").bind(new Date().toISOString() + ' ' + (Date.now() - t0) + 'ms ' + JSON.stringify(sr ?? null).slice(0, 300)).run(); } catch (e) {}
+        await hb('3-karne bitti');
+      }
       // KAP: dakikada bir, her gün (gece gelenler sabah 09:30 özetinde)
       try {
         const kr = await kapPoll(env, { UA, tgSend, kvGet, esc, scanRaw });
@@ -942,12 +957,10 @@ export default {
         if (n) { const st = await kvGet(env, 'st', {}); if (st.cnt) { st.cnt.kap = (st.cnt.kap || 0) + n; await kvPut(env, 'st', st); } }
         if (kr && kr.yeni) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_st', ?)").bind(JSON.stringify({ at: Date.now(), ...kr })).run();
       } catch (e) { try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_err', ?)").bind(new Date().toISOString() + ' ' + String(e && e.message || e).slice(0, 300)).run(); } catch {} }
-      // NABIZ geçmiş testi: seans DIŞINDA, dakikada bir hisse (ağır iş en sona — alarmlar etkilenmesin)
-      const T = trNow(); const inSess = T.wd >= 1 && T.wd <= 5 && T.m >= 590 && T.m < 1095;
-      if (!inSess) { const t0 = Date.now(); let sr; try { sr = await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf); } catch (e) { sr = { hata: String(e && e.message || e).slice(0, 200) }; }
-        try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sig_st', ?)").bind(new Date().toISOString() + ' ' + (Date.now() - t0) + 'ms ' + JSON.stringify(sr ?? null).slice(0, 300)).run(); } catch (e) {} try { await btStep(env); } catch (e) {} }
-    }).catch(async e => {
-      try { const st = await kvGet(env, 'st', {}); st.err = 'cron: ' + (e && e.message || e); st.lastRun = Date.now(); await kvPut(env, 'st', st); } catch {}
-    }));
+      await hb('4-KAP bitti');
+      // NABIZ/özellik geçmiş testi: seans DIŞINDA (ağır iş en sona)
+      if (!inSess) { try { await btStep(env); } catch (e) {} }
+      await hb('5-tamam');
+    })());
   }
 };
