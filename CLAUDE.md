@@ -96,6 +96,7 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   Worker ayrıca api.altinerpano.com'da (wrangler.jsonc routes custom_domain). workers.dev de çalışır; telefonlar eski adreste.
   pairStart motorun tvproxy'sini yeni adrese çevirir; kur.ps1 /pair'i yeni adrese yollar, npm.cmd/npx.cmd kullanır (betik engeli).
   Şirket PC'sinde PowerShell'de önce 'Set-ExecutionPolicy -Scope Process Bypass -Force'. 01.10 22:48 motor kuruldu, canlı veri var.
+- v7.6 ŞİMDİ YENİ GÖRÜNÜM: nHero (BIST 100 büyük rakam, piyasanın havası, artıda/eksi çubuğu, XU030/BANKA/USD/EUR/ALTIN kutuları = S.mkt, refreshTick doldurur), nAvatar, nPill, halka karne (nRing), sektör Türkçe (SEC_TR). Geniş ekranda iki sütun (.ngrid).
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.

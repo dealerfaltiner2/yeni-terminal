@@ -2085,7 +2085,7 @@ async function refreshTick(){
  try{
   const j=await tvScan('global',{symbols:{tickers:['BIST:XU100','BIST:XU030','BIST:XBANK','BIST:XUSIN','FX_IDC:USDTRY','FX_IDC:EURTRY','TVC:GOLD','TVC:SILVER','BINANCE:BTCUSDT','BINANCE:ETHUSDT']},columns:['name','close','change']});
   const nm={XU100:'XU100',XU030:'XU030',XBANK:'BANKA',XUSIN:'SINAİ',USDTRY:'USD',EURTRY:'EUR',GOLD:'ALTIN',SILVER:'GÜMÜŞ',BTCUSDT:'BTC',ETHUSDT:'ETH'};
-  j.data.forEach(r=>{if(r.d[0]==='XU100')S.idxCh=r.d[2]});
+  j.data.forEach(r=>{if(r.d[0]==='XU100')S.idxCh=r.d[2]});S.mkt=S.mkt||{};j.data.forEach(r=>{S.mkt[nm[r.d[0]]||r.d[0]]={c:r.d[1],ch:r.d[2]}});
   const h=j.data.map(r=>'<span><b>'+(nm[r.d[0]]||r.d[0])+'</b>'+nf(r.d[1],r.d[1]>1000?0:2)+' <i class="'+cls(r.d[2])+'">'+pct(r.d[2])+'</i></span>').join('');
   $('#tickrun').innerHTML=h+h;
  }catch(e){}
@@ -3216,7 +3216,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="7.5";window.APPV=APP_VER;
+  const APP_VER="7.6";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4142,6 +4142,66 @@ tr.row:active td{background:var(--card2)}
 .stb button.pri{background:rgba(245,165,36,.16);border-color:rgba(245,165,36,.5);color:#fbbf24}
 .stbar{height:3px;border-radius:2px;background:rgba(255,255,255,.08);margin-top:9px;overflow:hidden}
 .stbar i{display:block;height:100%;background:rgba(255,255,255,.35);width:100%;transition:width linear}
+
+/* ============ v7.6 · ŞİMDİ YENİ GÖRÜNÜM ============ */
+#nowbody{padding:0 12px 20px;max-width:1180px;margin:0 auto;width:100%;box-sizing:border-box;min-width:0}
+.ngrid,.ncol{min-width:0}
+.nhero{position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:16px 16px 12px;background:radial-gradient(90% 120% at 100% 0%,rgba(56,189,248,.14),transparent 60%),linear-gradient(180deg,#131c29,#0d141e)}
+.nhero.TREND{background:radial-gradient(90% 120% at 100% 0%,rgba(0,211,160,.20),transparent 60%),linear-gradient(180deg,#112420,#0c1519)}
+.nhero.ZAYIF{background:radial-gradient(90% 120% at 100% 0%,rgba(255,85,102,.18),transparent 60%),linear-gradient(180deg,#22151a,#140e12)}
+.nh-row{display:flex;gap:14px;align-items:flex-start}
+.nh-idx small,.nh-mode small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.8px;color:var(--dim)}
+.nbig{font-size:34px;font-weight:800;letter-spacing:-1px;color:#fff;line-height:1.05;margin:2px 0 6px;font-variant-numeric:tabular-nums}
+.npill{display:inline-block;font-style:normal;font-weight:800;font-size:12px;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.07);color:var(--txt2);font-variant-numeric:tabular-nums}
+.npill.up{background:rgba(0,211,160,.15);color:var(--up)}.npill.dn{background:rgba(255,85,102,.15);color:#ff7a88}
+.nh-mode{margin-left:auto;text-align:right;max-width:58%}
+.nh-mode b{display:block;font-size:19px;font-weight:800;color:#fff;margin:3px 0 4px}
+.nhero.TREND .nh-mode b{color:var(--up)}.nhero.ZAYIF .nh-mode b{color:#ff7a88}
+.nh-mode span{display:block;font-size:12px;line-height:1.45;color:var(--txt2)}
+.nbr{margin-top:14px}
+.nbr-bar{height:7px;border-radius:99px;background:rgba(255,85,102,.35);overflow:hidden}
+.nbr-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#00b98c,#00d3a0)}
+.nbr-l{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:11.5px;color:var(--txt2)}
+.nbr-l b{color:#fff}.nbr-l b.up{color:var(--up)}
+.nmk{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:12px}
+.nmk div{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:7px 8px;font-variant-numeric:tabular-nums;min-width:0}
+.nmk small{display:block;font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--dim)}
+.nmk b{display:block;font-size:13px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nmk i{font-style:normal;font-size:11px;font-weight:700}
+.nhero .nsess{margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)}
+.ngrid{display:block}
+.nsec{display:flex;align-items:center;gap:8px;margin:20px 2px 10px}
+.nsec .nsi{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;font-size:13px;background:rgba(255,255,255,.06)}
+.nsec b{font-size:14px;font-weight:800;letter-spacing:0;color:#fff}
+.nsec em{font-style:normal;font-size:11px;font-weight:800;color:#0b1118;background:#fbbf24;border-radius:99px;padding:1px 7px}
+.nnote{font-size:12px;line-height:1.5;color:var(--dim);margin:-4px 2px 10px}
+.nrow{gap:11px;padding:10px 12px;border-radius:16px;border-color:rgba(255,255,255,.07);background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.015));transition:transform .12s,border-color .12s}
+.nrow:hover{border-color:rgba(255,255,255,.16)}
+.nrow:active{transform:scale(.99)}
+.nav{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font:800 13px var(--sans);letter-spacing:.3px;color:hsl(var(--h),80%,78%);background:hsla(var(--h),60%,45%,.18);border:1px solid hsla(var(--h),60%,55%,.25)}
+.nrow .nt{display:flex;align-items:center;gap:6px;min-width:0}
+.nrow .nm b{font-size:15px}
+.nrow .nm .src{margin-left:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
+.nsp{flex:none;opacity:.95}
+.nrow .nv{min-width:62px}
+.nrow .nv b{font-size:14.5px;margin-bottom:3px}
+.nempty{background:rgba(255,255,255,.02);border-radius:16px;padding:14px}
+.nempty b{color:var(--txt)}
+.nkg{grid-template-columns:repeat(2,1fr);gap:8px}
+.nk{display:flex;align-items:center;gap:10px;text-align:left;padding:9px 10px;border-radius:16px;border-color:rgba(255,255,255,.07);background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.015))}
+.nk svg{flex:none}
+.nk small{font-size:12.5px;font-weight:800;color:#fff}
+.nk i{font-size:11px;margin-top:2px;white-space:normal}
+.nqa{margin-top:20px;gap:8px}
+.nqa button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 4px;border-radius:16px;font:800 13px var(--sans);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border-color:rgba(255,255,255,.08);cursor:pointer}
+.nqa button span{font-size:18px}
+.nqa button small{font-weight:600;font-size:10.5px;color:var(--dim)}
+@media (max-width:420px){.nmk{grid-template-columns:repeat(3,1fr)}.nmk div:nth-child(n+4){display:none}.nbig{font-size:30px}.nsp{display:none}}
+@media (min-width:900px){
+ .ngrid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:22px;align-items:start}
+ .nhero{padding:20px 22px 14px}.nbig{font-size:40px}
+ .nh-mode{max-width:46%}
+}
 </style>
 <div id="sigtoast"></div>
 <script>
@@ -4172,14 +4232,27 @@ function nowSessLine(){const s=nowSess(),live=typeof tvAlive==='function'&&tvAli
 let NOWK={t:0,list:null};
 function nowKapLoad(){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||Date.now()-NOWK.t<120000)return;NOWK.t=Date.now();
  fetch(dq(b+'/kap?f=onemli')).then(r=>r.json()).then(j=>{if(j&&j.ok){NOWK.list=j.list||[];if(S.tab==='now')renderNow()}}).catch(()=>{})}
+const SEC_TR={'Electronic Technology':'Elektronik','Finance':'Finans','Non-Energy Minerals':'Madencilik','Consumer Durables':'Dayanıklı tüketim','Consumer Non-Durables':'Tüketim ürünleri','Producer Manufacturing':'İmalat','Process Industries':'Kimya ve proses','Utilities':'Enerji dağıtım','Energy Minerals':'Enerji','Retail Trade':'Perakende','Transportation':'Ulaştırma','Communications':'İletişim','Technology Services':'Yazılım','Health Technology':'Sağlık','Health Services':'Sağlık hizmeti','Commercial Services':'Ticari hizmet','Consumer Services':'Tüketici hizmeti','Distribution Services':'Dağıtım','Industrial Services':'Endüstriyel hizmet','Miscellaneous':'Diğer'};
+function secTr(x){x=String(x||'');return SEC_TR[x]||x}
+function nAvatar(sym){sym=String(sym||'?');let h=0;for(const c of sym)h=(h*31+c.charCodeAt(0))%360;return '<span class="nav" style="--h:'+h+'">'+htmlEsc(sym.slice(0,2))+'</span>'}
+function nPill(ch){return ch!=null&&isFinite(ch)?'<i class="npill '+(ch>0?'up':ch<0?'dn':'')+'">'+pct(ch)+'</i>':''}
+function nSec(ic,t,link,tab,n){return '<div class="nsec"><span class="nsi">'+ic+'</span><b>'+t+'</b>'+(n?'<em>'+n+'</em>':'')+(link?'<a href="#" onclick="showTab(\''+tab+'\');return false">'+link+' ›</a>':'')+'</div>'}
 function nowRow(o){ // {sym,src,cls,sub,val,chg,hot,onclick}
- return '<div class="nrow'+(o.hot?' hot':'')+(o.dn?' dn':'')+'" onclick="'+(o.onclick||('selectSym(\''+o.sym+'\',\'bist\');showTab(\'chart\')'))+'">'+(sparkFor(o.sym)||'<svg class="spk" width="76" height="26"></svg>')+
-  '<div class="nm"><b>'+htmlEsc(o.sym)+'</b><span class="src '+(o.cls||'')+'">'+htmlEsc(o.src)+'</span><small>'+htmlEsc(o.sub)+'</small></div>'+
-  '<div class="nv">'+(o.val!=null?'<b>'+o.val+'</b>':'')+(o.chg!=null?'<i class="'+cls(o.chg)+'">'+pct(o.chg)+'</i>':'')+'</div></div>'}
+ const sp=sparkFor(o.sym,64,24);
+ return '<div class="nrow'+(o.hot?' hot':'')+(o.dn?' dn':'')+'" onclick="'+(o.onclick||('selectSym(\''+o.sym+'\',\'bist\');showTab(\'chart\')'))+'">'+nAvatar(o.sym)+
+  '<div class="nm"><div class="nt"><b>'+htmlEsc(o.sym)+'</b><span class="src '+(o.cls||'')+'">'+htmlEsc(o.src)+'</span></div><small>'+htmlEsc(o.sub)+'</small></div>'+
+  (sp?'<div class="nsp">'+sp+'</div>':'')+
+  '<div class="nv">'+(o.val!=null?'<b>'+o.val+'</b>':'')+nPill(o.chg)+'</div></div>'}
+function nRing(p,m){const r=17,c=2*Math.PI*r,v=p==null?0:p/100,col=p==null?'rgba(255,255,255,.15)':kCol(p,m);
+ return '<svg width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="22" r="'+r+'" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="4.5"/>'+
+  '<circle cx="22" cy="22" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="'+(c*v).toFixed(1)+' '+c.toFixed(1)+'" transform="rotate(-90 22 22)"/>'+
+  '<text x="22" y="26" text-anchor="middle" font-size="11" font-weight="800" fill="'+(p==null?'#64748b':'#fff')+'" font-family="system-ui">'+(p==null?'–':p)+'</text></svg>'}
+function nKarneGrid(srcObj,detail){const it=[['Fırsat A',['firsat-A']],['Fırsat B',['firsat-B']],['Algı',['algi']],['Radar',['radar']]];
+ return '<div class="nkg">'+it.map(([ad,k])=>{const a=kAgg(k,srcObj),m=a.h+a.s,p=m?Math.round(a.h/m*100):null;
+  return '<div class="nk">'+nRing(p,m)+'<div><small>'+ad+'</small><i>'+(detail?(a.n?a.h+' kazandı · '+a.s+' kaybetti':'sinyal yok'):(m?m+' sinyal':'veri yok'))+'</i></div></div>'}).join('')+'</div>'}
 function nowKarne(){const K=window.KSTAT;if(K&&Date.now()-(K._t||0)>5*60e3)kstatLoad().then(k=>{if(k&&S.tab==='now')renderNow()});if(!K){kstatLoad().then(k=>{if(k&&S.tab==='now')renderNow()});return '<div class="nempty">'+(window.KSTAT_ERR?'Karne alınamadı: '+htmlEsc(KSTAT_ERR):'Karne yükleniyor…')+'</div>'}
  if(!K.gun)return '<div class="nempty">Henüz ölçülmüş sinyal yok. Sinyaller her akşam 18:15\'ten sonra ölçülür.</div>';
- const it=[['Fırsat A',['firsat-A']],['Fırsat B',['firsat-B']],['Algı',['algi']],['Radar',['radar']]];
- return '<div class="nkg">'+it.map(([ad,k])=>{const a=kAgg(k,K.src),m=a.h+a.s,p=m?Math.round(a.h/m*100):null;return '<div class="nk"><small>'+ad+'</small><b style="color:'+(p==null?'var(--dim)':kCol(p,m))+'">'+(p==null?'–':'%'+p)+'</b><i>'+(m?m+' sinyal':'veri yok')+'</i></div>'}).join('')+'</div>'}
+ return nKarneGrid(K.src,false)}
 function nowPositions(){
  const q=s=>{const x=S.quotes[s]||S.umap[s];return x&&x.close?x.close:null};
  const op=(S.jr||[]).filter(j=>j.r==null);let h='';
@@ -4189,46 +4262,54 @@ function nowPositions(){
  if(b&&b.portfolio&&b.portfolio.openN)h+='<div class="nrow" onclick="showTab(\'port\')"><div class="nm"><b>Portföy</b><small>'+b.portfolio.openN+' pozisyon · '+nf(b.portfolio.openVal,0)+' ₺'+(b.portfolio.usage!=null?' · sermayenin %'+nf(b.portfolio.usage,0)+'\'i':'')+'</small></div><div class="nv"><b class="'+cls(b.portfolio.un)+'">'+(b.portfolio.un>=0?'+':'')+nf(b.portfolio.un,0)+' ₺</b><i style="color:var(--dim)">açık kâr/zarar</i></div></div>';
  if(b&&b.alarms&&b.alarms.length)h+='<div class="nrow" onclick="showTab(\'alarm\')"><div class="nm"><b>🔔 Yaklaşan alarm</b><small>'+b.alarms.map(a=>a.s+' (%'+nf(a.d,1)+' kaldı)').join(' · ')+'</small></div></div>';
  return h}
+function nHero(){
+ const r=S.reg,mk=S.mkt||{},x=mk.XU100||{},ch=x.ch!=null?x.ch:S.idxCh;
+ const md=r?r.mode:'',mdTr={TREND:'Yükseliş havası',YATAY:'Yatay seyir',ZAYIF:'Zayıf piyasa'}[md]||'Piyasa';
+ const tip=md==='TREND'?'AL sinyalleri daha güvenilir.':md==='ZAYIF'?'Temkinli ol, pozisyonları küçült.':md?'Yön belirsiz; kırılım ve sıkışma kurulumları öne çıkar.':'Piyasa verisi bekleniyor.';
+ let h='<div class="nhero '+md+'"><div class="nh-row">'+
+  '<div class="nh-idx"><small>BIST 100</small><div class="nbig">'+(x.c?nf(x.c,0):'–')+'</div>'+nPill(ch)+'</div>'+
+  '<div class="nh-mode"><small>PİYASANIN HAVASI</small><b>'+mdTr+'</b><span>'+tip+'</span></div></div>';
+ if(r){const up=Math.max(0,Math.min(100,r.breadth||0));
+  h+='<div class="nbr"><div class="nbr-bar"><i style="width:'+up+'%"></i></div><div class="nbr-l"><span><b class="up">%'+nf(up,0)+'</b> hisse artıda</span><span><b>%'+nf(r.above,0)+'</b>\'i 20 günlük ortalama üstünde</span></div></div>'}
+ const tl=['XU030','BANKA','USD','EUR','ALTIN'].filter(k=>mk[k]);
+ if(tl.length)h+='<div class="nmk">'+tl.map(k=>'<div><small>'+k+'</small><b>'+nf(mk[k].c,mk[k].c>1000?0:2)+'</b><i class="'+cls(mk[k].ch)+'">'+pct(mk[k].ch)+'</i></div>').join('')+'</div>';
+ return h+nowSessLine()+'</div>'}
 function renderNow(){
  const el=document.getElementById('nowbody');if(!el)return;nowKapLoad();
- const s=nowSess(),r=S.reg,today=new Date(Date.now()+3*3600e3).toISOString().slice(0,10);
- let h='<div class="nhero '+(r?r.mode:'')+'"><div class="nh1"><div class="nmode">'+(r?r.mode:'Piyasa')+(r?'<small>piyasanın havası</small>':'<small>veri bekleniyor</small>')+'</div>'+
-  '<div class="nidx"><small>BIST 100</small><b class="'+cls(S.idxCh)+'">'+(S.idxCh!=null?pct(S.idxCh):'–')+'</b></div></div>'+
-  (r?'<div class="ndesc">Hisselerin <b>%'+nf(r.breadth,0)+'</b>\'i artıda, <b>%'+nf(r.above,0)+'</b>\'i 20 günlük ortalamasının üstünde. '+(r.mode==='TREND'?'AL sinyalleri daha güvenilir.':r.mode==='ZAYIF'?'Temkinli ol, pozisyonları küçült.':'Yön belirsiz; kırılım ve sıkışma kurulumları öne çıkar.')+'</div>':'')+nowSessLine()+'</div>';
+ const s=nowSess(),today=new Date(Date.now()+3*3600e3).toISOString().slice(0,10);
+ let h=nHero(),main='',side='';
  if(s.open){
   // ---- canlı sinyaller ----
   const rows=[];
   try{const AL=S.algi;if(AL){
    (AL.rows||[]).filter(x=>x.stage==='ates'||x.stage==='hazir').forEach(x=>rows.push({k:2,t:Date.now(),html:nowRow({sym:x.s,src:x.stage==='ates'?'Algı · AL':'Algı · hazırlanıyor',cls:x.stage==='ates'?'al':'hz',sub:'Skor '+x.sc+(x.f&&x.f.fa!=null?' · hacim '+nf(x.f.fa,1)+' kat':'')+(x.f&&x.f.fc!=null?' · alıcı %'+nf(x.f.fc*100,0):''),val:x.f?nf(x.f.p):null,chg:x.f?x.f.ch:null,hot:x.stage==='ates'})}));
    (AL.log||[]).filter(e=>e.d===today).slice(-6).forEach(e=>{const px=(S.quotes[e.s]||S.umap[e.s]||{}).close,rr=px?(px/e.p0-1)*100:null;
-    rows.push({k:1,t:e.t,html:nowRow({sym:e.s,src:'Algı · '+new Date(e.t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}),cls:'al',sub:'Giriş '+nf(e.p0)+' · stop '+nf(e.sp)+' · hedef '+nf(e.tp)+(e.res?' · '+({hit:'🎯 hedef',fail:'❌ stop',flat:'süre doldu',conf:'✅ teyit'}[e.res]||e.res):''),val:rr!=null?(rr>=0?'+':'')+nf(rr,2)+'%':null,chg:null,hot:e.res==='hit',dn:e.res==='fail'})})})}}catch(e){}
+    rows.push({k:1,t:e.t,html:nowRow({sym:e.s,src:'Algı · '+new Date(e.t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}),cls:'al',sub:'Giriş '+nf(e.p0)+' · stop '+nf(e.sp)+' · hedef '+nf(e.tp)+(e.res?' · '+({hit:'🎯 hedef',fail:'❌ stop',flat:'süre doldu',conf:'✅ teyit'}[e.res]||e.res):''),val:px?nf(px):null,chg:rr,hot:e.res==='hit',dn:e.res==='fail'})})})}}catch(e){}
   try{const b=briefData(true);(b.signals||[]).filter(x=>!x.scan).forEach(x=>rows.push({k:1,t:x.t,html:nowRow({sym:x.n,src:'Fırsat A · '+x.dir,cls:x.dir==='AL'?'al':'',sub:x.note,val:nf(x.close),chg:x.change,hot:true})}))}catch(e){}
   try{(NOWK.list||[]).filter(k=>Date.now()-k.t<3*3600e3&&k.onem>=2).slice(0,4).forEach(k=>{const sy=String(k.syms||'').split(',')[0];if(!sy)return;const o=S.umap[sy]||{};
    rows.push({k:0,t:k.t,html:nowRow({sym:sy,src:'KAP · '+(k.ad||k.tip),cls:'kap',sub:(k.subj||'')+(k.summ?' — '+k.summ:''),val:o.close?nf(o.close):null,chg:o.change,dn:k.yon<0,onclick:"showTab('kap')"})})})}catch(e){}
   rows.sort((a,b)=>b.k-a.k||b.t-a.t);
   let nA=0;try{nA=(S.algi&&S.algi.rows||[]).length}catch(e){}
-  h+='<div class="nsec"><b>ŞU AN CANLI SİNYALLER</b><a href="#" onclick="showTab(\'algi\');return false">Algı ›</a></div>'+
-   (rows.length?rows.slice(0,10).map(x=>x.html).join(''):'<div class="nempty">Şu an sinyal yok. Algı '+(nA?nA+' hisseyi yakından ':'piyasayı ')+'izliyor; bir hisseye ani para girerse burada ve üstte bildirim olarak görünür.</div>');
-  h+='<div class="nsec"><b>KARNE · SON 10 GÜN</b><a href="#" onclick="showTab(\'lab\');return false">Karne ›</a></div>'+nowKarne();
-  const pz=nowPositions();if(pz)h+='<div class="nsec"><b>AÇIK POZİSYONLAR</b><a href="#" onclick="showTab(\'jr\');return false">Günlük ›</a></div>'+pz;
+  main+=nSec('⚡','Şu an canlı sinyaller','Algı','algi',rows.length||'')+
+   (rows.length?rows.slice(0,10).map(x=>x.html).join(''):'<div class="nempty"><b>Şu an sinyal yok.</b><br>Algı '+(nA?nA+' hisseyi yakından ':'piyasayı ')+'izliyor; bir hisseye ani para girerse burada ve üstte bildirim olarak görünür.</div>');
+  side+=nSec('📊','Karne · son 10 gün','Karne','lab')+nowKarne();
+  const pz=nowPositions();if(pz)side+=nSec('💼','Açık pozisyonlar','Günlük','jr')+pz;
  }else{
-  // ---- piyasa kapalı: dünün karnesi, gece KAP'ları, yarın izlenecekler ----
-  const K=window.KSTAT;
-  h+='<div class="nsec"><b>'+(K&&K.last?(K.last===today?'BUGÜNÜN':K.last.slice(8)+'.'+K.last.slice(5,7))+' KARNESİ':'KARNE')+'</b><a href="#" onclick="showTab(\'lab\');return false">Ayrıntı ›</a></div>';
-  if(K&&K.last){const d=(K.days||[]).find(x=>x.d===K.last);const it=[['Fırsat A',['firsat-A']],['Fırsat B',['firsat-B']],['Algı',['algi']],['Radar',['radar']]];
-   h+='<div class="nkg">'+it.map(([ad,k])=>{const a=kAgg(k,d?d.src:{}),m=a.h+a.s,p=m?Math.round(a.h/m*100):null;return '<div class="nk"><small>'+ad+'</small><b style="color:'+(p==null?'var(--dim)':kCol(p,m))+'">'+(p==null?'–':'%'+p)+'</b><i>'+(a.n?a.h+' ✓ · '+a.s+' ✗':'sinyal yok')+'</i></div>'}).join('')+'</div>'}
-  else h+=nowKarne();
-  const kl=(NOWK.list||[]).filter(k=>Date.now()-k.t<18*3600e3&&k.onem>=2).slice(0,6);
-  h+='<div class="nsec"><b>SEANS SONRASI ÖNEMLİ KAP\'LAR</b><a href="#" onclick="showTab(\'kap\');return false">Tümü ›</a></div>'+
-   (kl.length?kl.map(k=>{const sy=String(k.syms||'').split(',')[0]||'KAP';return nowRow({sym:sy,src:k.ad||k.tip,cls:'kap',sub:(k.subj||'')+(k.summ?' — '+k.summ:''),val:new Date(k.t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}),dn:k.yon<0,onclick:"showTab('kap')"})}).join(''):'<div class="nempty">Seans sonrası önemli bildirim yok.</div>');
-  // yarın izlenecekler: günü zirveye yakın, yüksek hacimle ve artıda kapatanlar (çok yükselmişler hariç)
+  // ---- piyasa kapalı: son günün karnesi, seans sonrası KAP, yarın izlenecekler ----
   const wl=(S.uni||[]).filter(o=>o.voltl>=2e7&&o.change>=1.5&&o.change<=7&&o.high>0&&o.close>=o.high*.99&&(rvolOf(o)||0)>=1.3)
    .sort((a,b)=>(b.change*(rvolOf(b)||1))-(a.change*(rvolOf(a)||1))).slice(0,8);
-  h+='<div class="nsec"><b>YARIN İZLENECEKLER</b></div><div class="note" style="padding:0 2px 8px">Günü zirvesine yakın, normalden yüksek hacimle ve %1,5–7 artıda kapatanlar. Sinyal değil; açılışta ilk bakılacak liste.</div>'+
-   (wl.length?wl.map(o=>nowRow({sym:o.name,src:(o.sector||'').slice(0,16)||'BIST',sub:'Hacim normalin '+nf(rvolOf(o),1)+' katı · zirveye %'+nf((1-o.close/o.high)*100,1),val:nf(o.close),chg:o.change})).join(''):'<div class="nempty">Bugün bu şartlara uyan hisse yok.</div>');
-  const pz=nowPositions();if(pz)h+='<div class="nsec"><b>AÇIK POZİSYONLAR</b></div>'+pz;
+  main+=nSec('🔭','Yarın izlenecekler','','',wl.length||'')+'<div class="nnote">Günü zirvesine yakın, normalden yüksek hacimle ve %1,5–7 artıda kapatanlar. Sinyal değil; açılışta ilk bakılacak liste.</div>'+
+   (wl.length?wl.map(o=>nowRow({sym:o.name,src:secTr(o.sector)||'BIST',sub:'Hacim normalin '+nf(rvolOf(o),1)+' katı · zirveye %'+nf((1-o.close/o.high)*100,1),val:nf(o.close),chg:o.change})).join(''):'<div class="nempty">Bugün bu şartlara uyan hisse yok.</div>');
+  const K=window.KSTAT;
+  side+=nSec('📊',(K&&K.last?(K.last===today?'Bugünün':K.last.slice(8)+'.'+K.last.slice(5,7))+' karnesi':'Karne'),'Ayrıntı','lab');
+  if(K&&K.last){const d=(K.days||[]).find(x=>x.d===K.last);side+=nKarneGrid(d?d.src:{},true)}else side+=nowKarne();
+  const kl=(NOWK.list||[]).filter(k=>Date.now()-k.t<18*3600e3&&k.onem>=2).slice(0,6);
+  side+=nSec('📰','Seans sonrası önemli KAP\'lar','Tümü','kap',kl.length||'')+
+   (kl.length?kl.map(k=>{const sy=String(k.syms||'').split(',')[0]||'KAP';return nowRow({sym:sy,src:k.ad||k.tip,cls:'kap',sub:(k.subj||'')+(k.summ?' — '+k.summ:''),val:new Date(k.t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}),dn:k.yon<0,onclick:"showTab('kap')"})}).join(''):'<div class="nempty">Seans sonrası önemli bildirim yok.</div>');
+  const pz=nowPositions();if(pz)side+=nSec('💼','Açık pozisyonlar','','')+pz;
  }
- h+='<div class="nqa"><button onclick="showTab(\'op\')">🎯 Fırsatlar</button><button onclick="showTab(\'algi\')">⚡ Algı</button><button onclick="showTab(\'kap\')">📰 KAP</button></div>';
+ side+='<div class="nqa"><button onclick="showTab(\'op\')"><span>🎯</span>Fırsatlar<small>derin tarama</small></button><button onclick="showTab(\'algi\')"><span>⚡</span>Algı<small>ani para girişi</small></button><button onclick="showTab(\'kap\')"><span>📰</span>KAP<small>haberler</small></button></div>';
+ h+='<div class="ngrid"><div class="ncol">'+main+'</div><div class="ncol">'+side+'</div></div>';
  el.innerHTML=h;
 }
 (function(){
