@@ -28,8 +28,8 @@ foreach ($f in 'bot.js', 'package.json', 'baslat.vbs') { Invoke-WebRequest "$RAW
 Yaz '3/5 Tarayıcı bileşeni kuruluyor (ilk seferde ~150 MB)...'
 Push-Location $D
 try {
-  & npm install --no-audit --no-fund --loglevel=error | Out-Null
-  & npx playwright install chromium | Out-Null
+  & npm.cmd install --no-audit --no-fund --loglevel=error | Out-Null
+  & npx.cmd playwright install chromium | Out-Null
 } finally { Pop-Location }
 
 # 4) Eşleştirme
