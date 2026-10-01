@@ -31,5 +31,24 @@ at('21:05'); await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf); ok('10 dk 
 tgOk = true; at('21:12'); await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf); ok('10 dk sonra gönderildi', sent.length === 2 && meta('sigsum') === '2026-10-01');
 at('21:20'); await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf); ok('bir kez gönderildikten sonra tekrar yok', sent.length === 2);
 ok('raporda veri gelmedi notu', /veri gelmedi/.test(sent[1]));
+// 01.10: ölçüm yarıda kesilirse (Cloudflare sınırı) aynı hisseler sonsuza dek takılmasın; kesen hisse ayıklansın
+const { sigOutcome } = await import(path.join(W, 'sig.js'));
+{ const TR = 3 * 3600e3, day = ms => new Date(ms + TR).toISOString().slice(0, 10);
+  const bs = []; for (let i = 0; i < 2500; i++) { const t = Date.parse('2026-09-30T14:00:00+03:00') / 1000 + i * 60; const c = 10 + Math.sin(i / 7) * 0.3; bs.push([t, c, c + 0.05, c - 0.05, c, 1]); }
+  const r = { t: Date.parse('2026-10-01T11:00:00+03:00'), d: '2026-10-01', dir: 'AL', px: null };
+  const o = sigOutcome(bs, r, bs); const s0 = Math.floor(r.t / 60000) * 60;
+  const B = bs.filter(b => b[0] >= s0 + 60 && day(b[0] * 1000) === r.d); let pc = null; for (const b of bs) { if (day(b[0] * 1000) < r.d) pc = b[4]; else break; }
+  ok('gün sınırı hesabı eskisiyle aynı', o.px === Math.round(B[0][1] * 100) / 100 && o.pre === Math.round((B[0][1] / pc - 1) * 1e4) / 100 && o.rc === Math.round((B[B.length - 1][4] / B[0][1] - 1) * 1e4) / 100 && o.idx === Math.round((bs.filter(b => b[0] <= s0 && day(b[0] * 1000) === r.d).pop()[4] / pc - 1) * 1e4) / 100); }
+['KIL', 'IY1', 'IY2'].forEach(x => ins(x, '13:00', 0));
+const asked = []; const hang = (e, syms) => { asked.push(syms.filter(x => x !== 'BIST:XU100')); return new Promise(() => {}); };
+at('21:30'); sigEval(env, hang, tgSend, kvGet, esc, nf); await new Promise(r => setTimeout(r, 20));
+ok('ölçüm başlarken hisseler kaydedildi', /KIL/.test(meta('sig_run') || ''));
+at('21:30'); ok('önceki ölçüm sürerken ikincisi beklenir', (await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf)).bekle);
+const killer = (e, syms) => syms.includes('BIST:KIL') ? hang(e, syms) : fetchBarsTV(e, syms);
+for (let i = 1; i <= 8; i++) { at('21:' + (30 + i * 2)); const p = sigEval(env, killer, tgSend, kvGet, esc, nf); await Promise.race([p, new Promise(r => setTimeout(r, 20))]); }
+ok('yarıda kesilme deftere yazıldı', db.prepare("SELECT count(*) n FROM err WHERE msg LIKE 'karne ölçümü yarıda kesildi%'").get().n >= 1);
+ok('suçsuz hisseler tek tek ölçüldü', db.prepare("SELECT count(*) n FROM sig WHERE sym IN ('IY1','IY2') AND done=1 AND err IS NULL").get().n === 2);
+ok('kesen hisse 3 kezden sonra kapatıldı', db.prepare("SELECT count(*) n FROM sig WHERE sym='KIL' AND done=1 AND err LIKE 'ölçülemedi%'").get().n === 1);
+ok('takılı kayıt kalmadı', !meta('sig_run') && db.prepare("SELECT count(*) n FROM sig WHERE done=0").get().n === 1);
 console.log('\nKARNE: ' + res.filter(Boolean).length + '/' + res.length + ' geçti');
 process.exit(res.every(Boolean) ? 0 : 1);

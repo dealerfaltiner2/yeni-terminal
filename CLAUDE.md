@@ -75,6 +75,7 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   Sunucu hataları da err'e yazılır (cron, KAP, karne, rapor gönderimi, veri gelmeyen hisse). Terminal: ekran hata verirse bir kez yeniden çizer; seansta veri 60 sn gelmezse bağlantıyı yeniler.
   TESTLER: `bash tests/run.sh` (sözdizimi + karne mantığı + Playwright arayüz 34 kontrol + yerel Worker). HER DEĞİŞİKLİKTEN SONRA ÇALIŞTIR; geçmeden yayınlama.
   Akşam bakımı = zamanlanmış görev (hafta içi 18:53): err + meta durumlarını okur, düzeltir, test eder, geçerse yayınlar. Fatih TELEGRAM İSTEMİYOR — sonuç yalnız Claude bildirimi.
+- 01.10 bakım: karne ölçümü 18:25'ten sonra her dakika yarıda kesiliyordu (iz bırakmadan) → karne + KAP durdu. sigEval artık meta 'sig_run' (ölçülen hisseler) + 'sig_kill' (kesilme sayısı) tutar; kesilen hisseler tek tek denenir, 3 kez kesilen 'ölçülemedi' diye kapanır. sigOutcome gün sınırını sayıyla hesaplar (işlemci).
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.

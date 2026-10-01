@@ -55,11 +55,13 @@ export async function sigLog(request, env, url, json) {
 // Bir sinyalin sonucu: bars = 1 dk mumlar [t(sn), o, h, l, c, v]; ib = XU100 1 dk mumları
 export function sigOutcome(bars, r, ib) {
   const s0 = Math.floor(r.t / 60000) * 60;                     // sinyal dakikası (sn)
-  const B = bars.filter(b => b[0] >= s0 + 60 && trDay(b[0] * 1000) === r.d); // sinyalden SONRAKİ tam mumlar, aynı gün
+  // 01.10: gün sınırı sayıyla (her mumda tarih metni üretmek işlemciyi yoruyordu; ücretsiz planda 10 ms sınırı)
+  const ds = (Date.parse(r.d + 'T00:00:00Z') - TRMS) / 1000, de = ds + 86400;
+  const B = bars.filter(b => b[0] >= s0 + 60 && b[0] >= ds && b[0] < de); // sinyalden SONRAKİ tam mumlar, aynı gün
   if (!B.length) return { err: 'mum yok' };
   const up = r.dir !== 'SAT', sg = up ? 1 : -1;
   const px = r.px > 0 ? r.px : B[0][1];                          // fiyatsız sinyal (KAP) → sinyalden sonraki ilk mumun açılışı
-  let pc = null; for (const b of bars) { if (trDay(b[0] * 1000) < r.d) pc = b[4]; else break; }
+  let pc = null; for (const b of bars) { if (b[0] < ds) pc = b[4]; else break; }
   const race = K => {
     const tg = px * (1 + sg * K / 100), sl = px * (1 - sg * K / 100);
     for (const b of B) {
@@ -75,7 +77,7 @@ export function sigOutcome(bars, r, ib) {
   let idx = null;
   if (ib && ib.length) {
     let cur = null, prev = null;
-    for (const b of ib) { const d = trDay(b[0] * 1000); if (d < r.d) prev = b[4]; else if (d === r.d && b[0] <= s0) cur = b[4]; }
+    for (const b of ib) { if (b[0] < ds) prev = b[4]; else if (b[0] < de && b[0] <= s0) cur = b[4]; }
     if (cur != null && prev) idx = (cur / prev - 1) * 100;
   }
   const r2 = v => v == null || !isFinite(v) ? null : Math.round(v * 100) / 100;
@@ -96,15 +98,41 @@ export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
   const todo = ready.filter(r => now - r.t <= 4 * 86400e3);
   // Art arda 3 kez veri gelmeyen hisse sıranın sonuna atılır (diğerlerini kilitlemesin)
   const all = [...new Set(todo.map(r => r.sym))];
-  const syms = [...all.filter(x => (FAIL.get(x) || 0) < 3), ...all.filter(x => (FAIL.get(x) || 0) >= 3)].slice(0, 5);
+  // 01.10: ÇALIŞMA YARIDA KESİLİRSE (Cloudflare süre/işlemci sınırı) hiçbir iz kalmıyordu → aynı 5 hisse her dakika yeniden
+  // deneniyor, karne ölçümü ve arkasındaki KAP haberleri duruyordu. Artık ölçülen hisseler önce meta 'sig_run'a yazılır;
+  // bir sonraki çalışma bu kaydı bitmemiş bulursa o hisselerin 'kesilme' sayısını artırır (meta 'sig_kill'). Kesilen hisseler
+  // tek tek denenir (suçsuzlar ölçülür), 3 kez kesilen hisse 'ölçülemedi' diye kapatılır.
+  const mg = async k => { try { const x = await env.BT.prepare('SELECT v FROM meta WHERE k = ?').bind(k).first(); return x ? JSON.parse(x.v) : null; } catch (e) { return null; } };
+  const ms = (k, v) => env.BT.prepare('INSERT OR REPLACE INTO meta (k, v) VALUES (?, ?)').bind(k, JSON.stringify(v)).run();
+  const KILL = (await mg('sig_kill')) || {};
+  const run = await mg('sig_run');
+  if (run && Array.isArray(run.syms)) {
+    if (now - run.at < 50e3 && now >= run.at) return { bekle: 'önceki ölçüm sürüyor' };
+    for (const x of run.syms) KILL[x] = (KILL[x] || 0) + 1;
+    await errAdd(env, 'sunucu', 'toparlama', 'karne ölçümü yarıda kesildi: ' + run.syms.join(','), 'karne ölçümü');
+    await env.BT.prepare("DELETE FROM meta WHERE k = 'sig_run'").run();
+  }
+  for (const x of Object.keys(KILL)) {
+    if (KILL[x] >= 3) {
+      await env.BT.prepare("UPDATE sig SET done = 1, err = 'ölçülemedi (ölçüm 3 kez yarıda kesildi)' WHERE done = 0 AND sym = ?").bind(x).run();
+      await errAdd(env, 'sunucu', 'toparlama', 'karne: ölçülemeyen hisse kapatıldı: ' + x, 'karne ölçümü');
+      delete KILL[x];
+    } else if (!all.includes(x)) delete KILL[x];
+  }
+  if (Object.keys(KILL).length || run) await ms('sig_kill', KILL);
+  const sus = all.filter(x => KILL[x] && !(KILL[x] >= 3));
+  const syms = sus.length ? [sus[0]]   // şüpheli hisse tek başına denenir
+    : [...all.filter(x => (FAIL.get(x) || 0) < 3), ...all.filter(x => (FAIL.get(x) || 0) >= 3)].filter(x => !(KILL[x] >= 3)).slice(0, 5);
   if (!syms.length) return { eski: old.length };
+  await ms('sig_run', { syms, at: now });
+  let n = 0, bos = 0;
+  try {
   const got = await fetchBarsTV(env, [...syms.map(s => 'BIST:' + s), 'BIST:XU100'], '1', 2500, 25000);
   const toBars = st => st ? [...st.m.values()].filter(v => v && v.length >= 5).sort((a, b) => a[0] - b[0]) : [];
   const ib = toBars(got['BIST:XU100']);
   // v6.6: günlük mumlar → oynaklık (adr). Ayrı bağlantı, sırayla; gelmezse adr boş kalır, ölçüm yine yapılır.
   let gd = {};
   try { gd = await fetchBarsTV(env, syms.map(s => 'BIST:' + s), '1D', 30, 10000); } catch (e) { gd = {}; }
-  let n = 0, bos = 0;
   if (FAIL.size > 300) FAIL.clear();
   for (const r of todo.filter(x => syms.includes(x.sym))) {
     const st = got['BIST:' + r.sym], bars = toBars(st);
@@ -117,6 +145,8 @@ export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
       .bind(o.px ?? null, o.pre ?? null, o.o10 ?? null, o.o15 ?? null, o.r15 ?? null, o.r60 ?? null, o.rc ?? null, o.mfe ?? null, o.mae ?? null, o.idx ?? null, adr, o.err || null, r.id).run();
     n++;
   }
+  if (syms.some(x => KILL[x])) { for (const x of syms) delete KILL[x]; await ms('sig_kill', KILL); }
+  } finally { try { await env.BT.prepare("DELETE FROM meta WHERE k = 'sig_run'").run(); } catch (e) {} }
   // 21:00'den sonra ölçülemeyen sinyal kalsa da rapor çıksın (sigSummary kendisi 'bugün gönderildi mi' bakar)
   let rapor = null;
   if (m >= 1260) { try { rapor = await sigSummary(env, tgSend, kvGet, esc, nf); } catch (e) {} }
