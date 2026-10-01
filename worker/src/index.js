@@ -1,3 +1,4 @@
+import { probe } from './probe.js';
 // BIST TV Köprüsü v5.5 — Cloudflare Worker (bist-tv)
 // Yayın: GitHub → Cloudflare Workers Builds (otomatik). Kodu burada değiştir, Cloudflare editöründe değil.
 // Secrets: TV_SESSION, TV_SESSION_SIGN, ACCESS_KEY
@@ -477,6 +478,19 @@ async function cron(env, force = false) {
   return { ok: true, sent: msgs.length, err: errStr, health: st.health || null, alarms: cfg.alarms.length, watch: cfg.watch, scanned: U ? Object.keys(U).length : 0 };
 }
 
+// v7.7: Midas yedeği (15 dk gecikmeli tablo; tavan/taban). Terminal doğrudan alamazsa (şirket ağı vb.) buradan alır. 60 sn önbellek.
+let MIDC = { t: 0, body: '' };
+async function midasProxy() {
+  if (MIDC.body && Date.now() - MIDC.t < 60e3) return new Response(MIDC.body, { headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' } });
+  try {
+    const r = await fetch('https://www.getmidas.com/wp-json/midas-api/v1/midas_table_data?return=table', { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(8000) });
+    const t = await r.text();
+    if (!r.ok) return json({ ok: false, error: 'Midas HTTP ' + r.status }, 502);
+    MIDC = { t: Date.now(), body: t };
+    return new Response(t, { headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' } });
+  } catch (e) { return json({ ok: false, error: 'Midas: ' + e.message }, 502); }
+}
+
 function scanRaw(env, body, market = 'turkey') {
   return fetch(`https://scanner.tradingview.com/${market}/scan`, {
     method: 'POST',
@@ -688,7 +702,7 @@ const OWN_ROUTES = new Set(['sync', 'prefs', 'cron-test', 'pine-sync', 'pine-tes
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
 const DEV_GRACE = Date.UTC(2026, 9, 6); // 6 Ekim 2026
-const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap']);
+const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas']);
 const devCache = new Map();
 let ownerCache = { v: undefined, at: 0 }, devReady = false;
 async function ownerTok(env) {
@@ -919,6 +933,7 @@ export default {
       case 'pine-test': return pineTest(env);
       case 'pine-sync': return json(await pineSync(env, url.searchParams.get('force') === '1'));
       case 'tv-scan': return tvScan(request, env);
+      case 'midas': return midasProxy();
       case 'set-syms': return json({ ok: true });
       case 'pull': return json({});
       case 'scan': if (request.method === 'POST') return scan(request, env, url); break;
@@ -973,6 +988,7 @@ export default {
       }
       // NABIZ/özellik geçmiş testi: seans DIŞINDA (ağır iş en sona)
       if (!inSess) { try { await btStep(env); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'btStep: ' + String(e && e.message || e).slice(0, 200), 'btStep'); } }
+      try { await probe(env, scanRaw, UA); } catch (e) {}
       await hb('5-tamam');
     })());
   }
