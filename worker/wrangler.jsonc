@@ -7,6 +7,8 @@
   "main": "src/index.js",
   "compatibility_date": "2026-09-01",
   "workers_dev": true,
+  // 01.10: kendi alan adı (iş yeri ağı workers.dev'i engelliyor). workers.dev adresi de çalışmaya devam eder.
+  "routes": [ { "pattern": "api.altinerpano.com", "custom_domain": true } ],
   "keep_vars": true,
   "kv_namespaces": [
     { "binding": "DB", "id": "3dd092224330451f9674550a592207b0" }
