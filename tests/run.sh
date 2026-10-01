@@ -2,7 +2,7 @@
 # Tüm testler: bash tests/run.sh   (çıkış 0 = hepsi geçti)
 cd "$(dirname "$0")"
 fail=0
-echo "== Sözdizimi"; for f in ../worker/src/*.js; do node --check "$f" || fail=1; done
+echo "== Sözdizimi"; for f in ../worker/src/*.js ../pc/bot.js; do node --check "$f" || fail=1; done
 python3 - <<'PY' || fail=1
 import re,subprocess,sys
 s=open('../index.html',encoding='utf-8').read()

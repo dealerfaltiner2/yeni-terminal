@@ -85,6 +85,13 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   sabah özeti ≤3500 karakterlik parçalar, yalnız giden satırlar sent=1; /kap 'INDEXED BY kap_t' + cihaz onayı (DATA_ROUTES). JSON yanıtları girintisiz.
   Terminal: Şimdi'de dış metinler htmlEsc; bekçi yalnız TVL.last'a bakar; briefData(true) piyasayı yeniden taramaz; dokunurken Şimdi yeniden çizilmez; otomatik tarama İstanbul saatiyle.
   Testler: tests/kap.mjs eklendi; D1 taklidinde bind() YENİ nesne döndürmeli (gerçek D1 gibi). run.sh sunucu testinin çıkış kodunu artık doğru sayıyor.
+- v7.4 İŞ BİLGİSAYARI SİNYAL MOTORU (pc/): Fatih'in iş yerindeki 7/24 açık Windows bilgisayarında terminal ?bot=1 ile başsız Chromium'da (Node+Playwright) sürekli açık.
+  Algı + otomatik Fırsat taraması (autoRun, 15 dk) orada çalışır, sinyaller Telegram + karne. Telefon motor canlıyken (hello yanıtı 'bot') Algı/autoRun Telegram'ı göndermez.
+  Kurulum: telefonda Ayarlar → Ana cihaz → 'İş bilgisayarını bağla' → /pair-create (sahip) 10 karakterlik tek kullanımlık kod (15 dk, D1 meta 'pair:KOD');
+  PC'de PowerShell: irm https://raw.githubusercontent.com/dealerfaltiner2/yeni-terminal/main/pc/kur.ps1 | iex → /pair (anahtarsız) ayarları alır → %LOCALAPPDATA%\BistMotor\ayar.json.
+  Başlatma: Başlangıç klasöründe BistMotor.vbs (yönetici izni gerekmez). Durum: http://127.0.0.1:47123 ; günlük: motor.log. Kaldırma: pc/kaldir.ps1.
+  bot.js: nabız (window.BOT.beat) 3 dk durursa ya da tarayıcı çökerse yeniden başlatır; her gün 09:40 ve 18:25 tazeler (son sürüm). Sunucu: meta 'bot_seen' (motorun hello'su), seansta 5 dk sessizse Telegram uyarısı (meta 'bot_alert').
+  Kütüphane yedeği: unpkg/cdnjs engelliyse jsdelivr, o da yoksa LightweightCharts taklidi (grafik yok ama Algı/Fırsat çalışır — şirket ağı için).
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.

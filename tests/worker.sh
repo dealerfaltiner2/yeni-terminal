@@ -20,6 +20,15 @@ chk "cihaz onaylama" "$(curl -s -m 10 "$B/dev-ok?id=yenicihaz0001&own=$OWN")" '"
 chk "onaydan sonra veri gelir" "$(curl -s -m 10 "$B/sigstats?dev=yenicihaz0001")" '"ok": ?true'
 chk "KAP listesi onaysız cihaza kapalı" "$(curl -s -m 10 "$B/kap?f=onemli&dev=yabanci000001")" "onayını bekliyor"
 chk "KAP listesi (indeksli sorgu, hisse filtresi) çalışır" "$(curl -s -m 10 "$B/kap?f=hepsi&s=ASELS,THYAO&dev=eskicihaz0001")" '"ok": ?true'
+chk "motor kapalıyken hello: bot=false" "$(curl -s -m 10 "$B/hello?dev=eskicihaz0001")" '"bot": ?false'
+PC=$(curl -s -m 10 -X POST -d '{"cfg":{"ls":{"tvproxy":"wss://x/k","ownTok":"t"}}}' "$B/pair-create?own=$OWN" | python3 -c "import json,sys;print(json.load(sys.stdin).get('code',''))")
+chk "eşleştirme kodu üretildi (sahip)" "$PC" "^[A-Z0-9]{5}-[A-Z0-9]{5}$"
+chk "eşleştirme kodu sahipsiz üretilemez" "$(curl -s -m 10 -X POST -d '{"cfg":{}}' "$B/pair-create")" "yalnız ana cihaz"
+chk "kodla ayar alındı (anahtarsız)" "$(curl -s -m 10 -X POST -d "{\"c\":\"$PC\"}" "http://localhost:$PORT/pair")" '"tvproxy": ?"wss://x/k"'
+chk "kod ikinci kez kullanılamaz" "$(curl -s -m 10 -X POST -d "{\"c\":\"$PC\"}" "http://localhost:$PORT/pair")" "kullanılmış"
+chk "yanlış kod reddedilir" "$(curl -s -m 10 -X POST -d '{"c":"AAAAA-BBBBB"}' "http://localhost:$PORT/pair")" "geçersiz"
+curl -s -m 10 "$B/hello?dev=motor0000000001&bot=1&own=$OWN" >/dev/null
+chk "motor nabzı sonrası hello: bot=true" "$(curl -s -m 10 "$B/hello?dev=eskicihaz0001")" '"bot": ?true'
 chk "hata defterine yazma" "$(curl -s -m 10 -X POST -d '{"items":[{"k":"hata","m":"test hatası","w":"x.js:1","tab":"now","v":"7.2"}]}' "$B/errlog?dev=eskicihaz0001")" '"n": ?1'
 curl -s -m 10 -X POST -d '{"items":[{"k":"hata","m":"test hatası","w":"x.js:1"}]}' "$B/errlog?dev=eskicihaz0001" >/dev/null
 chk "aynı hata sayaçla tek satır" "$(npx -y wrangler@3 d1 execute bist_bt --local --command "SELECT n FROM err WHERE msg='test hatası'" 2>/dev/null)" '"n": ?2'

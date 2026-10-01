@@ -1,0 +1,6 @@
+{
+  "name": "bist-motor",
+  "private": true,
+  "description": "BIST Terminal sinyal motoru — iş bilgisayarında terminali sunucu modunda (başsız tarayıcı) sürekli açık tutar",
+  "dependencies": { "playwright": "1.63.0" }
+}

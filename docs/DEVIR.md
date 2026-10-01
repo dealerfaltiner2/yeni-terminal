@@ -34,6 +34,7 @@
 - v6.9–7.0 Tasarım: her bölümde 'Bu nedir?' bilgi kartı (IC{}), Algı/Fırsat 'neden sinyal' çipleri, gruplu menü, Karne sekmesinde sunucu karnesi (/sigstats), kompakt görünüm katmanı. Fırsat ⓘ eşik yazıları koda uyduruldu; günlükte Kapat düğmesi; Canlı 'Hız' = lot/sn.
 - v7.1: 'Şimdi' ana ekranı (ilk sekme), üstten kayan sinyal kartı, mini fiyat çizgileri, renk düzeni, kapalı piyasa ekranları. Karne yükleyicisindeki sonsuz döngü düzeltildi (sunucuya ulaşılamazsa sayfa donuyordu).
 - v7.2: Hata defteri (D1 err) + terminalde kendini toparlama + kalıcı testler (tests/run.sh) + akşam bakımı zamanlanmış görevi (hata bul → düzelt → test → yayınla; yalnız Claude bildirimi, Telegram yok).
+- v7.3: genel bakım (işlemci yükü, KAP dayanıklılığı, güvenlik). v7.4: iş bilgisayarı sinyal motoru (pc/) — Algı/Fırsat telefona bağlı olmaktan çıktı; eşleştirme kodu ile kurulum.
 - v6.4 Kopma teşhisi (arka plan / gerçek ayrımı). v6.5 Algı radarı okunur kart görünümü.
 - Karne mesajı sadeleştirildi; devre kesici bildirimleri karneden çıkarıldı.
 

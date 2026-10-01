@@ -9,6 +9,7 @@
 import { riseRows } from './rise.js';
 import { sigAdd, sigLog, sigEval, sigSummary, sigStats } from './sig.js';
 import { errAdd, errLogRoute } from './err.js';
+import { botAlive, botBeat, botWatch, pairCreate, pairUse } from './bot.js';
 import { kapPoll, kapMorning, kapList } from './kap.js';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
 const CORS = {
@@ -682,7 +683,7 @@ async function btStep(env) {
 }
 /* ---------- v5.6: ana cihaz (sahip) kilidi + bağlı cihazlar (D1: meta 'owner', tablo dev) ---------- */
 // Sahip kodu D1'de durur → gerekirse Claude D1'den sıfırlayabilir. Kod yokken (ilk kurulum) eski davranış sürer.
-const OWN_ROUTES = new Set(['sync', 'prefs', 'cron-test', 'pine-sync', 'pine-test', 'devices', 'dev-block', 'dev-ok', 'siglog', 'sig-eval']);
+const OWN_ROUTES = new Set(['sync', 'prefs', 'cron-test', 'pine-sync', 'pine-test', 'devices', 'dev-block', 'dev-ok', 'siglog', 'sig-eval', 'pair-create']);
 // v6.8 YENİ CİHAZ ONAYI: ana cihaz belirlenmişse, onaylanmamış (ok=0) cihaz canlı veri / tarama / mum alamaz.
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
@@ -853,6 +854,8 @@ export default {
     const isWS = (request.headers.get('Upgrade') || '').toLowerCase() === 'websocket';
 
     if (parts[0] === 'echo' && !isWS) return new Response('OK', { headers: CORS });
+    // v7.4: iş bilgisayarı kurulumu — anahtarsız, tek kullanımlık eşleştirme kodu ile ayarları bir kez alır
+    if (parts[0] === 'pair' && parts.length === 1 && request.method === 'POST' && env.BT) return pairUse(request, env, json);
 
     let route;
     if (env.ACCESS_KEY && parts[0] === env.ACCESS_KEY) route = parts.slice(1).join('/');
@@ -881,13 +884,18 @@ export default {
       case '': return new Response('OK', { headers: CORS });
       case 'owner-claim': if (request.method === 'POST') return ownerClaim(env); break;
       case 'owner-check': { const o = await ownerTok(env); return json({ ok: true, claimed: !!o, owner: !!o && url.searchParams.get('own') === o }); }
-      case 'hello': { const st = await devTouch(request, env, url); return json({ ok: true, blocked: st === 'blocked', wait: st === 'wait' }); }
+      case 'hello': {
+        const st = await devTouch(request, env, url);
+        if (!st && url.searchParams.get('bot') === '1') { const o = await ownerTok(env); if (o && url.searchParams.get('own') === o) await botBeat(env); }
+        return json({ ok: true, blocked: st === 'blocked', wait: st === 'wait', bot: env.BT ? await botAlive(env) : false });
+      }
       case 'kap': return kapList(env, url, json);
       case 'sigstats': return json(await sigStats(env));
       case 'errlog': if (request.method === 'POST') return errLogRoute(request, env, url, json); break;
       case 'devices': return devices(env);
       case 'dev-block': return devBlock(env, url);
       case 'dev-ok': return devOk(env, url);
+      case 'pair-create': if (request.method === 'POST') return pairCreate(request, env, json); break;
       case 'siglog': if (request.method === 'POST') return sigLog(request, env, url, json); break;
       case 'sig-eval': return json(url.searchParams.get('sum') === '1' ? await sigSummary(env, tgSend, kvGet, esc, nf, true) : await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf));
       case 'test': return test(env, url);
@@ -954,6 +962,7 @@ export default {
       } catch (e) { await errAdd(env, 'sunucu', 'hata', 'KAP: ' + String(e && e.message || e).slice(0, 200), 'kapPoll'); try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_err', ?)").bind(new Date().toISOString() + ' ' + String(e && e.message || e).slice(0, 300)).run(); } catch {} }
       try { mr = await kapMorning(env, { tgSend, kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'KAP sabah özeti: ' + String(e && e.message || e).slice(0, 200), 'kapMorning'); }
       try { const n = (kr && kr.telegram || 0) + (mr && mr.ozet ? 1 : 0); if (n) { const st = await kvGet(env, 'st', {}); if (st.cnt) { st.cnt.kap = (st.cnt.kap || 0) + n; await kvPut(env, 'st', st); } } } catch (e) {}
+      try { await botWatch(env, tgSend, kvGet); } catch (e) {}
       await hb('3-KAP bitti');
       const T = trNow(); const inSess = T.wd >= 1 && T.wd <= 5 && T.m >= 590 && T.m < 1095;
       if (!inSess) {

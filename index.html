@@ -13,6 +13,15 @@
 <title>BIST Terminal · PRO</title>
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+/* v7.4: kütüphane yedeği — unpkg/cdnjs engelliyse (ör. şirket ağı) önce jsdelivr denenir; o da yoksa grafik kütüphanesi yerine
+   boş bir taklit konur: grafik çizilmez ama terminalin geri kalanı (Algı, Fırsat, sinyal motoru) çalışmaya devam eder. */
+if(typeof LightweightCharts==='undefined')document.write('<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"><\/script>');
+if(typeof d3==='undefined')document.write('<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"><\/script>');
+</script>
+<script>
+if(typeof LightweightCharts==='undefined'){window.LC_STUB=1;const P=()=>new Proxy(function(){},{get:(t,k)=>k===Symbol.toPrimitive?(()=>0):k==='then'?undefined:(k==='valueOf'||k==='toString')?(()=>''):P(),apply:()=>P()});window.LightweightCharts=P();}
+</script>
 <style>
 /* ============ BIST TERMINAL — "PRO" TASARIM SISTEMI ============ */
 :root{
@@ -654,6 +663,8 @@ td.fl-up,td.fl-dn{border-radius:4px}
 <div id="pal" onclick="if(event.target.id==='pal')closePal()"><div id="palbox"><input id="palin" placeholder="Hisse veya kripto ara" autocomplete="off"><div id="pallist"></div></div></div>
 
 <script>
+// v7.4: iş bilgisayarı sinyal motoru — terminal ?bot=1 ile 'sunucu modu'nda açılır (Windows'ta başsız tarayıcı)
+window.BOTMODE=/[?&]bot=1(&|$)/.test(location.search);
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const $=s=>document.querySelector(s);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -723,6 +734,7 @@ function withinMarketHours(){
 function sigKey(sym,dir){return sym+'|'+dir+'|'+new Date().toISOString().slice(0,10)}
 async function autoRun(manual){
  const m=$('#tgmsg');
+ if(!manual&&!BOTMODE&&S.botAlive)return;   // v7.4: iş bilgisayarı motoru tarıyor ve gönderiyor
  if(!manual&&!withinMarketHours()){return}
  if(!S.tgTok||!S.tgChat){if(manual)m.innerHTML='<span class="dn">Önce Telegram token ve Chat ID gir.</span>';return}
  if(manual)m.textContent='taranıyor...';
@@ -947,11 +959,14 @@ const OWN={claimed:null,list:null,err:''};
 function ownBase(){return srvBase(S.tvproxy)}
 function devNameSave(v){LS.set('devName',String(v||'').replace(/[<>"'&]/g,'').trim().slice(0,24));devHello()}
 const WAIT_MSG='bu cihaz ana cihazın onayını bekliyor';
-async function devHello(){const b=ownBase();if(!/^https:\/\//.test(b))return;try{const j=await (await fetch(qAdd(b+'/hello?'+devQ(),ownQ()))).json();OWN.wait=!!(j&&j.wait);if(j&&j.blocked)TVL.err='bu cihaz engellendi';else if(j&&j.wait)TVL.err=WAIT_MSG}catch(e){}}
+async function devHello(){const b=ownBase();if(!/^https:\/\//.test(b))return;OWN.helloAt=Date.now();try{const j=await (await fetch(qAdd(b+'/hello?'+devQ()+(BOTMODE?'&bot=1':''),ownQ()))).json();OWN.wait=!!(j&&j.wait);S.botAlive=!!(j&&j.bot);S.botKnown=1;if(j&&j.blocked)TVL.err='bu cihaz engellendi';else if(j&&j.wait)TVL.err=WAIT_MSG}catch(e){}}
 // v6.8: sunucu veri yollarına cihaz kimliği (yeni cihaz onayı)
 function dq(u){return qAdd(u,'dev='+devId())}
 setTimeout(devHello,3000);
 setInterval(()=>{if(!document.hidden)devHello()},10*60000);
+// v7.4: motor dakikada bir nabız verir; telefon seans içinde 2 dk'da bir motorun canlı olup olmadığını öğrenir (çift bildirim olmasın)
+setInterval(()=>{try{if(document.hidden&&!BOTMODE)return;const d=new Date(Date.now()+3*3600e3),m=d.getUTCHours()*60+d.getUTCMinutes(),wk=d.getUTCDay()>0&&d.getUTCDay()<6;
+ if(BOTMODE||(wk&&m>=590&&m<1090&&Date.now()-(OWN.helloAt||0)>110000))devHello()}catch(e){}},60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now()-(OWN.helloAt||0)>5*60000){OWN.helloAt=Date.now();devHello()}});
 async function ownRender(){
  const m=document.getElementById('ownmsg'),bt=document.getElementById('ownbtns'),dl=document.getElementById('devlist'),nm=document.getElementById('devname');
@@ -3201,7 +3216,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="7.3";window.APPV=APP_VER;
+  const APP_VER="7.4";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3463,7 +3478,8 @@ function tvReconnectReport(){
  }
 
  /* ---------- Telegram (kisisel sohbet) ---------- */
- function tg(text){if(!AL.cfg.tg||!AL.cfg.chat||!S.tgTok)return;AL.q.push(text);pump()}
+ function tg(text){if(!AL.cfg.tg||!AL.cfg.chat||!S.tgTok)return;if(!BOTMODE&&S.botAlive)return;   // v7.4: motor gönderiyor
+ AL.q.push(text);pump()}
  async function pump(){
   if(AL.qBusy)return;AL.qBusy=true;
   while(AL.q.length){const t=AL.q.shift();
@@ -4222,6 +4238,7 @@ function renderNow(){
   ['NEDİR?','Terminalin ana ekranı. "Şu an ne oluyor, bir şey yapmam gerekiyor mu?" sorusunun cevabı tek ekranda: piyasanın havası, seans durumu, canlı sinyaller, karne ve açık pozisyonların. 5 saniyede bir yenilenir.'],
   ['SEANS AÇIKKEN',['<b>Canlı sinyaller</b>: Algı\'nın ateşlediği ya da hazırlanan hisseler, bugün verilen Algı sinyallerinin şu anki durumu, son 8 saatteki Fırsat A notları ve son 3 saatin önemli KAP haberleri','<b>Karne</b>: son 10 iş gününde her sinyal kaynağının başarısı','<b>Açık pozisyonlar</b>: günlükteki açık işlemler (kaç R\'de olduğu), portföy ve yaklaşan alarmlar']],
   ['PİYASA KAPALIYKEN',['Son günün karnesi','Seans sonrası gelen önemli KAP\'lar','<b>Yarın izlenecekler</b>: günü zirvesine %1\'den yakın, göreli hacmi 1,3 kat üstü, %1,5–7 artıda ve günlük hacmi 20 Mn ₺ üstü kapatan hisseler. Sinyal değil, açılışta ilk bakılacak liste.']],
+  ['İŞ BİLGİSAYARI MOTORU','Kuruluysa Algı ve Fırsat iş bilgisayarında sürekli çalışır; telefon kapalıyken de sinyal gelir. Durumu seans satırının altında görünür. Kurulum: Ayarlar → Ana cihaz → <b>İş bilgisayarını bağla</b>.'],
   ['MİNİ ÇİZGİ','Her satırın solundaki küçük grafik: hisse derin taranmışsa bugünün 15 dakikalık kapanışları, değilse son birkaç dakikanın canlı fiyatı. Yeşil = yükseliyor, kırmızı = düşüyor.']]};
  try{SNAME.algi=SNAME.algi||'Algı'}catch(e){}
  if(!document.getElementById('t-now')){const d=document.createElement('div');d.className='tab';d.id='t-now';d.innerHTML='<div class="sechd"><div class="st"><h1>Şimdi</h1><div class="ss">Tek bakışta piyasa, sinyaller, pozisyonlar</div></div><button class="ibtn" onclick="infoOpen(\'now\')"><i>i</i>Bu nedir?</button></div><div id="nowbody"></div>';tabsWrap.insertBefore(d,tabsWrap.firstChild)}
@@ -4305,6 +4322,46 @@ window.addEventListener('unhandledrejection',e=>{try{const r=e.reason;errLog('ha
  // sayfa kapanırken bekleyen kayıtları gönder
  document.addEventListener('visibilitychange',()=>{if(document.hidden&&HEAL.q.length)errFlush()});
 })();
+</script>
+<script>
+/* ================= v7.4 İŞ BİLGİSAYARI SİNYAL MOTORU =================
+   Motor (Windows'ta başsız tarayıcı) bu sayfayı ?bot=1 ile açar: Algı seans boyunca çalışır, otomatik Fırsat taraması 15 dk'da bir
+   yapılır, sinyaller Telegram'a ve karneye gider. Telefon, motor canlıyken aynı sinyalleri Telegram'a göndermez.
+   window.BOT.beat → Windows tarafındaki bekçi bununla sayfanın donmadığını anlar. */
+window.BOT={beat:Date.now(),since:Date.now()};
+setInterval(()=>{try{BOT.beat=Date.now();BOT.tv=typeof tvAlive==='function'&&tvAlive();BOT.uni=(S.uni||[]).length;BOT.algi=S.algi&&S.algi.rows?S.algi.rows.length:0;BOT.ver=window.APPV}catch(e){}},5000);
+if(BOTMODE){try{
+ S.autoOn=1;LS.set('autoOn',1);
+ const ac=LS.get('algiCfg',{});if(!ac.on){ac.on=1;LS.set('algiCfg',ac)}
+ setTimeout(()=>{try{devHello()}catch(e){}},3000);
+ document.title='BIST motor';
+}catch(e){}}
+// Ayarlar → ana cihaz: "İş bilgisayarını bağla"
+async function pairStart(){
+ const box=document.getElementById('pairbox');if(!box)return;
+ if(!LS.get('ownTok',''))return alert('Bu işlem yalnız ana cihazdan yapılır.');
+ if(!S.tgTok||!S.tgChat){if(!confirm('Telegram ayarın boş görünüyor. Motor sinyalleri karneye yazar ama Telegram\'a gönderemez. Yine de devam edilsin mi?'))return}
+ box.innerHTML='<div class="note">Kod hazırlanıyor…</div>';
+ const rid=(crypto&&crypto.randomUUID?crypto.randomUUID():String(Math.random())+Date.now()).replace(/[^a-z0-9]/gi,'').toLowerCase().slice(0,16);
+ const cfg={ls:{tvproxy:S.tvproxy,ownTok:LS.get('ownTok',''),ownClaimed:1,devName:'İş bilgisayarı (motor)',devId:'motor'+rid,
+  tgTok:S.tgTok||'',tgChat:S.tgChat||'',tgMin:S.tgMin||55,autoOn:1,algiCfg:Object.assign({},LS.get('algiCfg',{}),{on:1}),stf:LS.get('stf','15'),guestWiped:1,guestWiped2:1}};
+ try{const r=await fetch(qAdd(ownBase()+'/pair-create',ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({cfg})});const j=await r.json();
+  if(!j.ok)throw new Error(j.error||('HTTP '+r.status));
+  const cmd='irm https://raw.githubusercontent.com/dealerfaltiner2/yeni-terminal/main/pc/kur.ps1 | iex';
+  box.innerHTML='<div class="isec" style="margin:8px 0"><h3>EŞLEŞTİRME KODU · 15 DK GEÇERLİ</h3><div style="font:800 26px var(--sans);letter-spacing:3px;color:#fff;margin:4px 0 10px">'+htmlEsc(j.code)+'</div>'+
+   '<ol><li>İş bilgisayarında <b>Başlat</b>\'a sağ tıkla → <b>Terminal</b> ya da <b>Windows PowerShell</b>\'i aç.</li><li>Aşağıdaki komutu yapıştır, Enter\'a bas.</li><li>Kod sorulunca yukarıdaki kodu yaz.</li></ol>'+
+   '<div style="font:12px monospace;background:rgba(0,0,0,.35);border:1px solid var(--line2);border-radius:10px;padding:8px;margin:8px 0;word-break:break-all;color:#e2e8f0">'+htmlEsc(cmd)+'</div>'+
+   '<button class="g" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+cmd.replace(/'/g,"\\'")+'\').then(()=>alert(\'Komut kopyalandı\'))">📋 Komutu kopyala</button></div>';
+ }catch(e){box.innerHTML='<div class="note dn">Kod alınamadı: '+htmlEsc(e.message||e)+'</div>'}
+}
+(function(){ // ana cihaz bölümüne düğme + kutu
+ const _or=ownRender;window.ownRender=ownRender=async function(){await _or.apply(this,arguments);try{const bt=document.getElementById('ownbtns');
+  if(bt&&LS.get('ownTok','')&&!bt.querySelector('.pairbtn')){bt.insertAdjacentHTML('beforeend','<button class="g pairbtn" onclick="pairStart()">💻 İş bilgisayarını bağla (sinyal motoru)</button><div id="pairbox"></div>')}
+  const st=document.getElementById('ownmsg');if(st&&S.botKnown)st.insertAdjacentHTML('beforeend','<br><small>'+(S.botAlive?'<span class="up">💻 İş bilgisayarı motoru çalışıyor</span> — Algı ve Fırsat sinyallerini o gönderiyor.':'💻 İş bilgisayarı motoru şu an çalışmıyor.')+'</small>');
+ }catch(e){}};
+})();
+// Şimdi ekranı: motor durumu (seans satırının altına)
+(function(){const _sl=nowSessLine;window.nowSessLine=nowSessLine=function(){let h=_sl.apply(this,arguments);try{if(S.botKnown)h+='<div class="nsess" style="border-top:0;padding-top:4px;margin-top:2px"><span class="dot '+(S.botAlive?'on':'')+'"></span><span>💻 İş bilgisayarı motoru: <b>'+(S.botAlive?'çalışıyor':'kapalı')+'</b></span><span class="fr">'+(S.botAlive?'sinyaller oradan':'sinyaller telefondan')+'</span></div>'}catch(e){}return h}})();
 </script>
 </body>
 </html>

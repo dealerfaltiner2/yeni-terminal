@@ -26,14 +26,18 @@ const SIG = { ok: true, at: now, gun: 3, bekleyen: 0, last: day(0),
   days: [0, 1, 2].map(k => ({ d: day(k), src: { 'firsat-B': { n: 3, h: 2, s: 1 }, radar: { n: 3, h: 1, s: 2 } } })),
   list: [{ t: now - 3e6, src: 'algi', sym: 'KCHOL', o10: 1, mfe: 1.4, rc: .8 }] };
 function install(page, opt = {}) {
-  const hits = { errlog: [], all: 0 };
+  const hits = { errlog: [], all: 0, urls: [] };
   return page.route(/^https?:\/\//, async r => {
-    const u = r.request().url(); hits.all++;
+    const u = r.request().url(); hits.all++; hits.urls.push(u);
+    if (opt.nolib && /unpkg|cdnjs|jsdelivr/.test(u)) return r.abort();
     if (/unpkg\.com\/lightweight-charts/.test(u)) return r.fulfill({ path: require('path').join(__dirname,'node_modules','lightweight-charts','dist','lightweight-charts.standalone.production.js'), contentType: 'application/javascript' });
     if (/cdnjs\.cloudflare\.com\/ajax\/libs\/d3/.test(u)) return r.fulfill({ path: require('path').join(__dirname,'node_modules','d3','dist','d3.min.js'), contentType: 'application/javascript' });
     if (!/x\.test|scanner\.tradingview\.com/.test(u)) return r.abort();
     if (opt.fail) return r.fulfill({ status: 500, body: 'err' });
     if (u.includes('/errlog')) { try { hits.errlog.push(...(JSON.parse(r.request().postData() || '{}').items || [])); } catch (e) {} return r.fulfill({ contentType: 'application/json', body: '{"ok":true}' }); }
+    if (u.includes('/owner-check')) { const own = /[?&]own=sahipkodu/.test(u); return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, claimed: true, owner: own }) }); }
+    if (u.includes('/hello')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, blocked: false, wait: false, bot: !!opt.bot }) });
+    if (u.includes('/pair-create')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, code: 'ABCDE-FGH23', exp: Date.now() + 9e5 }) });
     if (u.includes('/sigstats')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify(SIG) });
     if (u.includes('/kap')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify(KAP) });
     if (u.includes('scan')) {

@@ -12,7 +12,8 @@ async function page(b, opt) {
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   const hits = await install(p, opt);
   if (opt.proxy) await p.addInitScript(() => localStorage.setItem('tvproxy', JSON.stringify('wss://x.test/k')));
-  await p.goto(FILE, { waitUntil: 'domcontentloaded', timeout: 20000 });
+  if (opt.owner) await p.addInitScript(() => { localStorage.setItem('ownTok', JSON.stringify('sahipkodu')); localStorage.setItem('ownClaimed', '1'); localStorage.setItem('tgTok', JSON.stringify('1:x')); localStorage.setItem('tgChat', JSON.stringify('1')); });
+  await p.goto(FILE + (opt.qs || ''), { waitUntil: 'domcontentloaded', timeout: 20000 });
   const T = (f, arg) => Promise.race([p.evaluate(f, arg), new Promise(r => setTimeout(() => r('__DONMA__'), 6000))]);
   return { p, errs, hits, T };
 }
@@ -64,6 +65,34 @@ async function page(b, opt) {
       const real = errs.filter(e => !/test-/.test(e));
       ok('gezintide sayfa hatası yok', !real.length, real.slice(0, 3).join(' | '));
       await p.close(); }
+    // 4) iş bilgisayarı motoru (sunucu modu)
+    { const { p, errs, hits, T } = await page(b, { proxy: true, owner: true, qs: '?bot=1' }); await p.waitForTimeout(6000);
+      ok('motor modu açıldı', await T(() => window.BOTMODE === true && S.autoOn === 1));
+      ok('motor nabız veriyor (sunucuya bot=1 + sahip kodu)', hits.urls.some(u => /\/hello\?.*bot=1.*own=sahipkodu|\/hello\?.*own=sahipkodu.*bot=1/.test(u)), hits.urls.filter(u => u.includes('hello')).slice(0, 2).join(' | '));
+      const b1 = await T(() => BOT.beat); await p.waitForTimeout(5500); const b2 = await T(() => BOT.beat);
+      ok('motor kalp atışı güncelleniyor (Windows bekçisi için)', b2 > b1);
+      ok('motor modunda Algı açık', await T(() => !!(S.algi && S.algi.cfg && S.algi.cfg.on)));
+      ok('motor modunda sayfa hatası yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }
+    // 4b) şirket ağı kütüphane adreslerini engellerse motor yine çalışmalı
+    { const { p, errs, T } = await page(b, { proxy: true, owner: true, qs: '?bot=1', nolib: true }); await p.waitForTimeout(6000);
+      ok('kütüphaneler engelliyken motor açılıyor', await T(() => window.BOTMODE === true && window.LC_STUB === 1 && typeof BOT === 'object'));
+      const b1 = await T(() => BOT.beat); await p.waitForTimeout(5500);
+      ok('kütüphaneler engelliyken kalp atışı sürüyor', (await T(() => BOT.beat)) > b1);
+      for (const t of ['now', 'op', 'algi', 'chart']) await T(t => showTab(t), t);
+      await p.waitForTimeout(800);
+      ok('kütüphaneler engelliyken sayfa hatası yok', !errs.length, errs.slice(0, 3).join(' | ')); await p.close(); }
+    // 5) telefon: motor canlıyken Telegram'a göndermez, otomatik taramayı motora bırakır
+    { const { p, errs, T } = await page(b, { proxy: true, owner: true, bot: true }); await p.waitForTimeout(4000);
+      await T(() => devHello()); await p.waitForTimeout(800);
+      ok('telefon motorun çalıştığını biliyor', await T(() => S.botAlive === true));
+      const n = await T(async () => { let c = 0; const o = window.loadUniverse; window.loadUniverse = loadUniverse = async () => { c++; }; S.autoOn = 1; await autoRun(false); window.loadUniverse = loadUniverse = o; return c; });
+      ok('motor canlıyken telefon otomatik tarama yapmıyor', n === 0, 'tarama=' + n);
+      await T(() => { showTab('now'); renderNow(); });
+      ok('Şimdi ekranında motor durumu görünüyor', /İş bilgisayarı motoru: çalışıyor/.test(await T(() => document.getElementById('nowbody').innerText)));
+      await T(() => { const d = document.createElement('div'); d.id = 'pairbox'; document.body.appendChild(d); });
+      await T(() => pairStart()); await p.waitForTimeout(800);
+      ok('eşleştirme kodu ve kurulum komutu gösteriliyor', /ABCDE-FGH23/.test(await T(() => document.getElementById('pairbox').innerText)) && /kur\.ps1/.test(await T(() => document.getElementById('pairbox').innerText)));
+      ok('telefon modunda sayfa hatası yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }
   } catch (e) { ok('test çalıştırma', false, e.message); }
   await b.close();
   const f = results.filter(r => !r.ok);
