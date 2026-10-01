@@ -57,6 +57,25 @@ Copy-Item $vbs (Join-Path $startup 'BistMotor.vbs') -Force
 Start-Process wscript.exe "`"$vbs`""
 Start-Sleep -Seconds 20
 try { $s = Invoke-WebRequest 'http://127.0.0.1:47123' -UseBasicParsing -TimeoutSec 5; $ok = $s.StatusCode -eq 200 } catch { $ok = $false }
+# 6) İsteğe bağlı: bilgisayar açılınca OTURUM AÇILMADAN da başlasın (Görev Zamanlayıcı; Windows şifresi bir kez sorulur, hiçbir yere kaydedilmez/gönderilmez)
+$ots = Read-Host "`nBilgisayar yeniden başlayınca, sen oturum açmadan da motor çalışsın mı? (E/H)"
+if ($ots -match '^[Ee]') {
+  try {
+    $u = "$env:USERDOMAIN\$env:USERNAME"
+    $sp = Read-Host "Windows oturum şifren ($u) — yalnız Windows'a verilir" -AsSecureString
+    $pw = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sp))
+    $node = (Get-Command node).Source
+    $act = New-ScheduledTaskAction -Execute $node -Argument 'bot.js' -WorkingDirectory $D
+    $trg = New-ScheduledTaskTrigger -AtStartup
+    $set = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 5 -RestartInterval (New-TimeSpan -Minutes 1)
+    Register-ScheduledTask -TaskName 'BistMotor' -Action $act -Trigger $trg -Settings $set -User $u -Password $pw -RunLevel Limited -Force | Out-Null
+    $pw = $null
+    Yaz '✅ Görev eklendi: bilgisayar açılınca motor oturum açılmasını beklemeden başlar.' 'Green'
+  } catch {
+    Yaz ('⚠️ Görev eklenemedi: ' + $_.Exception.Message) 'Yellow'
+    Yaz 'Bu ayar için genelde yönetici izni gerekir. Motor yine çalışır; yalnız yeniden başlatmadan sonra senin oturum açman gerekir.' 'Yellow'
+  }
+}
 if ($ok) {
   Yaz "`n✅ Kuruldu. Sinyal motoru arka planda çalışıyor." 'Green'
   Yaz 'Durumunu görmek için tarayıcıda: http://127.0.0.1:47123'
