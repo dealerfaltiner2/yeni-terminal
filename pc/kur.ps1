@@ -40,7 +40,7 @@ if ($yeni -match '^[Ee]') {
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
   $kod = Read-Host '4/5 Telefondaki eşleştirme kodunu yaz (Ayarlar > Ana cihaz > İş bilgisayarını bağla)'
   $body = @{ c = $kod.Trim() } | ConvertTo-Json
-  try { $r = Invoke-RestMethod -Method Post -Uri 'https://bist-tv.c8jmvhdm8c.workers.dev/pair' -Body $body -ContentType 'application/json' }
+  try { $r = Invoke-RestMethod -Method Post -Uri 'https://api.altinerpano.com/pair' -Body $body -ContentType 'application/json' }
   catch { $m = $_.ErrorDetails.Message; if (-not $m) { $m = $_.Exception.Message }; Yaz ('Eşleştirme olmadı: ' + $m + "`nTelefondan yeni kod alıp komutu tekrar çalıştır.") 'Red'; return }
   if (-not $r.ok) { Yaz ('Eşleştirme olmadı: ' + $r.error) 'Red'; return }
   $json = $r.cfg | ConvertTo-Json -Depth 8
