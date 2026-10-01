@@ -4235,7 +4235,8 @@ function ecFlag(e){return e.c==='TR'?'🇹🇷':e.c==='US'?'🇺🇸':e.c}
 function ecHm(t){return new Date(t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Istanbul'})}
 function ecVal(v,e){return v==null?'–':(nf(v,Math.abs(v)<100?1:0)+(e.u==='%'?'%':''))}
 // önemli veri yakında mı? (önümüzdeki 'ileri' dk ya da son 10 dk)
-function ecNear(ileri){const n=Date.now();return (ECAL.list||[]).filter(e=>(e.im>=1||e.c==='TR')&&e.t>n-10*60e3&&e.t<n+ileri*60e3)}
+function ecImp(e){return e.im>=1||(e.c==='TR'&&/inflation|interest rate|repo|gdp/i.test(e.ti))}
+function ecNear(ileri){const n=Date.now();return (ECAL.list||[]).filter(e=>ecImp(e)&&e.t>n-10*60e3&&e.t<n+ileri*60e3)}
 function earnDays(sym){const o=(S.umap&&S.umap[sym])||{},ts=+o.earnings_release_next_date;if(!(ts>0))return null;
  const day=x=>Math.floor((x+3*3600e3)/864e5),d=day(ts*1000)-day(Date.now());return d>=0&&d<=7?d:null}
 function sigNotes(sym){const a=[];try{const d=earnDays(sym);if(d!=null)a.push(d===0?'Bilanço bugün açıklanıyor':d===1?'Bilanço yarın açıklanıyor':'Bilanço '+d+' gün sonra');
@@ -4351,7 +4352,7 @@ function renderNow(){
  }
  try{const n=Date.now(),L=(ECAL.list||[]).filter(e=>e.t>n-2*3600e3&&e.t<n+40*3600e3).slice(0,7);
   side+=nSec('🗓️','Ekonomik takvim','','',L.length||'')+(L.length?'<div class="ncal">'+L.map(e=>{const done=e.a!=null,past=e.t<n;
-   return '<div class="nce'+(e.im>=1?' hi':'')+(past?' past':'')+'"><span class="tm">'+(new Date(e.t+3*3600e3).toISOString().slice(0,10)===new Date(n+3*3600e3).toISOString().slice(0,10)?'':'Yarın ')+ecHm(e.t)+'</span><span class="fl">'+ecFlag(e)+'</span><div class="ti"><b>'+htmlEsc(ecTitle(e))+'</b><small>'+(done?'Açıklanan <b>'+ecVal(e.a,e)+'</b> · ':'')+'Beklenti '+ecVal(e.f,e)+' · Önceki '+ecVal(e.p,e)+'</small></div></div>'}).join('')+'</div>':'<div class="nempty">'+(ECAL.list?'Önümüzdeki 40 saatte önemli veri yok.':'Takvim yükleniyor…')+'</div>')}catch(e){}
+   return '<div class="nce'+(ecImp(e)?' hi':'')+(past?' past':'')+'"><span class="tm">'+(new Date(e.t+3*3600e3).toISOString().slice(0,10)===new Date(n+3*3600e3).toISOString().slice(0,10)?'':'Yarın ')+ecHm(e.t)+'</span><span class="fl">'+ecFlag(e)+'</span><div class="ti"><b>'+htmlEsc(ecTitle(e))+'</b><small>'+(done?'Açıklanan <b>'+ecVal(e.a,e)+'</b> · ':'')+'Beklenti '+ecVal(e.f,e)+' · Önceki '+ecVal(e.p,e)+'</small></div></div>'}).join('')+'</div>':'<div class="nempty">'+(ECAL.list?'Önümüzdeki 40 saatte önemli veri yok.':'Takvim yükleniyor…')+'</div>')}catch(e){}
  side+='<div class="nqa"><button onclick="showTab(\'op\')"><span>🎯</span>Fırsatlar<small>derin tarama</small></button><button onclick="showTab(\'algi\')"><span>⚡</span>Algı<small>ani para girişi</small></button><button onclick="showTab(\'kap\')"><span>📰</span>KAP<small>haberler</small></button></div>';
  h+='<div class="ngrid"><div class="ncol">'+main+'</div><div class="ncol">'+side+'</div></div>';
  el.innerHTML=h;
