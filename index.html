@@ -715,9 +715,9 @@ async function tgTest(){
  catch(e){m.innerHTML='<b class="dn">Başarısız:</b> '+e.message}
 }
 function withinMarketHours(){
- const d=new Date(),day=d.getDay();
+ const d=new Date(Date.now()+3*3600e3),day=d.getUTCDay();   // 01.10: İstanbul saati (telefonun saat diliminden bağımsız)
  if(day===0||day===6)return false;
- const mins=d.getHours()*60+d.getMinutes();
+ const mins=d.getUTCHours()*60+d.getUTCMinutes();
  return mins>=600&&mins<=1090; // 10:00–18:10
 }
 function sigKey(sym,dir){return sym+'|'+dir+'|'+new Date().toISOString().slice(0,10)}
@@ -917,7 +917,7 @@ async function loadKap(force){
  try{
   let u=b+'/kap?f='+(KAPS.f==='onemli'?'onemli':'hepsi');
   if(KAPS.f==='takip'){const w=W().filter(x=>/^[A-Z0-9]{3,6}$/.test(x)).slice(0,30);if(!w.length){KAPS.list=[];KAPS.lf=KAPS.f;KAPS.err='';return renderKap()}u+='&s='+w.join(',')}
-  const r=await fetch(u);const j=await r.json();if(!j.ok)throw new Error(j.error||('HTTP '+r.status));
+  const r=await fetch(dq(u));const j=await r.json();if(!j.ok)throw new Error(j.error||('HTTP '+r.status));
   KAPS.list=j.list||[];KAPS.at=Date.now();KAPS.lf=KAPS.f;KAPS.err='';
  }catch(e){KAPS.err='Yüklenemedi: '+(e.message||e)}
  renderKap();
@@ -932,7 +932,7 @@ function renderKap(){
  const sp=x=>x==null?'-':(x>=0?'+':'−')+'%'+nf(Math.abs(x),2);
  el.innerHTML=head+KAPS.list.map(r=>{
   const d=new Date(r.t),hm=d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}),dm=d.toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit'});
-  const syms=String(r.syms||'').split(',').filter(Boolean);
+  const syms=String(r.syms||'').split(',').filter(x=>/^[A-Z0-9]{3,7}$/.test(x));
   const ic=r.yon>0?'🟢':r.yon<0?'🔴':'⚪';
   const o=r.olcum;
   const ol=o?('<b>Tepki</b> (giriş '+(o.pre!=null?'önceki kapanışa göre '+sp(o.pre)+', ':'')+'sonra): 15 dk '+sp(o.r15)+' · 1 sa '+sp(o.r60)+' · kapanış '+sp(o.rc)+' · en yüksek '+sp(o.mfe)+(o.o10===1?' · ✅ +%1 önce':o.o10===2?' · ❌ −%1 önce':'')+'<br>'):'';
@@ -1581,7 +1581,7 @@ function cardHtml(o,ix){const dir=S.dir,tf=S.stf;
    '<div class="plan" id="pl_'+o.name+'">'+mtfStrip(o)+meters+wrest+'<div class="dsub">Göstergeler</div><div class="why">'+whyText(o,tf)+'</div><div class="dsub">Bağlam</div>'+ctx+planT+'</div>';
   return '<div class="card v6'+(ix<3?' top':'')+'" onclick="selectSym(\''+o.name+'\',\'bist\')">'+
    '<div class="crow"><div class="cl"><div class="cn"><span class="cname">'+o.name+'</span>'+badge+alb+(isNew?'<span class="newtag">YENİ</span>':'')+(rise?'<span class="rise">▲ güçleniyor</span>':'')+'</div>'+
-   '<div class="cdesc">'+(o.description||'').slice(0,30)+'</div></div>'+
+   '<div class="cdesc">'+htmlEsc((o.description||'').slice(0,30))+'</div></div>'+
    (typeof sparkFor==='function'?sparkFor(o.name,64,26):'')+'<div class="cprice"><b>'+nf(o.close)+'</b><i class="'+cls(o.change)+'">'+pct(o.change)+'</i><i class="vol">'+big(o.voltl)+' ₺</i></div></div>'+
    '<div class="tags">'+tags+'</div>'+whyChips(o,dir,al,m,pr)+w0+detail+'</div>';
 }
@@ -2176,7 +2176,7 @@ function renderLive(){
 }
 
 /* ================= gün özeti ================= */
-function briefData(){
+function briefData(light){   // light: Şimdi ekranı için — tüm piyasayı yeniden taramaz (pil/ısınma)
  const d=new Date(),out={date:d.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}),hr:d.getHours()};
  const r=S.reg;
  if(r)out.regime={mode:r.mode,breadth:r.breadth,above:r.above,desc:r.desc};
@@ -2193,7 +2193,7 @@ function briefData(){
    out.signals.push({n:n,dir:dp.dir,close:o.close,change:o.change,note:x.join(' · '),t:dp.t})});
   out.signals.sort((a,b)=>b.t-a.t);out.signals=out.signals.slice(0,6);
  }catch(e){}
- if(out.signals.length<3){
+ if(!light&&out.signals.length<3){
   try{
    opData().filter(o=>o._ss.length>=2).slice(0,6-out.signals.length)
     .forEach(o=>out.signals.push({n:o.name,dir:S.dir,close:o.close,change:o.change,note:o._ss.map(k=>SNAME[k]).join(' + '),t:0,scan:1}));
@@ -3098,7 +3098,7 @@ async function loadCandles(){
 }
 function selectSym(s,mode){if(s!==S.sym){S.box=null;S.vp=null}S.sym=s;S.mode=mode;LS.set('sym',s);LS.set('mode',mode);
  const q=mode==='crypto'?S.cmap[s]:S.umap[s];
- $('#symbtn').innerHTML=s+'<small>'+(mode==='crypto'?'USDT':((q&&q.description)||'BIST').slice(0,20))+'</small>';
+ $('#symbtn').innerHTML=htmlEsc(s)+'<small>'+htmlEsc(mode==='crypto'?'USDT':((q&&q.description)||'BIST').slice(0,20))+'</small>';
  closePal();renderPx();showTab('chart');loadCandles()}
 let pit=[];
 function openPal(){$('#pal').classList.add('on');$('#palin').value='';palFilter('');setTimeout(()=>$('#palin').focus(),60)}
@@ -3126,7 +3126,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadUnive
  [...$('#viewseg2').children].forEach(x=>x.classList.toggle('on',x.dataset.v===S.view));
  [...$('#autoseg').children].forEach(x=>x.classList.toggle('on',+x.dataset.a===S.autoOn));
  try{await loadUniverse()}catch(e){TVL.gerr='universe: '+(e.message||e)} // KRITIK: bu satir reddederse tum init oluyordu
- const q=S.umap[S.sym];$('#symbtn').innerHTML=S.sym+'<small>'+(S.mode==='crypto'?'USDT':((q&&q.description)||'BIST').slice(0,20))+'</small>';
+ const q=S.umap[S.sym];$('#symbtn').innerHTML=htmlEsc(S.sym)+'<small>'+htmlEsc(S.mode==='crypto'?'USDT':((q&&q.description)||'BIST').slice(0,20))+'</small>';
  renderPx();renderOps();
  try{refreshTick()}catch(e){}try{loadCrypto()}catch(e){}try{loadDom()}catch(e){}try{watchLoop()}catch(e){}try{loadCandles()}catch(e){}try{algolabPollLoop()}catch(e){}try{alBadge()}catch(e){}
  try{updateOpenSignals()}catch(e){}setInterval(function(){try{updateOpenSignals()}catch(e){}},60000);
@@ -3201,7 +3201,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="7.2";window.APPV=APP_VER;
+  const APP_VER="7.3";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4158,9 +4158,9 @@ function nowKapLoad(){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||Date
  fetch(dq(b+'/kap?f=onemli')).then(r=>r.json()).then(j=>{if(j&&j.ok){NOWK.list=j.list||[];if(S.tab==='now')renderNow()}}).catch(()=>{})}
 function nowRow(o){ // {sym,src,cls,sub,val,chg,hot,onclick}
  return '<div class="nrow'+(o.hot?' hot':'')+(o.dn?' dn':'')+'" onclick="'+(o.onclick||('selectSym(\''+o.sym+'\',\'bist\');showTab(\'chart\')'))+'">'+(sparkFor(o.sym)||'<svg class="spk" width="76" height="26"></svg>')+
-  '<div class="nm"><b>'+htmlEsc(o.sym)+'</b><span class="src '+(o.cls||'')+'">'+o.src+'</span><small>'+o.sub+'</small></div>'+
+  '<div class="nm"><b>'+htmlEsc(o.sym)+'</b><span class="src '+(o.cls||'')+'">'+htmlEsc(o.src)+'</span><small>'+htmlEsc(o.sub)+'</small></div>'+
   '<div class="nv">'+(o.val!=null?'<b>'+o.val+'</b>':'')+(o.chg!=null?'<i class="'+cls(o.chg)+'">'+pct(o.chg)+'</i>':'')+'</div></div>'}
-function nowKarne(){const K=window.KSTAT;if(!K){kstatLoad().then(k=>{if(k&&S.tab==='now')renderNow()});return '<div class="nempty">'+(window.KSTAT_ERR?'Karne alınamadı: '+htmlEsc(KSTAT_ERR):'Karne yükleniyor…')+'</div>'}
+function nowKarne(){const K=window.KSTAT;if(K&&Date.now()-(K._t||0)>5*60e3)kstatLoad().then(k=>{if(k&&S.tab==='now')renderNow()});if(!K){kstatLoad().then(k=>{if(k&&S.tab==='now')renderNow()});return '<div class="nempty">'+(window.KSTAT_ERR?'Karne alınamadı: '+htmlEsc(KSTAT_ERR):'Karne yükleniyor…')+'</div>'}
  if(!K.gun)return '<div class="nempty">Henüz ölçülmüş sinyal yok. Sinyaller her akşam 18:15\'ten sonra ölçülür.</div>';
  const it=[['Fırsat A',['firsat-A']],['Fırsat B',['firsat-B']],['Algı',['algi']],['Radar',['radar']]];
  return '<div class="nkg">'+it.map(([ad,k])=>{const a=kAgg(k,K.src),m=a.h+a.s,p=m?Math.round(a.h/m*100):null;return '<div class="nk"><small>'+ad+'</small><b style="color:'+(p==null?'var(--dim)':kCol(p,m))+'">'+(p==null?'–':'%'+p)+'</b><i>'+(m?m+' sinyal':'veri yok')+'</i></div>'}).join('')+'</div>'}
@@ -4169,7 +4169,7 @@ function nowPositions(){
  const op=(S.jr||[]).filter(j=>j.r==null);let h='';
  op.slice(-5).reverse().forEach(j=>{const px=q(j.s),risk=Math.abs(j.e-j.l)||1,r=px?((j.d==='AL'?px-j.e:j.e-px)/risk):null;
   h+=nowRow({sym:j.s,src:'İşlem · '+j.d,cls:j.d==='AL'?'al':'',sub:'Giriş '+nf(j.e)+' · Stop '+nf(j.l)+(j.t?' · Hedef '+nf(j.t):''),val:r!=null?(r>=0?'+':'')+nf(r,2)+'R':'-',chg:px?(j.d==='AL'?1:-1)*(px/j.e-1)*100:null,dn:r!=null&&r<-.5,onclick:"showTab('jr')"})});
- let b=null;try{b=briefData()}catch(e){}
+ let b=null;try{b=briefData(true)}catch(e){}
  if(b&&b.portfolio&&b.portfolio.openN)h+='<div class="nrow" onclick="showTab(\'port\')"><div class="nm"><b>Portföy</b><small>'+b.portfolio.openN+' pozisyon · '+nf(b.portfolio.openVal,0)+' ₺'+(b.portfolio.usage!=null?' · sermayenin %'+nf(b.portfolio.usage,0)+'\'i':'')+'</small></div><div class="nv"><b class="'+cls(b.portfolio.un)+'">'+(b.portfolio.un>=0?'+':'')+nf(b.portfolio.un,0)+' ₺</b><i style="color:var(--dim)">açık kâr/zarar</i></div></div>';
  if(b&&b.alarms&&b.alarms.length)h+='<div class="nrow" onclick="showTab(\'alarm\')"><div class="nm"><b>🔔 Yaklaşan alarm</b><small>'+b.alarms.map(a=>a.s+' (%'+nf(a.d,1)+' kaldı)').join(' · ')+'</small></div></div>';
  return h}
@@ -4186,7 +4186,7 @@ function renderNow(){
    (AL.rows||[]).filter(x=>x.stage==='ates'||x.stage==='hazir').forEach(x=>rows.push({k:2,t:Date.now(),html:nowRow({sym:x.s,src:x.stage==='ates'?'Algı · AL':'Algı · hazırlanıyor',cls:x.stage==='ates'?'al':'hz',sub:'Skor '+x.sc+(x.f&&x.f.fa!=null?' · hacim '+nf(x.f.fa,1)+' kat':'')+(x.f&&x.f.fc!=null?' · alıcı %'+nf(x.f.fc*100,0):''),val:x.f?nf(x.f.p):null,chg:x.f?x.f.ch:null,hot:x.stage==='ates'})}));
    (AL.log||[]).filter(e=>e.d===today).slice(-6).forEach(e=>{const px=(S.quotes[e.s]||S.umap[e.s]||{}).close,rr=px?(px/e.p0-1)*100:null;
     rows.push({k:1,t:e.t,html:nowRow({sym:e.s,src:'Algı · '+new Date(e.t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}),cls:'al',sub:'Giriş '+nf(e.p0)+' · stop '+nf(e.sp)+' · hedef '+nf(e.tp)+(e.res?' · '+({hit:'🎯 hedef',fail:'❌ stop',flat:'süre doldu',conf:'✅ teyit'}[e.res]||e.res):''),val:rr!=null?(rr>=0?'+':'')+nf(rr,2)+'%':null,chg:null,hot:e.res==='hit',dn:e.res==='fail'})})})}}catch(e){}
-  try{const b=briefData();(b.signals||[]).filter(x=>!x.scan).forEach(x=>rows.push({k:1,t:x.t,html:nowRow({sym:x.n,src:'Fırsat A · '+x.dir,cls:x.dir==='AL'?'al':'',sub:x.note,val:nf(x.close),chg:x.change,hot:true})}))}catch(e){}
+  try{const b=briefData(true);(b.signals||[]).filter(x=>!x.scan).forEach(x=>rows.push({k:1,t:x.t,html:nowRow({sym:x.n,src:'Fırsat A · '+x.dir,cls:x.dir==='AL'?'al':'',sub:x.note,val:nf(x.close),chg:x.change,hot:true})}))}catch(e){}
   try{(NOWK.list||[]).filter(k=>Date.now()-k.t<3*3600e3&&k.onem>=2).slice(0,4).forEach(k=>{const sy=String(k.syms||'').split(',')[0];if(!sy)return;const o=S.umap[sy]||{};
    rows.push({k:0,t:k.t,html:nowRow({sym:sy,src:'KAP · '+(k.ad||k.tip),cls:'kap',sub:(k.subj||'')+(k.summ?' — '+k.summ:''),val:o.close?nf(o.close):null,chg:o.change,dn:k.yon<0,onclick:"showTab('kap')"})})})}catch(e){}
   rows.sort((a,b)=>b.k-a.k||b.t-a.t);
@@ -4227,7 +4227,9 @@ function renderNow(){
  if(!document.getElementById('t-now')){const d=document.createElement('div');d.className='tab';d.id='t-now';d.innerHTML='<div class="sechd"><div class="st"><h1>Şimdi</h1><div class="ss">Tek bakışta piyasa, sinyaller, pozisyonlar</div></div><button class="ibtn" onclick="infoOpen(\'now\')"><i>i</i>Bu nedir?</button></div><div id="nowbody"></div>';tabsWrap.insertBefore(d,tabsWrap.firstChild)}
  setTimeout(()=>{try{showTab('now')}catch(e){}},0);
  const _d=draw;window.draw=draw=function(t){if(t==='now'){S.dirty[t]=0;try{renderNow()}catch(e){document.getElementById('nowbody').innerHTML='<div class="note dn">Ekran hatası: '+htmlEsc(e.message||e)+'</div>'}return}return _d.apply(this,arguments)};
- setInterval(()=>{if(!document.hidden&&S.tab==='now')renderNow()},5000);
+ // 01.10: dokunma/kaydırma sırasında yeniden çizme (dokunuş kaybolmasın, sayfa zıplamasın)
+ window.NOW_TOUCH=0;['touchstart','scroll','wheel'].forEach(ev=>document.getElementById('t-now').addEventListener(ev,()=>{NOW_TOUCH=Date.now()},{passive:true,capture:true}));
+ setInterval(()=>{if(!document.hidden&&S.tab==='now'&&Date.now()-NOW_TOUCH>1500)renderNow()},5000);
 })();
 /* ================= v7.1 SİNYAL BİLDİRİM KARTI ================= */
 const STQ=[];let stTimer=null,stCur=null;
@@ -4291,9 +4293,11 @@ window.addEventListener('unhandledrejection',e=>{try{const r=e.reason;errLog('ha
   if(Date.now()-(HEAL.last['d'+t]||0)>30000){HEAL.last['d'+t]=Date.now();setTimeout(()=>{try{_d(t);errLog('toparlama','ekran yeniden çizildi','ekran:'+t)}catch(x){}},800)}}};
  // canlı veri bekçisi
  setInterval(()=>{try{
-  if(document.hidden||!S.tvproxy||typeof TVL==='undefined'||!(TVL.last>0))return;
+  if(document.hidden||!S.tvproxy||typeof TVL==='undefined')return;
   if(typeof nowSess==='function'&&!nowSess().open)return;
-  const last=Math.max(TVL.last||0,(typeof TVS!=='undefined'&&TVS.at)||0);
+  // 01.10: yalnız canlı akışın kendi zamanı (TVL.last); hiç veri gelmediyse bağlantının açıldığı an. Tarama (TVS) her 4 sn
+  // güncellendiği için akışın sessizce ölmesini gizliyordu → Algı 'radar bekliyor'da kalıyordu.
+  const last=TVL.last>0?TVL.last:(TVL.openAt||0);if(!last)return;
   if(Date.now()-last>60000&&Date.now()-(HEAL.last.ws||0)>120000){HEAL.last.ws=Date.now();
    errLog('toparlama','canlı veri 60 sn gelmedi, bağlantı yenilendi','canlı akış');
    try{if(TVL.ws)TVL.ws.close()}catch(e){}setTimeout(()=>{try{tvLiveStart()}catch(e){}},700)}

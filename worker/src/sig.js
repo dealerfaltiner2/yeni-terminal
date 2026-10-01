@@ -54,10 +54,15 @@ export async function sigLog(request, env, url, json) {
 }
 // Bir sinyalin sonucu: bars = 1 dk mumlar [t(sn), o, h, l, c, v]; ib = XU100 1 dk mumları
 export function sigOutcome(bars, r, ib) {
-  const s0 = Math.floor(r.t / 60000) * 60;                     // sinyal dakikası (sn)
+  let s0 = Math.floor(r.t / 60000) * 60;                     // sinyal dakikası (sn)
   // 01.10: gün sınırı sayıyla (her mumda tarih metni üretmek işlemciyi yoruyordu; ücretsiz planda 10 ms sınırı)
-  const ds = (Date.parse(r.d + 'T00:00:00Z') - TRMS) / 1000, de = ds + 86400;
-  const B = bars.filter(b => b[0] >= s0 + 60 && b[0] >= ds && b[0] < de); // sinyalden SONRAKİ tam mumlar, aynı gün
+  let ds = (Date.parse(r.d + 'T00:00:00Z') - TRMS) / 1000, de = ds + 86400;
+  let B = bars.filter(b => b[0] >= s0 + 60 && b[0] >= ds && b[0] < de); // sinyalden SONRAKİ tam mumlar, aynı gün
+  // 01.10: fiyatsız (KAP) sinyalin günü tatil/yarım gün çıkarsa, sinyalden sonraki ilk işlem gününe kaydır
+  if (!B.length && !(r.px > 0)) {
+    const f = bars.find(b => b[0] >= s0 + 60);
+    if (f) { ds = Math.floor((f[0] + TRMS / 1000) / 86400) * 86400 - TRMS / 1000; de = ds + 86400; B = bars.filter(b => b[0] >= f[0] && b[0] < de); s0 = f[0] - 60; }
+  }
   if (!B.length) return { err: 'mum yok' };
   const up = r.dir !== 'SAT', sg = up ? 1 : -1;
   const px = r.px > 0 ? r.px : B[0][1];                          // fiyatsız sinyal (KAP) → sinyalden sonraki ilk mumun açılışı
@@ -85,12 +90,13 @@ export function sigOutcome(bars, r, ib) {
 }
 // Seans dışında her dakika: bekleyen sinyallerden 5 hisseyi ölç; hepsi bitince özeti gönder
 import { errAdd } from './err.js';
-const FAIL = new Map();   // hisse → art arda veri gelmeme sayısı (bu çalışma örneğinde)
+const FAIL = new Map();
+const IDXC = { at: 0, n: 0, bars: null };   // BIST 100 dakikalık mum önbelleği (bu çalışma örneğinde, 10 dk)   // hisse → art arda veri gelmeme sayısı (bu çalışma örneğinde)
 export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
   if (!env.BT) return null;
   await sigEnsure(env);
   const now = Date.now(), today = trDay(now), m = trMin(now);
-  const rows = (await env.BT.prepare('SELECT id,d,t,sym,dir,px FROM sig WHERE done = 0 AND t < ? ORDER BY t LIMIT 80').bind(now).all()).results || [];
+  const rows = (await env.BT.prepare('SELECT id,d,t,sym,dir,px,src FROM sig WHERE done = 0 AND t < ? ORDER BY t LIMIT 80').bind(now).all()).results || [];
   const ready = rows.filter(r => r.d < today || m >= 1095);       // bugünün sinyalleri 18:15'ten sonra
   if (!ready.length) return sigSummary(env, tgSend, kvGet, esc, nf);
   const old = ready.filter(r => now - r.t > 4 * 86400e3);
@@ -127,17 +133,27 @@ export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
   await ms('sig_run', { syms, at: now });
   let n = 0, bos = 0;
   try {
-  const got = await fetchBarsTV(env, [...syms.map(s => 'BIST:' + s), 'BIST:XU100'], '1', 2500, 25000);
+  // 01.10 akşam: İŞLEMCİ YÜKÜ (ücretsiz plan 10 ms/çalışma) — yalnız gereken kadar mum çekilir (eski: her hisseye 2500),
+  // BIST 100 mumları 10 dk önbellekte, günlük mumlar yalnız KAP dışı sinyal varsa (adr yalnız onlarda kullanılıyor).
+  const batch = todo.filter(x => syms.includes(x.sym));
+  const oldest = batch.reduce((a, r) => (r.d < a ? r.d : a), today);
+  const cd = Math.max(0, Math.round((Date.parse(today) - Date.parse(oldest)) / 86400e3));
+  const need = Math.min(2500, 650 + 520 * cd);
+  const useIdx = IDXC.bars && IDXC.n >= need && now - IDXC.at < 10 * 60e3;
+  const got = await fetchBarsTV(env, [...syms.map(s => 'BIST:' + s), ...(useIdx ? [] : ['BIST:XU100'])], '1', need, 15000);
   const toBars = st => st ? [...st.m.values()].filter(v => v && v.length >= 5).sort((a, b) => a[0] - b[0]) : [];
-  const ib = toBars(got['BIST:XU100']);
-  // v6.6: günlük mumlar → oynaklık (adr). Ayrı bağlantı, sırayla; gelmezse adr boş kalır, ölçüm yine yapılır.
+  if (!useIdx) { const b = toBars(got['BIST:XU100']); if (b.length) { IDXC.bars = b; IDXC.n = need; IDXC.at = now; } }
+  const ib = IDXC.bars || [];
+  // v6.6: günlük mumlar → oynaklık (adr). Gelmezse adr boş kalır, ölçüm yine yapılır.
   let gd = {};
-  try { gd = await fetchBarsTV(env, syms.map(s => 'BIST:' + s), '1D', 30, 10000); } catch (e) { gd = {}; }
+  const dsyms = [...new Set(batch.filter(r => !String(r.src || '').startsWith('kap-')).map(r => r.sym))];
+  if (dsyms.length) { try { gd = await fetchBarsTV(env, dsyms.map(s => 'BIST:' + s), '1D', 30, 6000); } catch (e) { gd = {}; } }
   if (FAIL.size > 300) FAIL.clear();
-  for (const r of todo.filter(x => syms.includes(x.sym))) {
+  const failed = new Set();
+  for (const r of batch) {
     const st = got['BIST:' + r.sym], bars = toBars(st);
-    // bağlantı sorunu → işaretleme, sonraki dakikada yeniden dene (4 gün sonra 'çok eski' olarak kapanır)
-    if (!bars.length && !(st && /^(symbol_error|series_error)/.test(st.err || ''))) { FAIL.set(r.sym, (FAIL.get(r.sym) || 0) + 1); bos++; if (FAIL.get(r.sym) === 3) await errAdd(env, 'sunucu', 'toparlama', 'veri gelmeyen hisse sıranın sonuna alındı: ' + r.sym, 'karne ölçümü'); continue; }
+    // bağlantı sorunu → işaretleme, sonraki dakikada yeniden dene (4 gün sonra 'çok eski' olarak kapanır). Sayaç hisse başına çalışmada bir kez artar.
+    if (!bars.length && !(st && /^(symbol_error|series_error)/.test(st.err || ''))) { if (!failed.has(r.sym)) { failed.add(r.sym); FAIL.set(r.sym, (FAIL.get(r.sym) || 0) + 1); if (FAIL.get(r.sym) === 3) await errAdd(env, 'sunucu', 'toparlama', 'veri gelmeyen hisse sıranın sonuna alındı: ' + r.sym, 'karne ölçümü'); } bos++; continue; }
     FAIL.delete(r.sym);
     const o = bars.length ? sigOutcome(bars, r, ib) : { err: st.err };
     const adr = adrOf(toBars(gd['BIST:' + r.sym]), r.d);

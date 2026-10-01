@@ -52,6 +52,7 @@ export function kapEntry(ms) {
   while (d.getUTCDay() === 0 || d.getUTCDay() === 6) d = new Date(d.getTime() + 86400e3);
   return d.getTime() + 9 * 3600e3 + 59 * 60e3 - TRMS; // 09:59 TR
 }
+const KAPC = { len: -1, from: '', empty: false };   // son KAP yanıtının uzunluğu (değişmediyse ayrıştırma atlanır)
 let ready = false;
 async function kapEnsure(env) {
   if (ready) return;
@@ -82,16 +83,22 @@ export async function kapPoll(env, h) {
   if (!env.BT) return null;
   await kapEnsure(env);
   const now = Date.now(), p = trParts(now);
+  // 01.10: gece yarısından sonraki ilk 15 dk dünü de iste (23:59'da yayımlanan / birikmiş bildirim kaçmasın)
+  const from = p.m < 15 ? trParts(now - 86400e3).day : p.day;
   const r = await fetch(KAP_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', Referer: 'https://www.kap.org.tr/tr/bildirim-sorgu', Origin: 'https://www.kap.org.tr', 'User-Agent': h.UA },
-    body: JSON.stringify({ fromDate: p.day, toDate: p.day, mkkMemberOidList: [], subjectList: [] }) });
+    body: JSON.stringify({ fromDate: from, toDate: p.day, mkkMemberOidList: [], subjectList: [] }), signal: AbortSignal.timeout(10000) });
   if (!r.ok) throw new Error('KAP HTTP ' + r.status);
-  const arr = await r.json();
+  // 01.10: İŞLEMCİ — günün tüm listesi her dakika ayrıştırılıyordu (akşamları ~1 MB). Yanıt bir öncekiyle aynı uzunluktaysa yeni bildirim yoktur → ayrıştırma atlanır.
+  const raw = await r.text();
+  if (KAPC.len === raw.length && KAPC.from === from && KAPC.empty) return { yeni: 0 };
+  let arr; try { arr = JSON.parse(raw); } catch (e) { throw new Error('KAP yanıtı okunamadı'); }
   if (!Array.isArray(arr)) throw new Error('KAP yanıtı dizi değil');
+  KAPC.len = raw.length; KAPC.from = from; KAPC.empty = false;
   const lastRow = await env.BT.prepare("SELECT v FROM meta WHERE k = 'kap_last'").first();
   let last = lastRow ? +lastRow.v : 0;
   // en eskiden başla, çalışma başına en fazla 40 (ücretsiz plan istek sınırı) — birikmiş varsa sonraki dakikalarda devam
   const fresh = arr.filter(x => +x.disclosureIndex > last).sort((a, b) => a.disclosureIndex - b.disclosureIndex).slice(0, 40);
-  if (!fresh.length) return { yeni: 0 };
+  if (!fresh.length) { KAPC.empty = true; return { yeni: 0 }; }
   const cfg = await h.kvGet(env, 'cfg', null);
   const opt = (cfg && cfg.opt) || {};
   const watch = new Set((cfg && cfg.watch) || []);
@@ -114,11 +121,17 @@ export async function kapPoll(env, h) {
     r0.sent = tgOn && r0.syms && wantTg(r0, big, watch) ? (inWin ? 1 : 0) : 2; // 2 = gönderilmeyecek, 0 = sabah özetine
     if (r0.sent === 1) toSend.push(r0);
   }
-  for (let k = 0; k < rows.length; k += 40) await env.BT.batch(rows.slice(k, k + 40).map(r0 => ins.bind(r0.idx, r0.t, r0.syms, r0.title, r0.subj, r0.summ, r0.tip, r0.yon, r0.onem, r0.sent)));
+  // 01.10: ÇÖKMEYE DAYANIKLI — önce satırlar eklenir; yalnız GERÇEKTEN yeni eklenen satırlar karneye ve Telegram'a gider;
+  // 'kap_last' en sonda yazılır. Çalışma yarıda kesilirse sonraki dakika aynı bildirimleri yeniden dener (çift kayıt olmaz).
+  const isNew = new Set();
+  for (let k = 0; k < rows.length; k += 40) {
+    const part = rows.slice(k, k + 40);
+    const res = await env.BT.batch(part.map(r0 => ins.bind(r0.idx, r0.t, r0.syms, r0.title, r0.subj, r0.summ, r0.tip, r0.yon, r0.onem, r0.sent)));
+    part.forEach((r0, i) => { if (res[i] && res[i].meta && res[i].meta.changes) isNew.add(r0.idx); });
+  }
   last = Math.max(last, ...rows.map(r0 => r0.idx));
-  await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_last', ?)").bind(String(last)).run();
   // Karne: önem ≥ 1 olan her hisse haberi ölçülsün (ilk çalışmada da — sadece Telegram atlanır)
-  for (const r0 of rows) {
+  for (const r0 of rows.filter(x => isNew.has(x.idx))) {
     if (r0.onem < 1 || !r0.syms || r0.tip === 'devre') continue; // devre kesici haber değil, hareketin sonucu → karneye yazılmaz
     const te = kapEntry(r0.t);
     for (const s of r0.syms.split(',').slice(0, 2)) await sigAdd(env, { src: 'kap-' + r0.tip, sym: s, dir: 'AL', px: null, sc: r0.onem, t: te, meta: { idx: r0.idx, yon: r0.yon, pub: r0.t } });
@@ -134,7 +147,8 @@ export async function kapPoll(env, h) {
     } catch (e) {}
   }
   let sent = 0;
-  for (const r0 of toSend.slice(0, 8)) { const q = Q[r0.syms.split(',')[0]]; const t = await h.tgSend(cfg, kapMsg(r0, h.esc, q)); if (t && t.ok) sent++; }
+  for (const r0 of toSend.filter(x => isNew.has(x.idx)).slice(0, 8)) { const q = Q[r0.syms.split(',')[0]]; const t = await h.tgSend(cfg, kapMsg(r0, h.esc, q)); if (t && t.ok) sent++; }
+  await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_last', ?)").bind(String(last)).run();
   return { yeni: rows.length, telegram: sent };
 }
 // Sabah 09:30 (hafta içi): gece biriken önemli KAP'lar tek mesajda
@@ -145,11 +159,19 @@ export async function kapMorning(env, h) {
   if (!(p.wd >= 1 && p.wd <= 5 && p.m >= 570 && p.m < 600)) return null;
   const rs = (await env.BT.prepare('SELECT idx,t,syms,subj,summ,tip,yon,onem FROM kap WHERE sent = 0 ORDER BY onem DESC, idx DESC LIMIT 25').all()).results || [];
   if (!rs.length) return null;
-  await env.BT.prepare('UPDATE kap SET sent = 1 WHERE sent = 0').run();
   const cfg = await h.kvGet(env, 'cfg', null);
   const lines = rs.map(r => (r.yon > 0 ? '🟢' : r.yon < 0 ? '🔴' : '⚪') + ' <b>' + h.esc(r.syms) + '</b> · ' + h.esc(KAP_AD[r.tip] || r.tip) + ' · ' + new Date(r.t + TRMS).toISOString().slice(5, 16).replace('T', ' ').replace(/^(\d\d)-(\d\d)/, '$2.$1') + '\n   ' + h.esc(String(r.summ || r.subj).slice(0, 110)));
-  await h.tgSend(cfg, '🌅 <b>GECE GELEN ÖNEMLİ KAP\'LAR</b> (' + rs.length + ')\n\n' + lines.join('\n'));
-  return { ozet: rs.length };
+  // 01.10: Telegram tek mesajda en çok 4096 karakter → ~3500'lük parçalar; yalnız GİDEN satırlar 'gönderildi' işaretlenir
+  const parts = []; let cur = '🌅 <b>GECE GELEN ÖNEMLİ KAP\'LAR</b> (' + rs.length + ')\n', curIdx = [];
+  rs.forEach((r, i) => { if (cur.length + lines[i].length > 3500 && curIdx.length) { parts.push([cur, curIdx]); cur = ''; curIdx = []; } cur += '\n' + lines[i]; curIdx.push(r.idx); });
+  if (curIdx.length) parts.push([cur, curIdx]);
+  let ok = 0;
+  for (const [txt, ids] of parts) {
+    const t = await h.tgSend(cfg, txt);
+    if (t && t.ok) { ok += ids.length; await env.BT.prepare('UPDATE kap SET sent = 1 WHERE idx IN (' + ids.map(() => '?').join(',') + ')').bind(...ids).run(); }
+    else break;
+  }
+  return { ozet: ok };
 }
 // Terminal listesi: /kap?f=onemli|hepsi&s=SYM
 export async function kapList(env, url, json) {
@@ -157,7 +179,8 @@ export async function kapList(env, url, json) {
   await kapEnsure(env);
   const f = url.searchParams.get('f') || 'onemli';
   const S = String(url.searchParams.get('s') || '').toUpperCase().split(',').map(x => x.replace(/[^A-Z0-9]/g, '')).filter(x => x.length >= 3).slice(0, 30);
-  let q = 'SELECT idx,t,syms,title,subj,summ,tip,yon,onem FROM kap WHERE t >= ? AND onem >= ?', b = [Date.now() - 7 * 86400e3, f === 'hepsi' ? 1 : 2];
+  // 01.10: 'INDEXED BY kap_t' — yoksa SQLite birincil anahtardan geriye tüm tabloyu tarıyordu (takip filtresinde okuma sınırı riski)
+  let q = 'SELECT idx,t,syms,title,subj,summ,tip,yon,onem FROM kap INDEXED BY kap_t WHERE t >= ? AND onem >= ?', b = [Date.now() - 7 * 86400e3, f === 'hepsi' ? 1 : 2];
   if (S.length) { q += ' AND (' + S.map(() => "(',' || syms || ',') LIKE ?").join(' OR ') + ')'; S.forEach(x => b.push('%,' + x + ',%')); }
   q += ' ORDER BY idx DESC LIMIT 60';
   const rs = (await env.BT.prepare(q).bind(...b).all()).results || [];

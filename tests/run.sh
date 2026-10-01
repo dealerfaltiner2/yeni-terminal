@@ -13,7 +13,8 @@ PY
 rm -f out_scripts.js
 [ -d node_modules/playwright ] || npm install --silent --no-audit --no-fund >/dev/null 2>&1
 echo "== Karne mantığı"; node sig.mjs 2>/dev/null || fail=1
+echo "== KAP haberleri"; node kap.mjs 2>/dev/null || fail=1
 echo "== Arayüz"; timeout 300 node ui.js || fail=1
-echo "== Sunucu (yerel)"; timeout 300 bash worker.sh 2>/dev/null | grep -v agent-proxy || fail=1
+echo "== Sunucu (yerel)"; timeout 300 bash worker.sh > out_worker.txt 2>/dev/null; wr=$?; grep -v agent-proxy out_worker.txt; rm -f out_worker.txt; [ $wr = 0 ] || fail=1
 echo; [ $fail = 0 ] && echo "SONUÇ: HEPSİ GEÇTİ" || echo "SONUÇ: HATA VAR"
 exit $fail

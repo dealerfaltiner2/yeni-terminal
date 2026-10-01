@@ -18,7 +18,8 @@ function val(c, sym, i) {
 const now = Date.now();
 const KAP = { ok: true, list: [
   { idx: 1670001, t: now - 36e5, syms: 'ASELS', title: 'ASELSAN', subj: 'Yeni İş İlişkisi', summ: 'Yurt dışı müşteri ile sözleşme', tip: 'is', ad: 'Yeni iş/sözleşme', yon: 1, onem: 3, olcum: { pre: .4, r15: 1.2, r60: 2.1, rc: 2.8, mfe: 3.4, o10: 1 } },
-  { idx: 1670002, t: now - 72e5, syms: 'SASA', title: 'SASA', subj: 'Pay Geri Alım', summ: 'Geri alım', tip: 'geri', ad: 'Geri alım', yon: 1, onem: 2, olcum: null }] };
+  { idx: 1670002, t: now - 72e5, syms: 'SASA', title: 'SASA', subj: 'Pay Geri Alım', summ: 'Geri alım', tip: 'geri', ad: 'Geri alım', yon: 1, onem: 2, olcum: null },
+  { idx: 1670003, t: now - 6e5, syms: 'KONTR', title: 'KONTR', subj: 'Test <img src=x onerror="window.__XSS=1">', summ: '<b>kalın</b>', tip: 'is', ad: 'Yeni iş', yon: 1, onem: 3, olcum: null }] };
 const day = k => new Date(now - k * 864e5).toISOString().slice(0, 10);
 const SIG = { ok: true, at: now, gun: 3, bekleyen: 0, last: day(0),
   src: { 'firsat-A': { n: 5, h: 2, s: 3 }, 'firsat-B': { n: 8, h: 5, s: 2 }, algi: { n: 4, h: 3, s: 1 }, radar: { n: 9, h: 4, s: 5 }, 'kap-geri': { n: 20, h: 9, s: 8 } },

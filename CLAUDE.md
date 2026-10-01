@@ -78,6 +78,13 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   TESTLER: `bash tests/run.sh` (sözdizimi + karne mantığı + Playwright arayüz 34 kontrol + yerel Worker). HER DEĞİŞİKLİKTEN SONRA ÇALIŞTIR; geçmeden yayınlama.
   Akşam bakımı = zamanlanmış görev (hafta içi 18:53): err + meta durumlarını okur, düzeltir, test eder, geçerse yayınlar. Fatih TELEGRAM İSTEMİYOR — sonuç yalnız Claude bildirimi.
 - 01.10 bakım: karne ölçümü 18:25'ten sonra her dakika yarıda kesiliyordu (iz bırakmadan) → karne + KAP durdu. sigEval artık meta 'sig_run' (ölçülen hisseler) + 'sig_kill' (kesilme sayısı) tutar; kesilen hisseler tek tek denenir, 3 kez kesilen 'ölçülemedi' diye kapanır. sigOutcome gün sınırını sayıyla hesaplar (işlemci).
+- v7.3 (01.10 akşam, genel bakım): ÜCRETSİZ PLANDA DAKİKALIK İŞİN TAMAMI 10 ms İŞLEMCİ PAYLAŞIR (süre sınırı 15 dk, sorun değil).
+  Cron sırası: alarm/radar → duyuru → KAP (3) → karne (4) → btStep (5). Karne: gereken kadar mum (aynı gün 650, eskiye 520/gün, en çok 2500),
+  BIST 100 mumları 10 dk önbellek, günlük (1D) yalnız KAP dışı sinyalde; FAIL sayacı hisse başına çalışmada bir; fiyatsız KAP sinyali tatile düşerse sonraki işlem gününe kayar.
+  KAP: yanıt uzunluğu aynıysa ayrıştırma atlanır (KAPC), gece 00:00–00:15 dün de istenir, yalnız gerçekten yeni eklenen satırlar karne/Telegram'a gider, kap_last en sonda;
+  sabah özeti ≤3500 karakterlik parçalar, yalnız giden satırlar sent=1; /kap 'INDEXED BY kap_t' + cihaz onayı (DATA_ROUTES). JSON yanıtları girintisiz.
+  Terminal: Şimdi'de dış metinler htmlEsc; bekçi yalnız TVL.last'a bakar; briefData(true) piyasayı yeniden taramaz; dokunurken Şimdi yeniden çizilmez; otomatik tarama İstanbul saatiyle.
+  Testler: tests/kap.mjs eklendi; D1 taklidinde bind() YENİ nesne döndürmeli (gerçek D1 gibi). run.sh sunucu testinin çıkış kodunu artık doğru sayıyor.
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.

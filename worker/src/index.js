@@ -25,7 +25,7 @@ const frame = s => `~m~${s.length}~m~${s}`;
 const msg = (m, p) => frame(JSON.stringify({ m, p }));
 const txt = d => typeof d === 'string' ? d : new TextDecoder().decode(d);
 const rnd = () => Math.random().toString(36).slice(2, 12);
-const json = (o, status = 200) => new Response(JSON.stringify(o, null, 2), {
+const json = (o, status = 200) => new Response(JSON.stringify(o), {   // 01.10: sıkıştırılmış (girintili çıktı büyük yanıtlarda işlemciyi aşıyordu)
   status, headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }
 });
 
@@ -58,7 +58,7 @@ async function getAuth(env, force = false) {
   if (!cookie) { authCache.err = 'TV_SESSION secret tanımlı değil'; return 'unauthorized_user_token'; }
   try {
     const r = await fetch('https://www.tradingview.com/', {
-      headers: { Cookie: cookie, 'User-Agent': UA, 'Accept-Language': 'tr-TR,tr;q=0.9' }
+      headers: { Cookie: cookie, 'User-Agent': UA, 'Accept-Language': 'tr-TR,tr;q=0.9' }, signal: AbortSignal.timeout(8000)
     });
     const html = await r.text();
     const m = html.match(/"auth_token":"([^"]+)"/);
@@ -687,7 +687,7 @@ const OWN_ROUTES = new Set(['sync', 'prefs', 'cron-test', 'pine-sync', 'pine-tes
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
 const DEV_GRACE = Date.UTC(2026, 9, 6); // 6 Ekim 2026
-const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog']);
+const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap']);
 const devCache = new Map();
 let ownerCache = { v: undefined, at: 0 }, devReady = false;
 async function ownerTok(env) {
@@ -918,8 +918,8 @@ export default {
     return json({ error: 'bilinmeyen yol: /' + route }, 404);
   },
   async scheduled(event, env, ctx) {
-    // Dakikalık iş. Sıra: alarm/radar (cron) → duyuru → karne ölçümü (seans dışı) → KAP → geçmiş test.
-    // Karne KAP'tan ÖNCE: ay sonu gibi yoğun günlerde KAP listesi büyüyüp çalışma süresini aşarsa karne yine de çalışsın.
+    // Dakikalık iş. Sıra (01.10): alarm/radar (cron) → duyuru → KAP → karne ölçümü (seans dışı) → geçmiş test.
+    // Ücretsiz planda tüm çalışma 10 ms işlemci paylaşır; hafif ve zamana duyarlı işler önce.
     // Teşhis: meta 'cron_hb' = son çalışmanın saati + ulaştığı adım (iş yarıda kesilirse nerede kaldığı görünür).
     const hb = async st => { try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('cron_hb', ?)").bind(trNow().hm + ' ' + st).run(); } catch (e) {} };
     ctx.waitUntil((async () => {
@@ -945,22 +945,23 @@ export default {
           }
         }
       } catch (e) {}
+      // KAP: dakikada bir, her gün (gece gelenler sabah 09:30 özetinde). 01.10: karneden ÖNCE — zamana duyarlı ve hafif;
+      // karne ölçümü ağırlaşıp çalışmayı yarıda kestirse bile haberler gecikmesin. Sabah özeti ayrı korumada (KAP sitesi çökse de gider).
+      let kr = null, mr = null;
+      try {
+        kr = await kapPoll(env, { UA, tgSend, kvGet, esc, scanRaw });
+        if (kr && kr.yeni) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_st', ?)").bind(JSON.stringify({ at: Date.now(), ...kr })).run();
+      } catch (e) { await errAdd(env, 'sunucu', 'hata', 'KAP: ' + String(e && e.message || e).slice(0, 200), 'kapPoll'); try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_err', ?)").bind(new Date().toISOString() + ' ' + String(e && e.message || e).slice(0, 300)).run(); } catch {} }
+      try { mr = await kapMorning(env, { tgSend, kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'KAP sabah özeti: ' + String(e && e.message || e).slice(0, 200), 'kapMorning'); }
+      try { const n = (kr && kr.telegram || 0) + (mr && mr.ozet ? 1 : 0); if (n) { const st = await kvGet(env, 'st', {}); if (st.cnt) { st.cnt.kap = (st.cnt.kap || 0) + n; await kvPut(env, 'st', st); } } } catch (e) {}
+      await hb('3-KAP bitti');
       const T = trNow(); const inSess = T.wd >= 1 && T.wd <= 5 && T.m >= 590 && T.m < 1095;
       if (!inSess) {
         const t0 = Date.now(); let sr;
         try { sr = await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf); } catch (e) { sr = { hata: String(e && e.message || e).slice(0, 200) }; await errAdd(env, 'sunucu', 'hata', 'karne: ' + sr.hata, 'sigEval'); }
         try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sig_st', ?)").bind(new Date().toISOString() + ' ' + (Date.now() - t0) + 'ms ' + JSON.stringify(sr ?? null).slice(0, 300)).run(); } catch (e) {}
-        await hb('3-karne bitti');
+        await hb('4-karne bitti');
       }
-      // KAP: dakikada bir, her gün (gece gelenler sabah 09:30 özetinde)
-      try {
-        const kr = await kapPoll(env, { UA, tgSend, kvGet, esc, scanRaw });
-        const mr = await kapMorning(env, { tgSend, kvGet, esc });
-        const n = (kr && kr.telegram || 0) + (mr && mr.ozet ? 1 : 0);
-        if (n) { const st = await kvGet(env, 'st', {}); if (st.cnt) { st.cnt.kap = (st.cnt.kap || 0) + n; await kvPut(env, 'st', st); } }
-        if (kr && kr.yeni) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_st', ?)").bind(JSON.stringify({ at: Date.now(), ...kr })).run();
-      } catch (e) { await errAdd(env, 'sunucu', 'hata', 'KAP: ' + String(e && e.message || e).slice(0, 200), 'kapPoll'); try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_err', ?)").bind(new Date().toISOString() + ' ' + String(e && e.message || e).slice(0, 300)).run(); } catch {} }
-      await hb('4-KAP bitti');
       // NABIZ/özellik geçmiş testi: seans DIŞINDA (ağır iş en sona)
       if (!inSess) { try { await btStep(env); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'btStep: ' + String(e && e.message || e).slice(0, 200), 'btStep'); } }
       await hb('5-tamam');
