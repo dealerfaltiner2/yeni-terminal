@@ -97,6 +97,12 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   pairStart motorun tvproxy'sini yeni adrese çevirir; kur.ps1 /pair'i yeni adrese yollar, npm.cmd/npx.cmd kullanır (betik engeli).
   Şirket PC'sinde PowerShell'de önce 'Set-ExecutionPolicy -Scope Process Bypass -Force'. 01.10 22:48 motor kuruldu, canlı veri var.
 - v7.6 ŞİMDİ YENİ GÖRÜNÜM: nHero (BIST 100 büyük rakam, piyasanın havası, artıda/eksi çubuğu, XU030/BANKA/USD/EUR/ALTIN kutuları = S.mkt, refreshTick doldurur), nAvatar, nPill, halka karne (nRing), sektör Türkçe (SEC_TR). Geniş ekranda iki sütun (.ngrid).
+- v7.7 (01.10 gece) BİLGİ KATMANI (sinyal kuralları DEĞİŞMEDİ): worker/src/ecal.js TradingView ekonomik takvimi (TR önem≥0, ABD önem 1), 30 dk'da bir → meta 'ecal'; /ecal (DATA_ROUTES).
+  Terminal: ECAL, ecTitle (EC_TR Türkçe başlıklar), Şimdi'de 'Ekonomik takvim' kartı + 45 dk kala sarı uyarı; sigNotes(sym) = bilanço ≤7 gün (earnings_release_next_date, BASE kolonu) + 30 dk içindeki veri
+  → Algı msgFire, Fırsat Telegram ve bildirim kartına eklenir. VİOP: tvScan('futures') BIST:XU030D1! (S.viop; abonelikte VİOP yok → 15 dk gecikmeli, ⏱); 09:30–10:00 'VİOP açıldı' satırı.
+  Şerit: S&P vadeli (CME_MINI:ES1!), DOLAR END. (TVC:DXY), ABD 10Y. /midas (Midas yedeği bist-tv'de; eski 'bist' worker'ında /midas YOK — o worker aslında eski bist-tv kopyası).
+  worker/src/probe.js: meta 'probe_req'=0 yazılırsa dakikada bir kaynak denemesi → 'probe:<ad>' (yeni TradingView alanlarını sunucudan denemek için).
+  kur.ps1 6. adım: 'oturum açmadan başlasın mı' → Görev Zamanlayıcı BistMotor (AtStartup, Windows şifresi; yönetici izni gerekebilir; olmazsa Başlangıç klasörü yeter).
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.

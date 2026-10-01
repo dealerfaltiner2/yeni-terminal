@@ -773,7 +773,7 @@ async function autoRun(manual){
       'Kurulum: '+c.ss.map(x=>htmlEsc(SNAME[x])).join(', ')+'\n'+
       '4S teyit: '+(htfOk?'✓ uyumlu':'✗')+' · Puan: '+Math.round(c.sc)+'\n'+
       (a.ref?('POC '+nf(a.ref.poc)+' · VAH '+nf(a.ref.vah)+' · VAL '+nf(a.ref.val)+'\n'):'')+
-      '#'+c.o.name+' #'+dir;
+      sigNoteTxt(c.o.name).replace(/^\n/,'')+(sigNotes(c.o.name).length?'\n':'')+'#'+c.o.name+' #'+dir;
      await tgSend(txt);
      S.sentSig.push(key);sent++;
      beep();notify('BIST · Sinyal gönderildi',c.o.name+' '+dir);
@@ -1034,7 +1034,7 @@ const TFDEF=[
  {id:'D',lab:'Günlük',sfx:'',htf:'|1W',htfLab:'Hafta',vwap:false}
 ];
 const TFMAP={};TFDEF.forEach(t=>TFMAP[t.id]=t);
-const BASE=['name','description','close','change','change_abs','open','high','low','volume','market_cap_basic','price_earnings_ttm','price_book_fundamental','dividends_yield_current','sector','relative_volume_10d_calc','relative_volume_intraday|5','price_52_week_high','price_52_week_low','update_mode','Perf.W','Perf.1M','EMA20','EMA200'];
+const BASE=['name','description','close','change','change_abs','open','high','low','volume','market_cap_basic','price_earnings_ttm','price_book_fundamental','dividends_yield_current','sector','relative_volume_10d_calc','relative_volume_intraday|5','price_52_week_high','price_52_week_low','update_mode','Perf.W','Perf.1M','EMA20','EMA200','earnings_release_next_date'];
 function tfCols(sfx,vwap){
  const c=['close','EMA20','EMA50','EMA200','RSI','ADX','ATR','BB.upper','BB.lower','MACD.macd','MACD.signal','Stoch.K','Stoch.D'].map(x=>x+sfx);
  if(vwap)c.push('VWAP'+sfx);
@@ -1688,7 +1688,8 @@ async function fetchMidasRaw(){
   if(!r.ok)throw new Error('HTTP '+r.status);
   return await r.text();
  }catch(e){
-  const r2=await fetch(WORKER+'midas');
+  const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b))throw new Error('Midas alınamadı: '+(e.message||e));
+  const r2=await fetch(dq(b+'/midas'));
   if(!r2.ok)throw new Error('yedek de başarısız: HTTP '+r2.status);
   return await r2.text();
  }
@@ -2083,8 +2084,9 @@ async function refreshFast(){
 async function refreshTick(){
  if(document.hidden)return;
  try{
-  const j=await tvScan('global',{symbols:{tickers:['BIST:XU100','BIST:XU030','BIST:XBANK','BIST:XUSIN','FX_IDC:USDTRY','FX_IDC:EURTRY','TVC:GOLD','TVC:SILVER','BINANCE:BTCUSDT','BINANCE:ETHUSDT']},columns:['name','close','change']});
-  const nm={XU100:'XU100',XU030:'XU030',XBANK:'BANKA',XUSIN:'SINAİ',USDTRY:'USD',EURTRY:'EUR',GOLD:'ALTIN',SILVER:'GÜMÜŞ',BTCUSDT:'BTC',ETHUSDT:'ETH'};
+  const j=await tvScan('global',{symbols:{tickers:['BIST:XU100','BIST:XU030','BIST:XBANK','BIST:XUSIN','FX_IDC:USDTRY','FX_IDC:EURTRY','TVC:GOLD','TVC:SILVER','BINANCE:BTCUSDT','BINANCE:ETHUSDT','CME_MINI:ES1!','TVC:DXY','TVC:US10Y']},columns:['name','close','change']});
+  const nm={XU100:'XU100',XU030:'XU030',XBANK:'BANKA',XUSIN:'SINAİ',USDTRY:'USD',EURTRY:'EUR',GOLD:'ALTIN',SILVER:'GÜMÜŞ',BTCUSDT:'BTC',ETHUSDT:'ETH','ES1!':'S&P VADELİ',DXY:'DOLAR END.',US10Y:'ABD 10Y'};
+  try{const v=await tvScan('futures',{symbols:{tickers:['BIST:XU030D1!']},columns:['name','close','change','update_mode']});const d=v&&v.data&&v.data[0];if(d)S.viop={c:d.d[1],ch:d.d[2],dl:/delayed/.test(String(d.d[3]||'')),at:Date.now()}}catch(e){}
   j.data.forEach(r=>{if(r.d[0]==='XU100')S.idxCh=r.d[2]});S.mkt=S.mkt||{};j.data.forEach(r=>{S.mkt[nm[r.d[0]]||r.d[0]]={c:r.d[1],ch:r.d[2]}});
   const h=j.data.map(r=>'<span><b>'+(nm[r.d[0]]||r.d[0])+'</b>'+nf(r.d[1],r.d[1]>1000?0:2)+' <i class="'+cls(r.d[2])+'">'+pct(r.d[2])+'</i></span>').join('');
   $('#tickrun').innerHTML=h+h;
@@ -3216,7 +3218,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="7.6";window.APPV=APP_VER;
+  const APP_VER="7.7";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3498,7 +3500,7 @@ function tvReconnectReport(){
    'Akış '+P(f.fa,1)+'x · RVOL '+(f.rv!=null?P(f.rv,1)+'x':'-')+' · Alım %'+nf((f.fc||0)*100,0)+
    (fl.length?'\n✓ '+fl.join(' · '):'')+
    '\nHedef '+P(e.tp)+' ('+sp(e.stp*2)+') · Stop '+P(e.sp)+' (−%'+nf(e.stp,2)+') · 15 dk'+
-   (e.f.sh?'\n⚠ Sığ hisse — manipülasyon riski':'');
+   (e.f.sh?'\n⚠ Sığ hisse — manipülasyon riski':'')+sigNoteTxt(e.s);
  }
 
  /* ---------- ana dongu (5 sn) ---------- */
@@ -4196,6 +4198,18 @@ tr.row:active td{background:var(--card2)}
 .nqa button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 4px;border-radius:16px;font:800 13px var(--sans);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border-color:rgba(255,255,255,.08);cursor:pointer}
 .nqa button span{font-size:18px}
 .nqa button small{font-weight:600;font-size:10.5px;color:var(--dim)}
+.nwarn{margin-top:12px;padding:9px 11px;border-radius:12px;font-size:12.5px;line-height:1.45;color:#fde68a;background:rgba(245,165,36,.10);border:1px solid rgba(245,165,36,.35)}
+.nwarn b{color:#fbbf24}.nwarn.info{color:#bae6fd;background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.3)}.nwarn.info b{color:#7dd3fc}
+.nrow .nm .src.wn,.chip.wn{background:rgba(245,165,36,.16);color:#fbbf24}
+.ncal{border:1px solid rgba(255,255,255,.07);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.02)}
+.nce{display:flex;align-items:center;gap:9px;padding:9px 12px;border-top:1px solid rgba(255,255,255,.05)}
+.nce:first-child{border-top:0}.nce.past{opacity:.55}
+.nce .tm{flex:none;min-width:44px;font:700 12px var(--sans);color:var(--txt2);font-variant-numeric:tabular-nums}
+.nce .fl{flex:none;font-size:15px}
+.nce .ti{min-width:0}.nce .ti>b{display:block;font-size:13px;color:#fff;font-weight:700}
+.nce.hi .ti>b::after{content:' ● önemli';font-size:10px;color:#fbbf24;font-weight:800}
+.nce .ti small{display:block;font-size:11px;color:var(--dim);margin-top:1px}.nce .ti small b{display:inline;font-size:11px;color:#fff}
+.nmk{grid-template-columns:repeat(auto-fit,minmax(104px,1fr))}
 @media (max-width:420px){.nmk{grid-template-columns:repeat(3,1fr)}.nmk div:nth-child(n+4){display:none}.nbig{font-size:30px}.nsp{display:none}}
 @media (min-width:900px){
  .ngrid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:22px;align-items:start}
@@ -4205,6 +4219,28 @@ tr.row:active td{background:var(--card2)}
 </style>
 <div id="sigtoast"></div>
 <script>
+/* ================= v7.7 EKONOMİK TAKVİM · BİLANÇO NOTU · VİOP ================= */
+let ECAL={list:null,t:0};
+function ecalLoad(){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||Date.now()-ECAL.t<15*60e3)return;ECAL.t=Date.now();
+ fetch(dq(b+'/ecal')).then(r=>r.json()).then(j=>{if(j&&j.ok){ECAL.list=j.list||[];if(S.tab==='now')renderNow()}}).catch(()=>{})}
+const EC_TR=[[/core inflation rate yoy/i,'Çekirdek enflasyon (yıllık)'],[/inflation rate yoy/i,'Enflasyon (yıllık)'],[/core inflation rate mom/i,'Çekirdek enflasyon (aylık)'],[/inflation rate mom/i,'Enflasyon (aylık)'],
+ [/core pce/i,'Çekirdek PCE enflasyonu'],[/pce price/i,'PCE enflasyonu'],[/ppi/i,'Üretici fiyatları (ÜFE)'],[/interest rate decision|fed interest rate|one-week repo/i,'Faiz kararı'],[/fomc minutes/i,'FED toplantı tutanakları'],
+ [/fomc press|fed chair|powell/i,'FED başkanı konuşması'],[/fed .* speech|speech/i,'Merkez bankası konuşması'],[/non farm payrolls/i,'Tarım dışı istihdam'],[/unemployment rate/i,'İşsizlik oranı'],[/initial jobless/i,'Haftalık işsizlik başvuruları'],
+ [/jolts/i,'Açık iş ilanları (JOLTS)'],[/adp/i,'ADP özel sektör istihdamı'],[/gdp growth rate yoy/i,'Büyüme (yıllık)'],[/gdp growth/i,'Büyüme'],[/retail sales/i,'Perakende satışlar'],[/ism manufacturing/i,'ISM imalat endeksi'],
+ [/ism services|ism non-manufacturing/i,'ISM hizmet endeksi'],[/manufacturing pmi/i,'İmalat PMI'],[/current account/i,'Cari denge'],[/balance of trade/i,'Dış ticaret dengesi'],[/capacity utilization/i,'Kapasite kullanım oranı'],
+ [/business confidence/i,'Reel kesim güveni'],[/consumer confidence/i,'Tüketici güveni'],[/industrial production/i,'Sanayi üretimi'],[/michigan/i,'Michigan tüketici güveni'],[/durable goods/i,'Dayanıklı mal siparişleri'],
+ [/budget balance/i,'Bütçe dengesi'],[/tourist arrivals/i,'Turist sayısı'],[/foreign exchange reserves|reserves/i,'Döviz rezervleri'],[/housing starts|building permits|home sales/i,'Konut verisi'],[/crude oil inventories/i,'Ham petrol stokları']];
+function ecTitle(e){for(const [r,t] of EC_TR)if(r.test(e.ti))return t;return e.ti}
+function ecFlag(e){return e.c==='TR'?'🇹🇷':e.c==='US'?'🇺🇸':e.c}
+function ecHm(t){return new Date(t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Istanbul'})}
+function ecVal(v,e){return v==null?'–':(nf(v,Math.abs(v)<100?1:0)+(e.u==='%'?'%':''))}
+// önemli veri yakında mı? (önümüzdeki 'ileri' dk ya da son 10 dk)
+function ecNear(ileri){const n=Date.now();return (ECAL.list||[]).filter(e=>(e.im>=1||e.c==='TR')&&e.t>n-10*60e3&&e.t<n+ileri*60e3)}
+function earnDays(sym){const o=(S.umap&&S.umap[sym])||{},ts=+o.earnings_release_next_date;if(!(ts>0))return null;
+ const day=x=>Math.floor((x+3*3600e3)/864e5),d=day(ts*1000)-day(Date.now());return d>=0&&d<=7?d:null}
+function sigNotes(sym){const a=[];try{const d=earnDays(sym);if(d!=null)a.push(d===0?'Bilanço bugün açıklanıyor':d===1?'Bilanço yarın açıklanıyor':'Bilanço '+d+' gün sonra');
+ ecNear(30).slice(0,2).forEach(e=>a.push(ecHm(e.t)+' '+(e.c==='TR'?'Türkiye':'ABD')+' verisi: '+ecTitle(e)))}catch(e){}return a}
+function sigNoteTxt(sym){const a=sigNotes(sym);return a.length?'\n⚠️ '+a.join(' · '):''}
 /* ================= v7.1 ŞİMDİ ================= */
 // mini fiyat çizgisi: önce bugünün 15 dk mumları (derin tarama/izleme önbelleği), yoksa canlı akış örnekleri
 function sparkFor(sym,w,h){try{
@@ -4240,7 +4276,7 @@ function nSec(ic,t,link,tab,n){return '<div class="nsec"><span class="nsi">'+ic+
 function nowRow(o){ // {sym,src,cls,sub,val,chg,hot,onclick}
  const sp=sparkFor(o.sym,64,24);
  return '<div class="nrow'+(o.hot?' hot':'')+(o.dn?' dn':'')+'" onclick="'+(o.onclick||('selectSym(\''+o.sym+'\',\'bist\');showTab(\'chart\')'))+'">'+nAvatar(o.sym)+
-  '<div class="nm"><div class="nt"><b>'+htmlEsc(o.sym)+'</b><span class="src '+(o.cls||'')+'">'+htmlEsc(o.src)+'</span></div><small>'+htmlEsc(o.sub)+'</small></div>'+
+  '<div class="nm"><div class="nt"><b>'+htmlEsc(o.sym)+'</b><span class="src '+(o.cls||'')+'">'+htmlEsc(o.src)+'</span>'+(earnDays(o.sym)!=null?'<span class="src wn">📅 bilanço '+(earnDays(o.sym)===0?'bugün':earnDays(o.sym)===1?'yarın':earnDays(o.sym)+' gün')+'</span>':'')+'</div><small>'+htmlEsc(o.sub)+'</small></div>'+
   (sp?'<div class="nsp">'+sp+'</div>':'')+
   '<div class="nv">'+(o.val!=null?'<b>'+o.val+'</b>':'')+nPill(o.chg)+'</div></div>'}
 function nRing(p,m){const r=17,c=2*Math.PI*r,v=p==null?0:p/100,col=p==null?'rgba(255,255,255,.15)':kCol(p,m);
@@ -4271,11 +4307,16 @@ function nHero(){
   '<div class="nh-mode"><small>PİYASANIN HAVASI</small><b>'+mdTr+'</b><span>'+tip+'</span></div></div>';
  if(r){const up=Math.max(0,Math.min(100,r.breadth||0));
   h+='<div class="nbr"><div class="nbr-bar"><i style="width:'+up+'%"></i></div><div class="nbr-l"><span><b class="up">%'+nf(up,0)+'</b> hisse artıda</span><span><b>%'+nf(r.above,0)+'</b>\'i 20 günlük ortalama üstünde</span></div></div>'}
- const tl=['XU030','BANKA','USD','EUR','ALTIN'].filter(k=>mk[k]);
- if(tl.length)h+='<div class="nmk">'+tl.map(k=>'<div><small>'+k+'</small><b>'+nf(mk[k].c,mk[k].c>1000?0:2)+'</b><i class="'+cls(mk[k].ch)+'">'+pct(mk[k].ch)+'</i></div>').join('')+'</div>';
+ const V=S.viop,tiles=[];
+ if(V&&V.c)tiles.push(['VİOP 30',V.c,V.ch,V.dl?'15 dk gecikmeli':'']);
+ ['BANKA','USD','EUR','ALTIN','S&P VADELİ','DOLAR END.'].forEach(k=>{if(mk[k])tiles.push([k==='S&P VADELİ'?'S&P VADELİ':k,mk[k].c,mk[k].ch,''])});
+ if(tiles.length)h+='<div class="nmk">'+tiles.map(t=>'<div'+(t[3]?' title="'+t[3]+'"':'')+'><small>'+t[0]+(t[3]?' ⏱':'')+'</small><b>'+nf(t[1],t[1]>1000?0:2)+'</b><i class="'+cls(t[2])+'">'+pct(t[2])+'</i></div>').join('')+'</div>';
+ const ss=nowSess();
+ if(V&&V.c&&ss.wk&&ss.m>=570&&ss.m<600)h+='<div class="nwarn info">📈 <b>VİOP açıldı:</b> BIST 30 vadeli '+pct(V.ch)+' → endeks '+(V.ch>0.3?'yukarı':V.ch<-0.3?'aşağı':'yatay')+' açılabilir'+(V.dl?' (veri 15 dk gecikmeli)':'')+'.</div>';
+ const ne=ecNear(45);if(ne.length)h+='<div class="nwarn">⚠️ <b>'+ne.map(e=>ecHm(e.t)+' '+ecFlag(e)+' '+htmlEsc(ecTitle(e))).join(' · ')+'</b> — veri saatinde fiyatlar sert oynayabilir; yeni işleme dikkat.</div>';
  return h+nowSessLine()+'</div>'}
 function renderNow(){
- const el=document.getElementById('nowbody');if(!el)return;nowKapLoad();
+ const el=document.getElementById('nowbody');if(!el)return;nowKapLoad();ecalLoad();
  const s=nowSess(),today=new Date(Date.now()+3*3600e3).toISOString().slice(0,10);
  let h=nHero(),main='',side='';
  if(s.open){
@@ -4308,6 +4349,9 @@ function renderNow(){
    (kl.length?kl.map(k=>{const sy=String(k.syms||'').split(',')[0]||'KAP';return nowRow({sym:sy,src:k.ad||k.tip,cls:'kap',sub:(k.subj||'')+(k.summ?' — '+k.summ:''),val:new Date(k.t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}),dn:k.yon<0,onclick:"showTab('kap')"})}).join(''):'<div class="nempty">Seans sonrası önemli bildirim yok.</div>');
   const pz=nowPositions();if(pz)side+=nSec('💼','Açık pozisyonlar','','')+pz;
  }
+ try{const n=Date.now(),L=(ECAL.list||[]).filter(e=>e.t>n-2*3600e3&&e.t<n+40*3600e3).slice(0,7);
+  side+=nSec('🗓️','Ekonomik takvim','','',L.length||'')+(L.length?'<div class="ncal">'+L.map(e=>{const done=e.a!=null,past=e.t<n;
+   return '<div class="nce'+(e.im>=1?' hi':'')+(past?' past':'')+'"><span class="tm">'+(new Date(e.t+3*3600e3).toISOString().slice(0,10)===new Date(n+3*3600e3).toISOString().slice(0,10)?'':'Yarın ')+ecHm(e.t)+'</span><span class="fl">'+ecFlag(e)+'</span><div class="ti"><b>'+htmlEsc(ecTitle(e))+'</b><small>'+(done?'Açıklanan <b>'+ecVal(e.a,e)+'</b> · ':'')+'Beklenti '+ecVal(e.f,e)+' · Önceki '+ecVal(e.p,e)+'</small></div></div>'}).join('')+'</div>':'<div class="nempty">'+(ECAL.list?'Önümüzdeki 40 saatte önemli veri yok.':'Takvim yükleniyor…')+'</div>')}catch(e){}
  side+='<div class="nqa"><button onclick="showTab(\'op\')"><span>🎯</span>Fırsatlar<small>derin tarama</small></button><button onclick="showTab(\'algi\')"><span>⚡</span>Algı<small>ani para girişi</small></button><button onclick="showTab(\'kap\')"><span>📰</span>KAP<small>haberler</small></button></div>';
  h+='<div class="ngrid"><div class="ncol">'+main+'</div><div class="ncol">'+side+'</div></div>';
  el.innerHTML=h;
@@ -4320,6 +4364,7 @@ function renderNow(){
   ['SEANS AÇIKKEN',['<b>Canlı sinyaller</b>: Algı\'nın ateşlediği ya da hazırlanan hisseler, bugün verilen Algı sinyallerinin şu anki durumu, son 8 saatteki Fırsat A notları ve son 3 saatin önemli KAP haberleri','<b>Karne</b>: son 10 iş gününde her sinyal kaynağının başarısı','<b>Açık pozisyonlar</b>: günlükteki açık işlemler (kaç R\'de olduğu), portföy ve yaklaşan alarmlar']],
   ['PİYASA KAPALIYKEN',['Son günün karnesi','Seans sonrası gelen önemli KAP\'lar','<b>Yarın izlenecekler</b>: günü zirvesine %1\'den yakın, göreli hacmi 1,3 kat üstü, %1,5–7 artıda ve günlük hacmi 20 Mn ₺ üstü kapatan hisseler. Sinyal değil, açılışta ilk bakılacak liste.']],
   ['İŞ BİLGİSAYARI MOTORU','Kuruluysa Algı ve Fırsat iş bilgisayarında sürekli çalışır; telefon kapalıyken de sinyal gelir. Durumu seans satırının altında görünür. Kurulum: Ayarlar → Ana cihaz → <b>İş bilgisayarını bağla</b>.'],
+  ['EKONOMİK TAKVİM VE UYARILAR',['<b>Ekonomik takvim</b>: Türkiye\'nin önemli ve orta önemdeki verileri (enflasyon, faiz kararı, cari denge…) ile ABD\'nin önemli verileri (enflasyon, istihdam, FED). Saat, beklenti, önceki ve açıklanan değer.','Önemli bir veriye <b>45 dakikadan az</b> kaldıysa üst kartta sarı uyarı çıkar; veri saatinde fiyatlar sert oynayabilir.','<b>Bilanço notu</b>: bilançosu 7 gün içinde açıklanacak hisselerin yanında 📅 rozeti; Algı ve Fırsat bildirimlerinde de yazar.','<b>VİOP 30</b>: BIST 30 vadeli kontratı. 09:30–10:00 arası açılışın yönü için erken fikir verir. Aboneliğin VİOP\'u kapsamıyorsa 15 dakika gecikmelidir (⏱ işareti).','Bu notlar sinyal kurallarını değiştirmez; yalnız bilgi verir.']],
   ['MİNİ ÇİZGİ','Her satırın solundaki küçük grafik: hisse derin taranmışsa bugünün 15 dakikalık kapanışları, değilse son birkaç dakikanın canlı fiyatı. Yeşil = yükseliyor, kırmızı = düşüyor.']]};
  try{SNAME.algi=SNAME.algi||'Algı'}catch(e){}
  if(!document.getElementById('t-now')){const d=document.createElement('div');d.className='tab';d.id='t-now';d.innerHTML='<div class="sechd"><div class="st"><h1>Şimdi</h1><div class="ss">Tek bakışta piyasa, sinyaller, pozisyonlar</div></div><button class="ibtn" onclick="infoOpen(\'now\')"><i>i</i>Bu nedir?</button></div><div id="nowbody"></div>';tabsWrap.insertBefore(d,tabsWrap.firstChild)}
@@ -4335,6 +4380,7 @@ function sigToast(o){try{if(!o||!o.sym)return;if(STQ.some(x=>x.sym===o.sym&&x.sr
 function stNext(){const el=document.getElementById('sigtoast');stCur=STQ.shift()||null;if(!stCur){el.classList.remove('on');return}const o=stCur,sat=o.dir==='SAT';
  el.innerHTML='<div class="stc'+(sat?' sat':'')+'"><div class="st1"><span class="lb">'+htmlEsc(o.label||('YENİ SİNYAL · '+(o.dir||'AL')))+'</span><b>'+htmlEsc(o.sym)+'</b>'+sparkFor(o.sym,64,22)+'<button class="x" onclick="stClose()" aria-label="Kapat">✕</button></div>'+
   (o.why&&o.why.length?'<div class="chips">'+o.why.map(t=>'<span class="chip ok">'+t+'</span>').join('')+'</div>':'')+
+  (sigNotes(o.sym).length?'<div class="chips">'+sigNotes(o.sym).map(t=>'<span class="chip wn">'+htmlEsc(t)+'</span>').join('')+'</div>':'')+
   (o.entry?'<div class="stp"><div><small>Giriş</small><b>'+nf(o.entry)+'</b></div><div><small>Stop</small><b class="dn">'+(o.stop?nf(o.stop):'-')+'</b></div><div><small>Hedef</small><b class="up">'+(o.tgt?nf(o.tgt):'-')+'</b></div></div>':'')+
   '<div class="stb"><button class="pri" onclick="stGo()">Grafiği aç</button>'+(o.jr===false?'':'<button onclick="stJr()">'+(o.jrDone?'Günlükte ✓':'Günlüğe ekle')+'</button>')+'</div><div class="stbar"><i></i></div></div>';
  el.classList.add('on');const bar=el.querySelector('.stbar i');bar.style.transition='none';bar.style.width='100%';requestAnimationFrame(()=>requestAnimationFrame(()=>{bar.style.transition='width 20s linear';bar.style.width='0%'}));

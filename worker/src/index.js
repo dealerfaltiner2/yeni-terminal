@@ -1,3 +1,4 @@
+import { ecalPoll, ecalRoute } from './ecal.js';
 import { probe } from './probe.js';
 // BIST TV Köprüsü v5.5 — Cloudflare Worker (bist-tv)
 // Yayın: GitHub → Cloudflare Workers Builds (otomatik). Kodu burada değiştir, Cloudflare editöründe değil.
@@ -702,7 +703,7 @@ const OWN_ROUTES = new Set(['sync', 'prefs', 'cron-test', 'pine-sync', 'pine-tes
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
 const DEV_GRACE = Date.UTC(2026, 9, 6); // 6 Ekim 2026
-const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas']);
+const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal']);
 const devCache = new Map();
 let ownerCache = { v: undefined, at: 0 }, devReady = false;
 async function ownerTok(env) {
@@ -934,6 +935,7 @@ export default {
       case 'pine-sync': return json(await pineSync(env, url.searchParams.get('force') === '1'));
       case 'tv-scan': return tvScan(request, env);
       case 'midas': return midasProxy();
+      case 'ecal': return ecalRoute(env, json);
       case 'set-syms': return json({ ok: true });
       case 'pull': return json({});
       case 'scan': if (request.method === 'POST') return scan(request, env, url); break;
@@ -988,6 +990,7 @@ export default {
       }
       // NABIZ/özellik geçmiş testi: seans DIŞINDA (ağır iş en sona)
       if (!inSess) { try { await btStep(env); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'btStep: ' + String(e && e.message || e).slice(0, 200), 'btStep'); } }
+      try { await ecalPoll(env, UA); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'ekonomik takvim: ' + String(e && e.message || e).slice(0, 150), 'ecal'); }
       try { await probe(env, scanRaw, UA); } catch (e) {}
       await hb('5-tamam');
     })());
