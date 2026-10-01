@@ -92,6 +92,10 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   Başlatma: Başlangıç klasöründe BistMotor.vbs (yönetici izni gerekmez). Durum: http://127.0.0.1:47123 ; günlük: motor.log. Kaldırma: pc/kaldir.ps1.
   bot.js: nabız (window.BOT.beat) 3 dk durursa ya da tarayıcı çökerse yeniden başlatır; her gün 09:40 ve 18:25 tazeler (son sürüm). Sunucu: meta 'bot_seen' (motorun hello'su), seansta 5 dk sessizse Telegram uyarısı (meta 'bot_alert').
   Kütüphane yedeği: unpkg/cdnjs engelliyse jsdelivr, o da yoksa LightweightCharts taklidi (grafik yok ama Algı/Fırsat çalışır — şirket ağı için).
+- v7.5 KENDİ ALAN ADI: iş yeri ağı *.workers.dev'i engelliyor (ERR_CONNECTION_CLOSED). altinerpano.com alındı (Cloudflare, otomatik yenileme);
+  Worker ayrıca api.altinerpano.com'da (wrangler.jsonc routes custom_domain). workers.dev de çalışır; telefonlar eski adreste.
+  pairStart motorun tvproxy'sini yeni adrese çevirir; kur.ps1 /pair'i yeni adrese yollar, npm.cmd/npx.cmd kullanır (betik engeli).
+  Şirket PC'sinde PowerShell'de önce 'Set-ExecutionPolicy -Scope Process Bypass -Force'. 01.10 22:48 motor kuruldu, canlı veri var.
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.
