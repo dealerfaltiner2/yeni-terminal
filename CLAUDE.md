@@ -33,6 +33,8 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
 - SEANS SAATİNDE (hafta içi 09:55–18:15) PUSH YAPMA: Workers Builds include path '*' → HER push Worker'ı yeniden yayınlar → herkesin canlı
   WebSocket bağlantısı kopar (29.09 sabahı 'kopma 9'un sebebi). Acil değilse commit'le, 18:20'den sonra push et.
 - GitHub Pages yayını ara sıra "deploy" adımında düşer → boş commit ile yeniden tetikle.
+- Workers Builds (sunucu) düşerse BOŞ COMMIT İŞE YARAMAZ (yalnız worker/ altındaki değişiklikle tetiklenir) → worker/ içinde zararsız bir yorum satırı değiştirip push et.
+  Yüklemenin gerçekten olduğunu doğrula: GitHub commit check-runs'ta 'Workers Builds: bist-tv' success OLMALI (yoksa yükleme yapılmamıştır).
 - v6.0 ANA CİHAZ: sahip kodu D1 meta k='owner' (sıfırlamak için o satırı sil). Yalnız sahip: sync, prefs, cron-test, pine-sync, devices, dev-block (?own=KOD).
   Kod yokken (sahip belirlenmeden) eski davranış. Cihazlar D1 tablo dev (hello, tv-token, WS direct'te kaydedilir; blocked=1 → canlı akış kesilir).
   Terminal: LS devId/devName/ownTok; Ayarlar → "Ana cihaz · bağlı cihazlar".
