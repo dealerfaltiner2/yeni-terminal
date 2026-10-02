@@ -242,6 +242,18 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
   }
   return { gonderildi: !!(t && t.ok), msg };
 }
+// v7.9 ŞİMDİ · CANLI TAKİP — bugünün sinyalleri (KAP hariç); motorun gönderdikleri telefonda da görünsün. 30 sn önbellek.
+let todayCache = { at: 0, v: null };
+export async function sigToday(env) {
+  if (!env.BT) return { ok: false, error: 'D1 yok' };
+  if (todayCache.v && Date.now() - todayCache.at < 30e3) return todayCache.v;
+  await sigEnsure(env);
+  const d0 = Date.parse(trDay(Date.now()) + 'T00:00:00Z') - TRMS;
+  const rows = (await env.BT.prepare("SELECT t, src, sym, dir, px, sc, meta, done, o10, o15, mfe, mae, rc FROM sig INDEXED BY sig_t WHERE t >= ? AND src NOT LIKE 'kap-%' ORDER BY t DESC LIMIT 60").bind(d0).all()).results || [];
+  const v = { ok: true, at: Date.now(), list: rows.map(r => { let m = null; try { m = r.meta ? JSON.parse(r.meta) : null; } catch (e) {} return { ...r, meta: m }; }) };
+  todayCache = { at: Date.now(), v };
+  return v;
+}
 // v6.9 KARNE EKRANI — terminalin Karne sekmesi için son ~2 haftanın özeti (5 dk önbellek; okuma sınırı için sig_d indeksi kullanılır)
 let statCache = { at: 0, v: null };
 export async function sigStats(env) {

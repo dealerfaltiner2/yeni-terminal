@@ -9,7 +9,7 @@ import { probe } from './probe.js';
 // v5: 7/24 sunucu — dakikada bir (Cron) alarm, radar, KAP/haber ve bağlantı sağlığı kontrolü, Telegram bildirimi.
 //     Gerekenler: KV bağlaması "DB" + Cron tetikleyici "* * * * *". Ayarlar terminalden /sync ile gelir.
 import { riseRows } from './rise.js';
-import { sigAdd, sigLog, sigEval, sigSummary, sigStats } from './sig.js';
+import { sigAdd, sigLog, sigEval, sigSummary, sigStats, sigToday } from './sig.js';
 import { errAdd, errLogRoute } from './err.js';
 import { botAlive, botBeat, botWatch, pairCreate, pairUse } from './bot.js';
 import { kapPoll, kapMorning, kapList } from './kap.js';
@@ -704,7 +704,7 @@ const OWN_ROUTES = new Set(['sync', 'prefs', 'cron-test', 'pine-sync', 'pine-tes
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
 const DEV_GRACE = Date.UTC(2026, 9, 6); // 6 Ekim 2026
-const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal']);
+const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday']);
 const devCache = new Map();
 let ownerCache = { v: undefined, at: 0 }, devReady = false;
 async function ownerTok(env) {
@@ -907,6 +907,7 @@ export default {
       }
       case 'kap': return kapList(env, url, json);
       case 'sigstats': return json(await sigStats(env));
+      case 'sigtoday': return json(await sigToday(env));
       case 'errlog': if (request.method === 'POST') return errLogRoute(request, env, url, json); break;
       case 'devices': return devices(env);
       case 'dev-block': return devBlock(env, url);
