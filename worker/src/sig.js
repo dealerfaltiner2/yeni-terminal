@@ -168,7 +168,7 @@ export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
   if (m >= 1260) { try { rapor = await sigSummary(env, tgSend, kvGet, esc, nf); } catch (e) {} }
   return { olculen: n, verisiz: bos, kalan: ready.length - n, hisse: syms, rapor: rapor ? !!rapor.gonderildi : null };
 }
-const SRC_AD = { radar: '📡 Sunucu radarı', algi: '⚡ Algı', 'firsat-A': '🅰️ Fırsat A', 'firsat-B': '🅱️ Fırsat B' };
+const SRC_AD = { radar: '📡 Sunucu radarı (mesajı kapalı)', algi: '⚡ Algı', 'firsat-A': '🅰️ Fırsat A', 'firsat-B': '🅱️ Fırsat B', momentum: '🧪 Momentum (deneme · ±%1,5)' };
 const KAP_TR = { is: 'Yeni iş/sözleşme', ihale: 'İhale', geri: 'Geri alım', bedelsiz: 'Bedelsiz', bedelli: 'Bedelli', tahsisli: 'Sermaye artırımı', teklif: 'Pay alım teklifi', birlesme: 'Birleşme/devir', tesvik: 'Teşvik', temettu: 'Temettü', bilanco: 'Bilanço', not: 'Kredi notu', icerden: 'İçeriden alım-satım', yatirim: 'Yatırım', varlik: 'Varlık alım/satım', ozel: 'Özel durum', risk: 'Risk (konkordato vb.)', kisit: 'İşlem kısıtı', ceza: 'Ceza/dava' };
 // v6.6 FİLTRE KONTROLÜ — araştırmada bulunan iki filtre kendi sinyallerimizde de tutuyor mu? (tüm günler, yalnız AL, KAP hariç)
 // Endeks: sinyal anında XU100 önceki kapanışa göre artıda mı (idx ≥ 0). Oynaklık: son 20 gün ortalama günlük aralık %5 ve üstü mü (adr).
@@ -204,19 +204,24 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
     // kilit: aynı anda çalışan ikinci bir cron ikinci kez göndermesin
     await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sigsum_try', ?)").bind(JSON.stringify({ d: today, n: tryN, at: now })).run();
   }
-  const R = (await env.BT.prepare("SELECT src, count(*) n, sum(o10 = 1) h, sum(o10 = 2) s FROM sig WHERE d = ? AND err IS NULL AND done = 1 AND src <> 'kap-devre' GROUP BY src ORDER BY n DESC").bind(today).all()).results || [];
+  // momentum ±%1,5 ile ölçülür (araştırması öyle) → h/s o15'ten
+  const HS = "CASE WHEN src = 'momentum' THEN o15 ELSE o10 END";
+  const R = (await env.BT.prepare("SELECT src, count(*) n, sum(" + HS + " = 1) h, sum(" + HS + " = 2) s FROM sig WHERE d = ? AND err IS NULL AND done = 1 AND src <> 'kap-devre' GROUP BY src ORDER BY n DESC").bind(today).all()).results || [];
   if (!R.length) { if (!force) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sigsum', ?)").bind(today).run(); return { mesaj: 'bugün sinyal yok' }; }
-  const A = (await env.BT.prepare("SELECT src, count(*) n, sum(o10 = 1) h, sum(o10 = 2) s, count(DISTINCT d) g FROM sig WHERE err IS NULL AND done = 1 AND src <> 'kap-devre' GROUP BY src").bind().all()).results || [];
+  const A = (await env.BT.prepare("SELECT src, count(*) n, sum(" + HS + " = 1) h, sum(" + HS + " = 2) s, count(DISTINCT d) g FROM sig WHERE err IS NULL AND done = 1 AND src <> 'kap-devre' GROUP BY src").bind().all()).results || [];
+  // 03.10: Algı 'güçlü' (alıcı oranı ≥%80) ayrı ölçülür — bir hafta sonra yalnız güçlüler gönderilsin mi kararı için
+  const AG = (await env.BT.prepare("SELECT (json_extract(meta, '$.fc') >= 0.8) g, sum(d = ?) n, sum(d = ? AND o10 = 1) h, sum(d = ? AND o10 = 2) s, count(*) tn, sum(o10 = 1) th, sum(o10 = 2) ts FROM sig WHERE src = 'algi' AND err IS NULL AND done = 1 GROUP BY 1").bind(today, today, today).all()).results || [];
   const best = (await env.BT.prepare("SELECT sym, max(mfe) mfe FROM sig WHERE d = ? AND err IS NULL AND done = 1 AND src <> 'kap-devre' GROUP BY sym ORDER BY mfe DESC LIMIT 3").bind(today).all()).results || [];
   const pc = (a, b) => b ? Math.round(a / b * 100) : 0;
   const line = (h, s) => (h + s ? (h ? '✅ ' + h + ' kazandı' : '') + (h && s ? ' · ' : '') + (s ? '❌ ' + s + ' kaybetti' : '') + ' → <b>%' + pc(h, h + s) + '</b>' : 'sonuçlanan yok');
   const d = today.split('-');
   let msg = '📊 <b>SİNYAL KARNESİ · ' + d[2] + '.' + d[1] + '</b>\n<i>Her sinyalde önce +%1 mi geldi, −%1 mi?</i>';
-  const ORD = ['firsat-A', 'firsat-B', 'algi', 'radar'], rk = x => { const i = ORD.indexOf(x); return i < 0 ? 99 : i; };
+  const ORD = ['firsat-A', 'firsat-B', 'algi', 'momentum', 'radar'], rk = x => { const i = ORD.indexOf(x); return i < 0 ? 99 : i; };
   for (const r of R.filter(r => !String(r.src).startsWith('kap-')).sort((a, b) => rk(a.src) - rk(b.src))) {
     msg += '\n\n<b>' + esc(SRC_AD[r.src] || r.src) + '</b> — ' + r.n + ' sinyal\n   ' + line(r.h, r.s);
     const a = A.find(x => x.src === r.src);
     if (a && a.g > 1) msg += '\n   <i>tüm günler: ' + a.n + ' sinyal → %' + pc(a.h, a.h + a.s) + '</i>';
+    if (r.src === 'algi') for (const g of AG) if (g.n) msg += '\n   ' + (g.g ? '💪 güçlü (alıcı %80+)' : '· diğerleri') + ': ' + g.n + ' → ' + (g.h + g.s ? '%' + pc(g.h, g.h + g.s) : '-') + (g.tn > g.n ? ' <i>(tüm günler ' + g.tn + ' → %' + pc(g.th, g.th + g.ts) + ')</i>' : '');
   }
   const K = R.filter(r => String(r.src).startsWith('kap-'));
   if (K.length) {

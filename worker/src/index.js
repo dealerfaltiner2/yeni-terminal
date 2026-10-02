@@ -462,7 +462,8 @@ async function cron(env, force = false) {
     for (const c of top) await sigAdd(env, { src: 'radar', sym: c.s, px: c.o.close, sc: c.sc, t: now, meta: { rv: Math.round(c.rv * 10) / 10, vwd: Math.round((c.o.close / c.vw - 1) * 1000) / 10, chg: Math.round(c.o.change * 100) / 100 } });
     top.forEach(c => {
       st.sent[c.s] = now; st.cnt.radar++; dirty = true;
-      msgs.push('📡 <b>SUNUCU RADAR · ' + esc(c.s) + '</b> · skor ' + c.sc + '\nFiyat ' + nf(c.o.close) + ' · Gün ' + sp(c.o.change) + ' · 5dk RVOL ' + nf(c.rv, 1) + 'x\nVWAP üstü ' + sp((c.o.close / c.vw - 1) * 100) + ' · gün zirvesinde' + (c.o.sector ? '\n' + esc(String(c.o.sector).slice(0, 30)) : ''));
+      // 03.10 (Fatih onayı): radar mesajı kapatıldı — 4 günde %35 başarı, gün sonu ort. −%3. Karneye yazılmaya devam ediyor.
+      if (opt.rdTg) msgs.push('📡 <b>SUNUCU RADAR · ' + esc(c.s) + '</b> · skor ' + c.sc + '\nFiyat ' + nf(c.o.close) + ' · Gün ' + sp(c.o.change) + ' · 5dk RVOL ' + nf(c.rv, 1) + 'x\nVWAP üstü ' + sp((c.o.close / c.vw - 1) * 100) + ' · gün zirvesinde' + (c.o.sector ? '\n' + esc(String(c.o.sector).slice(0, 30)) : ''));
     });
     for (const k in st.sent) if (now - st.sent[k] > 6 * 3600e3) { delete st.sent[k]; dirty = true; }
   }

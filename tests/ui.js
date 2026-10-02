@@ -93,6 +93,9 @@ async function page(b, opt) {
         const k = Object.keys(S.umap)[0]; S.umap[k].earnings_release_next_date = Math.floor(n / 1000) + 86400; renderNow(); const tx = document.getElementById('nowbody').innerText;
         return { cal: /Tarım dışı istihdam/.test(tx) && /Faiz kararı/.test(tx), warn: !!document.querySelector('#nowbody .nwarn'), notes: sigNotes(k).join('|'), msg: /⚠️/.test(sigNoteTxt(k)) }; });
       ok('ekonomik takvim kartı Türkçe görünüyor', ec.cal);
+      const mm = await T(() => { const D = []; let c = 100; for (let i = 0; i < 25; i++) { c = i === 24 ? c * 1.04 : i >= 20 ? c * 1.01 : c; D.push({ open: c, high: c * 1.035, low: c * 0.965, close: c, volume: 2e6 }); }
+        const r = momCalc(D, D[24].close * 1.005), r2 = momCalc(D, D[24].close * 1.02); return { ok: r.ok, d1: r.d1, d5: r.d5, adr: r.adr, late: r2.ok }; });
+      ok('momentum kuralı: dün +%3, 5 gün +%5, oynak, sabah koşmamış → aday; koşmuşsa değil', mm.ok && !mm.late, JSON.stringify(mm));
       ok('yaklaşan veri için uyarı çıkıyor', ec.warn);
       ok('sinyal notu: bilanço yarın + veri saati', /Bilanço yarın/.test(ec.notes) && /ABD verisi/.test(ec.notes) && ec.msg, ec.notes);
       await T(() => { const d = document.createElement('div'); d.id = 'pairbox'; document.body.appendChild(d); });

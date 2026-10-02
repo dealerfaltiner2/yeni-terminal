@@ -103,6 +103,9 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   Şerit: S&P vadeli (CME_MINI:ES1!), DOLAR END. (TVC:DXY), ABD 10Y. /midas (Midas yedeği bist-tv'de; eski 'bist' worker'ında /midas YOK — o worker aslında eski bist-tv kopyası).
   worker/src/probe.js: meta 'probe_req'=0 yazılırsa dakikada bir kaynak denemesi → 'probe:<ad>' (yeni TradingView alanlarını sunucudan denemek için).
   kur.ps1 6. adım: 'oturum açmadan başlasın mı' → Görev Zamanlayıcı BistMotor (AtStartup, Windows şifresi; yönetici izni gerekebilir; olmazsa Başlangıç klasörü yeter).
+- v7.8 (03.10, Fatih onayıyla): Radar Telegram mesajı KAPALI (opt.rdTg yoksa; karneye yazmaya devam). KAP 'icerden' Telegram'a gitmez (wantTg). Algı: hisse başına günde tek sinyal (AL.log aynı gün),
+  fc≥0.8 → '💪 GÜÇLÜ' etiketi; karne özetinde güçlü/diğer ayrı satır (meta.fc). MOMENTUM (deneme): momScan() 10:30–10:50 bir kez (motor ya da motor yokken ana cihaz):
+  dün ≥+%3, 5 gün ≥+%5, adr ≥%6, 10:30'da <%1, 20g ort. ciro ≥50 Mn → en çok 6; src 'momentum', ±%1,5 ile ölçülür (karne özetinde o15). Araştırma: docs/DEVIR.md 6b.
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.

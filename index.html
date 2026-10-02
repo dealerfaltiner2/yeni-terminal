@@ -3218,7 +3218,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="7.7";window.APPV=APP_VER;
+  const APP_VER="7.8";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3495,12 +3495,12 @@ function tvReconnectReport(){
  const sp=x=>(x>=0?'+':'−')+'%'+nf(Math.abs(x),2);
  function msgFire(e,f,o){
   const fl=[];if(e.f.D)fl.push('bid tırmanıyor');if(f.brk)fl.push(f.abv?'kırılım, VWAP üstü':'kırılım');if(e.f.G)fl.push('tema: '+(o.sector||'-').slice(0,22)+' ('+e.g+')');
-  return '⚡ <b>ALGI · '+e.s+'</b> ateşleme\n'+
+  return '⚡ <b>ALGI · '+e.s+'</b> ateşleme'+(f.fc>=.8?' · 💪 <b>GÜÇLÜ</b>':'')+'\n'+
    'Fiyat '+P(e.p0)+' · Gün '+sp(f.ch||0)+' · Skor <b>'+e.sc+'</b>\n'+
    'Akış '+P(f.fa,1)+'x · RVOL '+(f.rv!=null?P(f.rv,1)+'x':'-')+' · Alım %'+nf((f.fc||0)*100,0)+
    (fl.length?'\n✓ '+fl.join(' · '):'')+
    '\nHedef '+P(e.tp)+' ('+sp(e.stp*2)+') · Stop '+P(e.sp)+' (−%'+nf(e.stp,2)+') · 15 dk'+
-   (e.f.sh?'\n⚠ Sığ hisse — manipülasyon riski':'')+sigNoteTxt(e.s);
+   (e.f.sh?'\n⚠ Sığ hisse — manipülasyon riski':'')+(f.fc>=.8?'\n💪 Güçlü: alıcı oranı %80 üstü (deneme etiketi; karnede ayrı ölçülüyor)':'')+sigNoteTxt(e.s);
  }
 
  /* ---------- ana dongu (5 sn) ---------- */
@@ -3549,7 +3549,7 @@ function tvReconnectReport(){
     const flow=f.fa>=2.5||(f.rv!=null&&f.rv>=2);
     const awake=(f.fa>=3||(f.rv!=null&&f.rv>=2))&&Math.abs(f.mv5)<1;
     if(awake&&!st.awake)st.awake=now;if(!flow)st.awake=0;
-    const fire=flow&&f.fc!=null&&f.fc>=.65&&(f.fd||f.fe)&&!f.late&&f.mv5<2.5&&sc>=AL.cfg.minSc&&now>st.cool;
+    const fire=flow&&f.fc!=null&&f.fc>=.65&&(f.fd||f.fe)&&!f.late&&f.mv5<2.5&&sc>=AL.cfg.minSc&&now>st.cool&&!AL.log.some(x=>x.s===sym&&x.d===dayKey(now)); // 03.10: hisse başına günde tek sinyal
     st.cnt=fire?st.cnt+1:0;
     let stage=st.cnt>0?'hazir':awake?'uyanis':'';
     if(st.cnt>=3){
@@ -3564,7 +3564,7 @@ function tvReconnectReport(){
      sigPost({src:'algi',sym:sym,t:now,px:p0,sc:sc,dir:'AL',meta:{fa:f.fa!=null?+(+f.fa).toFixed(1):null,rv:f.rv!=null?+(+f.rv).toFixed(1):null,fc:f.fc!=null?+(+f.fc).toFixed(2):null,ch:f.ch!=null?+(+f.ch).toFixed(2):null,brk:!!f.brk,abv:!!f.abv,bid:!!f.fd,tema:!!gOk,endeks:!!hOk,sig:!(o.voltl>=1e7),sessiz:!!e.mute}});
      try{notify('⚡ Algı: '+sym,'Skor '+sc+' · '+nf(f.p))}catch(x){}
      try{if(window.sigToast){const w=[];if(f.fa>=2.5)w.push('Hacim normalin '+nf(f.fa,1)+' katı');else if(f.rv!=null&&f.rv>=2)w.push('Günlük hacim '+nf(f.rv,1)+' kat');if(f.fc!=null)w.push('Alıcı oranı %'+nf(f.fc*100,0));if(f.fe)w.push('30 dk zirvesini VWAP üstünde kırdı');else if(f.fd)w.push('Alış kademesi yükseliyor');if(gOk)w.push('Sektörde hareket var');
-      sigToast({src:'algi',sym:sym,dir:'AL',label:'⚡ ALGI · AL · '+sc,why:w,entry:p0,stop:e.sp,tgt:e.tp})}}catch(x){}
+      sigToast({src:'algi',sym:sym,dir:'AL',label:'⚡ ALGI · AL · '+sc+(f.fc>=.8?' · 💪 GÜÇLÜ':''),why:w,entry:p0,stop:e.sp,tgt:e.tp})}}catch(x){}
     }
     if(now<st.cool&&stage!=='ates')stage=stage||'';
     if(sc>=40||stage)rows.push({s:sym,o,f,sc,stage,g});
@@ -3872,10 +3872,10 @@ const IC={
   ['NEDİR?','Seans boyunca en çok işlem gören hisseleri birkaç saniyede bir tarar. Bir hisseye birden para girmeye başladığında, fiyat henüz fazla kıpırdamadan uyarır. Yalnız <b>AL</b> yönlü, 10:00–18:00 arası ve <b>terminal açıkken</b> çalışır.'],
   ['NE ZAMAN SİNYAL VERİR?',['Son 1 dakikanın işlem hacmi günün normalinin <b>en az 2,5 katı</b> (ya da günlük göreli hacim 2 kat)','İşlemlerin <b>en az %65\'i alıcıdan</b> (satış kademesinden alınıyor)','Alış kademesi yükseliyor <b>ya da</b> fiyat son 30 dakikanın zirvesini VWAP üstünde kırıyor','Skor <b>eşiğin üstünde</b> (varsayılan 70, Ayar\'dan değişir) ve şartlar <b>3 tur üst üste</b> (~10–15 sn) tutuyor'],'ol'],
   ['SKOR NASIL HESAPLANIR?','100 üzerinden: anlık hacim 25, alıcı baskısı 20, günlük hacim 15, kırılım+VWAP 15, kademe yükselişi 10, sektörde 2+ hareketli hisse 10, endeks son 15 dk\'da düşmüyor 5. Sığ hisse (−20), geniş spread (−10), açılışın ilk 10 dk\'sı ve 17:50 sonrası (−15), geç kalınmış hareket (−25) puan kırar.'],
-  ['NASIL KULLANIRIM?','Durumlar: 👀 <b>İzlemede</b> → ⏳ <b>Hazırlanıyor</b> → ⚡ <b>AL sinyali</b>. Sinyalde giriş, stop (en az %0,5) ve hedef (stopun 2 katı) Telegram\'a gelir. 5 dakika içinde hedefin yarısı gelirse ✅ teyit mesajı düşer. Aynı hisse 30 dk tekrar sinyal vermez.'],
+  ['NASIL KULLANIRIM?','Durumlar: 👀 <b>İzlemede</b> → ⏳ <b>Hazırlanıyor</b> → ⚡ <b>AL sinyali</b>. Sinyalde giriş, stop (en az %0,5) ve hedef (stopun 2 katı) Telegram\'a gelir. 5 dakika içinde hedefin yarısı gelirse ✅ teyit mesajı düşer. Aynı hisse günde yalnız bir kez sinyal verir. Alıcı oranı %80 üstüyse mesajda 💪 GÜÇLÜ yazar (deneme etiketi; karnede ayrı ölçülüyor).'],
   ['DİKKAT','Günde %5\'ten fazla yükselmiş ya da tavana %4\'ten yakın hissede sinyal vermez. Telefon kilitlenirse radar durur; sayfa kapalıyken <b>Sunucu radarı</b> çalışır.',1]]},
  radar:{ic:'📡',c:'#38bdf8',t:'Sunucu radarı',s:'Terminal kapalıyken de çalışır',k:['radar'],rel:['algi'],sec:[
-  ['NEDİR?','Sunucuda dakikada bir çalışan tarama. Terminal kapalı olsa bile 10:10–17:55 arası bütün BIST\'e bakar, bulduğunu Telegram\'a <b>📡 SUNUCU RADAR</b> olarak yollar. Ayarlar → Sunucu bölümünden açılıp kapanır.'],
+  ['NEDİR?','Sunucuda dakikada bir çalışan tarama. Terminal kapalı olsa bile 10:10–17:55 arası bütün BIST\'e bakar, bulduklarını Sinyal Karnesi\'ne yazar. <b>3 Ekim\'den beri Telegram mesajı kapalı</b>: ilk 4 günde %35 tuttu, gün sonu ortalaması −%3 (zaten çok yükselmiş hisseyi yakalıyor). Karnede düzelirse yeniden açılır.'],
   ['NE ZAMAN SİNYAL VERİR?',['Bugünkü işlem hacmi <b>en az 20 Mn ₺</b>','Son 5 dakikanın göreli hacmi <b>en az 3 kat</b>','Günlük değişim <b>%0,5 ile %5 arası</b> (geç kalınmamış)','Fiyat 15 dakikalık <b>VWAP ve EMA20\'nin üstünde</b>','Fiyat gün zirvesine <b>%0,3\'ten yakın</b>','Puan 60 ve üstü; dakikada en çok 4 hisse, aynı hisse 90 dakikada bir'],'ol'],
   ['ALGI\'DAN FARKI','Algı saniyeleri izler, alıcı/satıcı ayrımı ve kademe hareketine bakar ama sayfa açık olmalı. Sunucu radarı dakikaları izler, daha kaba ama her zaman çalışır.']]},
  lab:{ic:'📊',c:'#a78bfa',t:'Karne',s:'Sinyaller gerçekten tuttu mu?',k:['*'],rel:['radar','algi','op'],sec:[
@@ -3986,7 +3986,7 @@ document.getElementById('infosheet').addEventListener('click',e=>{if(e.target.cl
 </style>
 <script>
 /* ================= v6.9 SUNUCU KARNESİ ================= */
-const KSRC=[['firsat-A','🅰️ Fırsat A'],['firsat-B','🅱️ Fırsat B'],['algi','⚡ Algı'],['radar','📡 Sunucu radarı']];
+const KSRC=[['firsat-A','🅰️ Fırsat A'],['firsat-B','🅱️ Fırsat B'],['algi','⚡ Algı'],['momentum','🧪 Momentum (deneme)'],['radar','📡 Sunucu radarı']];
 const KAPTR={is:'Yeni iş/sözleşme',ihale:'İhale',geri:'Geri alım',bedelsiz:'Bedelsiz',bedelli:'Bedelli',tahsisli:'Sermaye artırımı',teklif:'Pay alım teklifi',birlesme:'Birleşme/devir',tesvik:'Teşvik',temettu:'Temettü',bilanco:'Bilanço',not:'Kredi notu',icerden:'İçeriden alım-satım',yatirim:'Yatırım',varlik:'Varlık alım/satım',ozel:'Özel durum',risk:'Risk',kisit:'İşlem kısıtı',ceza:'Ceza/dava'};
 let KST_LOADING=null,KST_TRY=0;
 // hata mesajını bir kez göstermek için tek seferlik yeniden çizim (kstatLoad 60 sn kısıtlı olduğundan döngü olmaz)
@@ -4489,6 +4489,50 @@ async function pairStart(){
  }catch(e){}};
 })();
 // Şimdi ekranı: motor durumu (seans satırının altına)
+/* ================= v7.8 MOMENTUM (DENEME) =================
+   13 aylık araştırma (docs/DEVIR.md 6b): dün ≥+%3 VE son 5 günde ≥+%5 VE 20 günlük ort. günlük aralık ≥%6 VE 10:30'da gün getirisi <%1
+   → 10:30'da al, hedef +%1,5 / stop −%1,5, gün sonunda kapat. Geçmişte %62 (ilk dönem %64, son dönem %60).
+   Sinyal kurallarına dokunmaz: karneye 'momentum' kaynağı, Telegram'da 🧪 deneme etiketi. Motor varsa motor, yoksa ana cihaz çalıştırır. */
+const MOM={day:LS.get('momDay',''),busy:false,last:null};
+function momDay(){return new Date(Date.now()+3*3600e3).toISOString().slice(0,10)}
+function momCalc(D,px){ // D: bugünden ÖNCEKİ günlük mumlar (eskiden yeniye) {open,high,low,close,volume}
+ const n=D.length;if(n<22)return null;const pc=D[n-1].close;if(!(pc>0))return null;
+ const d1=(pc/D[n-2].close-1)*100,d5=(pc/D[n-6].close-1)*100;
+ let adr=0,to=0;for(let j=n-20;j<n;j++){adr+=(D[j].high-D[j].low)/D[j].close;to+=D[j].close*(D[j].volume||0)}
+ adr=adr/20*100;to/=20;const r30=(px/pc-1)*100;
+ return {d1,d5,adr,to,r30,pc,ok:d1>=3&&d5>=5&&adr>=6&&r30<1&&to>=5e7}}
+async function momScan(force){
+ const d=momDay();if(MOM.busy||(!force&&MOM.day===d))return null;
+ const t=new Date(Date.now()+3*3600e3),m=t.getUTCHours()*60+t.getUTCMinutes(),wd=t.getUTCDay();
+ if(!force){if(wd<1||wd>5||m<630||m>=650)return null;if(!(BOTMODE||(!S.botAlive&&LS.get('ownTok',''))))return null}
+ if(!(S.uni&&S.uni.length))return null;
+ MOM.busy=true;
+ try{
+  const q=s=>{const x=S.quotes[s];return x&&x.close>0?x.close:null};
+  const pre=S.uni.filter(o=>o.close>0&&o.change!=null&&o.change<1.5&&(o['Perf.W']==null||o['Perf.W']-o.change>=3)).slice(0,90);
+  const dk=x=>typeof x.time==='string'?x.time.slice(0,10):new Date(x.time*1000+3*3600e3).toISOString().slice(0,10);
+  const out=[];
+  for(const o of pre){
+   let cs;try{cs=await getBars(o.name,'1day')}catch(e){continue}
+   const D=(cs||[]).filter(x=>dk(x)<d);const px=q(o.name)||o.close;
+   const r=momCalc(D,px);if(r&&r.ok)out.push(Object.assign({s:o.name,px,sec:o.sector||''},r));
+  }
+  MOM.day=d;LS.set('momDay',d);MOM.last={at:Date.now(),aday:pre.length,list:out};
+  out.sort((a,b)=>b.d5-a.d5);
+  for(const x of out.slice(0,6)){
+   const tp=x.px*1.015,sp=x.px*0.985;
+   sigPost({src:'momentum',sym:x.s,t:Date.now(),px:x.px,sc:Math.round(x.d5),dir:'AL',meta:{d1:+x.d1.toFixed(1),d5:+x.d5.toFixed(1),adr:+x.adr.toFixed(1),r30:+x.r30.toFixed(2)}});
+   if(S.tgTok&&S.tgChat&&(BOTMODE||!S.botAlive)){try{await tgSend('🧪 <b>MOMENTUM (deneme) · '+htmlEsc(x.s)+'</b>\n'+
+    'Fiyat '+nf(x.px)+' · bugün '+pct(x.r30)+' · dün '+pct(x.d1)+' · 5 günde '+pct(x.d5)+'\n'+
+    'Günlük ortalama oynaklık %'+nf(x.adr,1)+(x.sec?' · '+htmlEsc(secTr(x.sec)):'')+'\n'+
+    'Hedef <b>'+nf(tp)+'</b> (+%1,5) · Stop <b>'+nf(sp)+'</b> (−%1,5) · ikisi de gelmezse gün sonunda kapat\n'+
+    '<i>Deneme: geçmiş 13 ayda %62 tuttu, şimdi canlı ölçülüyor.</i>'+sigNoteTxt(x.s))}catch(e){}}
+   try{sigToast({src:'momentum',sym:x.s,dir:'AL',label:'🧪 MOMENTUM · deneme',why:['Dün '+pct(x.d1),'5 günde '+pct(x.d5),'Oynaklık %'+nf(x.adr,1)],entry:x.px,stop:sp,tgt:tp,jr:false})}catch(e){}
+  }
+  return out;
+ }finally{MOM.busy=false}
+}
+setInterval(()=>{try{momScan(false)}catch(e){}},30000);
 (function(){const _sl=nowSessLine;window.nowSessLine=nowSessLine=function(){let h=_sl.apply(this,arguments);try{if(S.botKnown)h+='<div class="nsess" style="border-top:0;padding-top:4px;margin-top:2px"><span class="dot '+(S.botAlive?'on':'')+'"></span><span>💻 İş bilgisayarı motoru: <b>'+(S.botAlive?'çalışıyor':'kapalı')+'</b></span><span class="fr">'+(S.botAlive?'sinyaller oradan':'sinyaller telefondan')+'</span></div>'}catch(e){}return h}})();
 </script>
 </body>
