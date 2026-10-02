@@ -74,6 +74,16 @@ Hedef: hedef = stop (±%1, ±%1,5, ±%2) iken %60+ tutan, 10:30'da bilinebilen �
   above (EMA20 üstü), i30 (endeks 10:30), wd (gün), rng30 (sabah aralığı %), adr (20g ort. günlük aralık %), o10/o15/o20 (1 hedef, 2 stop, 0 yok),
   rest (10:30→kapanış), mfe/mae/t3/dd3.
 
+## 6b. 03.10 %60 ARAMASI SONUCU (feat, 27.514 satır, 100 hisse, Ağu 2025–Eyl 2026; eski <15.03.2026 / yeni ≥)
+- Taban (her hisseyi 10:30'da al): ±%1,5'te %43 — 10:30 alımı genelde kaybettiriyor.
+- Gün düzeyi şartlar (wd, i30) eski dönemde %70+ çıkıp yenide çöküyor → sahte (az sayıda güne bağlı). Bunları arama dışı bırak (scratchpad s2.py mantığı).
+- TUTARLI ADAYLAR (10:30 girişi, hedef=stop):
+  A) 5 günde ≥+%5 · 20g oynaklık (adr) ≥%6 · 10:30'da gün getirisi <%2 → ±%1,5: %58,3 (eski 58,1 / yeni 58,5), 14 ayın 14'ü ≥%50; ±%2: %58,8. En çok 5 hisse hariç %55,7.
+  B) dün ≥+%3 · adr ≥%5 · 10:30'da <%1 → ±%2: %58,8 (60,2 / 57,5), 13/14 ay; 5 hisse hariç %57,9 (60 hisse, daha yaygın).
+  A VE B → ±%2: %62,8 (eski 66,9 / yeni 58,7), n=242 (~günde 1), 11/12 ay, 5 hisse hariç %63, ort +%0,53/işlem.
+- Uyarı: 'güçlü koşucu' ailesine yakın (Fatih o versiyonu reddetti); bu daha ılımlı (5 gün +%5 / dün +%3, 20 günlük +%25 değil). Spread/kayma yok sayıldı.
+- Fatih onayı olmadan sinyale eklenmez; önerilen yol: karneye 'deneme' kaynağı olarak canlı ölçüm.
+
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
 - v6.6 (29.09 akşamı): karne özetinde "Filtre kontrolü" — endeks artı/eksi ve oynak/sakin ayrımı kendi sinyallerimizde. 1–2 hafta sonra bak; tutarsa sinyal kapısı öner.
