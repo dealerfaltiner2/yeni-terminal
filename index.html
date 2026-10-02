@@ -632,6 +632,7 @@ td.fl-up,td.fl-dn{border-radius:4px}
     <b>SÜRÜM</b>
     <div id="vermsg" class="note" style="padding-top:0">Kontrol ediliyor…</div>
     <button class="g" onclick="appUpdate()">🔄 Şimdi güncelle</button>
+    <button class="g" onclick="newIconSetup()">🧭 Yeni ikonu kur (BIST Pusula)</button>
     <div id="yedeksec">
     <b>YEDEK</b>
     <button class="g pri" onclick="cloudSave()">☁️ Ayarlarımı sunucuya kaydet</button>
@@ -903,17 +904,35 @@ async function cloudLoad(addr){
   $('#bktext').value=d.data;restore();
  }catch(e){alert('Sunucuya ulaşılamadı — adres doğru mu? ('+(e.message||e)+')')}
 }
+// v8.1 YENİ İKON KURULUMU: eski uygulamada tek düğme → ayarları sunucuya kaydet + kurulum bilgisini panoya kopyala + Safari'de aç.
+// Yeni uygulamada 'Kurulum bilgisini yapıştır' → adres + ana cihaz kodu yerine konur, ayarlar sunucudan yüklenir. (Kod yalnız panoda geçici durur.)
+function newIconSetup(){
+ const own=LS.get('ownTok',''),px=S.tvproxy||'';
+ if(!/^wss?:\/\//.test(px))return alert('Önce sunucu adresi ayarlı olmalı.');
+ const txt='PUSULA|'+px+'|'+own;
+ try{navigator.clipboard&&navigator.clipboard.writeText(txt)}catch(e){}
+ (async()=>{await cloudSave();
+  if(!confirm('Kurulum bilgisi panoya kopyalandı.\n\nŞimdi Safari açılacak:\n1) Paylaş ⬆︎ → Ana Ekrana Ekle\n2) Yeni 🧭 BIST Pusula ikonunu aç\n3) "Kurulum bilgisini yapıştır"a bas\n\nDevam edilsin mi?'))return;
+  const u='https://dealerfaltiner2.github.io/yeni-terminal/?kur=1';
+  location.href='x-safari-'+u;
+  setTimeout(()=>{prompt('Safari açılmadıysa bu adresi kopyalayıp Safari\'ye yapıştır:',u)},1800)})()}
+function setupFromText(t){t=String(t||'').trim();
+ const m=t.match(/^PUSULA\|(wss?:\/\/[^|\s]+)\|([^|\s]*)$/);
+ if(m){if(m[2]){LS.set('ownTok',m[2]);LS.set('ownClaimed',1)}return cloudLoad(m[1])}
+ if(/^wss?:\/\//.test(t))return cloudLoad(t);
+ alert('Bu metin tanınmadı. Eski uygulamada Ayarlar → "🧭 Yeni ikonu kur"a basıp tekrar dene.')}
 function appSetup(){
  try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{})}catch(e){}
  const box=document.createElement('div');box.id='appbox';
  const close=()=>{try{box.remove()}catch(e){}};
  if(isApp()&&!S.tvproxy){
-  box.innerHTML='<div class="appcard"><div class="appt">Hoş geldin 👋</div><div class="appd">Uygulamanın hafızası Safari\'den ayrıdır, bu yüzden ayarların burada henüz yok. Sunucu adresini yapıştır, ayarların tek dokunuşla gelsin.</div><input id="appaddr" placeholder="wss://bist-tv…workers.dev/şifre" autocapitalize="off" autocorrect="off" spellcheck="false"><button class="g pri" id="appgo">☁️ Ayarlarımı yükle</button><button class="g" id="appx">Şimdilik geç</button><div class="appd" style="font-size:12px">Önce Safari\'deki terminalde Ayarlar → Yedek → "Ayarlarımı sunucuya kaydet"e basmış olmalısın.</div></div>';
+  box.innerHTML='<div class="appcard"><div class="appt">Hoş geldin 👋</div><div class="appd">Uygulamanın hafızası Safari\'den ayrıdır, bu yüzden ayarların burada henüz yok. Sunucu adresini yapıştır, ayarların tek dokunuşla gelsin.</div><button class="g pri" id="apppaste">📋 Kurulum bilgisini yapıştır</button><input id="appaddr" placeholder="ya da buraya yapıştır (PUSULA|… ya da wss://…)" autocapitalize="off" autocorrect="off" spellcheck="false"><button class="g" id="appgo">☁️ Ayarlarımı yükle</button><button class="g" id="appx">Şimdilik geç</button><div class="appd" style="font-size:12px">Eski uygulamada Ayarlar → <b>🧭 Yeni ikonu kur</b>a bastıysan kurulum bilgisi panoda hazır.</div></div>';
   document.body.appendChild(box);
-  box.querySelector('#appgo').onclick=()=>{const v=box.querySelector('#appaddr').value.trim();if(v)cloudLoad(v)};
+  box.querySelector('#appgo').onclick=()=>{const v=box.querySelector('#appaddr').value.trim();if(v)setupFromText(v)};
+  const pb=box.querySelector('#apppaste');if(pb)pb.onclick=async()=>{try{const t=await navigator.clipboard.readText();if(t){box.querySelector('#appaddr').value=t.trim();setupFromText(t.trim())}}catch(e){alert('Panodan okunamadı; kutuya basılı tutup Yapıştır de.')}};
   box.querySelector('#appx').onclick=close;
- }else if(!isApp()&&/iPhone|iPad|iPod/.test(navigator.userAgent)&&!LS.get('apphint',0)){
-  box.innerHTML='<div class="appcard apphint"><div class="appt">📲 Uygulama olarak kur</div><div class="appd">1) Önce Ayarlar → Yedek → <b>Ayarlarımı sunucuya kaydet</b><br>2) Safari\'de alttaki <b>Paylaş ⬆︎</b> → <b>Ana Ekrana Ekle</b><br>3) Ana ekrandaki <b>BIST Pusula</b> ikonundan aç → ayarlarını yükle</div><button class="g" id="appx">Tamam, gizle</button></div>';
+ }else if(!isApp()&&/iPhone|iPad|iPod/.test(navigator.userAgent)&&(!LS.get('apphint',0)||/[?&]kur=1/.test(location.search))){
+  box.innerHTML='<div class="appcard apphint"><div class="appt">📲 Uygulama olarak kur</div><div class="appd">1) Alttaki <b>Paylaş ⬆︎</b> → <b>Ana Ekrana Ekle</b> → <b>Ekle</b><br>2) Ana ekrandaki yeni <b>🧭 BIST Pusula</b> ikonunu aç<br>3) <b>📋 Kurulum bilgisini yapıştır</b>a bas — ayarların gelir<br>4) Her şey yerindeyse eski <b>BIST</b> ikonunu sil</div><button class="g" id="appx">Tamam, gizle</button></div>';
   document.body.appendChild(box);
   box.querySelector('#appx').onclick=()=>{LS.set('apphint',1);close()};
  }
@@ -3219,7 +3238,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="8.0";window.APPV=APP_VER;
+  const APP_VER="8.1";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
