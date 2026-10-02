@@ -1,4 +1,4 @@
-// BIST Terminal — servis çalışanı (uygulama modu)
+// BIST Pusula — servis çalışanı (uygulama modu)
 // Sayfa: HER ZAMAN önce internetten (güncelleme hemen gelir); internet yoksa son kopya.
 // Grafik kütüphaneleri: önbellekten (hızlı açılış). Veri istekleri ve canlı akış: HİÇ dokunulmaz.
 const V = 'bist-v1';

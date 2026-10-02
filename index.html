@@ -7,10 +7,11 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#080b10">
-<link rel="apple-touch-icon" href="icon-180.png">
-<meta name="apple-mobile-web-app-title" content="BIST">
+<link rel="apple-touch-icon" href="icon-180.png?v=2">
+<link rel="icon" type="image/png" href="icon-192.png?v=2">
+<meta name="apple-mobile-web-app-title" content="BIST Pusula">
 <meta name="mobile-web-app-capable" content="yes">
-<title>BIST Terminal · PRO</title>
+<title>BIST Pusula</title>
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
@@ -722,7 +723,7 @@ async function tgSend(text){
 }
 async function tgTest(){
  const m=$('#tgmsg');m.textContent='gönderiliyor...';
- try{await tgSend('✅ BIST Terminal bağlantı testi — '+new Date().toLocaleTimeString('tr-TR'));m.innerHTML='<b class="up">Gönderildi.</b> Telegram\'ı kontrol et.'}
+ try{await tgSend('✅ BIST Pusula bağlantı testi — '+new Date().toLocaleTimeString('tr-TR'));m.innerHTML='<b class="up">Gönderildi.</b> Telegram\'ı kontrol et.'}
  catch(e){m.innerHTML='<b class="dn">Başarısız:</b> '+e.message}
 }
 function withinMarketHours(){
@@ -912,7 +913,7 @@ function appSetup(){
   box.querySelector('#appgo').onclick=()=>{const v=box.querySelector('#appaddr').value.trim();if(v)cloudLoad(v)};
   box.querySelector('#appx').onclick=close;
  }else if(!isApp()&&/iPhone|iPad|iPod/.test(navigator.userAgent)&&!LS.get('apphint',0)){
-  box.innerHTML='<div class="appcard apphint"><div class="appt">📲 Uygulama olarak kur</div><div class="appd">1) Önce Ayarlar → Yedek → <b>Ayarlarımı sunucuya kaydet</b><br>2) Safari\'de alttaki <b>Paylaş ⬆︎</b> → <b>Ana Ekrana Ekle</b><br>3) Ana ekrandaki <b>BIST</b> ikonundan aç → ayarlarını yükle</div><button class="g" id="appx">Tamam, gizle</button></div>';
+  box.innerHTML='<div class="appcard apphint"><div class="appt">📲 Uygulama olarak kur</div><div class="appd">1) Önce Ayarlar → Yedek → <b>Ayarlarımı sunucuya kaydet</b><br>2) Safari\'de alttaki <b>Paylaş ⬆︎</b> → <b>Ana Ekrana Ekle</b><br>3) Ana ekrandaki <b>BIST Pusula</b> ikonundan aç → ayarlarını yükle</div><button class="g" id="appx">Tamam, gizle</button></div>';
   document.body.appendChild(box);
   box.querySelector('#appx').onclick=()=>{LS.set('apphint',1);close()};
  }
@@ -2243,7 +2244,7 @@ function briefData(light){   // light: Şimdi ekranı için — tüm piyasayı y
 }
 function briefText(b){
  const greet=b.hr<11?'Günaydın':b.hr<17?'İyi günler':b.hr<22?'İyi akşamlar':'İyi geceler';
- let h='<div class="bigreg"><h2>☀️ '+greet+'</h2><p style="color:var(--dim)">'+b.date+' · BIST Terminal gün özeti</p></div>';
+ let h='<div class="bigreg"><h2>☀️ '+greet+'</h2><p style="color:var(--dim)">'+b.date+' · BIST Pusula gün özeti</p></div>';
  if(b.regime){
   const c=b.regime.mode==='TREND'?'var(--up)':b.regime.mode==='ZAYIF'?'var(--dn)':'var(--acc)';
   h+='<div class="bigreg" style="padding-top:0"><h2 style="color:'+c+'">'+b.regime.mode+'</h2><p>'+b.regime.desc+'</p>'+
@@ -2970,7 +2971,7 @@ function dayEndCheck(){
  msg+='• Bugün kapanan: '+closedT.length+' işlem · '+((x=>x>=0?'+':'')+nf(x,1))(sumR(closedT))+'R\n';
  if(bl)msg+='• Breadth: %'+Math.round(bl.b)+' · hacim '+(bl.v>=1e9?nf(bl.v/1e9,1)+'Mr':nf(bl.v/1e6,0)+'Mn')+(bl.src==='live'?' (gün içi)':'')+'\n';
  if(topK)msg+='• Günün kurulumu: '+(SNAME[topK]||topK)+'\n';
- msg+='— BIST Terminal';
+ msg+='— 🧭 BIST Pusula';
  tgSend(msg).then(()=>notify("Gün sonu raporu gönderildi","Telegram'ı kontrol et")).catch(e=>console.warn('gün sonu raporu: '+(e.message||e)));
 }
 
@@ -3218,7 +3219,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="7.9";window.APPV=APP_VER;
+  const APP_VER="8.0";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4311,6 +4312,9 @@ tr.row:active td{background:var(--card2)}
 .nme-bars span{font-size:9.5px;color:var(--dim);margin-top:3px}
 .nme-bars em{position:absolute;left:0;right:0;border-top:1px dashed rgba(255,255,255,.25);margin-bottom:14px}
 @media (min-width:900px){.nlv-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.nprep-g{grid-template-columns:repeat(4,minmax(0,1fr))}.nwl{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.bpbrand{display:flex;align-items:center;gap:9px;padding:14px 16px 0;max-width:1180px;margin:0 auto}
+.bpbrand .bpl{width:28px;height:28px;filter:drop-shadow(0 0 8px rgba(0,211,160,.35))}
+.bpbrand b{font:800 15px var(--sans);letter-spacing:2.5px;color:#e2e8f0;text-transform:uppercase}.bpbrand b span{color:#d4a94f}
 </style>
 <div id="sigtoast"></div>
 <script>
@@ -4551,7 +4555,7 @@ function renderNow(){
   ['EKONOMİK TAKVİM VE UYARILAR',['<b>Ekonomik takvim</b>: Türkiye\'nin önemli ve orta önemdeki verileri (enflasyon, faiz kararı, cari denge…) ile ABD\'nin önemli verileri (enflasyon, istihdam, FED). Saat, beklenti, önceki ve açıklanan değer.','Önemli bir veriye <b>45 dakikadan az</b> kaldıysa üst kartta sarı uyarı çıkar; veri saatinde fiyatlar sert oynayabilir.','<b>Bilanço notu</b>: bilançosu 7 gün içinde açıklanacak hisselerin yanında 📅 rozeti; Algı ve Fırsat bildirimlerinde de yazar.','<b>VİOP 30</b>: BIST 30 vadeli kontratı. 09:30–10:00 arası açılışın yönü için erken fikir verir. Aboneliğin VİOP\'u kapsamıyorsa 15 dakika gecikmelidir (⏱ işareti).','Bu notlar sinyal kurallarını değiştirmez; yalnız bilgi verir.']],
   ['MİNİ ÇİZGİ','Her satırın solundaki küçük grafik: hisse derin taranmışsa bugünün 15 dakikalık kapanışları, değilse son birkaç dakikanın canlı fiyatı. Yeşil = yükseliyor, kırmızı = düşüyor.']]};
  try{SNAME.algi=SNAME.algi||'Algı'}catch(e){}
- if(!document.getElementById('t-now')){const d=document.createElement('div');d.className='tab';d.id='t-now';d.innerHTML='<div class="sechd"><div class="st"><h1>Şimdi</h1><div class="ss">Tek bakışta piyasa, sinyaller, pozisyonlar</div></div><button class="ibtn" onclick="infoOpen(\'now\')"><i>i</i>Bu nedir?</button></div><div id="nowbody"></div>';tabsWrap.insertBefore(d,tabsWrap.firstChild)}
+ if(!document.getElementById('t-now')){const d=document.createElement('div');d.className='tab';d.id='t-now';d.innerHTML='<div class="bpbrand"><svg class="bpl" viewBox="-220 -220 440 440"><circle r="212" fill="#0b1220" stroke="#d4a94f" stroke-width="16"/><g transform="rotate(32)"><polygon points="0,-170 30,0 -30,0" fill="#00d3a0"/><polygon points="0,170 30,0 -30,0" fill="#ff5566"/><circle r="26" fill="#0b1220" stroke="#d4a94f" stroke-width="8"/></g></svg><b>BIST <span>Pusula</span></b></div><div class="sechd"><div class="st"><h1>Şimdi</h1><div class="ss">Tek bakışta piyasa, sinyaller, pozisyonlar</div></div><button class="ibtn" onclick="infoOpen(\'now\')"><i>i</i>Bu nedir?</button></div><div id="nowbody"></div>';tabsWrap.insertBefore(d,tabsWrap.firstChild)}
  setTimeout(()=>{try{showTab('now')}catch(e){}},0);
  const _d=draw;window.draw=draw=function(t){if(t==='now'){S.dirty[t]=0;try{renderNow()}catch(e){document.getElementById('nowbody').innerHTML='<div class="note dn">Ekran hatası: '+htmlEsc(e.message||e)+'</div>'}return}return _d.apply(this,arguments)};
  // 01.10: dokunma/kaydırma sırasında yeniden çizme (dokunuş kaybolmasın, sayfa zıplamasın)

@@ -1,4 +1,4 @@
-# BIST Terminal · PRO — proje notları (Claude için)
+# BIST Pusula (eski adı BIST Terminal · PRO) — proje notları (Claude için)
 
 Sahibi: Fatih (İstanbul, BIST gün içi / scalp). iPhone'dan çalışır; Türkçe, adım adım,
 basit anlatım ister. Önce plan, sonra uygulama. Kod verilecekse tek parça.
@@ -108,6 +108,7 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   dün ≥+%3, 5 gün ≥+%5, adr ≥%6, 10:30'da <%1, 20g ort. ciro ≥50 Mn → en çok 6; src 'momentum', ±%1,5 ile ölçülür (karne özetinde o15). Araştırma: docs/DEVIR.md 6b.
 - v7.9 ŞİMDİ KOMUTA MERKEZİ: XU100 gün içi çizgi (idxLoad 5dk mum, IDXD), Güne/Yarına hazırlık kartı (nPrep; 08:00–10:00 ve 18:15 sonrası), Canlı takip (nLive: /sigtoday [sig.js sigToday, 30 sn önbellek]
   + AL.log + MOM.last; stop–hedef çubuğu, TRK gün içi uç noktalar), Piyasa nabzı (sekmeli, LS nowp), Para akışı (sektör ağırlıklı ort.), İzleme listem (W()), Benim günüm (S.jr bugün + KSTAT son 10 gün).
+- v8.0 AD: BIST Pusula (03.10). manifest name/short_name, apple-mobile-web-app-title, <title>, ikonlar (pusula: yeşil/kırmızı ibre, altın halka; ?v=2 önbellek kırıcı), Şimdi üstünde .bpbrand. iOS'ta ikon/ad için ana ekrana yeniden eklemek gerekebilir.
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.
