@@ -9,6 +9,7 @@ export async function probe(env, scanRaw, UA) {
     ['ecal', async () => { const r = await fetch('https://economic-calendar.tradingview.com/events?from=' + from + '&to=' + to + '&countries=TR,US&minImportance=0', { headers: { Origin: 'https://www.tradingview.com', Referer: 'https://www.tradingview.com/', 'User-Agent': UA }, signal: AbortSignal.timeout(8000) }); return r.status + ' ' + (await r.text()).slice(0, 900); }],
     ['viop_tr', () => sc('turkey', ['BIST:XU030D1!', 'BIST:XU030D2!'], ['name', 'close', 'change', 'update_mode', 'description'])],
     ['viop_fut', () => sc('futures', ['BIST:XU030D1!'], ['name', 'close', 'change', 'update_mode'])],
+    ['tavan', async () => { const r = await scanRaw(env, JSON.stringify({ filter: [{ left: 'change', operation: 'egreater', right: 9.4 }, { left: 'type', operation: 'equal', right: 'stock' }], columns: ['name', 'close', 'change', 'high', 'volume'], sort: { sortBy: 'change', sortOrder: 'desc' }, range: [0, 40] }), 'turkey'); return r.status + ' ' + (await r.text()).slice(0, 600); }],
     ['glob', () => sc('global', ['CME_MINI:ES1!', 'TVC:DXY', 'TVC:UKOIL', 'TVC:US10Y'], ['name', 'close', 'change'])],
     ...['earnings_release_next_date', 'earnings_release_date', 'ex_dividend_date_upcoming', 'dividends_yield_current', 'Recommend.All'].map(c => ['col_' + c, () => sc('turkey', ['BIST:THYAO', 'BIST:ASELS', 'BIST:EREGL'], ['name', c])])
   ];

@@ -54,7 +54,9 @@ async function page(b, opt) {
       await p.waitForTimeout(600);
       ok('bildirim kartı görünüyor', await T(() => document.getElementById('sigtoast').classList.contains('on')));
       await T(() => document.querySelector('#sigtoast .stb button:last-child').click()); await p.waitForTimeout(500);
-      ok('bildirimden günlüğe eklendi', await T(() => S.jr.some(j => j.s === 'ASELS' && j.k === 'algi')));
+      ok('bildirimdeki "Aldım" lot penceresini açıyor', await T(() => document.getElementById('aldim').classList.contains('on')));
+      await T(() => document.querySelector('#aldim .g.pri').click()); await p.waitForTimeout(700);
+      ok('Aldım → günlüğe eklendi', await T(() => S.jr.some(j => j.s === 'ASELS' && j.k === 'algi' && j.posId)));
       // hata defteri + ekran koruması
       await T(() => { const o = window.renderReg; let once = 0; window.renderReg = renderReg = function () { if (!once++) throw new Error('test-ekran-hatasi'); return o.apply(this, arguments); }; });
       await T(() => { setTimeout(() => { throw new Error('test-sayfa-hatasi'); }, 0); showTab('reg'); });
@@ -94,6 +96,11 @@ async function page(b, opt) {
         return { cal: /Tarım dışı istihdam/.test(tx) && /Faiz kararı/.test(tx), warn: !!document.querySelector('#nowbody .nwarn'), notes: sigNotes(k).join('|'), msg: /⚠️/.test(sigNoteTxt(k)) }; });
       ok('ekonomik takvim kartı Türkçe görünüyor', ec.cal);
       const su = await T(() => { let got = null; const o = window.cloudLoad; window.cloudLoad = cloudLoad = a => { got = a; }; const old = LS.get('ownTok', ''); setupFromText('PUSULA|wss://x.test/k|kod123'); const r = { got, own: LS.get('ownTok', '') }; LS.set('ownTok', old); window.cloudLoad = cloudLoad = o; return r; });
+      const al = await T(() => { S.cap = 100000; S.rskp = 1; aldimOpen({ sym: 'THYAO', src: 'algi', entry: 100, stop: 98, tgt: 102 }); document.getElementById('ad_e').value = '100'; document.getElementById('ad_sp').value = '98'; document.getElementById('ad_lot').value = ''; aldimCalc(); const r = { lot: document.getElementById('ad_lot').value, txt: document.getElementById('ad_info').innerText }; aldimClose(); return r; });
+      ok('Aldım: 100.000 ₺ sermaye, %1 risk, 2 ₺ stop mesafesi → 500 lot', al.lot === '500', JSON.stringify(al));
+      const ja = await T(() => { const o = S.jr; S.jr = [1, -1, 2, -0.5, 1.5, 0.8].map((p, i) => ({ s: 'H' + i, k: i % 2 ? 'algi' : 'momentum', e: 10, l: 9.8, r: p, pct: p, dt: '2026-10-05 0' + (7 + (i % 3)) + ':30', closeD: '2026-10-05' })); const h = jrAnalysis(); S.jr = o; return h; });
+      ok('İşlem analizim: kazanma oranı ve saat/kaynak tablosu çıkıyor', /%67/.test(ja) && /Kaynak/.test(ja) && /Saat/.test(ja));
+      ok('Deneme laboratuvarı listeleniyor', await T(() => /Deneme laboratuvarı/.test(labHtml()) && /Momentum/.test(labHtml())));
       ok('yeni ikon kurulumu: yapıştırılan bilgi adres + kodu yerine koyuyor', su.got === 'wss://x.test/k' && su.own === 'kod123', JSON.stringify(su));
       const mm = await T(() => { const D = []; let c = 100; for (let i = 0; i < 25; i++) { c = i === 24 ? c * 1.04 : i >= 20 ? c * 1.01 : c; D.push({ open: c, high: c * 1.035, low: c * 0.965, close: c, volume: 2e6 }); }
         const r = momCalc(D, D[24].close * 1.005), r2 = momCalc(D, D[24].close * 1.02); return { ok: r.ok, d1: r.d1, d5: r.d5, adr: r.adr, late: r2.ok }; });

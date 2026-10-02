@@ -217,7 +217,7 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
   const d = today.split('-');
   let msg = '📊 <b>SİNYAL KARNESİ · ' + d[2] + '.' + d[1] + '</b>\n<i>Her sinyalde önce +%1 mi geldi, −%1 mi?</i>';
   const ORD = ['firsat-A', 'firsat-B', 'algi', 'momentum', 'radar'], rk = x => { const i = ORD.indexOf(x); return i < 0 ? 99 : i; };
-  for (const r of R.filter(r => !String(r.src).startsWith('kap-')).sort((a, b) => rk(a.src) - rk(b.src))) {
+  for (const r of R.filter(r => !String(r.src).startsWith('kap-') && r.src !== 'tavan').sort((a, b) => rk(a.src) - rk(b.src))) {
     msg += '\n\n<b>' + esc(SRC_AD[r.src] || r.src) + '</b> — ' + r.n + ' sinyal\n   ' + line(r.h, r.s);
     const a = A.find(x => x.src === r.src);
     if (a && a.g > 1) msg += '\n   <i>tüm günler: ' + a.n + ' sinyal → %' + pc(a.h, a.h + a.s) + '</i>';
@@ -229,6 +229,12 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
     msg += '\n\n<b>📰 KAP haberleri</b> — ' + kn + ' haber · ' + (kh + ks ? '%' + pc(kh, kh + ks) : '-');
     K.filter(r => r.h + r.s > 0).slice(0, 5).forEach(r => { msg += '\n   ' + esc(KAP_TR[r.src.slice(4)] || r.src.slice(4)) + ': ' + r.n + ' → %' + pc(r.h, r.h + r.s); });
   }
+  // v8.2 tavan takibi: en son ölçülen tavan grubu (dün tavan kapananların bugünkü açılışı)
+  try {
+    const tv = await env.BT.prepare("SELECT d, count(*) n, avg(pre) g, sum(pre > 0) up FROM sig WHERE src = 'tavan' AND done = 1 AND err IS NULL AND pre IS NOT NULL GROUP BY d ORDER BY d DESC LIMIT 1").first();
+    const ta = await env.BT.prepare("SELECT count(*) n, avg(pre) g, sum(pre > 0) up FROM sig WHERE src = 'tavan' AND done = 1 AND err IS NULL AND pre IS NOT NULL").first();
+    if (tv && tv.n) msg += '\n\n🚀 <b>Tavan takibi (deneme)</b> — önceki gün tavan kapanan ' + tv.n + ' hisse, ' + tv.d.slice(8) + '.' + tv.d.slice(5, 7) + ' açılışı\n   açılış ortalaması ' + (tv.g >= 0 ? '+' : '') + '%' + (+tv.g).toFixed(1) + ' · ' + tv.up + '/' + tv.n + ' yukarı açıldı' + (ta && ta.n > tv.n ? '\n   <i>tüm günler: ' + ta.n + ' hisse → ort. ' + (ta.g >= 0 ? '+' : '') + '%' + (+ta.g).toFixed(1) + ', %' + pc(ta.up, ta.n) + ' yukarı</i>' : '');
+  } catch (e) {}
   if (best.length) msg += '\n\n🏆 <b>Günün en iyileri</b>: ' + best.map(b => esc(b.sym) + ' +%' + Math.round(b.mfe)).join(' · ');
   msg += await filterBlock(env, pc);
   if (pend) msg += '\n\n⏳ ' + pend + ' sinyal için veri gelmedi; ölçülünce genel toplamlara eklenecek.';
@@ -272,4 +278,41 @@ export async function sigStats(env) {
   const v = { ok: true, at: Date.now(), gun: days.length, days: byDay, src, last, list, bekleyen: pend ? pend.n : 0 };
   statCache = { at: Date.now(), v };
   return v;
+}
+
+// v8.2 HAFTALIK RAPOR — Cuma, günlük karne gittikten sonra bir kez. Son 7 günün özeti + sade öneriler.
+export async function weeklySummary(env, tgSend, kvGet, esc, pushSend) {
+  const d = new Date(Date.now() + TRMS), wd = d.getUTCDay(), m = d.getUTCHours() * 60 + d.getUTCMinutes(), today = d.toISOString().slice(0, 10);
+  if (wd !== 5 || m < 1110) return null;
+  const ss = await env.BT.prepare("SELECT v FROM meta WHERE k = 'sigsum'").first(); if (!ss || ss.v !== today) return null;
+  const ws = await env.BT.prepare("SELECT v FROM meta WHERE k = 'weeksum'").first(); if (ws && ws.v === today) return null;
+  await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('weeksum', ?)").bind(today).run();
+  const from = new Date(Date.now() + TRMS - 6 * 864e5).toISOString().slice(0, 10);
+  const HS = "CASE WHEN src = 'momentum' THEN o15 ELSE o10 END";
+  const R = (await env.BT.prepare("SELECT src, count(*) n, sum(" + HS + " = 1) h, sum(" + HS + " = 2) s, avg(rc) rc FROM sig WHERE d >= ? AND done = 1 AND err IS NULL AND src NOT LIKE 'kap-%' AND src <> 'tavan' GROUP BY src").bind(from).all()).results || [];
+  const AG = (await env.BT.prepare("SELECT (json_extract(meta, '$.fc') >= 0.8) g, sum(o10 = 1) h, sum(o10 = 2) s FROM sig WHERE src = 'algi' AND d >= ? AND done = 1 AND err IS NULL GROUP BY 1").bind(from).all()).results || [];
+  const K = (await env.BT.prepare("SELECT src, count(*) n, sum(o10 = 1) h, sum(o10 = 2) s FROM sig WHERE d >= ? AND done = 1 AND err IS NULL AND src LIKE 'kap-%' AND src <> 'kap-devre' GROUP BY src HAVING n >= 8").bind(from).all()).results || [];
+  const T = await env.BT.prepare("SELECT count(*) n, avg(pre) g, sum(pre > 0) up FROM sig WHERE src = 'tavan' AND d >= ? AND done = 1 AND err IS NULL AND pre IS NOT NULL").bind(from).first();
+  const pc = (a, b) => b ? Math.round(a / b * 100) : 0;
+  const AD = { 'firsat-A': '🅰️ Fırsat A', 'firsat-B': '🅱️ Fırsat B', algi: '⚡ Algı', momentum: '🧪 Momentum (deneme)', radar: '📡 Radar (mesajı kapalı)' };
+  const ORD = ['firsat-A', 'firsat-B', 'algi', 'momentum', 'radar'];
+  let msg = '🗓 <b>HAFTALIK KARNE</b> · ' + from.slice(8) + '.' + from.slice(5, 7) + ' – ' + today.slice(8) + '.' + today.slice(5, 7) + '\n<i>Önce hedef mi geldi, stop mu? (Momentum ±%1,5, diğerleri ±%1)</i>';
+  const oner = [];
+  for (const k of ORD) {
+    const r = R.find(x => x.src === k); if (!r) continue; const t = r.h + r.s, p = pc(r.h, t);
+    msg += '\n\n<b>' + AD[k] + '</b> — ' + r.n + ' sinyal · ' + (t ? r.h + ' kazandı, ' + r.s + ' kaybetti → <b>%' + p + '</b>' : 'sonuçlanan yok');
+    if (k === 'algi') for (const g of AG) { const tt = g.h + g.s; if (tt) msg += '\n   ' + (g.g ? '💪 güçlü' : '· diğerleri') + ': %' + pc(g.h, tt) + ' (' + tt + ')'; }
+    if (t >= 15 && k !== 'radar') { if (p < 45) oner.push(AD[k] + ' zayıf (%' + p + ') — sıkılaştırmayı ya da kapatmayı konuşalım.'); else if (p >= 58) oner.push(AD[k] + ' iyi gidiyor (%' + p + ').'); }
+    if (k === 'momentum') oner.push(t < 10 ? 'Momentum denemesinde henüz az veri var (' + t + ' sonuç); izlemeye devam.' : p >= 58 ? 'Momentum canlıda da tutuyor (%' + p + ') — gerçek sinyale çevirmeyi önerebilirim.' : 'Momentum canlıda beklentinin altında (%' + p + '); bir hafta daha izleyelim.');
+  }
+  const gs = AG.find(g => g.g), go = AG.find(g => !g.g);
+  if (gs && go && gs.h + gs.s >= 8 && go.h + go.s >= 8) { const a = pc(gs.h, gs.h + gs.s), b = pc(go.h, go.h + go.s); if (a - b >= 10) oner.push('Algı\'da güçlüler (%' + a + ') diğerlerinden (%' + b + ') belirgin iyi — yalnız güçlüleri göndermeyi önerebilirim.'); }
+  if (T && T.n) msg += '\n\n🚀 <b>Tavan takibi</b> — ' + T.n + ' hisse · açılış ort. ' + (T.g >= 0 ? '+' : '') + '%' + (+T.g).toFixed(1) + ' · %' + pc(T.up, T.n) + ' yukarı açıldı';
+  if (K.length) { msg += '\n\n📰 <b>KAP (en iyi ve en kötü)</b>'; const ks = K.map(r => ({ k: r.src.slice(4), n: r.n, p: pc(r.h, r.h + r.s) })).sort((a, b) => b.p - a.p); [...ks.slice(0, 2), ...ks.slice(-2)].filter((x, i, a) => a.indexOf(x) === i).forEach(x => { msg += '\n   ' + esc(KAP_TR[x.k] || x.k) + ': %' + x.p + ' (' + x.n + ')'; }); }
+  if (oner.length) msg += '\n\n💡 <b>Öneriler</b>\n' + oner.map(x => '• ' + esc(x)).join('\n');
+  msg += '\n\n<i>Hiçbir değişiklik onayın olmadan yapılmaz.</i>';
+  const cfg = await kvGet(env, 'cfg', null);
+  const t = await tgSend(cfg, msg);
+  try { await pushSend(env, { cat: 'rapor', title: '🗓 Haftalık karne hazır', body: R.map(r => (AD[r.src] || r.src).replace(/^\S+ /, '') + ' %' + pc(r.h, r.h + r.s)).join(' · ').slice(0, 220), url: './', tag: 'hafta' + today }, 3); } catch (e) {}
+  return { gonderildi: !!(t && t.ok) };
 }

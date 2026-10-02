@@ -1,3 +1,6 @@
+import { tavanScan } from './tavan.js';
+import { posRoute, posWatch } from './pos.js';
+import { pushRoute, pushSend } from './push.js';
 import { ecalPoll, ecalRoute } from './ecal.js';
 import { probe } from './probe.js';
 // BIST TV Köprüsü v5.5 — Cloudflare Worker (bist-tv)
@@ -9,7 +12,7 @@ import { probe } from './probe.js';
 // v5: 7/24 sunucu — dakikada bir (Cron) alarm, radar, KAP/haber ve bağlantı sağlığı kontrolü, Telegram bildirimi.
 //     Gerekenler: KV bağlaması "DB" + Cron tetikleyici "* * * * *". Ayarlar terminalden /sync ile gelir.
 import { riseRows } from './rise.js';
-import { sigAdd, sigLog, sigEval, sigSummary, sigStats, sigToday } from './sig.js';
+import { sigAdd, sigLog, sigEval, sigSummary, sigStats, sigToday, weeklySummary } from './sig.js';
 import { errAdd, errLogRoute } from './err.js';
 import { botAlive, botBeat, botWatch, pairCreate, pairUse } from './bot.js';
 import { kapPoll, kapMorning, kapList } from './kap.js';
@@ -699,12 +702,12 @@ async function btStep(env) {
 }
 /* ---------- v5.6: ana cihaz (sahip) kilidi + bağlı cihazlar (D1: meta 'owner', tablo dev) ---------- */
 // Sahip kodu D1'de durur → gerekirse Claude D1'den sıfırlayabilir. Kod yokken (ilk kurulum) eski davranış sürer.
-const OWN_ROUTES = new Set(['sync', 'prefs', 'cron-test', 'pine-sync', 'pine-test', 'devices', 'dev-block', 'dev-ok', 'siglog', 'sig-eval', 'pair-create']);
+const OWN_ROUTES = new Set(['sync', 'prefs', 'cron-test', 'pine-sync', 'pine-test', 'devices', 'dev-block', 'dev-ok', 'siglog', 'sig-eval', 'pair-create', 'push-sub', 'push-off', 'push-send', 'pos']);
 // v6.8 YENİ CİHAZ ONAYI: ana cihaz belirlenmişse, onaylanmamış (ok=0) cihaz canlı veri / tarama / mum alamaz.
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
 const DEV_GRACE = Date.UTC(2026, 9, 6); // 6 Ekim 2026
-const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday']);
+const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key']);
 const devCache = new Map();
 let ownerCache = { v: undefined, at: 0 }, devReady = false;
 async function ownerTok(env) {
@@ -908,6 +911,8 @@ export default {
       case 'kap': return kapList(env, url, json);
       case 'sigstats': return json(await sigStats(env));
       case 'sigtoday': return json(await sigToday(env));
+      case 'pos': return posRoute(request, env, json);
+      case 'push-key': case 'push-sub': case 'push-off': case 'push-send': return pushRoute(route, request, env, url, json);
       case 'errlog': if (request.method === 'POST') return errLogRoute(request, env, url, json); break;
       case 'devices': return devices(env);
       case 'dev-block': return devBlock(env, url);
@@ -976,18 +981,24 @@ export default {
       // karne ölçümü ağırlaşıp çalışmayı yarıda kestirse bile haberler gecikmesin. Sabah özeti ayrı korumada (KAP sitesi çökse de gider).
       let kr = null, mr = null;
       try {
-        kr = await kapPoll(env, { UA, tgSend, kvGet, esc, scanRaw });
+        kr = await kapPoll(env, { UA, tgSend, kvGet, esc, scanRaw, pushSend });
         if (kr && kr.yeni) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_st', ?)").bind(JSON.stringify({ at: Date.now(), ...kr })).run();
       } catch (e) { await errAdd(env, 'sunucu', 'hata', 'KAP: ' + String(e && e.message || e).slice(0, 200), 'kapPoll'); try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_err', ?)").bind(new Date().toISOString() + ' ' + String(e && e.message || e).slice(0, 300)).run(); } catch {} }
       try { mr = await kapMorning(env, { tgSend, kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'KAP sabah özeti: ' + String(e && e.message || e).slice(0, 200), 'kapMorning'); }
       try { const n = (kr && kr.telegram || 0) + (mr && mr.ozet ? 1 : 0); if (n) { const st = await kvGet(env, 'st', {}); if (st.cnt) { st.cnt.kap = (st.cnt.kap || 0) + n; await kvPut(env, 'st', st); } } } catch (e) {}
       try { await botWatch(env, tgSend, kvGet); } catch (e) {}
+      try { await tavanScan(env, { scanRaw, sigAdd, tgSend, kvGet, esc, pushSend }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'tavan takibi: ' + String(e && e.message || e).slice(0, 150), 'tavanScan'); }
+      try { await posWatch(env, { scanRaw, kvGet, tgSend, esc, pushSend }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'pozisyon asistanı: ' + String(e && e.message || e).slice(0, 150), 'posWatch'); }
       await hb('3-KAP bitti');
       const T = trNow(); const inSess = T.wd >= 1 && T.wd <= 5 && T.m >= 590 && T.m < 1095;
       if (!inSess) {
         const t0 = Date.now(); let sr;
         try { sr = await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf); } catch (e) { sr = { hata: String(e && e.message || e).slice(0, 200) }; await errAdd(env, 'sunucu', 'hata', 'karne: ' + sr.hata, 'sigEval'); }
         try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sig_st', ?)").bind(new Date().toISOString() + ' ' + (Date.now() - t0) + 'ms ' + JSON.stringify(sr ?? null).slice(0, 300)).run(); } catch (e) {}
+        try { await weeklySummary(env, tgSend, kvGet, esc, pushSend); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'haftalık rapor: ' + String(e && e.message || e).slice(0, 150), 'weeklySummary'); }
+        // günlük karne gittiyse iPhone'a kısa haber (bir kez)
+        try { const T = trNow(); const ss = await env.BT.prepare("SELECT v FROM meta WHERE k = 'sigsum'").first(), sp = await env.BT.prepare("SELECT v FROM meta WHERE k = 'sigsum_push'").first();
+          if (ss && ss.v === T.day && (!sp || sp.v !== T.day)) { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sigsum_push', ?)").bind(T.day).run(); await pushSend(env, { cat: 'rapor', title: '📊 Günün karnesi hazır', body: 'Ayrıntılar Telegram\'da ve Pusula → Karne\'de.', url: './', tag: 'karne' + T.day }, 3); } } catch (e) {}
         await hb('4-karne bitti');
       }
       // NABIZ/özellik geçmiş testi: seans DIŞINDA (ağır iş en sona)

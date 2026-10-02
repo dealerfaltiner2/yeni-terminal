@@ -109,6 +109,11 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
 - v7.9 ŞİMDİ KOMUTA MERKEZİ: XU100 gün içi çizgi (idxLoad 5dk mum, IDXD), Güne/Yarına hazırlık kartı (nPrep; 08:00–10:00 ve 18:15 sonrası), Canlı takip (nLive: /sigtoday [sig.js sigToday, 30 sn önbellek]
   + AL.log + MOM.last; stop–hedef çubuğu, TRK gün içi uç noktalar), Piyasa nabzı (sekmeli, LS nowp), Para akışı (sektör ağırlıklı ort.), İzleme listem (W()), Benim günüm (S.jr bugün + KSTAT son 10 gün).
 - v8.0 AD: BIST Pusula (03.10). manifest name/short_name, apple-mobile-web-app-title, <title>, ikonlar (pusula: yeşil/kırmızı ibre, altın halka; ?v=2 önbellek kırıcı), Şimdi üstünde .bpbrand. iOS'ta ikon/ad için ana ekrana yeniden eklemek gerekebilir.
+- v8.2 (03.10): iPHONE BİLDİRİMLERİ worker/src/push.js (RFC8291+VAPID, kütüphanesiz; anahtar D1 meta 'vapid', abonelik D1 tablo push; /push-key /push-sub /push-off /push-send; kategoriler algi,momentum,firsat,kap,poz,tavan,rapor).
+  sw.js push + notificationclick (?s=HİSSE → grafik). Terminal pushMsg = Telegram'la aynı kural (motor canlıysa yalnız motor); Ayarlar #pushsec. KAP push cron'da en çok 2/çalışma.
+  ALDIM + POZİSYON ASİSTANI: aldimOpen (lot = sermaye×risk%÷(giriş−stop)) → S.jr (posId) + /pos (worker/src/pos.js, meta 'pos'); cron posWatch: +%1 stopu girişe çek, stopa %0,3, hedef/stop, 17:45 hatırlatma, 18:15 temizlik.
+  TAVAN TAKİBİ worker/src/tavan.js: 18:12+ tavan kapananlar src 'tavan' px=null t=kapEntry (ertesi gün 09:59) → pre = açılış farkı; karne özetinde ayrı blok. HAFTALIK RAPOR sig.js weeklySummary (Cuma, karneden sonra, meta 'weeksum').
+  Günlük'te jrAnalysis (İşlem analizim), Karne'de labHtml (Deneme laboratuvarı — LAB dizisi index.html'de; yeni araştırma sonucu buraya eklenir). tests/pos.mjs.
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.

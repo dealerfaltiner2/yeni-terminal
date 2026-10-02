@@ -587,6 +587,8 @@ td.fl-up,td.fl-dn{border-radius:4px}
     <b>MİDAS CANLI VERİ</b>
     <div id="midasmsg" class="note">Yükleniyor...</div>
     <div class="note">Midas verisi <b>15 dk gecikmelidir</b>. Anlık fiyat, hacim ve alış/satış her zaman TradingView (Worker) akışından gelir. Midas yalnızca tavan/taban bilgisi için ve TradingView bağlantısı tamamen koparsa <b>“15 dk”</b> etiketli yedek fiyat olarak kullanılır; bu durumda CANLI rozeti yanmaz.</div>
+    <b>🔔 İPHONE BİLDİRİMLERİ</b>
+    <div id="pushsec"></div>
     <div id="tgsec">
     <b>OTOMATİK TARAMA + TELEGRAM</b>
     <div class="frow" style="padding:2px 0"><label>Durum</label><div class="seg" id="autoseg"><button data-a="0" class="on">Kapalı</button><button data-a="1">Açık</button></div></div>
@@ -776,7 +778,7 @@ async function autoRun(manual){
       '4S teyit: '+(htfOk?'✓ uyumlu':'✗')+' · Puan: '+Math.round(c.sc)+'\n'+
       (a.ref?('POC '+nf(a.ref.poc)+' · VAH '+nf(a.ref.vah)+' · VAL '+nf(a.ref.val)+'\n'):'')+
       sigNoteTxt(c.o.name).replace(/^\n/,'')+(sigNotes(c.o.name).length?'\n':'')+'#'+c.o.name+' #'+dir;
-     await tgSend(txt);
+     await tgSend(txt);try{pushMsg('firsat',txt,c.o.name)}catch(e){}
      S.sentSig.push(key);sent++;
      beep();notify('BIST · Sinyal gönderildi',c.o.name+' '+dir);
      seenAAdd(c.o.name,dir);
@@ -2622,7 +2624,7 @@ $('#jrk').innerHTML=SETUPS.map(s=>'<option value="'+s.id+'">'+s.n+'</option>').j
 function addJr(e){e.preventDefault();
  S.jr.push({s:$('#jrs').value.trim().toUpperCase(),d:$('#jrd').value,k:$('#jrk').value,type:'manuel',tf:S.stf,e:+$('#jre').value,l:+$('#jrl').value,t:+$('#jrt').value||null,tp2v:null,dt:new Date().toISOString().slice(0,16).replace('T',' '),x:null,r:null,pct:null,status:'açık',closeD:null});
  LS.set('jr',S.jr);e.target.reset();renderJr()}
-function closeJr(i){const v=prompt('Çıkış fiyatı:');if(!v)return;const j=S.jr[i],x=+v;if(!x)return;
+function closeJr(i){const v=prompt('Çıkış fiyatı:');if(!v)return;const j=S.jr[i],x=+v;if(!x)return;if(j.posId)posApi({op:'del',id:j.posId});
  const risk=Math.abs(j.e-j.l)||1;j.x=x;j.r=(j.d==='AL'?(x-j.e):(j.e-x))/risk;j.pct=(j.d==='AL'?(x-j.e):(j.e-x))/j.e*100;j.status='kapandı';j.closeD=todayStr();LS.set('jr',S.jr);renderJr();mark('perf');maeMfe(i)}
 async function maeMfe(i){
  const j=S.jr[i];if(!j)return;
@@ -2635,7 +2637,7 @@ async function maeMfe(i){
   j.mae=mae;j.mfe=mfe;LS.set('jr',S.jr);renderJr();
  }catch(e){console.warn('MAE/MFE '+j.s+': '+(e.message||e))}
 }
-function delJr(i){if(!confirm('Bu işlem günlükten silinsin mi?'))return;S.jr.splice(i,1);LS.set('jr',S.jr);renderJr();mark('perf')}
+function delJr(i){if(!confirm('Bu işlem günlükten silinsin mi?'))return;try{if(S.jr[i]&&S.jr[i].posId)posApi({op:'del',id:S.jr[i].posId})}catch(e){}S.jr.splice(i,1);LS.set('jr',S.jr);renderJr();mark('perf')}
 function journalFromBox(){const b=S.box;if(!b){alert('Önce AL/SAT kutusu kur');return}
  let k=S.setup;
  if(k==='all'){
@@ -3238,7 +3240,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="8.1";window.APPV=APP_VER;
+  const APP_VER="8.2";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3500,7 +3502,7 @@ function tvReconnectReport(){
  }
 
  /* ---------- Telegram (kisisel sohbet) ---------- */
- function tg(text){if(!AL.cfg.tg||!AL.cfg.chat||!S.tgTok)return;if(!BOTMODE&&S.botAlive)return;   // v7.4: motor gönderiyor
+ function tg(text){try{pushMsg('algi',text)}catch(e){}if(!AL.cfg.tg||!AL.cfg.chat||!S.tgTok)return;if(!BOTMODE&&S.botAlive)return;   // v7.4: motor gönderiyor
  AL.q.push(text);pump()}
  async function pump(){
   if(AL.qBusy)return;AL.qBusy=true;
@@ -4334,6 +4336,31 @@ tr.row:active td{background:var(--card2)}
 .bpbrand{display:flex;align-items:center;gap:9px;padding:14px 16px 0;max-width:1180px;margin:0 auto}
 .bpbrand .bpl{width:28px;height:28px;filter:drop-shadow(0 0 8px rgba(0,211,160,.35))}
 .bpbrand b{font:800 15px var(--sans);letter-spacing:2.5px;color:#e2e8f0;text-transform:uppercase}.bpbrand b span{color:#d4a94f}
+.pushcats{display:grid;gap:6px;margin:8px 0 4px}.pushcats label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt)}.pushcats input{width:18px;height:18px;accent-color:#fbbf24}
+#aldim{position:fixed;inset:0;z-index:90;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+#aldim.on{display:flex}
+.adbox{width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(180deg,#131c29,#0b1119);border:1px solid rgba(255,255,255,.1)}
+.adh{display:flex;align-items:center;margin-bottom:12px}.adh b{font-size:17px;color:#fff}.adh button{margin-left:auto;background:none;border:0;color:var(--dim);font-size:18px}
+.adg{display:grid;grid-template-columns:1fr 1fr;gap:8px}.adg label{font-size:11px;font-weight:700;color:var(--dim);letter-spacing:.4px}
+.adg input{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:11px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#fff;font:700 16px var(--sans)}
+.adi{margin:12px 0 6px;font-size:13px;line-height:1.5;color:var(--txt2)}.adi b{color:#fff}.adi b.dn{color:#ff7a88}.adi b.up{color:var(--up)}
+.adn{font-size:11.5px;color:var(--dim);line-height:1.45;margin-bottom:10px}
+.nlv-buy{margin-top:9px;width:100%;border:1px solid rgba(0,211,160,.35);background:rgba(0,211,160,.10);color:var(--up);border-radius:12px;padding:8px;font:800 12.5px var(--sans);cursor:pointer}
+.ja{border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:12px;margin:0 0 12px;background:linear-gradient(180deg,rgba(167,139,250,.07),rgba(255,255,255,.015))}
+.jah b{display:block;font-size:15px;color:#fff}.jah small{font-size:11.5px;color:var(--dim)}
+.jan{font-size:12.5px;color:var(--txt2);line-height:1.5;margin-top:8px}.jan b{color:#fff}
+.jak{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}.jak div{background:rgba(255,255,255,.04);border-radius:12px;padding:7px;text-align:center}
+.jak small{display:block;font-size:9.5px;color:var(--dim);font-weight:700}.jak b{font-size:14px;color:#fff;font-variant-numeric:tabular-nums}.jak b.up{color:var(--up)}.jak b.dn{color:#ff7a88}
+.jai{margin-top:10px}.jai p{margin:4px 0;font-size:12.5px;line-height:1.5;color:#e9d5ff}
+.jat{display:grid;gap:8px;margin-top:10px}.jat table{width:100%}.jat td.up{color:var(--up)}.jat td.dn{color:#ff7a88}
+@media (max-width:420px){.jak{grid-template-columns:repeat(3,1fr)}}
+.lab{margin-top:16px;border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:12px;background:rgba(255,255,255,.02)}
+.labh b{display:block;font-size:15px;color:#fff}.labh small{display:block;font-size:11.5px;color:var(--dim);line-height:1.45;margin-top:2px}
+.labr{border-top:1px solid rgba(255,255,255,.06);padding:10px 0}.labr:first-of-type{border-top:0}
+.labt{display:flex;gap:6px;align-items:baseline}.labt b{font-size:13.5px;color:#fff}
+.labm{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px;font-size:11.5px;color:var(--txt2)}.labm b{color:#fff}.labm b.up{color:var(--up)}.labm b.dn{color:#ff7a88}
+.labm em{font-style:normal;font-weight:700;color:var(--dim)}.labr.canli .labm em{color:var(--up)}.labr.red .labm em{color:#ff7a88}.labr.bulgu .labm em{color:#7dd3fc}
+.labn{font-size:11.5px;color:var(--dim);margin-top:3px;line-height:1.45}
 </style>
 <div id="sigtoast"></div>
 <script>
@@ -4479,7 +4506,8 @@ function liveCard(x){
   '<div class="nlv-h">'+nAvatar(x.sym)+'<div class="nlv-t"><b>'+htmlEsc(x.sym)+'</b><span>'+SN[0]+' '+SN[1]+' · '+new Date(x.t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})+' · '+(mins<60?mins+' dk':Math.floor(mins/60)+' sa '+(mins%60)+' dk')+' önce</span></div>'+
   '<div class="nlv-v"><b>'+(q?nf(q):'–')+'</b>'+nPill(ch)+'</div></div>'+
   '<div class="nlv-bar"><i class="z" style="left:'+posf(T.lo)+'%;width:'+Math.max(0,posf(T.hi)-posf(T.lo))+'%"></i><i class="e" style="left:'+posf(x.px)+'%"></i>'+(q?'<i class="p" style="left:'+posf(q)+'%"></i>':'')+'</div>'+
-  '<div class="nlv-l"><span>Stop <b>'+nf(x.sp)+'</b></span><span class="st">'+st+'</span><span>Hedef <b>'+nf(x.tp)+'</b></span></div></div>'}
+  '<div class="nlv-l"><span>Stop <b>'+nf(x.sp)+'</b></span><span class="st">'+st+'</span><span>Hedef <b>'+nf(x.tp)+'</b></span></div>'+
+  (stc==='win'||stc==='loss'?'':'<button class="nlv-buy" onclick="event.stopPropagation();aldimOpen({sym:\''+htmlEsc(x.sym)+'\',src:\''+x.src+'\',entry:'+x.px+',stop:'+x.sp+',tgt:'+x.tp+'})">✅ Aldım</button>')+'</div>'}
 function nLive(){const L=liveSignals();let pre=[];try{pre=(S.algi&&S.algi.rows||[]).filter(x=>x.stage==='hazir').slice(0,6)}catch(e){}
  let h=nSec('🛰️','Canlı takip','Karne','lab',L.length||'');
  if(pre.length)h+='<div class="nprep-chips"><span>Hazırlanıyor:</span>'+pre.map(x=>'<button onclick="selectSym(\''+x.s+'\',\'bist\');showTab(\'chart\')">'+htmlEsc(x.s)+' <i>'+x.sc+'</i></button>').join('')+'</div>';
@@ -4589,7 +4617,7 @@ function stNext(){const el=document.getElementById('sigtoast');stCur=STQ.shift()
   (o.why&&o.why.length?'<div class="chips">'+o.why.map(t=>'<span class="chip ok">'+t+'</span>').join('')+'</div>':'')+
   (sigNotes(o.sym).length?'<div class="chips">'+sigNotes(o.sym).map(t=>'<span class="chip wn">'+htmlEsc(t)+'</span>').join('')+'</div>':'')+
   (o.entry?'<div class="stp"><div><small>Giriş</small><b>'+nf(o.entry)+'</b></div><div><small>Stop</small><b class="dn">'+(o.stop?nf(o.stop):'-')+'</b></div><div><small>Hedef</small><b class="up">'+(o.tgt?nf(o.tgt):'-')+'</b></div></div>':'')+
-  '<div class="stb"><button class="pri" onclick="stGo()">Grafiği aç</button>'+(o.jr===false?'':'<button onclick="stJr()">'+(o.jrDone?'Günlükte ✓':'Günlüğe ekle')+'</button>')+'</div><div class="stbar"><i></i></div></div>';
+  '<div class="stb"><button class="pri" onclick="stGo()">Grafiği aç</button>'+'<button onclick="const o=stCur;stClose();aldimOpen({sym:o.sym,src:o.src,entry:o.entry,stop:o.stop,tgt:o.tgt})">✅ Aldım</button>'+'</div><div class="stbar"><i></i></div></div>';
  el.classList.add('on');const bar=el.querySelector('.stbar i');bar.style.transition='none';bar.style.width='100%';requestAnimationFrame(()=>requestAnimationFrame(()=>{bar.style.transition='width 20s linear';bar.style.width='0%'}));
  clearTimeout(stTimer);stTimer=setTimeout(stClose,20000);
  try{if(navigator.vibrate)navigator.vibrate([90,60,90])}catch(e){}}
@@ -4733,12 +4761,139 @@ async function momScan(force){
     'Günlük ortalama oynaklık %'+nf(x.adr,1)+(x.sec?' · '+htmlEsc(secTr(x.sec)):'')+'\n'+
     'Hedef <b>'+nf(tp)+'</b> (+%1,5) · Stop <b>'+nf(sp)+'</b> (−%1,5) · ikisi de gelmezse gün sonunda kapat\n'+
     '<i>Deneme: geçmiş 13 ayda %62 tuttu, şimdi canlı ölçülüyor.</i>'+sigNoteTxt(x.s))}catch(e){}}
+   try{pushMsg('momentum','🧪 MOMENTUM (deneme) · '+x.s+'\nFiyat '+nf(x.px)+' · hedef '+nf(tp)+' · stop '+nf(sp),x.s)}catch(e){}
    try{sigToast({src:'momentum',sym:x.s,dir:'AL',label:'🧪 MOMENTUM · deneme',why:['Dün '+pct(x.d1),'5 günde '+pct(x.d5),'Oynaklık %'+nf(x.adr,1)],entry:x.px,stop:sp,tgt:tp,jr:false})}catch(e){}
   }
   return out;
  }finally{MOM.busy=false}
 }
 setInterval(()=>{try{momScan(false)}catch(e){}},30000);
+/* ================= v8.2 iPHONE BİLDİRİMLERİ (Web Push) =================
+   Yalnız ana ekrandaki uygulamada (iOS 16.4+). Abonelik sunucuda (D1 push); gönderim: motor ya da motor yokken ana cihaz → /push-send,
+   KAP / pozisyon / tavan / rapor bildirimlerini sunucu kendisi yollar. Telegram'dan bağımsız; ikisi birlikte çalışır. */
+const PUSHC=[['algi','⚡ Algı sinyalleri ve sonuçları'],['momentum','🧪 Momentum (deneme)'],['firsat','🎯 Fırsat taraması'],['kap','📰 Önemli KAP haberleri'],['poz','💼 Pozisyon uyarıları ("Aldım" dediklerin)'],['tavan','🚀 Tavan takibi'],['rapor','📊 Karne ve haftalık rapor']];
+function pushCats(){return LS.get('pushCats',PUSHC.map(x=>x[0]))}
+function pushBase(){const b=srvBase(S.tvproxy);return /^https:\/\//.test(b)?b:''}
+function u8key(k){k=k.replace(/-/g,'+').replace(/_/g,'/');k+='='.repeat((4-k.length%4)%4);return Uint8Array.from(atob(k),c=>c.charCodeAt(0))}
+async function pushSubSend(sub){const b=pushBase(),j=sub.toJSON();
+ const r=await fetch(qAdd(dq(b+'/push-sub'),ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({endpoint:j.endpoint,keys:j.keys,cats:pushCats()})});
+ if(r.status===403)throw new Error('ana cihaz kodu gerekli');const d=await r.json();if(!d.ok)throw new Error(d.error||('HTTP '+r.status))}
+async function pushOn(){
+ try{
+  if(!isApp())return alert('Bildirimler yalnız ana ekrandaki BIST Pusula uygulamasında çalışır (iPhone kuralı). Ana ekran ikonundan açıp tekrar dene.');
+  if(!('serviceWorker' in navigator)||!('PushManager' in window)||!window.Notification)return alert('Bu cihaz bildirimi desteklemiyor (iOS 16.4 ve üstü gerekir).');
+  const b=pushBase();if(!b)return alert('Önce sunucu adresi ayarlı olmalı.');
+  if(!LS.get('ownTok',''))return alert('Bildirimler yalnız ana cihazda açılır (Ayarlar → Ana cihaz kodu).');
+  const perm=await Notification.requestPermission();
+  if(perm!=='granted')return alert('İzin verilmedi. iPhone Ayarlar → Bildirimler → BIST Pusula bölümünden açabilirsin.');
+  const reg=await navigator.serviceWorker.ready;
+  const k=await (await fetch(dq(b+'/push-key'))).json();if(!k.ok)throw new Error('anahtar alınamadı');
+  let sub=await reg.pushManager.getSubscription();
+  if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8key(k.key)});
+  await pushSubSend(sub);LS.set('pushOn',1);pushRender();await pushTest(true);
+ }catch(e){alert('Bildirim açılamadı: '+(e.message||e))}}
+async function pushOff(){try{const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();
+ if(sub){await fetch(qAdd(dq(pushBase()+'/push-off'),ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({endpoint:sub.endpoint})});await sub.unsubscribe()}}catch(e){}
+ LS.set('pushOn',0);pushRender()}
+async function pushTest(silent){try{const r=await fetch(qAdd(dq(pushBase()+'/push-send'),ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({title:'🧭 BIST Pusula',body:'Bildirimler açık ✓ Sinyaller artık buraya da gelecek.',url:'./'})});const d=await r.json();
+ if(!silent)alert(d.n?'Deneme bildirimi gönderildi.':'Gönderilemedi'+(d.err?': '+d.err:'.'))}catch(e){if(!silent)alert('Gönderilemedi: '+(e.message||e))}}
+async function pushCatSet(k,on){const c=pushCats().filter(x=>x!==k);if(on)c.push(k);LS.set('pushCats',c);
+ try{const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();if(sub)await pushSubSend(sub)}catch(e){}}
+function pushRender(){const el=document.getElementById('pushsec');if(!el)return;const on=!!LS.get('pushOn',0),app=isApp();
+ el.innerHTML='<div class="note" style="padding-top:0">'+(app?'Sinyaller ve uyarılar kilit ekranına iPhone bildirimi olarak gelir; dokununca ilgili hisse açılır. Telegram\'la birlikte çalışır.':'Bildirimler yalnız <b>ana ekrandaki BIST Pusula</b> uygulamasında açılabilir (iPhone kuralı).')+'</div>'+
+  (on?'<div class="note" style="padding-top:0;color:var(--up)"><b>● Açık</b></div><button class="g" onclick="pushTest()">🔔 Deneme bildirimi gönder</button><button class="g" onclick="pushOff()">Bildirimleri kapat</button>':
+   '<button class="g pri" onclick="pushOn()"'+(app?'':' disabled')+'>🔔 Bildirimleri aç</button>')+
+  (on?'<div class="pushcats">'+PUSHC.map(([k,t])=>'<label><input type="checkbox" '+(pushCats().includes(k)?'checked':'')+' onchange="pushCatSet(\''+k+'\',this.checked)"> '+t+'</label>').join('')+'</div>':'')}
+// sinyal bildirimi: Telegram'la aynı kural — motor canlıysa yalnız motor gönderir
+function pushMsg(cat,text,sym){try{
+ if(!LS.get('ownTok','')||!pushBase())return;if(!BOTMODE&&S.botAlive)return;
+ const plain=String(text||'').replace(/<br\s*\/?>/g,'\n').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').trim();
+ const L=plain.split('\n').filter(Boolean),title=(L[0]||'BIST Pusula').slice(0,80),body=L.slice(1).join(' · ').slice(0,240);
+ if(!sym){const m=title.match(/\b([A-Z][A-Z0-9]{3,5})\b/g);sym=m?m.filter(x=>!/^(ALGI|AL|SAT|MOMENTUM|KAP|BIST)$/.test(x)).pop():''}
+ fetch(qAdd(dq(pushBase()+'/push-send'),ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({title,body,cat,url:sym?'./?s='+encodeURIComponent(sym):'./',tag:(cat||'')+(sym||'')})}).catch(()=>{});
+}catch(e){}}
+// bildirime dokununca: ?s=HİSSE → grafiği aç
+(function(){const go=u=>{try{const s=new URL(u,location.href).searchParams.get('s');if(s&&/^[A-Z0-9]{2,8}$/.test(s)){setTimeout(()=>{try{selectSym(s,'bist');showTab('chart')}catch(e){}},400)}}catch(e){}};
+ go(location.href);try{navigator.serviceWorker&&navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.type==='nav')go(e.data.url)})}catch(e){}
+ setTimeout(pushRender,800)})();
+/* ================= v8.2 "ALDIM" + POZİSYON ASİSTANI =================
+   Sinyal kartında "Aldım" → lot hesabı (sermaye × risk% ÷ (giriş − stop)) → Günlük'e yazılır + sunucuya bildirilir (/pos).
+   Sunucu dakikada bir izler: +%1'de "stopu girişe çek", stopa %0,3 kala uyarı, hedef/stop geldi, 17:45 hatırlatma (Telegram + iPhone bildirimi). */
+function posApi(b){const base=srvBase(S.tvproxy);if(!/^https:\/\//.test(base)||!LS.get('ownTok',''))return Promise.resolve(null);
+ return fetch(qAdd(dq(base+'/pos'),ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(b)}).then(r=>r.json()).catch(()=>null)}
+function aldimCalc(){const g=id=>+String(document.getElementById(id).value).replace(',','.')||0;
+ const e=g('ad_e'),sp=g('ad_sp'),tp=g('ad_tp'),risk=e-sp,riskTl=(S.cap||0)*(S.rskp||1)/100;
+ const lot=risk>0&&riskTl>0?Math.floor(riskTl/risk):0,el=document.getElementById('ad_info');
+ if(document.activeElement&&document.activeElement.id!=='ad_lot')document.getElementById('ad_lot').value=lot||'';
+ const L=g('ad_lot')||lot;
+ el.innerHTML=!(e>0)||!(sp>0)?'Fiyat ve stop gir.':sp>=e?'<b class="dn">Stop girişin altında olmalı.</b>':
+  (S.cap?'Sermaye '+nf(S.cap,0)+' ₺ · işlem riski %'+nf(S.rskp||1,1)+' → en çok <b>'+nf(riskTl,0)+' ₺</b> kayıp<br>':'<b>Ayarlar → Sermaye</b> girersen lotu ben hesaplarım.<br>')+
+  (L?'<b>'+nf(L,0)+' lot</b> = '+nf(L*e,0)+' ₺ · stop gelirse <b class="dn">−'+nf(L*risk,0)+' ₺</b>'+(tp>e?' · hedef gelirse <b class="up">+'+nf(L*(tp-e),0)+' ₺</b>':''):'')}
+function aldimOpen(o){
+ const q=(S.quotes[o.sym]&&S.quotes[o.sym].close)||(S.umap[o.sym]&&S.umap[o.sym].close)||o.entry||0;
+ const e=+(o.entry&&Math.abs(q/o.entry-1)<.03?q:(o.entry||q))||0,sp=o.stop&&o.stop<e?o.stop:e*.985,tp=o.tgt&&o.tgt>e?o.tgt:e*1.015;
+ let m=document.getElementById('aldim');if(!m){m=document.createElement('div');m.id='aldim';document.body.appendChild(m)}
+ const r2=v=>v?(+v).toFixed(2):'';
+ m.innerHTML='<div class="adbox"><div class="adh"><b>✅ '+htmlEsc(o.sym)+' aldım</b><button onclick="aldimClose()">✕</button></div>'+
+  '<div class="adg"><label>Alış fiyatı<input id="ad_e" inputmode="decimal" value="'+r2(e)+'"></label><label>Stop<input id="ad_sp" inputmode="decimal" value="'+r2(sp)+'"></label>'+
+  '<label>Hedef<input id="ad_tp" inputmode="decimal" value="'+r2(tp)+'"></label><label>Lot<input id="ad_lot" inputmode="numeric"></label></div>'+
+  '<div class="adi" id="ad_info"></div><div class="adn">Sunucu bu işlemi izler: +%1\'de "stopu girişe çek", stopa yaklaşınca, hedef ya da stop gelince ve kapanışa 15 dk kala haber verir. İşlem Günlük\'e de yazılır.</div>'+
+  '<button class="g pri" onclick="aldimSave(\''+htmlEsc(o.sym)+'\',\''+htmlEsc(o.src||'manuel')+'\')">Kaydet ve izlemeye al</button></div>';
+ m.classList.add('on');m.querySelectorAll('input').forEach(i=>i.addEventListener('input',aldimCalc));aldimCalc()}
+function aldimClose(){const m=document.getElementById('aldim');if(m)m.classList.remove('on')}
+async function aldimSave(sym,src){const g=id=>+String(document.getElementById(id).value).replace(',','.')||0;
+ const e=g('ad_e'),sp=g('ad_sp'),tp=g('ad_tp'),lot=g('ad_lot');
+ if(!(e>0)||!(sp>0)||sp>=e)return alert('Fiyat ve stop gir (stop girişin altında olmalı).');
+ const id=sym+'-'+Date.now();
+ S.jr.push({s:sym,d:'AL',k:src,type:'manuel',tf:'1',e,l:sp,t:tp||null,tp2v:null,lot:lot||null,posId:id,dt:new Date().toISOString().slice(0,16).replace('T',' '),x:null,r:null,pct:null,status:'açık',closeD:null});
+ LS.set('jr',S.jr);try{renderJr();mark('perf')}catch(x){}
+ const r=await posApi({op:'add',id,sym,e,sp,tp,lot,src});aldimClose();
+ if(S.tab==='now')renderNow();
+ alert(r&&r.ok?'✓ Kaydedildi. Sunucu '+sym+' işlemini izliyor; uyarılar Telegram\'a ve iPhone bildirimine gelir.':'Günlüğe yazıldı ama sunucuya iletilemedi (ana cihaz kodu ya da bağlantı).')}
+/* ================= v8.2 İŞLEM ANALİZİM (Günlük) + DENEME LABORATUVARI (Karne) ================= */
+function jrAnalysis(){const C=(S.jr||[]).filter(j=>j.r!=null&&j.pct!=null);
+ let h='<div class="ja"><div class="jah"><b>🔍 İşlem analizim</b><small>kapanan işlemlerinden çıkarımlar</small></div>';
+ if(C.length<5)return h+'<div class="jan">En az 5 kapanmış işlem gerekiyor (şu an '+C.length+'). "Aldım" ile girdiğin ve kapattığın işlemler burada incelenir.</div></div>';
+ const W=C.filter(j=>j.pct>0),L=C.filter(j=>j.pct<=0),avg=a=>a.length?a.reduce((x,j)=>x+j.pct,0)/a.length:0;
+ const wr=W.length/C.length*100,aw=avg(W),al=avg(L),tot=C.reduce((x,j)=>x+j.pct,0);
+ const hr=j=>{const d=new Date(String(j.dt||'').replace(' ','T')+'Z');return isNaN(d)?null:(d.getUTCHours()+3)%24*60+d.getUTCMinutes()};
+ const B=[['10:00–11:00',600,660],['11:00–13:00',660,780],['13:00–15:00',780,900],['15:00–18:10',900,1090]];
+ const grp=(a,f)=>{const G={};a.forEach(j=>{const k=f(j);if(k==null)return;(G[k]=G[k]||[]).push(j)});return G};
+ const row=(k,a)=>{const w=a.filter(j=>j.pct>0).length/a.length*100,v=avg(a);return '<tr><td>'+k+'</td><td>'+a.length+'</td><td class="'+(w>=55?'up':w<45?'dn':'')+'">%'+nf(w,0)+'</td><td class="'+cls(v)+'">'+pct(v)+'</td></tr>'};
+ const byH=grp(C,j=>{const m=hr(j);if(m==null)return null;const b=B.find(x=>m>=x[1]&&m<x[2]);return b?b[0]:null});
+ const SN={algi:'⚡ Algı',momentum:'🧪 Momentum','firsat-A':'🅰️ Fırsat A','firsat-B':'🅱️ Fırsat B',manuel:'✋ Kendi seçimim',manual:'✋ Kendi seçimim'};
+ const byS=grp(C,j=>SN[j.k]||(SNAME&&SNAME[j.k])||j.k||'diğer'),byY=grp(C,j=>j.s);
+ const ys=Object.keys(byY).map(k=>({k,v:byY[k].reduce((x,j)=>x+j.pct,0),n:byY[k].length})).sort((a,b)=>b.v-a.v);
+ const ins=[];
+ if(al&&Math.abs(al)>aw*1.3)ins.push('Kayıpların (ort. '+pct(al)+') kazançlarından (ort. '+pct(aw)+') belirgin büyük. Stopa daha sadık kalmak ya da kârı biraz daha taşımak sonucu en çok iyileştirecek şey.');
+ else if(aw>Math.abs(al)*1.3)ins.push('Kazançların kayıplarından büyük — bu iyi. Kazanma oranın %50\'nin altında olsa bile toplamda kârda kalabilirsin.');
+ const hb=Object.keys(byH).filter(k=>byH[k].length>=3).map(k=>({k,w:byH[k].filter(j=>j.pct>0).length/byH[k].length*100})).sort((a,b)=>b.w-a.w);
+ if(hb.length>=2)ins.push('En iyi saat dilimin '+hb[0].k+' (%'+nf(hb[0].w,0)+'), en zayıfı '+hb[hb.length-1].k+' (%'+nf(hb[hb.length-1].w,0)+').');
+ const sb=Object.keys(byS).filter(k=>byS[k].length>=3).map(k=>({k,v:avg(byS[k])})).sort((a,b)=>b.v-a.v);
+ if(sb.length>=2)ins.push('En çok kazandıran kaynak '+sb[0].k+' (işlem başına '+pct(sb[0].v)+'), en az '+sb[sb.length-1].k+' ('+pct(sb[sb.length-1].v)+').');
+ h+='<div class="jak"><div><small>İşlem</small><b>'+C.length+'</b></div><div><small>Kazanma</small><b class="'+(wr>=50?'up':'dn')+'">%'+nf(wr,0)+'</b></div><div><small>Ort. kazanç</small><b class="up">'+pct(aw)+'</b></div><div><small>Ort. kayıp</small><b class="dn">'+pct(al)+'</b></div><div><small>Toplam</small><b class="'+cls(tot)+'">'+pct(tot)+'</b></div></div>';
+ if(ins.length)h+='<div class="jai">'+ins.map(x=>'<p>💡 '+x+'</p>').join('')+'</div>';
+ h+='<div class="jat"><table><tr><th>Saat</th><th>İşlem</th><th>Kazanma</th><th>Ort.</th></tr>'+B.map(b=>byH[b[0]]?row(b[0],byH[b[0]]):'').join('')+'</table>'+
+  '<table><tr><th>Kaynak</th><th>İşlem</th><th>Kazanma</th><th>Ort.</th></tr>'+Object.keys(byS).map(k=>row(k,byS[k])).join('')+'</table></div>';
+ if(ys.length>=2)h+='<div class="jan">En iyi: '+ys.slice(0,3).map(x=>'<b>'+htmlEsc(x.k)+'</b> '+pct(x.v)).join(' · ')+'<br>En kötü: '+ys.slice(-3).reverse().map(x=>'<b>'+htmlEsc(x.k)+'</b> '+pct(x.v)).join(' · ')+'</div>';
+ return h+'</div>'}
+(function(){const _rj=renderJr;window.renderJr=renderJr=function(){_rj.apply(this,arguments);try{const el=document.getElementById('jrstat');if(el)el.insertAdjacentHTML('afterbegin',jrAnalysis())}catch(e){}}})();
+// Deneme laboratuvarı: test edilen fikirler ve sonuçları (13 aylık veri: eski dönem = 15.03.2026 öncesi, yeni = sonrası; taban 10:30 alımı ~%43)
+const LAB=[
+ {ad:'Momentum (5 gün +%5, dün +%3, oynak, sabah koşmamış)',kural:'10:30\'da al · ±%1,5',eski:64,yeni:60,n:242,durum:'canli',not:'3 Ekim\'den beri canlı deneme — karnede "Momentum" satırı.'},
+ {ad:'Gücü süren oynak hisse (5 gün +%5, oynaklık %6+)',kural:'10:30\'da al · ±%1,5',eski:58,yeni:59,n:775,durum:'bulgu',not:'14 ayın 14\'ünde %50 üstü. Momentum\'un geniş hali.'},
+ {ad:'Dünkü güç (dün +%3, oynaklık %5+, sabah <%1)',kural:'10:30\'da al · ±%2',eski:60,yeni:58,n:775,durum:'bulgu',not:'60 farklı hisseye yayılıyor, tek hisseye bağlı değil.'},
+ {ad:'Tavan kapanan hisse ertesi gün',kural:'tavanda tut · açılışta sat',eski:76,yeni:null,n:null,durum:'canli',not:'%76 yukarı açılış, ort. +%1,8. 3 Ekim\'den beri karnede "Tavan takibi".'},
+ {ad:'Algı "güçlü" (alıcı oranı %80+)',kural:'Algı sinyali · ±%1',eski:58,yeni:null,n:19,durum:'canli',not:'Tek günlük veri; karnede ayrı satır olarak ölçülüyor.'},
+ {ad:'Endeks artıdayken al',kural:'10:30 · ±%1',eski:48,yeni:46,n:null,durum:'zayif',not:'Kötü günleri eler ama tek başına yetmez.'},
+ {ad:'Haftanın günü + endeks şartları',kural:'çeşitli',eski:72,yeni:34,n:163,durum:'red',not:'Eski dönemde harika, yenide çöktü — birkaç şanslı güne bağlı (sahte).'},
+ {ad:'Güçlü koşucu (20 günde +%25, zirveye yakın)',kural:'+%3 hedef / −%1,5 stop',eski:null,yeni:null,n:null,durum:'red',not:'Geçmişte artıydı; "çok yükselmiş hisse" diye senin kararınla kullanılmıyor.'},
+ {ad:'Sunucu radarı (hacim + zirve kovalama)',kural:'canlı · ±%1',eski:null,yeni:35,n:34,durum:'red',not:'Canlıda %35, gün sonu ort. −%3 → Telegram mesajı kapatıldı.'}];
+function labHtml(){const D={canli:['🟢','Canlıda deneniyor'],bulgu:['🔵','Geçmişte tuttu'],zayif:['🟡','Zayıf'],red:['🔴','Elendi']};
+ return '<div class="lab"><div class="labh"><b>🧪 Deneme laboratuvarı</b><small>Aklına gelen fikri Claude\'a yaz; 13 aylık veride (100 hisse) test edip sonucunu buraya eklerim. Kural: önce eski dönemde bulunur, sonra hiç görmediği yeni dönemde doğrulanır.</small></div>'+
+  LAB.map(x=>'<div class="labr '+x.durum+'"><div class="labt"><span>'+D[x.durum][0]+'</span><b>'+htmlEsc(x.ad)+'</b></div><div class="labm"><span>'+htmlEsc(x.kural)+'</span>'+
+   (x.eski!=null?'<span>ilk dönem <b>%'+x.eski+'</b></span>':'')+(x.yeni!=null?'<span>son dönem <b class="'+(x.yeni>=55?'up':x.yeni<47?'dn':'')+'">%'+x.yeni+'</b></span>':'')+(x.n?'<span>'+x.n+' işlem</span>':'')+'<em>'+D[x.durum][1]+'</em></div><div class="labn">'+htmlEsc(x.not)+'</div></div>').join('')+'</div>'}
+(function(){const _rl=renderLab;window.renderLab=renderLab=function(){_rl.apply(this,arguments);try{const el=document.getElementById('labbody');if(el)el.insertAdjacentHTML('beforeend',labHtml())}catch(e){}}})();
 (function(){const _sl=nowSessLine;window.nowSessLine=nowSessLine=function(){let h=_sl.apply(this,arguments);try{if(S.botKnown)h+='<div class="nsess" style="border-top:0;padding-top:4px;margin-top:2px"><span class="dot '+(S.botAlive?'on':'')+'"></span><span>💻 İş bilgisayarı motoru: <b>'+(S.botAlive?'çalışıyor':'kapalı')+'</b></span><span class="fr">'+(S.botAlive?'sinyaller oradan':'sinyaller telefondan')+'</span></div>'}catch(e){}return h}})();
 </script>
 </body>
