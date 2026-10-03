@@ -3,6 +3,7 @@ import { posRoute, posWatch } from './pos.js';
 import { pushRoute, pushSend } from './push.js';
 import { ecalPoll, ecalRoute } from './ecal.js';
 import { probe } from './probe.js';
+import { paperRoute } from './paper.js';
 // BIST TV Köprüsü v5.5 — Cloudflare Worker (bist-tv)
 // Yayın: GitHub → Cloudflare Workers Builds (otomatik). Kodu burada değiştir, Cloudflare editöründe değil.
 // Secrets: TV_SESSION, TV_SESSION_SIGN, ACCESS_KEY
@@ -702,12 +703,12 @@ async function btStep(env) {
 }
 /* ---------- v5.6: ana cihaz (sahip) kilidi + bağlı cihazlar (D1: meta 'owner', tablo dev) ---------- */
 // Sahip kodu D1'de durur → gerekirse Claude D1'den sıfırlayabilir. Kod yokken (ilk kurulum) eski davranış sürer.
-const OWN_ROUTES = new Set(['sync', 'prefs', 'cron-test', 'pine-sync', 'pine-test', 'devices', 'dev-block', 'dev-ok', 'siglog', 'sig-eval', 'pair-create', 'push-sub', 'push-off', 'push-send', 'pos']);
+const OWN_ROUTES = new Set(['sync', 'prefs', 'cron-test', 'pine-sync', 'pine-test', 'devices', 'dev-block', 'dev-ok', 'siglog', 'sig-eval', 'pair-create', 'push-sub', 'push-off', 'push-send', 'pos', 'paper-set']);
 // v6.8 YENİ CİHAZ ONAYI: ana cihaz belirlenmişse, onaylanmamış (ok=0) cihaz canlı veri / tarama / mum alamaz.
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
 const DEV_GRACE = Date.UTC(2026, 9, 6); // 6 Ekim 2026
-const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key']);
+const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key', 'paper']);
 const devCache = new Map();
 let ownerCache = { v: undefined, at: 0 }, devReady = false;
 async function ownerTok(env) {
@@ -912,6 +913,7 @@ export default {
       case 'sigstats': return json(await sigStats(env));
       case 'sigtoday': return json(await sigToday(env));
       case 'pos': return posRoute(request, env, json);
+      case 'paper': case 'paper-set': return paperRoute(route, request, env, json);
       case 'push-key': case 'push-sub': case 'push-off': case 'push-send': return pushRoute(route, request, env, url, json);
       case 'errlog': if (request.method === 'POST') return errLogRoute(request, env, url, json); break;
       case 'devices': return devices(env);

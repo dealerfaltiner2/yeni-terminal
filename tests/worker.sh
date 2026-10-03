@@ -19,6 +19,9 @@ chk "sahip yolu kodsuz reddedilir" "$(curl -s -m 10 "$B/devices")" "yalnız ana 
 chk "cihaz onaylama" "$(curl -s -m 10 "$B/dev-ok?id=yenicihaz0001&own=$OWN")" '"ok": ?true'
 chk "onaydan sonra veri gelir" "$(curl -s -m 10 "$B/sigstats?dev=yenicihaz0001")" '"ok": ?true'
 chk "KAP listesi onaysız cihaza kapalı" "$(curl -s -m 10 "$B/kap?f=onemli&dev=yabanci000001")" "onayını bekliyor"
+chk "kâğıt bot sonuçları (onaylı cihaz)" "$(curl -s -m 10 "$B/paper?dev=eskicihaz0001")" '"tot"'
+chk "kâğıt bot ayarı sahipsiz değişmez" "$(curl -s -m 10 -X POST -d '{"amt":5000}' "$B/paper-set?dev=eskicihaz0001")" "ana cihaz"
+chk "kâğıt bot ayarı kaydedilir (sahip)" "$(curl -s -m 10 -X POST -d '{"amt":5000,"max":3}' "$B/paper-set?dev=eskicihaz0001&own=$OWN")" '"amt": ?5000'
 chk "KAP listesi (indeksli sorgu, hisse filtresi) çalışır" "$(curl -s -m 10 "$B/kap?f=hepsi&s=ASELS,THYAO&dev=eskicihaz0001")" '"ok": ?true'
 chk "motor kapalıyken hello: bot=false" "$(curl -s -m 10 "$B/hello?dev=eskicihaz0001")" '"bot": ?false'
 PC=$(curl -s -m 10 -X POST -d '{"cfg":{"ls":{"tvproxy":"wss://x/k","ownTok":"t"}}}' "$B/pair-create?own=$OWN" | python3 -c "import json,sys;print(json.load(sys.stdin).get('code',''))")

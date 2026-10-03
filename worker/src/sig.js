@@ -90,6 +90,7 @@ export function sigOutcome(bars, r, ib) {
 }
 // Seans dışında her dakika: bekleyen sinyallerden 5 hisseyi ölç; hepsi bitince özeti gönder
 import { errAdd } from './err.js';
+import { paperLine, paperCalc } from './paper.js';
 const FAIL = new Map();
 const IDXC = { at: 0, n: 0, bars: null };   // BIST 100 dakikalık mum önbelleği (bu çalışma örneğinde, 10 dk)   // hisse → art arda veri gelmeme sayısı (bu çalışma örneğinde)
 export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
@@ -237,6 +238,7 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
   } catch (e) {}
   if (best.length) msg += '\n\n🏆 <b>Günün en iyileri</b>: ' + best.map(b => esc(b.sym) + ' +%' + Math.round(b.mfe)).join(' · ');
   msg += await filterBlock(env, pc);
+  msg += await paperLine(env, today);
   if (pend) msg += '\n\n⏳ ' + pend + ' sinyal için veri gelmedi; ölçülünce genel toplamlara eklenecek.';
   const cfg = await kvGet(env, 'cfg', null);
   const t = await tgSend(cfg, msg);
@@ -309,6 +311,7 @@ export async function weeklySummary(env, tgSend, kvGet, esc, pushSend) {
   if (gs && go && gs.h + gs.s >= 8 && go.h + go.s >= 8) { const a = pc(gs.h, gs.h + gs.s), b = pc(go.h, go.h + go.s); if (a - b >= 10) oner.push('Algı\'da güçlüler (%' + a + ') diğerlerinden (%' + b + ') belirgin iyi — yalnız güçlüleri göndermeyi önerebilirim.'); }
   if (T && T.n) msg += '\n\n🚀 <b>Tavan takibi</b> — ' + T.n + ' hisse · açılış ort. ' + (T.g >= 0 ? '+' : '') + '%' + (+T.g).toFixed(1) + ' · %' + pc(T.up, T.n) + ' yukarı açıldı';
   if (K.length) { msg += '\n\n📰 <b>KAP (en iyi ve en kötü)</b>'; const ks = K.map(r => ({ k: r.src.slice(4), n: r.n, p: pc(r.h, r.h + r.s) })).sort((a, b) => b.p - a.p); [...ks.slice(0, 2), ...ks.slice(-2)].filter((x, i, a) => a.indexOf(x) === i).forEach(x => { msg += '\n   ' + esc(KAP_TR[x.k] || x.k) + ': %' + x.p + ' (' + x.n + ')'; }); }
+  try { const P = await paperCalc(env, true), W = P.days.filter(x => x.d >= from); if (W.length) { const pl = W.reduce((a, x) => a + x.pl, 0), n = W.reduce((a, x) => a + x.n, 0); msg += '\n\n🤖 <b>Kâğıt üzerinde bot</b> — bu hafta ' + n + ' işlem → <b>' + (pl >= 0 ? '+' : '−') + Math.abs(pl).toLocaleString('tr-TR') + ' TL</b> · ' + W.filter(x => x.pl > 0).length + '/' + W.length + ' gün kârda'; } } catch (e) {}
   if (oner.length) msg += '\n\n💡 <b>Öneriler</b>\n' + oner.map(x => '• ' + esc(x)).join('\n');
   msg += '\n\n<i>Hiçbir değişiklik onayın olmadan yapılmaz.</i>';
   const cfg = await kvGet(env, 'cfg', null);

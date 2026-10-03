@@ -114,6 +114,10 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   ALDIM + POZİSYON ASİSTANI: aldimOpen (lot = sermaye×risk%÷(giriş−stop)) → S.jr (posId) + /pos (worker/src/pos.js, meta 'pos'); cron posWatch: +%1 stopu girişe çek, stopa %0,3, hedef/stop, 17:45 hatırlatma, 18:15 temizlik.
   TAVAN TAKİBİ worker/src/tavan.js: 18:12+ tavan kapananlar src 'tavan' px=null t=kapEntry (ertesi gün 09:59) → pre = açılış farkı; karne özetinde ayrı blok. HAFTALIK RAPOR sig.js weeklySummary (Cuma, karneden sonra, meta 'weeksum').
   Günlük'te jrAnalysis (İşlem analizim), Karne'de labHtml (Deneme laboratuvarı — LAB dizisi index.html'de; yeni araştırma sonucu buraya eklenir). tests/pos.mjs.
+- v8.3 (03.10) KÂĞIT ÜZERİNDE BOT worker/src/paper.js (gerçek para/emir YOK; Midas'ın açık API'si yok → tam otomatik şimdilik yok, sıradaki adım 'onaylı bot').
+  Karnedeki sig satırlarından hesap (paperSim saf fonksiyon): yalnız AL, seçili kaynaklar, işlem başına sabit tutar, Momentum ±%1,5 (o15) / diğerleri ±%1 (o10), ikisi yoksa rc (gün sonu),
+  %0,1 kayma, günde en çok N işlem, hisseye günde bir. Ayar D1 meta 'paper' (/paper-set sahip; /paper DATA, 2 dk önbellek). Karne Telegram'ına + haftalık rapora 🤖 satırı.
+  Terminal: Şimdi'de paperCard (bugün canlı yaklaşık + toplam + 10 gün çubuk), Karne başında paperFull (gün gün, kaynak tek başına, son işlemler, kurallar, ⚙️ ayarlar). tests/paper.mjs.
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.
