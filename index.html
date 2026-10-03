@@ -3241,7 +3241,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="8.7.1";window.APPV=APP_VER;
+  const APP_VER="8.7.2";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4365,7 +4365,9 @@ tr.row:active td{background:var(--card2)}
 #xray{position:fixed;inset:0;z-index:91;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 #xray.on{display:flex}
 .xbox{width:100%;max-width:560px;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:22px 22px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom));background:linear-gradient(180deg,#131c29,#0b1119);border:1px solid rgba(255,255,255,.1);box-sizing:border-box}
-.xh{display:flex;align-items:center;margin-bottom:10px}.xh b{font-size:17px;color:#fff}.xh button{margin-left:auto;background:none;border:0;color:var(--dim);font-size:18px}
+.xh{display:flex;align-items:center;margin:-16px -16px 10px;padding:12px 16px;position:sticky;top:-16px;z-index:2;background:#131c29;border-bottom:1px solid rgba(255,255,255,.06)}.xh b{font-size:17px;color:#fff}
+.xcl{margin-left:auto;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;font-size:20px;font-weight:700;line-height:1;cursor:pointer}
+.xback{display:block;width:100%;margin-top:12px;padding:14px;border-radius:14px;border:0;background:#fbbf24;color:#111;font:900 15px var(--sans);cursor:pointer}
 .xin{display:flex;gap:8px}.xin input{flex:1;min-width:0;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:#fff;font:800 16px var(--sans);text-transform:uppercase}
 .xin button{padding:0 18px;border-radius:12px;border:0;background:#fbbf24;color:#111;font:900 15px var(--sans)}
 .xsug{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.xsug button{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);border-radius:10px;padding:6px 9px;color:#fff;text-align:left}
@@ -5046,9 +5048,9 @@ async function paperSave(){const b=srvBase(S.tvproxy),g=id=>+String((document.ge
    Not, Fırsat derin taramasıyla aynı hesap (analyze, 15 dk mumlar, AL yönü). Yatırım tavsiyesi değildir. */
 const XR={sym:'',busy:false,a:null,err:'',ks:null};
 function xrayOpen(sym){let m=document.getElementById('xray');if(!m){m=document.createElement('div');m.id='xray';m.onclick=e=>{if(e.target===m)xrayClose()};document.body.appendChild(m)}
- m.innerHTML='<div class="xbox"><div class="xh"><b>🔍 Hisse röntgeni</b><button onclick="xrayClose()">✕</button></div>'+
+ m.innerHTML='<div class="xbox"><div class="xh"><b>🔍 Hisse röntgeni</b><button class="xcl" onclick="xrayClose()" aria-label="Kapat">✕</button></div>'+
   '<div class="xin"><input id="xr_in" placeholder="Hisse adı yaz: ASELS, THYAO…" autocapitalize="characters" autocomplete="off" spellcheck="false" value="'+htmlEsc(sym||'')+'"><button onclick="xrayGo()">Bak</button></div>'+
-  '<div id="xr_sug"></div><div id="xr_body"><div class="xnote">Hisse adını yaz; notunu, puanlarını, seviyelerini ve sistemin bu hissedeki karnesini göstereyim.</div></div></div>';
+  '<div id="xr_sug"></div><div id="xr_body"><div class="xnote">Hisse adını yaz; notunu, puanlarını, seviyelerini ve sistemin bu hissedeki karnesini göstereyim.</div><button class="xback" onclick="xrayClose()">← Ana ekrana dön</button></div></div>';
  m.classList.add('on');const i=document.getElementById('xr_in');
  i.addEventListener('input',xraySug);i.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();xrayGo()}});
  try{kstatLoad()}catch(e){}
@@ -5121,7 +5123,8 @@ function xrayRender(){const body=document.getElementById('xr_body');if(!body)ret
   h+='<div class="xks">'+ks.src.map(r=>{const m=(r.h||0)+(r.s||0);return '<div><span>'+(SN[r.src]||(String(r.src).startsWith('kap-')?'📰 KAP haberi':r.src))+'</span><b>'+r.n+' sinyal</b><i class="'+(m?(r.h/m>=.5?'up':'dn'):'')+'">'+(m?r.h+' tuttu, '+r.s+' tutmadı':'sonuçlanmadı')+'</i></div>'}).join('')+'</div>'+
    (tot.h+tot.s?'<div class="xnote sm">Toplam: '+(tot.h+tot.s)+' sonuçlanan sinyalin %'+Math.round(tot.h/(tot.h+tot.s)*100)+'\'i tuttu.</div>':'')}
  h+='<div class="xbtn"><button onclick="xrayClose();selectSym(\''+sym+'\',\'bist\');showTab(\'chart\')">📈 Grafiği aç</button><button onclick="xrayWatch(\''+sym+'\')">'+(W().includes(sym)?'⭐ İzlemede':'☆ İzlemeye ekle')+'</button></div>'+
-  '<div class="xnote sm" style="text-align:center">Bu bir yatırım tavsiyesi değildir; not, teknik göstergelerin anlık özetidir.</div>';
+  '<div class="xnote sm" style="text-align:center">Bu bir yatırım tavsiyesi değildir; not, teknik göstergelerin anlık özetidir.</div>'+
+  '<button class="xback" onclick="xrayClose()">← Ana ekrana dön</button>';
  body.innerHTML=h}
 function xrayWatch(sym){if(!W().includes(sym)){W().push(sym);try{saveWL()}catch(e){LS.set('wl',WL)}try{renderWatch()}catch(e){}}xrayRender()}
 /* ================= v8.6 SESSİZ TREND (SESSİZ KAYIT) =================

@@ -109,6 +109,7 @@ async function page(b, opt) {
         setTimeout(() => { const t = document.getElementById('xr_body').textContent; xrayGo('YOKBOYLE1'); setTimeout(() => { const t2 = document.getElementById('xr_body').innerText; xrayClose(); res({ t, t2 }); }, 200); }, 1500); }));
       ok('Hisse röntgeni: not, ön şartlar, puan, seviyeler, karne görünüyor', /Ön şartlar/i.test(xr.t) && /Puan: 6'da/i.test(xr.t) && /Seviyeler/i.test(xr.t) && /karnesi/i.test(xr.t) && /tavsiyesi değildir/.test(xr.t), xr.t.slice(0, 160));
       ok('Hisse röntgeni: olmayan hisse için uyarı', /bulamadım/.test(xr.t2));
+      ok('Hisse röntgeni: büyük kapat düğmesi ve ana ekrana dön çalışıyor', await T(() => { xrayOpen(); const b = document.querySelector('#xray .xcl').getBoundingClientRect(); document.querySelector('#xray .xback').click(); return b.width >= 40 && b.height >= 40 && !document.getElementById('xray').classList.contains('on'); }));
       ok('Fırsat kartında ölçerler Detay\'a basmadan görünüyor', await T(() => { showTab('op'); const c = document.querySelector('#oplist .card.v6'); return !!c && !!c.querySelector(':scope > .mts') && !!c.querySelector(':scope > .mtf'); }));
       { const T0 = Date.UTC(2026, 8, 1, 7, 0) / 1000, bars = []; let px = 10, seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
         for (let day = 0; day < 30; day++) { const d0 = T0 + day * 86400; if ([0, 6].includes(new Date(d0 * 1000).getUTCDay())) continue;
