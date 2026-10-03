@@ -3241,7 +3241,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="8.6";window.APPV=APP_VER;
+  const APP_VER="8.7";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4389,6 +4389,12 @@ tr.row:active td{background:var(--card2)}
 .xsearch{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:12px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--dim);font-size:14px;cursor:pointer}
 .xsearch b{color:#fff;font-size:16px}.xsearch span{flex:1}.xsearch em{font-style:normal;font-size:11px;font-weight:800;color:#fbbf24;border:1px solid rgba(251,191,36,.35);border-radius:8px;padding:3px 7px}
 .card.v6 .mtf{margin-top:8px}.card.v6 .mts{margin-top:6px}
+.yrm{border:1px solid rgba(251,191,36,.22);border-radius:20px;padding:14px;margin-bottom:12px;background:radial-gradient(120% 70% at 100% 0%,rgba(251,191,36,.10),transparent 60%),linear-gradient(180deg,#141b26,#0c121b)}
+.yrm-h{display:flex;align-items:center;gap:8px;margin-bottom:6px}.yrm-h span{font-size:11px;font-weight:900;letter-spacing:.6px;color:#fbbf24}.yrm-h em{margin-left:auto;font-style:normal;font-size:11px;color:var(--dim)}
+.yrm-b p{margin:6px 0;font-size:14px;line-height:1.6;color:#e5e7eb}.yrm-b b{color:#fff}.yrm-b ul{margin:6px 0;padding-left:18px}.yrm-b li{font-size:13.5px;line-height:1.55;color:#d1d5db;margin:3px 0}
+.yrm-o{margin-top:8px;border-top:1px solid rgba(255,255,255,.06);padding-top:8px}.yrm-o summary{font-size:12.5px;font-weight:800;color:var(--txt2);cursor:pointer}
+.yrm-p{margin-top:10px;padding-top:8px;border-top:1px dashed rgba(255,255,255,.06)}.yrm-p .yrm-b p,.yrm-p .yrm-b li{font-size:12.5px;color:var(--txt2)}
+.yrm-n{margin-top:8px;font-size:10.5px;color:var(--dim)}
 .pp2{border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 14px 12px;margin-bottom:12px;background:radial-gradient(120% 80% at 0% 0%,rgba(0,211,160,.10),transparent 60%),linear-gradient(180deg,#111a26,#0b111a);box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .pp2-empty{font-size:13px;color:var(--txt2);line-height:1.5}
 .pp2-top{display:flex;gap:10px;align-items:flex-start}.pp2-main{flex:1;min-width:0}
@@ -4633,7 +4639,7 @@ function renderNow(){
   main+=nSec('🔭',s.pre?'Bugün ilk bakılacaklar':'Yarın izlenecekler','','',wl.length||'')+'<div class="nnote">Günü zirvesine yakın, normalden yüksek hacimle ve %1,5–7 artıda kapatanlar. Sinyal değil; açılışta ilk bakılacak liste.</div>'+
    (wl.length?wl.map(o=>nowRow({sym:o.name,src:secTr(o.sector)||'BIST',sub:'Hacim normalin '+nf(rvolOf(o),1)+' katı · zirveye %'+nf((1-o.close/o.high)*100,1),val:nf(o.close),chg:o.change})).join(''):'<div class="nempty">Bu şartlara uyan hisse yok.</div>');
   if(SIGT.list&&SIGT.list.length)main+=nLive()}
- main=paperCard()+main;
+ main=(typeof yorumCard==='function'?yorumCard():'')+paperCard()+main;
  main+=nPulse()+nSectors();
  side+=nWatch()+nMe();
  const K=window.KSTAT;
@@ -5160,6 +5166,19 @@ async function sesScan(force){
  }finally{SES.busy=false}
 }
 setInterval(()=>{try{sesScan(false)}catch(e){}},30000);
+/* ================= v8.7 CLAUDE PİYASA YORUMU =================
+   Zamanlanmış Claude görevi (hafta içi 10:40, 14:40, 18:40) piyasayı ve Pusula verilerini okur, yorumu D1 'yorum' tablosuna yazar.
+   Terminal /yorum'dan okur (5 dk'da bir). Metin düz yazı; **kalın** ve satır başları desteklenir, HTML kaçırılır. */
+const YRM={at:0,list:null,busy:false,open:false};
+const YSLOT={acilis:'☀️ Açılış sonrası',ogle:'🕑 Öğleden sonra',kapanis:'🌙 Kapanış ve yarın',hafta:'📅 Haftanın özeti'};
+function yorumLoad(force){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||YRM.busy)return;if(!force&&Date.now()-YRM.at<5*60e3)return;
+ YRM.busy=true;YRM.at=Date.now();fetch(dq(b+'/yorum')).then(r=>r.json()).then(j=>{if(j&&j.ok){const ch=JSON.stringify(j.list)!==JSON.stringify(YRM.list);YRM.list=j.list||[];if(ch&&S.tab==='now')renderNow()}}).catch(()=>{}).finally(()=>{YRM.busy=false})}
+function yorumFmt(t){return htmlEsc(String(t||'')).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').split(/\n+/).map(l=>l.trim()).filter(Boolean).map(l=>/^[•\-–]\s*/.test(l)?'<li>'+l.replace(/^[•\-–]\s*/,'')+'</li>':'<p>'+l+'</p>').join('').replace(/(<li>.*?<\/li>)+/g,m=>'<ul>'+m+'</ul>')}
+function yorumAge(t){const m=Math.round((Date.now()-t)/60e3);return m<1?'az önce':m<60?m+' dk önce':m<1440?Math.round(m/60)+' saat önce':new Date(t).toLocaleDateString('tr-TR',{day:'numeric',month:'long',weekday:'long'})}
+function yorumCard(){yorumLoad();const L=YRM.list;if(!L||!L.length)return '';const y=L[0],old=L.slice(1,6);
+ let h=nSec('🧭','Claude\'un piyasa yorumu','','')+'<div class="yrm"><div class="yrm-h"><span>'+(YSLOT[y.slot]||'Yorum')+'</span><em>'+yorumAge(y.t)+'</em></div><div class="yrm-b">'+yorumFmt(y.txt)+'</div>';
+ if(old.length)h+='<details class="yrm-o"'+(YRM.open?' open':'')+' ontoggle="YRM.open=this.open"><summary>Önceki yorumlar ('+old.length+')</summary>'+old.map(o=>'<div class="yrm-p"><div class="yrm-h"><span>'+(YSLOT[o.slot]||'Yorum')+'</span><em>'+yorumAge(o.t)+'</em></div><div class="yrm-b">'+yorumFmt(o.txt)+'</div></div>').join('')+'</details>';
+ return h+'<div class="yrm-n">Yorum, terminal verisi ve karne üzerinden yazılır; yatırım tavsiyesi değildir.</div></div>'}
 </script>
 </body>
 </html>

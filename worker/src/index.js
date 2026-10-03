@@ -708,7 +708,7 @@ const OWN_ROUTES = new Set(['sync', 'prefs', 'cron-test', 'pine-sync', 'pine-tes
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
 const DEV_GRACE = Date.UTC(2026, 9, 6); // 6 Ekim 2026
-const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key', 'paper', 'sigsym']);
+const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key', 'paper', 'sigsym', 'yorum']);
 const devCache = new Map();
 let ownerCache = { v: undefined, at: 0 }, devReady = false;
 async function ownerTok(env) {
@@ -913,6 +913,8 @@ export default {
       case 'sigstats': return json(await sigStats(env));
       case 'sigtoday': return json(await sigToday(env));
       case 'sigsym': return json(await sigSym(env, url.searchParams.get('s')));
+      // v8.7 CLAUDE PİYASA YORUMU — yorumları zamanlanmış Claude görevi doğrudan D1 'yorum' tablosuna yazar (anahtar gerekmez); terminal buradan okur.
+      case 'yorum': { try { await env.BT.prepare('CREATE TABLE IF NOT EXISTS yorum (id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER, slot TEXT, txt TEXT)').run(); const r = await env.BT.prepare('SELECT t, slot, txt FROM yorum ORDER BY t DESC LIMIT 8').all(); return json({ ok: true, list: r.results || [] }); } catch (e) { return json({ ok: false, error: String(e.message || e).slice(0, 100) }); } }
       case 'pos': return posRoute(request, env, json);
       case 'paper': case 'paper-set': return paperRoute(route, request, env, json);
       case 'push-key': case 'push-sub': case 'push-off': case 'push-send': return pushRoute(route, request, env, url, json);

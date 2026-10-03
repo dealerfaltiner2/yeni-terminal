@@ -118,6 +118,9 @@ async function page(b, opt) {
         const c = await T(b => { const cs = b.map(x => ({ time: x[0], open: x[1], high: x[2], low: x[3], close: x[4], volume: x[5] })); const today = Math.floor((b[b.length - 1][0] + 10800) / 86400); return sesCalc(cs, today); }, bars);
         const eq = (a, b) => Math.abs(a - b) < 0.02;
         ok('Sessiz trend: canlı hesap araştırmayla birebir (20g, zirve, hacim, aralık, oynaklık)', c && R && eq(c.d20, R[8]) && eq(c.dist, R[9]) && eq(c.vr30, R[5]) && eq(c.rr, R[21] / R[22]) && eq(c.adr, R[22]), JSON.stringify({ c, R: R && [R[8], R[9], R[5], R[21], R[22]] })); }
+      const yr = await T(() => new Promise(res => { yorumLoad(true); setTimeout(() => { renderNow(); const e = document.querySelector('#nowbody .yrm'); res({ txt: e ? e.textContent : '', xss: !!window.__XSS || !!document.querySelector('#nowbody .yrm img'), b: !!(e && e.querySelector('.yrm-b b')) }); }, 1200); }));
+      ok('Claude yorumu Şimdi ekranında (kalın yazı, maddeler, önceki yorumlar)', /Açılış sonrası/.test(yr.txt) && /Bankalar güçlü/.test(yr.txt) && /Önceki yorumlar/.test(yr.txt) && yr.b, yr.txt.slice(0, 120));
+      ok('Claude yorumundaki HTML çalıştırılmadı', !yr.xss);
       ok('Deneme laboratuvarı listeleniyor', await T(() => /Deneme laboratuvarı/.test(labHtml()) && /Momentum/.test(labHtml())));
       ok('yeni ikon kurulumu: yapıştırılan bilgi adres + kodu yerine koyuyor', su.got === 'wss://x.test/k' && su.own === 'kod123', JSON.stringify(su));
       const mm = await T(() => { const D = []; let c = 100; for (let i = 0; i < 25; i++) { c = i === 24 ? c * 1.04 : i >= 20 ? c * 1.01 : c; D.push({ open: c, high: c * 1.035, low: c * 0.965, close: c, volume: 2e6 }); }
