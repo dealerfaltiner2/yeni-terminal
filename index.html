@@ -3240,7 +3240,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="8.3";window.APPV=APP_VER;
+  const APP_VER="8.3.1";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4584,8 +4584,9 @@ function renderNow(){
   main+=nSec('🔭',s.pre?'Bugün ilk bakılacaklar':'Yarın izlenecekler','','',wl.length||'')+'<div class="nnote">Günü zirvesine yakın, normalden yüksek hacimle ve %1,5–7 artıda kapatanlar. Sinyal değil; açılışta ilk bakılacak liste.</div>'+
    (wl.length?wl.map(o=>nowRow({sym:o.name,src:secTr(o.sector)||'BIST',sub:'Hacim normalin '+nf(rvolOf(o),1)+' katı · zirveye %'+nf((1-o.close/o.high)*100,1),val:nf(o.close),chg:o.change})).join(''):'<div class="nempty">Bu şartlara uyan hisse yok.</div>');
   if(SIGT.list&&SIGT.list.length)main+=nLive()}
+ main=paperCard()+main;
  main+=nPulse()+nSectors();
- side+=nWatch()+nMe()+paperCard();
+ side+=nWatch()+nMe();
  const K=window.KSTAT;
  if(s.open)side+=nSec('📊','Karne · son 10 gün','Karne','lab')+nowKarne();
  else{side+=nSec('📊',(K&&K.last?(K.last===today?'Bugünün':K.last.slice(8)+'.'+K.last.slice(5,7))+' karnesi':'Karne'),'Ayrıntı','lab');
