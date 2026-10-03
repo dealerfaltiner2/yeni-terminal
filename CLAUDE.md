@@ -131,7 +131,7 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   Karar: ~3 Kasım'da (bir ay) karne + bot yarışı + sessiz trend birlikte değerlendirilecek.
 - v8.7 (04.10) CLAUDE PİYASA YORUMU: zamanlanmış görev 'Pusula piyasa yorumu' (hafta içi 10:40 / 14:40 / 18:40 İstanbul) veriyi okur (BORSA araçları + D1 sig/kap/meta),
   yorumu D1 tablo `yorum` (t ms, slot acilis|ogle|kapanis|hafta, txt ≤1500 karakter, **kalın** + '• ' madde) içine DOĞRUDAN yazar (anahtar gerekmez). Worker /yorum (DATA) son 8'i verir;
-  terminal yorumCard Şimdi'nin en üstünde (htmlEsc). Kurallar: yalnız veriye dayan, karneyi an, kesin fiyat tahmini yok, 'yatırım tavsiyesi değildir'. Telegram YOK.
+  terminal yorumCard Şimdi'nin en üstünde (htmlEsc), başlık 'Pusula'nın piyasa yorumu' (Fatih isteği: Claude adı geçmesin; yorum Pusula ağzından). Kurallar: yalnız veriye dayan, karneyi an, kesin fiyat tahmini yok, 'yatırım tavsiyesi değildir'. Telegram YOK.
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.

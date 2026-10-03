@@ -3241,7 +3241,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="8.7";window.APPV=APP_VER;
+  const APP_VER="8.7.1";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -5176,7 +5176,7 @@ function yorumLoad(force){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||
 function yorumFmt(t){return htmlEsc(String(t||'')).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').split(/\n+/).map(l=>l.trim()).filter(Boolean).map(l=>/^[•\-–]\s*/.test(l)?'<li>'+l.replace(/^[•\-–]\s*/,'')+'</li>':'<p>'+l+'</p>').join('').replace(/(<li>.*?<\/li>)+/g,m=>'<ul>'+m+'</ul>')}
 function yorumAge(t){const m=Math.round((Date.now()-t)/60e3);return m<1?'az önce':m<60?m+' dk önce':m<1440?Math.round(m/60)+' saat önce':new Date(t).toLocaleDateString('tr-TR',{day:'numeric',month:'long',weekday:'long'})}
 function yorumCard(){yorumLoad();const L=YRM.list;if(!L||!L.length)return '';const y=L[0],old=L.slice(1,6);
- let h=nSec('🧭','Claude\'un piyasa yorumu','','')+'<div class="yrm"><div class="yrm-h"><span>'+(YSLOT[y.slot]||'Yorum')+'</span><em>'+yorumAge(y.t)+'</em></div><div class="yrm-b">'+yorumFmt(y.txt)+'</div>';
+ let h=nSec('🧭','Pusula\'nın piyasa yorumu','','')+'<div class="yrm"><div class="yrm-h"><span>'+(YSLOT[y.slot]||'Yorum')+'</span><em>'+yorumAge(y.t)+'</em></div><div class="yrm-b">'+yorumFmt(y.txt)+'</div>';
  if(old.length)h+='<details class="yrm-o"'+(YRM.open?' open':'')+' ontoggle="YRM.open=this.open"><summary>Önceki yorumlar ('+old.length+')</summary>'+old.map(o=>'<div class="yrm-p"><div class="yrm-h"><span>'+(YSLOT[o.slot]||'Yorum')+'</span><em>'+yorumAge(o.t)+'</em></div><div class="yrm-b">'+yorumFmt(o.txt)+'</div></div>').join('')+'</details>';
  return h+'<div class="yrm-n">Yorum, terminal verisi ve karne üzerinden yazılır; yatırım tavsiyesi değildir.</div></div>'}
 </script>
