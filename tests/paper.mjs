@@ -28,4 +28,19 @@ v = paperSim(rows, { amt: 20000, max: 5, algiG: true }, '2026-10-03');
 ok('Algı yalnız güçlü: zayıf olan atlanır', !v.trades.some(x => x.sym === 'EEE') && v.trades.some(x => x.sym === 'FFF'));
 const c = paperCfg({ amt: -5, max: 999, srcs: ['algi', 'kotu'], start: 'x' });
 ok('ayar sınırları', c.amt === 1000 && c.max === 30 && c.srcs.join() === 'algi' && c.start === '2026-09-29');
+// v8.4 bot yarışı
+{ const T = h => Date.parse('2026-10-02T' + h + ':00+03:00');
+  const rr = [
+    { ...R('2026-10-02', T('10:30'), 'algi', 'A1', 10, 2, 2, -3), tx: -0.4, pbn: 1, pb: 1, meta: '{"fc":0.6}' },
+    { ...R('2026-10-02', T('11:30'), 'firsat-B', 'B1', 10, 2, 2, -2), tx: -1, pbn: 0, pb: null },
+    { ...R('2026-10-02', T('14:00'), 'firsat-B', 'C1', 10, 2, 2, -2), tx: -1, pbn: 1, pb: -1 },
+    { ...R('2026-10-02', T('15:00'), 'firsat-B', 'D1', 10, 1, 1, 2), tx: 0.5, pbn: null, pb: null } ];
+  const v = paperSim(rr, { amt: 10000, max: 5, slip: 0 }, '2026-10-02'), B = Object.fromEntries(v.bots.map(b => [b.k, b]));
+  ok('yarış: 6 bot, en çok kazanan en üstte', v.bots.length === 6 && v.bots[0].pl >= v.bots[5].pl);
+  ok('mevcut bot = ana bot', B.mevcut.pl === v.tot.pl && B.mevcut.n === 4, B.mevcut.pl + ' / ' + v.tot.pl);
+  ok('güçlüler: zayıf Algı alınmaz', B.guclu.n === 3);
+  ok('öğle arası: 11:30 sinyali alınmaz', B.saat.n === 3 && B.saat.pl === -100, B.saat.pl);
+  ok('günlük fren: 2 stoptan sonra işlem yok', B.fren.n === 2 && B.fren.l === 2);
+  ok('geri çekilme: gelmeyen atlanır, ölçülmeyen eksik sayılır', B.geri.n === 2 && B.geri.eksik === 1 && B.geri.pl === Math.round(1005 * 9.95 * 0.01) + Math.round(1005 * 9.95 * -0.01), B.geri.pl);
+  ok('çabuk çıkış: 60 dk sonucu kullanılır', B.cabuk.n === 4 && B.cabuk.pl === -40 - 100 - 100 + 50, B.cabuk.pl); }
 console.log(`KÂĞIT BOT: ${pass}/${pass + fail} geçti`); process.exit(fail ? 1 : 0);

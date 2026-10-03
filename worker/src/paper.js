@@ -6,6 +6,7 @@
 //   • Günde en çok N işlem (ilk gelenler), aynı hisseye günde bir kez.
 // Ayar: D1 meta 'paper' (yalnız ana cihaz değiştirir). Sonuç 2 dk önbellek.
 const TRMS = 3 * 3600e3;
+import { sigEnsure } from './sig.js';
 const trDay = ms => new Date(ms + TRMS).toISOString().slice(0, 10);
 export const PAPER_SRCS = ['firsat-A', 'firsat-B', 'algi', 'momentum', 'radar'];
 export const PAPER_DEF = { amt: 20000, cap: 100000, max: 5, srcs: ['firsat-A', 'firsat-B', 'algi', 'momentum'], algiG: false, slip: 0.1, start: '2026-09-29' };
@@ -67,7 +68,50 @@ export function paperSim(rows, cfg, today) {
     }
     if (B.n) bySrc[s] = B;
   }
-  return { cfg: c, tot, days: DL.reverse(), trades: trades.slice(-40).reverse(), open, pend, bySrc };
+  return { cfg: c, tot, days: DL.reverse(), trades: trades.slice(-40).reverse(), open, pend, bySrc, bots: botRace(rows, c, today) };
+}
+// v8.4 BOT YARIŞI — aynı sinyallerle, tek bir kuralı farklı 6 kâğıt bot. Hangisi daha çok kazandırıyor?
+// Ayar (tutar, günlük sınır, kaynaklar) ana botla aynı; her bot yalnız kendi kuralında farklı.
+const trM = ms => { const d = new Date(ms + TRMS); return d.getUTCHours() * 60 + d.getUTCMinutes(); };
+const resOf = (p, K) => p >= K - 1e-9 ? 'hedef' : p <= -K + 1e-9 ? 'stop' : 'süre';
+export const BOTS = [
+  { k: 'mevcut', ad: 'Mevcut kurallar', not: 'Ana botun aynısı (karşılaştırma için).' },
+  { k: 'guclu', ad: 'Algı\'da yalnız güçlüler', not: 'Algı sinyalinde alıcı oranı %80\'in altındaysa almaz.' },
+  { k: 'saat', ad: 'Öğle arası yok', not: '11:00–13:00 arasında gelen sinyalleri almaz.' },
+  { k: 'geri', ad: 'Geri çekilmede gir', not: 'Hemen almaz; 30 dk içinde fiyat %0,5 geri gelirse oradan alır, gelmezse geçer.' },
+  { k: 'cabuk', ad: 'Çabuk çık', not: 'Hedef ya da stop 60 dk içinde gelmezse satar; gün sonunu beklemez.' },
+  { k: 'fren', ad: 'Günlük fren', not: 'O gün 2 stop olduysa başka işlem açmaz.' }
+];
+export function botRace(rows, c, today) {
+  const wk = new Date(Date.parse(today) - 6 * 864e5).toISOString().slice(0, 10);
+  return BOTS.map(b => {
+    const days = new Map(); let n = 0, w = 0, l = 0, pl = 0, hafta = 0, eksik = 0, bugun = 0;
+    for (const r of rows) {
+      if (!r.done || !c.srcs.includes(r.src)) continue;
+      if (r.src === 'algi' && (c.algiG || b.k === 'guclu') && !(fcOf(r) >= 0.8)) continue;
+      if (b.k === 'saat') { const m = trM(r.t); if (m >= 660 && m < 780) continue; }
+      const D = days.get(r.d) || (days.set(r.d, { syms: new Set(), stop: 0, pl: 0 }), days.get(r.d));
+      if (D.syms.has(r.sym) || D.syms.size >= c.max) continue;
+      if (b.k === 'fren' && D.stop >= 2) continue;
+      const K = r.src === 'momentum' ? 1.5 : 1;
+      let p, res, px = r.px;
+      if (b.k === 'geri') {
+        if (r.pbn == null || r.pbn < 0) { eksik++; continue; }
+        if (r.pbn === 0) continue;                       // fiyat geri gelmedi → işlem yok
+        p = +r.pb; px = r.px * 0.995; res = resOf(p, K);
+      } else if (b.k === 'cabuk') {
+        if (r.tx == null) { eksik++; continue; }
+        p = +r.tx; res = resOf(p, K);
+      } else { const o = tradePct(r, 0); if (!o) continue; p = o.pct; res = o.res; }
+      D.syms.add(r.sym);
+      const lot = Math.floor(c.amt / px); if (!lot) continue;
+      const x = Math.round(lot * px * (p - c.slip) / 100);
+      n++; pl += x; D.pl += x; if (res === 'hedef') w++; else if (res === 'stop') { l++; D.stop++; }
+      if (r.d >= wk) hafta += x; if (r.d === today) bugun += x;
+    }
+    const DL = [...days.values()].filter(x => x.syms.size);
+    return { k: b.k, ad: b.ad, not: b.not, n, w, l, pl, hafta, bugun, gun: DL.length, iyi: DL.filter(x => x.pl > 0).length, eksik };
+  }).sort((a, b) => b.pl - a.pl);
 }
 let cache = { at: 0, v: null };
 export async function paperCalc(env, fresh) {
@@ -76,7 +120,8 @@ export async function paperCalc(env, fresh) {
   let raw = null; try { raw = m ? JSON.parse(m.v) : null; } catch (e) {}
   const c = paperCfg(raw);
   let rows = [];
-  try { rows = (await env.BT.prepare("SELECT d, t, src, sym, dir, px, done, o10, o15, rc, meta FROM sig WHERE d >= ? AND err IS NULL AND src IN ('firsat-A','firsat-B','algi','momentum','radar')").bind(c.start).all()).results || []; } catch (e) { if (!/no such table/i.test(String(e && e.message))) throw e; }
+  try { await sigEnsure(env); } catch (e) {}
+  try { rows = (await env.BT.prepare("SELECT d, t, src, sym, dir, px, done, o10, o15, rc, tx, pb, pbn, meta FROM sig WHERE d >= ? AND err IS NULL AND src IN ('firsat-A','firsat-B','algi','momentum','radar')").bind(c.start).all()).results || []; } catch (e) { if (!/no such table/i.test(String(e && e.message))) throw e; }
   const v = { ok: true, at: Date.now(), ...paperSim(rows, c, trDay(Date.now())) };
   cache = { at: Date.now(), v };
   return v;
@@ -100,6 +145,7 @@ export async function paperLine(env, today) {
     if (!t.n) return '';
     const tl = n => (n >= 0 ? '+' : '−') + Math.abs(Math.round(n)).toLocaleString('tr-TR') + ' TL';
     return '\n\n🤖 <b>Kâğıt üzerinde bot</b> <i>(gerçek para yok)</i>\n   bugün: ' + (D ? D.n + ' işlem → <b>' + tl(D.pl) + '</b>' : 'işlem yok') +
-      '\n   başından beri: ' + t.n + ' işlem, ' + t.gun + ' gün → <b>' + tl(t.pl) + '</b> (' + (t.pct >= 0 ? '+' : '') + '%' + String(t.pct).replace('.', ',') + ')';
+      '\n   başından beri: ' + t.n + ' işlem, ' + t.gun + ' gün → <b>' + tl(t.pl) + '</b> (' + (t.pct >= 0 ? '+' : '') + '%' + String(t.pct).replace('.', ',') + ')' +
+      (v.bots && v.bots.length && v.bots[0].n ? '\n   🏁 yarışta önde: <b>' + v.bots[0].ad + '</b> (' + tl(v.bots[0].pl) + ')' : '');
   } catch (e) { return ''; }
 }

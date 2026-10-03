@@ -75,5 +75,29 @@ ok('takılı kayıt kalmadı', !meta('sig_run') && db.prepare("SELECT count(*) n
   const op = sigOutcome(hb, { t: Date.parse('2026-10-29T11:00:00+03:00'), d: '2026-10-29', dir: 'AL', px: 20 }, []);
   ok('fiyatlı sinyalde gün kaydırma yapılmadı', op.err === 'mum yok');
 }
+
+// v8.4 bot yarışı ölçümleri: çabuk çıkış (tx) ve geri çekilme girişi (pb, pbn)
+{ const t0 = Date.parse('2026-10-02T11:00:00+03:00') / 1000, mkb = f => { const a = []; for (let i = 0; i < 300; i++) { const c = f(i); a.push([t0 + i * 60, c, c, c, c, 1]); } return a; };
+  const r = { t: t0 * 1000, d: '2026-10-02', dir: 'AL', px: 100, src: 'algi' };
+  let o = sigOutcome(mkb(i => i < 20 ? 100 : i < 40 ? 99.5 : i < 100 ? 100.3 : 102), r, []);
+  ok('geri çekilme: 30 dk içinde %0,5 düştü → giriş var, sonra hedef', o.pbn === 1 && o.pb === 1, JSON.stringify(o));
+  ok('çabuk çıkış: 60 dk içinde hedef yok → 60. dakikanın kapanışı', o.tx === 0.3, 'tx=' + o.tx);
+  ok('normal yarış (gün boyu) hedefi buldu', o.o10 === 1);
+  o = sigOutcome(mkb(i => 100 + i * 0.001), r, []);
+  ok('geri çekilme olmadı → işlem yok', o.pbn === 0 && o.pb === null);
+  o = sigOutcome(mkb(i => i < 10 ? 100 : 98.9), r, []);
+  ok('çabuk çıkış stopu yakaladı', o.tx === -1);
+  o = sigOutcome(mkb(i => i < 10 ? 100 : 98.9), { ...r, src: 'momentum' }, []);
+  ok('momentum ±%1,5: −%1,1 stop sayılmaz', o.tx === -1.1, 'tx=' + o.tx);
+  // geriye dönük tamamlama
+  db.exec("DELETE FROM sig");
+  db.prepare("INSERT INTO sig (src,d,t,sym,dir,px,done,o10) VALUES ('algi','2026-10-02',?,'BFX','AL',100,1,1)").run(t0 * 1000);
+  const bfx = async (e, syms) => { const o = {}; for (const s of syms) { const m = new Map(); mkb(i => i < 20 ? 100 : i < 40 ? 99.5 : 101).forEach(b => m.set(b[0], b)); o[s] = { m, err: '' }; } return o; };
+  T0 = Date.parse('2026-10-03T04:00:00+03:00'); Date.now = () => T0;
+  const bf = await sigEval(env, bfx, tgSend, kvGet, esc, nf);
+  const row = db.prepare("SELECT tx, pb, pbn FROM sig WHERE sym='BFX'").get();
+  ok('eski sinyaller geriye dönük tamamlandı', bf && bf.tamamlama === 1 && row.pbn === 1 && row.pb === 1, JSON.stringify({ bf, row }));
+  ok('tamamlanan sinyal ikinci kez denenmez', (await sigEval(env, bfx, tgSend, kvGet, esc, nf)) == null);
+}
 console.log('\nKARNE: ' + res.filter(Boolean).length + '/' + res.length + ' geçti');
 process.exit(res.every(Boolean) ? 0 : 1);

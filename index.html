@@ -3240,7 +3240,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="8.3.1";window.APPV=APP_VER;
+  const APP_VER="8.4";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4366,6 +4366,8 @@ tr.row:active td{background:var(--card2)}
 .pp-k small{display:block;font-size:10.5px;color:var(--dim);font-weight:700}.pp-k b{display:block;font-size:18px;color:#fff;font-variant-numeric:tabular-nums;margin:2px 0}.pp-k b.up{color:var(--up)}.pp-k b.dn{color:#ff7a88}.pp-k i{font-style:normal;font-size:11px;color:var(--txt2)}
 .pp-bars{display:flex;align-items:flex-end;gap:4px;height:56px;margin-top:10px}.pp-bars div{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
 .pp-bars i{display:block;width:100%;border-radius:4px 4px 2px 2px}.pp-bars i.up{background:var(--up)}.pp-bars i.dn{background:#ff7a88}.pp-bars span{font-size:9px;color:var(--dim);margin-top:2px}
+.pp-lead{margin-top:10px;font-size:12.5px;color:var(--txt2)}.pp-lead b{color:#fff}.pp-lead .up{color:var(--up);font-weight:800}.pp-lead .dn{color:#ff7a88;font-weight:800}
+.pps tr.ppme td{background:rgba(125,211,252,.06)}
 .pp-n{font-size:11.5px;color:var(--dim);line-height:1.45;margin-top:8px}.pp-n b.up{color:var(--up)}.pp-n b.dn{color:#ff7a88}
 .ppf{border:1px solid rgba(125,211,252,.18);border-radius:18px;padding:12px;margin:0 0 14px;background:linear-gradient(180deg,rgba(125,211,252,.07),rgba(255,255,255,.015))}
 .pps{margin-top:12px}.pps>b{font-size:13px;color:#fff}.pps>small{font-size:11px;color:var(--dim)}.pps table{width:100%;margin-top:6px}.pps td.up{color:var(--up)}.pps td.dn{color:#ff7a88}.pps td small{color:var(--dim)}
@@ -4933,6 +4935,7 @@ function paperCard(){paperLoad();const V=PAPER.v;
  h+='<div class="pp"><div class="pp-k"><div><small>Bugün</small><b class="'+cls(bd)+'">'+(bn?ptl(bd):'–')+'</b><i>'+(bn?bn+' işlem'+(lv.n?' · '+lv.n+' açık':''):'işlem yok')+'</i></div>'+
   '<div><small>Başından beri</small><b class="'+cls(T.pl)+'">'+(T.n?ptl(T.pl):'–')+'</b><i>'+(T.n?T.n+' işlem · '+T.gun+' gün':'henüz işlem yok')+'</i></div></div>';
  if(last.length)h+='<div class="pp-bars">'+last.map(d=>'<div title="'+d.d+' · '+ptl(d.pl)+'"><i class="'+(d.pl>=0?'up':'dn')+'" style="height:'+Math.max(4,Math.abs(d.pl)/mx*100)+'%"></i><span>'+d.d.slice(8)+'</span></div>').join('')+'</div>';
+ const L=(V.bots||[]).find(b=>b.n);if(L&&(V.bots||[]).filter(b=>b.n).length>1)h+='<div class="pp-lead">🏁 Bot yarışında önde: <b>'+htmlEsc(L.ad)+'</b> <span class="'+cls(L.pl)+'">'+ptl(L.pl)+'</span></div>';
  return h+'<div class="pp-n">Gerçek para yok. Pusula\'nın sinyallerine bot girseydi ne kazanırdı, onu gösterir.</div></div>'}
 function paperFull(){paperLoad();const V=PAPER.v;
  let h='<div class="ppf"><div class="labh"><b>🤖 Kâğıt üzerinde bot</b><small>Gerçek para yok, emir yok. Pusula\'nın sinyallerine bir bot girseydi ne olurdu, gerçek fiyatlarla hesaplanır. Birkaç hafta kârda kalırsa bir sonraki adım (onaylı bot) konuşulur.</small></div>';
@@ -4943,6 +4946,11 @@ function paperFull(){paperLoad();const V=PAPER.v;
  if(T.n)h+='<div class="pp-n">'+T.n+' işlemin <b class="up">'+T.w+'</b>\'i hedefe, <b class="dn">'+T.l+'</b>\'i stopa ulaştı, '+T.z+'\'i gün sonu kapanışında satıldı.'+(V.pend?' '+V.pend+' işlem ölçülmeyi bekliyor.':'')+'</div>';
  if(lv.n)h+='<div class="pps"><b>Bugün açık işlemler</b> <small>(canlı fiyatla, yaklaşık)</small><table><tr><th>Saat</th><th>Hisse</th><th>Kaynak</th><th>Durum</th><th>TL</th></tr>'+
   lv.L.map(x=>'<tr><td>'+ptm(x.t)+'</td><td><b>'+htmlEsc(x.sym)+'</b></td><td>'+(PSRC[x.src]||x.src)+'</td><td>'+x.st+(x.q!=null?' '+pct(x.q):'')+'</td><td class="'+cls(x.pl)+'">'+ptl(x.pl)+'</td></tr>').join('')+'</table></div>';
+ const BR=(V.bots||[]);
+ if(BR.length){const BW=BR.filter(b=>b.n);
+  h+='<div class="pps"><b>🏁 Bot yarışı</b> <small>(aynı sinyaller, her bot tek bir kuralda farklı)</small><table><tr><th>Bot</th><th>İşlem</th><th>Bu hafta</th><th>Toplam</th></tr>'+
+   BR.map((b,i)=>'<tr'+(b.k==='mevcut'?' class="ppme"':'')+'><td>'+(b.n&&i===0&&BW.length>1?'🥇 ':'')+'<b>'+htmlEsc(b.ad)+'</b><br><small>'+htmlEsc(b.not)+(b.eksik?' ('+b.eksik+' sinyal henüz ölçülmedi)':'')+'</small></td><td>'+b.n+'</td><td class="'+cls(b.hafta)+'">'+(b.n?ptl(b.hafta):'–')+'</td><td class="'+cls(b.pl)+'"><b>'+(b.n?ptl(b.pl):'–')+'</b></td></tr>').join('')+'</table>'+
+   '<div class="pp-n">2–3 hafta sonra öndeki botun kuralını gerçek sinyale çevirmeyi önereceğim; onayın olmadan hiçbir sinyal değişmez.</div></div>'}
  const D=(V.days||[]).slice(0,10);
  if(D.length)h+='<div class="pps"><b>Gün gün</b><table><tr><th>Gün</th><th>İşlem</th><th>Hedef</th><th>Stop</th><th>Sonuç</th></tr>'+
   D.map(d=>'<tr><td>'+d.d.slice(8)+'.'+d.d.slice(5,7)+'</td><td>'+d.n+'</td><td>'+d.w+'</td><td>'+d.l+'</td><td class="'+cls(d.pl)+'"><b>'+ptl(d.pl)+'</b></td></tr>').join('')+'</table></div>';

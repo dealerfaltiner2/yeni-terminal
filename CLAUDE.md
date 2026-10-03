@@ -118,6 +118,9 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   Karnedeki sig satırlarından hesap (paperSim saf fonksiyon): yalnız AL, seçili kaynaklar, işlem başına sabit tutar, Momentum ±%1,5 (o15) / diğerleri ±%1 (o10), ikisi yoksa rc (gün sonu),
   %0,1 kayma, günde en çok N işlem, hisseye günde bir. Ayar D1 meta 'paper' (/paper-set sahip; /paper DATA, 2 dk önbellek). Karne Telegram'ına + haftalık rapora 🤖 satırı.
   Terminal: Şimdi'de paperCard (bugün canlı yaklaşık + toplam + 10 gün çubuk), Karne başında paperFull (gün gün, kaynak tek başına, son işlemler, kurallar, ⚙️ ayarlar). tests/paper.mjs.
+- v8.4 (03.10) BOT YARIŞI (sinyaller DEĞİŞMEDİ): sig'e tx (çabuk çıkış: ±K en çok 60 mum, gelmezse 60. mum kapanışı), pbn/pb (geri çekilme girişi: 30 dk içinde px×0,995'e inerse oradan ±K yarışı, gelmezse gün sonu; pbn 0 = giriş yok, -1 = ölçülemedi).
+  sigOutcome hesaplar; eski sinyaller sigBackfill ile tamamlanır (ölçülecek sinyal yokken, çalışmada 3 hisse, son 6 gün). paper.js botRace: mevcut / güçlü Algı / öğle arası yok (11–13) / geri çekilme / çabuk çık / günlük fren (2 stop).
+  Karne'de '🏁 Bot yarışı' tablosu, Şimdi kartında 'önde' satırı, karne mesajında önde olan, Cuma raporunda haftalık sıralama. 2–3 hafta sonra kazanan kural Fatih onayıyla gerçek sinyale.
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.
