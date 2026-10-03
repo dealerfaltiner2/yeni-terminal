@@ -84,6 +84,16 @@ Hedef: hedef = stop (±%1, ±%1,5, ±%2) iken %60+ tutan, 10:30'da bilinebilen �
 - Uyarı: 'güçlü koşucu' ailesine yakın (Fatih o versiyonu reddetti); bu daha ılımlı (5 gün +%5 / dün +%3, 20 günlük +%25 değil). Spread/kayma yok sayıldı.
 - Fatih onayı olmadan sinyale eklenmez; önerilen yol: karneye 'deneme' kaynağı olarak canlı ölçüm.
 
+## 6c. 03.10 gece "SESSİZ TREND" ÇALIŞMASI (Fatih'in INTET gözlemi: tavanda Güç/Trend yüksek, Hacim/Oynaklık düşük)
+- Ekrandaki profil SONUÇ, sebep değil: Güç = bugünkü değişim (tavan → 97), Hacim/Oynaklık = 15 dk RVOL/ATR (tavana kilitlenince düşer). Sonradan bakış.
+- 10:30'daki karşılığı feat'te test edildi (eski/yeni dönem, ±%1,5 ve ±%2 önce hangisi, kapanış ort.):
+  Güç (ilk 30 dk ≥+%2) + trend + sessiz → eski %60, yeni %50 → TUTMADI. Güç tek başına taban gibi.
+  SESSİZ TREND = 20g ≥+%10 VE zirveye ≤%3 VE ilk 30 dk hacmi normalin altında (vr30<1) VE ilk 30 dk aralığı < günlük ort. aralığın yarısı:
+    ±1,5: %56 / %55 (n 791/404), kapanış +0,09 / +0,16. Aynı trend + YÜKSEK hacim: %47 / %57, kapanış −0,03 / −0,25.
+  SESSİZ TREND + oynak hisse (adr ≥%5): ±1,5 %60 / %60, ±2 %60 / %60, kapanış +0,33 / +0,55 (n 130/120). Hacim <0,7x ile: %59 / %67 (n 92/78).
+  Sessiz trend ∩ Momentum: %88 / %75 ama n 17/21 (çok az). Haftanın günü dağılımı: 46–69 (Çarşamba zayıf, küçük n).
+- Öneri (Fatih onayı bekliyor): 'Sessiz trend' momentum gibi 10:30 canlı deneme kaynağı; karne + bot yarışında ölçülür.
+
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
 - v6.6 (29.09 akşamı): karne özetinde "Filtre kontrolü" — endeks artı/eksi ve oynak/sakin ayrımı kendi sinyallerimizde. 1–2 hafta sonra bak; tutarsa sinyal kapısı öner.
