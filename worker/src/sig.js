@@ -93,7 +93,7 @@ export function sigOutcome(bars, r, ib) {
   // v8.4 bot yarışı (yalnız AL): K = Momentum %1,5, diğerleri %1. Aynı mumda hedef ve stop → stop (temkinli).
   let tx = null, pb = null, pbn = null;
   if (up) {
-    const K = r.src === 'momentum' ? 1.5 : 1;
+    const K = (r.src === 'momentum' || r.src === 'sessiz') ? 1.5 : 1;
     // çabuk çıkış: sinyalden sonraki 60 mum içinde ±K; gelmezse 60. mumun kapanışında sat
     { const tg = px * (1 + K / 100), sl = px * (1 - K / 100); let res = null, lc = null;
       for (const b of B) { if (b[0] > s0 + 3600) break; if (b[3] <= sl) { res = -K; break; } if (b[2] >= tg) { res = K; break; } lc = b[4]; }
@@ -204,7 +204,7 @@ export async function sigSym(env, sym) {
   const c = symCache.get(sym); if (c && Date.now() - c.at < 5 * 60e3) return c.v;
   await sigEnsure(env);
   const from = trDay(Date.now() - 60 * 86400e3);
-  const HS = "CASE WHEN src = 'momentum' THEN o15 ELSE o10 END";
+  const HS = "CASE WHEN src IN ('momentum','sessiz') THEN o15 ELSE o10 END";
   const rows = (await env.BT.prepare("SELECT src, count(*) n, sum(" + HS + " = 1) h, sum(" + HS + " = 2) s, max(d) son FROM sig INDEXED BY sig_sym WHERE sym = ? AND d >= ? AND done = 1 AND err IS NULL AND src <> 'kap-devre' GROUP BY src").bind(sym, from).all()).results || [];
   const last = (await env.BT.prepare("SELECT d, t, src, o10, o15, rc FROM sig INDEXED BY sig_sym WHERE sym = ? AND d >= ? AND done = 1 AND err IS NULL AND src <> 'kap-devre' ORDER BY d DESC, t DESC LIMIT 6").bind(sym, from).all()).results || [];
   const v = { ok: true, sym, src: rows, last };
@@ -216,7 +216,7 @@ export async function sigSym(env, sym) {
 // Yalnız ölçülecek sinyal yokken çalışır; her çalışmada en çok 3 hisse. Önce pbn = -1 yazılır (yarıda kesilirse sonsuza dek denenmesin).
 export async function sigBackfill(env, fetchBarsTV) {
   const now = Date.now();
-  const rows = (await env.BT.prepare("SELECT id, d, t, sym, dir, px, src FROM sig INDEXED BY sig_t WHERE t > ? AND done = 1 AND err IS NULL AND pbn IS NULL AND dir = 'AL' AND px > 0 AND src IN ('firsat-A','firsat-B','algi','momentum','radar') LIMIT 80").bind(now - 6 * 86400e3).all()).results || [];
+  const rows = (await env.BT.prepare("SELECT id, d, t, sym, dir, px, src FROM sig INDEXED BY sig_t WHERE t > ? AND done = 1 AND err IS NULL AND pbn IS NULL AND dir = 'AL' AND px > 0 AND src IN ('firsat-A','firsat-B','algi','momentum','radar','sessiz') LIMIT 80").bind(now - 6 * 86400e3).all()).results || [];
   if (!rows.length) return null;
   const syms = [...new Set(rows.map(r => r.sym))].slice(0, 3), batch = rows.filter(r => syms.includes(r.sym));
   await env.BT.prepare('UPDATE sig SET pbn = -1 WHERE id IN (' + batch.map(() => '?').join(',') + ')').bind(...batch.map(r => r.id)).run();
@@ -271,7 +271,7 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
     await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sigsum_try', ?)").bind(JSON.stringify({ d: today, n: tryN, at: now })).run();
   }
   // momentum ±%1,5 ile ölçülür (araştırması öyle) → h/s o15'ten
-  const HS = "CASE WHEN src = 'momentum' THEN o15 ELSE o10 END";
+  const HS = "CASE WHEN src IN ('momentum','sessiz') THEN o15 ELSE o10 END";
   const R = (await env.BT.prepare("SELECT src, count(*) n, sum(" + HS + " = 1) h, sum(" + HS + " = 2) s FROM sig WHERE d = ? AND err IS NULL AND done = 1 AND src <> 'kap-devre' GROUP BY src ORDER BY n DESC").bind(today).all()).results || [];
   if (!R.length) { if (!force) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sigsum', ?)").bind(today).run(); return { mesaj: 'bugün sinyal yok' }; }
   const A = (await env.BT.prepare("SELECT src, count(*) n, sum(" + HS + " = 1) h, sum(" + HS + " = 2) s, count(DISTINCT d) g FROM sig WHERE err IS NULL AND done = 1 AND src <> 'kap-devre' GROUP BY src").bind().all()).results || [];
@@ -283,7 +283,7 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
   const d = today.split('-');
   let msg = '📊 <b>SİNYAL KARNESİ · ' + d[2] + '.' + d[1] + '</b>\n<i>Her sinyalde önce +%1 mi geldi, −%1 mi?</i>';
   const ORD = ['firsat-A', 'firsat-B', 'algi', 'momentum', 'radar'], rk = x => { const i = ORD.indexOf(x); return i < 0 ? 99 : i; };
-  for (const r of R.filter(r => !String(r.src).startsWith('kap-') && r.src !== 'tavan').sort((a, b) => rk(a.src) - rk(b.src))) {
+  for (const r of R.filter(r => !String(r.src).startsWith('kap-') && r.src !== 'tavan' && r.src !== 'sessiz').sort((a, b) => rk(a.src) - rk(b.src))) {
     msg += '\n\n<b>' + esc(SRC_AD[r.src] || r.src) + '</b> — ' + r.n + ' sinyal\n   ' + line(r.h, r.s);
     const a = A.find(x => x.src === r.src);
     if (a && a.g > 1) msg += '\n   <i>tüm günler: ' + a.n + ' sinyal → %' + pc(a.h, a.h + a.s) + '</i>';
@@ -322,7 +322,7 @@ export async function sigToday(env) {
   if (todayCache.v && Date.now() - todayCache.at < 30e3) return todayCache.v;
   await sigEnsure(env);
   const d0 = Date.parse(trDay(Date.now()) + 'T00:00:00Z') - TRMS;
-  const rows = (await env.BT.prepare("SELECT t, src, sym, dir, px, sc, meta, done, o10, o15, mfe, mae, rc FROM sig INDEXED BY sig_t WHERE t >= ? AND src NOT LIKE 'kap-%' ORDER BY t DESC LIMIT 60").bind(d0).all()).results || [];
+  const rows = (await env.BT.prepare("SELECT t, src, sym, dir, px, sc, meta, done, o10, o15, mfe, mae, rc FROM sig INDEXED BY sig_t WHERE t >= ? AND src NOT LIKE 'kap-%' AND src <> 'sessiz' ORDER BY t DESC LIMIT 60").bind(d0).all()).results || [];
   const v = { ok: true, at: Date.now(), list: rows.map(r => { let m = null; try { m = r.meta ? JSON.parse(r.meta) : null; } catch (e) {} return { ...r, meta: m }; }) };
   todayCache = { at: Date.now(), v };
   return v;
@@ -355,7 +355,7 @@ export async function weeklySummary(env, tgSend, kvGet, esc, pushSend) {
   const ws = await env.BT.prepare("SELECT v FROM meta WHERE k = 'weeksum'").first(); if (ws && ws.v === today) return null;
   await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('weeksum', ?)").bind(today).run();
   const from = new Date(Date.now() + TRMS - 6 * 864e5).toISOString().slice(0, 10);
-  const HS = "CASE WHEN src = 'momentum' THEN o15 ELSE o10 END";
+  const HS = "CASE WHEN src IN ('momentum','sessiz') THEN o15 ELSE o10 END";
   const R = (await env.BT.prepare("SELECT src, count(*) n, sum(" + HS + " = 1) h, sum(" + HS + " = 2) s, avg(rc) rc FROM sig WHERE d >= ? AND done = 1 AND err IS NULL AND src NOT LIKE 'kap-%' AND src <> 'tavan' GROUP BY src").bind(from).all()).results || [];
   const AG = (await env.BT.prepare("SELECT (json_extract(meta, '$.fc') >= 0.8) g, sum(o10 = 1) h, sum(o10 = 2) s FROM sig WHERE src = 'algi' AND d >= ? AND done = 1 AND err IS NULL GROUP BY 1").bind(from).all()).results || [];
   const K = (await env.BT.prepare("SELECT src, count(*) n, sum(o10 = 1) h, sum(o10 = 2) s FROM sig WHERE d >= ? AND done = 1 AND err IS NULL AND src LIKE 'kap-%' AND src <> 'kap-devre' GROUP BY src HAVING n >= 8").bind(from).all()).results || [];
@@ -377,7 +377,7 @@ export async function weeklySummary(env, tgSend, kvGet, esc, pushSend) {
   if (T && T.n) msg += '\n\n🚀 <b>Tavan takibi</b> — ' + T.n + ' hisse · açılış ort. ' + (T.g >= 0 ? '+' : '') + '%' + (+T.g).toFixed(1) + ' · %' + pc(T.up, T.n) + ' yukarı açıldı';
   if (K.length) { msg += '\n\n📰 <b>KAP (en iyi ve en kötü)</b>'; const ks = K.map(r => ({ k: r.src.slice(4), n: r.n, p: pc(r.h, r.h + r.s) })).sort((a, b) => b.p - a.p); [...ks.slice(0, 2), ...ks.slice(-2)].filter((x, i, a) => a.indexOf(x) === i).forEach(x => { msg += '\n   ' + esc(KAP_TR[x.k] || x.k) + ': %' + x.p + ' (' + x.n + ')'; }); }
   try { const P = await paperCalc(env, true), W = P.days.filter(x => x.d >= from); if (W.length) { const pl = W.reduce((a, x) => a + x.pl, 0), n = W.reduce((a, x) => a + x.n, 0); msg += '\n\n🤖 <b>Kâğıt üzerinde bot</b> — bu hafta ' + n + ' işlem → <b>' + (pl >= 0 ? '+' : '−') + Math.abs(pl).toLocaleString('tr-TR') + ' TL</b> · ' + W.filter(x => x.pl > 0).length + '/' + W.length + ' gün kârda'; }
-    const BR = (P.bots || []).filter(b => b.n); if (BR.length) { msg += '\n🏁 <b>Bot yarışı</b> (bu hafta)'; [...BR].sort((a, b) => b.hafta - a.hafta).forEach((b, i) => { msg += '\n   ' + (i + 1) + '. ' + esc(b.ad) + ': ' + (b.hafta >= 0 ? '+' : '−') + Math.abs(b.hafta).toLocaleString('tr-TR') + ' TL'; }); } } catch (e) {}
+    const BR = (P.bots || []).filter(b => b.n && b.k !== 'sessiz'); if (BR.length) { msg += '\n🏁 <b>Bot yarışı</b> (bu hafta)'; [...BR].sort((a, b) => b.hafta - a.hafta).forEach((b, i) => { msg += '\n   ' + (i + 1) + '. ' + esc(b.ad) + ': ' + (b.hafta >= 0 ? '+' : '−') + Math.abs(b.hafta).toLocaleString('tr-TR') + ' TL'; }); } } catch (e) {}
   if (oner.length) msg += '\n\n💡 <b>Öneriler</b>\n' + oner.map(x => '• ' + esc(x)).join('\n');
   msg += '\n\n<i>Hiçbir değişiklik onayın olmadan yapılmaz.</i>';
   const cfg = await kvGet(env, 'cfg', null);

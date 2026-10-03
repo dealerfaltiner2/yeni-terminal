@@ -125,6 +125,10 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   analyze() (15 dk mum, Fırsat derin taramayla aynı not) → A/B/C + ön şartlar (gate) + 6 puan maddesi (analyze'a yalnız bilgi alanı stk/nss eklendi, not mantığı DEĞİŞMEDİ),
   mtfStrip + ölçerler, planOf seviyeleri + hacim profili, warnsOf/sigNotes/KAP uyarıları, hissenin 60 günlük karnesi (Worker /sigsym, sig_sym indeksi, 5 dk önbellek), 'yatırım tavsiyesi değildir'.
   Fırsat kartı: zaman dilimi şeridi + 4 ölçer artık Detay'a basmadan görünür.
+- v8.6 (03.10 gece, Fatih onayıyla) SESSİZ TREND — SESSİZ KAYIT (araştırma DEVIR 6c): sesScan() 10:31–10:50 bir kez (motor ya da motor yokken ana cihaz),
+  15 dk mumlardan rise.js ile BİREBİR formül (sesCalc; testte eşitlik kontrolü): d20≥10, dist≥−3, vr30<1, rng30/adr<0,5, adr≥5 → sigPost src 'sessiz' (en çok 10). Telegram/bildirim/ekranda sinyal YOK.
+  ±%1,5 ile ölçülür (HS ve K'de momentum gibi). Günlük karne mesajında, sigToday'de ve Telegram'daki yarış satırlarında gösterilmez; Karne ekranı + bot yarışında '🤫 Sessiz trend' botu.
+  Karar: ~3 Kasım'da (bir ay) karne + bot yarışı + sessiz trend birlikte değerlendirilecek.
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.

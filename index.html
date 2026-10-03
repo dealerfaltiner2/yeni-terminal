@@ -3241,7 +3241,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="8.5";window.APPV=APP_VER;
+  const APP_VER="8.6";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4009,7 +4009,7 @@ document.getElementById('infosheet').addEventListener('click',e=>{if(e.target.cl
 </style>
 <script>
 /* ================= v6.9 SUNUCU KARNESİ ================= */
-const KSRC=[['firsat-A','🅰️ Fırsat A'],['firsat-B','🅱️ Fırsat B'],['algi','⚡ Algı'],['momentum','🧪 Momentum (deneme)'],['radar','📡 Sunucu radarı']];
+const KSRC=[['firsat-A','🅰️ Fırsat A'],['firsat-B','🅱️ Fırsat B'],['algi','⚡ Algı'],['momentum','🧪 Momentum (deneme)'],['sessiz','🤫 Sessiz trend (sessiz kayıt)'],['radar','📡 Sunucu radarı']];
 const KAPTR={is:'Yeni iş/sözleşme',ihale:'İhale',geri:'Geri alım',bedelsiz:'Bedelsiz',bedelli:'Bedelli',tahsisli:'Sermaye artırımı',teklif:'Pay alım teklifi',birlesme:'Birleşme/devir',tesvik:'Teşvik',temettu:'Temettü',bilanco:'Bilanço',not:'Kredi notu',icerden:'İçeriden alım-satım',yatirim:'Yatırım',varlik:'Varlık alım/satım',ozel:'Özel durum',risk:'Risk',kisit:'İşlem kısıtı',ceza:'Ceza/dava'};
 let KST_LOADING=null,KST_TRY=0;
 // hata mesajını bir kez göstermek için tek seferlik yeniden çizim (kstatLoad 60 sn kısıtlı olduğundan döngü olmaz)
@@ -4942,6 +4942,7 @@ function jrAnalysis(){const C=(S.jr||[]).filter(j=>j.r!=null&&j.pct!=null);
 // Deneme laboratuvarı: test edilen fikirler ve sonuçları (13 aylık veri: eski dönem = 15.03.2026 öncesi, yeni = sonrası; taban 10:30 alımı ~%43)
 const LAB=[
  {ad:'Momentum (5 gün +%5, dün +%3, oynak, sabah koşmamış)',kural:'10:30\'da al · ±%1,5',eski:64,yeni:60,n:242,durum:'canli',not:'3 Ekim\'den beri canlı deneme — karnede "Momentum" satırı.'},
+ {ad:'Sessiz trend (trendde, zirveye yakın, sabah hacimsiz ve sıkışık, oynak hisse)',kural:'10:30\'da al · ±%1,5',eski:60,yeni:60,n:250,durum:'canli',not:'4 Ekim\'den beri SESSİZ KAYIT: bildirim yok, yalnız karne ve bot yarışında "🤫 Sessiz trend". Bir ay sonra bakılacak.'},
  {ad:'Gücü süren oynak hisse (5 gün +%5, oynaklık %6+)',kural:'10:30\'da al · ±%1,5',eski:58,yeni:59,n:775,durum:'bulgu',not:'14 ayın 14\'ünde %50 üstü. Momentum\'un geniş hali.'},
  {ad:'Dünkü güç (dün +%3, oynaklık %5+, sabah <%1)',kural:'10:30\'da al · ±%2',eski:60,yeni:58,n:775,durum:'bulgu',not:'60 farklı hisseye yayılıyor, tek hisseye bağlı değil.'},
  {ad:'Tavan kapanan hisse ertesi gün',kural:'tavanda tut · açılışta sat',eski:76,yeni:null,n:null,durum:'canli',not:'%76 yukarı açılış, ort. +%1,8. 3 Ekim\'den beri karnede "Tavan takibi".'},
@@ -4960,7 +4961,7 @@ function labHtml(){const D={canli:['🟢','Canlıda deneniyor'],bulgu:['🔵','G
    Gerçek para yok, emir yok. Sunucu (/paper) karnedeki sinyalleri "bot alsaydı ne olurdu?" diye hesaplar:
    seçili kaynaklar, işlem başına sabit tutar, Momentum ±%1,5 / diğerleri ±%1, gelmezse gün sonu kapanışı, %0,1 kayma payı, günde en çok N işlem. */
 const PAPER={at:0,v:null,err:null,busy:false};
-const PSRC={'firsat-A':'🅰️ Fırsat A','firsat-B':'🅱️ Fırsat B',algi:'⚡ Algı',momentum:'🧪 Momentum',radar:'📡 Radar'};
+const PSRC={'firsat-A':'🅰️ Fırsat A','firsat-B':'🅱️ Fırsat B',algi:'⚡ Algı',momentum:'🧪 Momentum',radar:'📡 Radar',sessiz:'🤫 Sessiz trend'};
 function paperLoad(force){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||PAPER.busy)return;if(!force&&Date.now()-PAPER.at<120e3)return;
  PAPER.busy=true;PAPER.at=Date.now();
  fetch(dq(b+'/paper')).then(r=>r.json()).then(j=>{if(j&&j.ok){PAPER.v=j;PAPER.err=null}else PAPER.err=(j&&j.error)||'alınamadı'}).catch(()=>{PAPER.err='sunucuya ulaşılamadı'})
@@ -5117,6 +5118,48 @@ function xrayRender(){const body=document.getElementById('xr_body');if(!body)ret
   '<div class="xnote sm" style="text-align:center">Bu bir yatırım tavsiyesi değildir; not, teknik göstergelerin anlık özetidir.</div>';
  body.innerHTML=h}
 function xrayWatch(sym){if(!W().includes(sym)){W().push(sym);try{saveWL()}catch(e){LS.set('wl',WL)}try{renderWatch()}catch(e){}}xrayRender()}
+/* ================= v8.6 SESSİZ TREND (SESSİZ KAYIT) =================
+   Araştırma (docs/DEVIR.md 6c): trendde (20 günde ≥+%10, 20 günlük zirveye ≤%3) bir hisse sabah SESSİZ (ilk 30 dk hacmi son 20 günün
+   ilk 30 dk ortalamasının altında) ve SIKIŞIK (ilk 30 dk aralığı < günlük ort. aralığın yarısı) ve oynak (20 gün ort. aralık ≥%5)
+   → 10:30'da al, ±%1,5. Geçmişte eski %60 / yeni %60. Formüller worker/src/rise.js ile BİREBİR aynı (15 dk mumlardan günlük).
+   SESSİZ KAYIT: Telegram, bildirim, ekranda sinyal YOK — yalnız karneye 'sessiz' kaynağı (bot yarışında '🤫 Sessiz trend' botu).
+   Motor varsa motor, yoksa ana cihaz; hafta içi 10:31–10:50 arasında günde bir kez. */
+const SES={day:LS.get('sesDay',''),busy:false,last:null};
+function sesDays(cs){const M=new Map();
+ for(const b of cs||[]){const t=typeof b.time==='string'?Date.parse(b.time)/1000:b.time;if(!(t>0))continue;const ist=t+10800,d=Math.floor(ist/86400),m=Math.floor((ist%86400)/60);
+  let x=M.get(d);if(!x){x={d,o:b.open,h:b.high,l:b.low,c:b.close,v:0,v30:0,c30:null,h30:-Infinity,l30:Infinity};M.set(d,x)}
+  x.h=Math.max(x.h,b.high);x.l=Math.min(x.l,b.low);x.c=b.close;x.v+=b.volume||0;
+  if(m+15<=630){x.v30+=b.volume||0;x.c30=b.close;x.h30=Math.max(x.h30,b.high);x.l30=Math.min(x.l30,b.low)}}
+ return [...M.values()].sort((a,b)=>a.d-b.d)}
+// cs: 15 dk mumlar; today: İstanbul gün numarası (Math.floor((ms/1000+10800)/86400))
+function sesCalc(cs,today){const S2=sesDays(cs),i=S2.length-1;if(i<21)return null;const x=S2[i];if(x.d!==today||x.c30==null)return null;
+ const pc=S2[i-1].c;if(!(pc>0))return null;
+ let v30=0;for(let j=i-20;j<i;j++)v30+=S2[j].v30;v30/=20;const vr30=v30>0?x.v30/v30:null;
+ const d20=(pc/S2[i-21].c-1)*100;let h20=-Infinity;for(let j=i-20;j<i;j++)h20=Math.max(h20,S2[j].h);const dist=(pc/h20-1)*100;
+ let adr=0;for(let j=i-20;j<i;j++)adr+=(S2[j].h-S2[j].l)/S2[j].c;adr=adr/20*100;
+ const rng30=isFinite(x.h30)?(x.h30-x.l30)/pc*100:null,rr=rng30!=null&&adr>0?rng30/adr:null,r30=(x.c30/pc-1)*100;
+ const ok=d20>=10&&dist>=-3&&vr30!=null&&vr30<1&&rr!=null&&rr<0.5&&adr>=5;
+ return {ok,d20,dist,vr30,rr,adr,r30,c30:x.c30}}
+async function sesScan(force){
+ const d=momDay();if(SES.busy||(!force&&SES.day===d))return null;
+ const t=new Date(Date.now()+3*3600e3),m=t.getUTCHours()*60+t.getUTCMinutes(),wd=t.getUTCDay();
+ if(!force){if(wd<1||wd>5||m<631||m>=650)return null;if(!(BOTMODE||(!S.botAlive&&LS.get('ownTok',''))))return null}
+ if(!(S.uni&&S.uni.length))return null;
+ SES.busy=true;
+ try{
+  const today=Math.floor((Date.now()/1000+10800)/86400);
+  // ön eleme (yalnız hız için; asıl kural sesCalc'ta): büyük/likit hisseler, ayda ≥+%5, bugün sakin
+  const pre=S.uni.filter(o=>o.close>0&&(o.market_cap_basic||0)>0).sort((a,b)=>(b.market_cap_basic||0)-(a.market_cap_basic||0)).slice(0,160)
+   .filter(o=>o['Perf.1M']!=null&&o['Perf.1M']>=5&&o.change!=null&&Math.abs(o.change)<4).slice(0,60);
+  const out=[];
+  for(const o of pre){let cs;try{cs=await getBars(o.name,'15min')}catch(e){continue}
+   const r=sesCalc(cs,today);if(r&&r.ok){const px=(S.quotes[o.name]&&S.quotes[o.name].close)||o.close;out.push(Object.assign({s:o.name,px},r))}}
+  SES.day=d;LS.set('sesDay',d);SES.last={at:Date.now(),aday:pre.length,list:out};
+  for(const x of out.slice(0,10))sigPost({src:'sessiz',sym:x.s,t:Date.now(),px:x.px,sc:Math.round(x.d20),dir:'AL',meta:{d20:+x.d20.toFixed(1),dist:+x.dist.toFixed(1),vr30:+x.vr30.toFixed(2),rr:+x.rr.toFixed(2),adr:+x.adr.toFixed(1),r30:+x.r30.toFixed(2)}});
+  return out;
+ }finally{SES.busy=false}
+}
+setInterval(()=>{try{sesScan(false)}catch(e){}},30000);
 </script>
 </body>
 </html>

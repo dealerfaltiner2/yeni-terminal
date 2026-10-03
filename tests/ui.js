@@ -110,6 +110,14 @@ async function page(b, opt) {
       ok('Hisse röntgeni: not, ön şartlar, puan, seviyeler, karne görünüyor', /Ön şartlar/i.test(xr.t) && /Puan: 6'da/i.test(xr.t) && /Seviyeler/i.test(xr.t) && /karnesi/i.test(xr.t) && /tavsiyesi değildir/.test(xr.t), xr.t.slice(0, 160));
       ok('Hisse röntgeni: olmayan hisse için uyarı', /bulamadım/.test(xr.t2));
       ok('Fırsat kartında ölçerler Detay\'a basmadan görünüyor', await T(() => { showTab('op'); const c = document.querySelector('#oplist .card.v6'); return !!c && !!c.querySelector(':scope > .mts') && !!c.querySelector(':scope > .mtf'); }));
+      { const T0 = Date.UTC(2026, 8, 1, 7, 0) / 1000, bars = []; let px = 10, seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+        for (let day = 0; day < 30; day++) { const d0 = T0 + day * 86400; if ([0, 6].includes(new Date(d0 * 1000).getUTCDay())) continue;
+          for (let k = 0; k < (day === 29 ? 2 : 33); k++) { const o = px; px = px * (1 + (rnd() - 0.45) * 0.01); bars.push([d0 + k * 900, o, Math.max(o, px) * 1.003, Math.min(o, px) * 0.997, px, Math.round(1e4 * (0.5 + rnd()))]); } }
+        const { riseRows } = await import(require('path').resolve(__dirname, '..', 'worker', 'src', 'rise.js'));
+        const R = riseRows(bars, []).pop();
+        const c = await T(b => { const cs = b.map(x => ({ time: x[0], open: x[1], high: x[2], low: x[3], close: x[4], volume: x[5] })); const today = Math.floor((b[b.length - 1][0] + 10800) / 86400); return sesCalc(cs, today); }, bars);
+        const eq = (a, b) => Math.abs(a - b) < 0.02;
+        ok('Sessiz trend: canlı hesap araştırmayla birebir (20g, zirve, hacim, aralık, oynaklık)', c && R && eq(c.d20, R[8]) && eq(c.dist, R[9]) && eq(c.vr30, R[5]) && eq(c.rr, R[21] / R[22]) && eq(c.adr, R[22]), JSON.stringify({ c, R: R && [R[8], R[9], R[5], R[21], R[22]] })); }
       ok('Deneme laboratuvarı listeleniyor', await T(() => /Deneme laboratuvarı/.test(labHtml()) && /Momentum/.test(labHtml())));
       ok('yeni ikon kurulumu: yapıştırılan bilgi adres + kodu yerine koyuyor', su.got === 'wss://x.test/k' && su.own === 'kod123', JSON.stringify(su));
       const mm = await T(() => { const D = []; let c = 100; for (let i = 0; i < 25; i++) { c = i === 24 ? c * 1.04 : i >= 20 ? c * 1.01 : c; D.push({ open: c, high: c * 1.035, low: c * 0.965, close: c, volume: 2e6 }); }

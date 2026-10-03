@@ -92,7 +92,7 @@ Hedef: hedef = stop (±%1, ±%1,5, ±%2) iken %60+ tutan, 10:30'da bilinebilen �
     ±1,5: %56 / %55 (n 791/404), kapanış +0,09 / +0,16. Aynı trend + YÜKSEK hacim: %47 / %57, kapanış −0,03 / −0,25.
   SESSİZ TREND + oynak hisse (adr ≥%5): ±1,5 %60 / %60, ±2 %60 / %60, kapanış +0,33 / +0,55 (n 130/120). Hacim <0,7x ile: %59 / %67 (n 92/78).
   Sessiz trend ∩ Momentum: %88 / %75 ama n 17/21 (çok az). Haftanın günü dağılımı: 46–69 (Çarşamba zayıf, küçük n).
-- Öneri (Fatih onayı bekliyor): 'Sessiz trend' momentum gibi 10:30 canlı deneme kaynağı; karne + bot yarışında ölçülür.
+- 03.10 Fatih kararı: bir ay bekle; Sessiz trend SESSİZ KAYIT olarak açıldı (v8.6, src 'sessiz', bildirim yok). ~3 Kasım'da toplu değerlendirme.
 
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
