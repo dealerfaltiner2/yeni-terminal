@@ -10,7 +10,8 @@ export async function sigEnsure(env) {
     env.BT.prepare('CREATE TABLE IF NOT EXISTS sig (id INTEGER PRIMARY KEY AUTOINCREMENT, d TEXT, t INTEGER, src TEXT, sym TEXT, dir TEXT, px REAL, sc REAL, dev TEXT, meta TEXT, done INTEGER DEFAULT 0, o10 INTEGER, o15 INTEGER, r15 REAL, r60 REAL, rc REAL, mfe REAL, mae REAL, idx REAL, err TEXT)'),
     env.BT.prepare('CREATE INDEX IF NOT EXISTS sig_done ON sig(done, t)'),
     env.BT.prepare('CREATE INDEX IF NOT EXISTS sig_d ON sig(d)'),
-    env.BT.prepare('CREATE INDEX IF NOT EXISTS sig_t ON sig(t)')
+    env.BT.prepare('CREATE INDEX IF NOT EXISTS sig_t ON sig(t)'),
+    env.BT.prepare('CREATE INDEX IF NOT EXISTS sig_sym ON sig(sym, d)')
   ]);
   try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN pre REAL').run(); } catch (e) {} // giriş fiyatı ↔ önceki kapanış (haber etkisi girişten önce mi?)
   try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN adr REAL').run(); } catch (e) {} // v6.6: hissenin son 20 gün ortalama günlük aralığı % (oynaklık)
@@ -194,6 +195,22 @@ export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
   let rapor = null;
   if (m >= 1260) { try { rapor = await sigSummary(env, tgSend, kvGet, esc, nf); } catch (e) {} }
   return { olculen: n, verisiz: bos, kalan: ready.length - n, hisse: syms, rapor: rapor ? !!rapor.gonderildi : null };
+}
+// v8.5 HİSSE RÖNTGENİ — bir hissenin son 60 gündeki sinyal karnesi (kaynak kaynak). 5 dk önbellek, sig_sym indeksi.
+const symCache = new Map();
+export async function sigSym(env, sym) {
+  sym = String(sym || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+  if (!sym) return { ok: false, error: 'hisse yok' };
+  const c = symCache.get(sym); if (c && Date.now() - c.at < 5 * 60e3) return c.v;
+  await sigEnsure(env);
+  const from = trDay(Date.now() - 60 * 86400e3);
+  const HS = "CASE WHEN src = 'momentum' THEN o15 ELSE o10 END";
+  const rows = (await env.BT.prepare("SELECT src, count(*) n, sum(" + HS + " = 1) h, sum(" + HS + " = 2) s, max(d) son FROM sig INDEXED BY sig_sym WHERE sym = ? AND d >= ? AND done = 1 AND err IS NULL AND src <> 'kap-devre' GROUP BY src").bind(sym, from).all()).results || [];
+  const last = (await env.BT.prepare("SELECT d, t, src, o10, o15, rc FROM sig INDEXED BY sig_sym WHERE sym = ? AND d >= ? AND done = 1 AND err IS NULL AND src <> 'kap-devre' ORDER BY d DESC, t DESC LIMIT 6").bind(sym, from).all()).results || [];
+  const v = { ok: true, sym, src: rows, last };
+  if (symCache.size > 200) symCache.clear();
+  symCache.set(sym, { at: Date.now(), v });
+  return v;
 }
 // v8.4: bot yarışı ölçümleri (tx, pb, pbn) eklenmeden önce ölçülmüş sinyalleri geriye dönük tamamla.
 // Yalnız ölçülecek sinyal yokken çalışır; her çalışmada en çok 3 hisse. Önce pbn = -1 yazılır (yarıda kesilirse sonsuza dek denenmesin).

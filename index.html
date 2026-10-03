@@ -485,6 +485,7 @@ td.fl-up,td.fl-dn{border-radius:4px}
     <button class="ic" onclick="toggleFilt()" id="filtbtn">⚙</button>
     <button class="ic" onclick="toggleInfo()">ⓘ</button>
     <button id="deepbtn" onclick="deepScan()">⚡ Derin tara</button>
+    <button class="ic" onclick="xrayOpen()" title="Hisse röntgeni">🔍</button>
     <div class="seg" id="viewseg2"><button data-v="card" class="on">Kart</button><button data-v="table">Tablo</button></div>
    </div>
    <div class="sheet" id="filtsheet">
@@ -1615,12 +1616,12 @@ function cardHtml(o,ix){const dir=S.dir,tf=S.stf;
    (p.share!=null?'<tr><td>Günlük hacmin</td><td style="text-align:right;color:'+(p.share>2?'var(--dn)':'var(--txt2)')+'">'+nf(p.share,2)+'%'+(p.share>2?' · doldurmak zor':'')+'</td></tr>':'')+
    '</table>'):'';
   const detail='<button class="planbtn detbtn" onclick="togglePlan(\''+o.name+'\')">Detay'+(p?' · İşlem planı':'')+' <span>▾</span></button>'+
-   '<div class="plan" id="pl_'+o.name+'">'+mtfStrip(o)+meters+wrest+'<div class="dsub">Göstergeler</div><div class="why">'+whyText(o,tf)+'</div><div class="dsub">Bağlam</div>'+ctx+planT+'</div>';
+   '<div class="plan" id="pl_'+o.name+'">'+wrest+'<div class="dsub">Göstergeler</div><div class="why">'+whyText(o,tf)+'</div><div class="dsub">Bağlam</div>'+ctx+planT+'</div>';
   return '<div class="card v6'+(ix<3?' top':'')+'" onclick="selectSym(\''+o.name+'\',\'bist\')">'+
    '<div class="crow"><div class="cl"><div class="cn"><span class="cname">'+o.name+'</span>'+badge+alb+(isNew?'<span class="newtag">YENİ</span>':'')+(rise?'<span class="rise">▲ güçleniyor</span>':'')+'</div>'+
    '<div class="cdesc">'+htmlEsc((o.description||'').slice(0,30))+'</div></div>'+
    (typeof sparkFor==='function'?sparkFor(o.name,64,26):'')+'<div class="cprice"><b>'+nf(o.close)+'</b><i class="'+cls(o.change)+'">'+pct(o.change)+'</i><i class="vol">'+big(o.voltl)+' ₺</i></div></div>'+
-   '<div class="tags">'+tags+'</div>'+whyChips(o,dir,al,m,pr)+w0+detail+'</div>';
+   '<div class="tags">'+tags+'</div>'+mtfStrip(o)+meters+whyChips(o,dir,al,m,pr)+w0+detail+'</div>';
 }
 // v6.9: "Neden listede?" — puanı en çok etkileyen bulgular düz Türkçe (✓ lehte / ○ eksik)
 function whyChips(o,dir,al,m,pr){try{
@@ -2074,7 +2075,7 @@ function analyze(cs,sym){
   if(!touch)return;
   kvw={side:above?'AL':'SAT',d:vwD,conf,sq};
  })();
- return{dir,bars,side,grade:!gate?'C':p>=5?'A':p>=3?'B':'C',pts:p,zone,pocD,valD,vahD,ref,vr,vwUp,vwD,atrPct,sq,vcp,pull,kvw,above50:px>e50[n],px,t:Date.now()};
+ return{dir,bars,side,grade:!gate?'C':p>=5?'A':p>=3?'B':'C',pts:p,stk:(e9[n]>e21[n]&&e21[n]>e50[n])?1:(e9[n]<e21[n]&&e21[n]<e50[n])?-1:0,nss:ss.length,zone,pocD,valD,vahD,ref,vr,vwUp,vwD,atrPct,sq,vcp,pull,kvw,above50:px>e50[n],px,t:Date.now()};
 }
 async function watchLoop(){
  while(true){
@@ -3240,7 +3241,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="8.4.1";window.APPV=APP_VER;
+  const APP_VER="8.5";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4361,6 +4362,33 @@ tr.row:active td{background:var(--card2)}
 .labm{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px;font-size:11.5px;color:var(--txt2)}.labm b{color:#fff}.labm b.up{color:var(--up)}.labm b.dn{color:#ff7a88}
 .labm em{font-style:normal;font-weight:700;color:var(--dim)}.labr.canli .labm em{color:var(--up)}.labr.red .labm em{color:#ff7a88}.labr.bulgu .labm em{color:#7dd3fc}
 .labn{font-size:11.5px;color:var(--dim);margin-top:3px;line-height:1.45}
+#xray{position:fixed;inset:0;z-index:91;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+#xray.on{display:flex}
+.xbox{width:100%;max-width:560px;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:22px 22px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom));background:linear-gradient(180deg,#131c29,#0b1119);border:1px solid rgba(255,255,255,.1);box-sizing:border-box}
+.xh{display:flex;align-items:center;margin-bottom:10px}.xh b{font-size:17px;color:#fff}.xh button{margin-left:auto;background:none;border:0;color:var(--dim);font-size:18px}
+.xin{display:flex;gap:8px}.xin input{flex:1;min-width:0;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:#fff;font:800 16px var(--sans);text-transform:uppercase}
+.xin button{padding:0 18px;border-radius:12px;border:0;background:#fbbf24;color:#111;font:900 15px var(--sans)}
+.xsug{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.xsug button{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);border-radius:10px;padding:6px 9px;color:#fff;text-align:left}
+.xsug b{display:block;font-size:13px}.xsug small{font-size:10px;color:var(--dim)}
+.xnote{font-size:12.5px;color:var(--txt2);line-height:1.5;margin:12px 0 4px}.xnote.sm{font-size:11px;color:var(--dim);margin:6px 0}
+.xhd{display:flex;align-items:center;margin:14px 0 10px}.xhd>div:first-child{flex:1;min-width:0}.xhd b{font-size:22px;color:#fff;letter-spacing:.3px}.xhd small{display:block;font-size:11.5px;color:var(--dim)}
+.xpx{text-align:right}.xpx b{display:block;font-size:20px}.xpx i{font-style:normal;font-weight:800;font-size:13px}
+.xgr{display:flex;gap:12px;align-items:center;padding:12px;border-radius:16px;margin-bottom:10px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
+.xg{width:54px;height:54px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font:900 28px var(--sans)}
+.xgr.gA{border-color:rgba(0,211,160,.35);background:rgba(0,211,160,.07)}.xgr.gA .xg{background:var(--up);color:#04140f}
+.xgr.gB{border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.06)}.xgr.gB .xg{background:#fbbf24;color:#1a1200}
+.xgr.gC .xg{background:rgba(255,255,255,.1);color:var(--txt2)}
+.xgt b{display:block;font-size:15px;color:#fff}.xgt span{display:block;font-size:12px;color:var(--txt2);margin-top:2px}.xgt small{display:block;font-size:10.5px;color:var(--dim);margin-top:4px}
+.xwhy div{font-size:12.5px;line-height:1.5;padding:3px 0;color:var(--txt2)}.xwhy .ok{color:#d1fae5}.xwhy .no{color:var(--dim)}
+.xchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.xchips span{font-size:11.5px;padding:4px 8px;border-radius:9px;background:rgba(125,211,252,.1);color:#bae6fd}
+.xlv{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.xlv div{background:rgba(255,255,255,.04);border-radius:12px;padding:8px;text-align:center}
+.xlv small{display:block;font-size:10px;color:var(--dim)}.xlv b{display:block;font-size:14px;color:#fff;font-variant-numeric:tabular-nums}.xlv b.up{color:var(--up)}.xlv b.dn{color:#ff7a88}.xlv i{font-style:normal;font-size:10px;color:var(--dim)}
+.xks div{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid rgba(255,255,255,.05);font-size:12.5px}.xks div:first-child{border-top:0}
+.xks span{flex:1;color:#fff}.xks b{font-weight:700;color:var(--txt2);font-size:11.5px}.xks i{font-style:normal;font-size:11.5px;color:var(--dim)}.xks i.up{color:var(--up)}.xks i.dn{color:#ff7a88}
+.xbtn{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.xbtn button{padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#fff;font:800 13.5px var(--sans)}
+.xsearch{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:12px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--dim);font-size:14px;cursor:pointer}
+.xsearch b{color:#fff;font-size:16px}.xsearch span{flex:1}.xsearch em{font-style:normal;font-size:11px;font-weight:800;color:#fbbf24;border:1px solid rgba(251,191,36,.35);border-radius:8px;padding:3px 7px}
+.card.v6 .mtf{margin-top:8px}.card.v6 .mts{margin-top:6px}
 .pp2{border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 14px 12px;margin-bottom:12px;background:radial-gradient(120% 80% at 0% 0%,rgba(0,211,160,.10),transparent 60%),linear-gradient(180deg,#111a26,#0b111a);box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .pp2-empty{font-size:13px;color:var(--txt2);line-height:1.5}
 .pp2-top{display:flex;gap:10px;align-items:flex-start}.pp2-main{flex:1;min-width:0}
@@ -4597,7 +4625,7 @@ function nMe(){const td=todayStr(),J=S.jr||[];const cl=J.filter(j=>j.closeD===td
 function renderNow(){
  const el=document.getElementById('nowbody');if(!el)return;nowKapLoad();ecalLoad();idxLoad();sigTodayLoad();
  const s=nowSess(),today=new Date(Date.now()+3*3600e3).toISOString().slice(0,10);
- let h=nHero(),main='',side='';
+ let h='<div class="xsearch" onclick="xrayOpen()"><b>🔍</b><span>Hisse sorgula: not, puan, seviye</span><em>RÖNTGEN</em></div>'+nHero(),main='',side='';
  const prepTime=s.wk&&((s.m>=480&&s.m<600)||s.m>=1095);
  if(prepTime)h+=nPrep(s);
  if(s.open||s.wk&&s.m>=1080&&s.m<1095)main+=nLive();
@@ -5006,6 +5034,89 @@ async function paperSave(){const b=srvBase(S.tvproxy),g=id=>+String((document.ge
  try{const j=await fetch(qAdd(dq(b+'/paper-set'),ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)}).then(r=>r.json());
   if(j&&j.ok){PAPER.v=j;PAPER.at=Date.now();renderLab();alert('✓ Bot ayarları kaydedildi.')}else alert('Kaydedilemedi: '+((j&&j.error)||'bilinmeyen'))}catch(e){alert('Sunucuya ulaşılamadı.')}}
 (function(){const _rl=renderLab;window.renderLab=renderLab=function(){_rl.apply(this,arguments);try{const el=document.getElementById('labbody');if(el)el.insertAdjacentHTML('afterbegin',paperFull())}catch(e){}}})();
+/* ================= v8.5 HİSSE RÖNTGENİ =================
+   Hisse adını yaz → tek kartta: A/B/C notu ve nedeni, zaman dilimi şeridi + ölçerler, seviyeler, uyarılar, bu hissenin sinyal karnesi.
+   Not, Fırsat derin taramasıyla aynı hesap (analyze, 15 dk mumlar, AL yönü). Yatırım tavsiyesi değildir. */
+const XR={sym:'',busy:false,a:null,err:'',ks:null};
+function xrayOpen(sym){let m=document.getElementById('xray');if(!m){m=document.createElement('div');m.id='xray';m.onclick=e=>{if(e.target===m)xrayClose()};document.body.appendChild(m)}
+ m.innerHTML='<div class="xbox"><div class="xh"><b>🔍 Hisse röntgeni</b><button onclick="xrayClose()">✕</button></div>'+
+  '<div class="xin"><input id="xr_in" placeholder="Hisse adı yaz: ASELS, THYAO…" autocapitalize="characters" autocomplete="off" spellcheck="false" value="'+htmlEsc(sym||'')+'"><button onclick="xrayGo()">Bak</button></div>'+
+  '<div id="xr_sug"></div><div id="xr_body"><div class="xnote">Hisse adını yaz; notunu, puanlarını, seviyelerini ve sistemin bu hissedeki karnesini göstereyim.</div></div></div>';
+ m.classList.add('on');const i=document.getElementById('xr_in');
+ i.addEventListener('input',xraySug);i.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();xrayGo()}});
+ try{kstatLoad()}catch(e){}
+ if(sym)xrayGo(sym);else setTimeout(()=>{try{i.focus()}catch(e){}},50)}
+function xrayClose(){const m=document.getElementById('xray');if(m)m.classList.remove('on')}
+function xraySug(){const el=document.getElementById('xr_sug'),q=String(document.getElementById('xr_in').value||'').toUpperCase().replace(/[^A-Z0-9ÇĞİÖŞÜ]/g,'');
+ if(!el)return;if(!q){el.innerHTML='';return}
+ const L=(S.uni||[]).filter(o=>o.name&&(o.name.startsWith(q)||String(o.description||'').toUpperCase().includes(q))).sort((a,b)=>(b.name.startsWith(q)-a.name.startsWith(q))||(b.voltl||0)-(a.voltl||0)).slice(0,6);
+ el.innerHTML=L.length?'<div class="xsug">'+L.map(o=>'<button onclick="xrayGo(\''+o.name+'\')"><b>'+o.name+'</b><small>'+htmlEsc(String(o.description||'').slice(0,22))+'</small></button>').join('')+'</div>':''}
+async function xrayGo(sym){const i=document.getElementById('xr_in');sym=String(sym||(i&&i.value)||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(!sym)return;
+ if(i)i.value=sym;const sg=document.getElementById('xr_sug');if(sg)sg.innerHTML='';try{i&&i.blur()}catch(e){}
+ const body=document.getElementById('xr_body');
+ if(S.uni&&S.uni.length&&!S.umap[sym]){body.innerHTML='<div class="xnote"><b>'+htmlEsc(sym)+'</b> diye bir BIST hissesi bulamadım. Yazımı kontrol et.</div>';return}
+ XR.sym=sym;XR.a=null;XR.err='';XR.ks=null;XR.busy=true;body.innerHTML='<div class="xnote">⏳ '+htmlEsc(sym)+' inceleniyor… (mumlar çekiliyor)</div>';
+ const b=srvBase(S.tvproxy);
+ if(/^https:\/\//.test(b))fetch(dq(b+'/sigsym?s='+sym)).then(r=>r.json()).then(j=>{if(XR.sym===sym&&j&&j.ok){XR.ks=j;xrayRender()}}).catch(()=>{});
+ try{const k='b:'+sym+':15min',c=S.ccache&&S.ccache[k];let cs=c&&Date.now()-c.t<420000?c.d:null;
+  if(!cs){cs=await getBars(sym,'15min',true);if(S.ccache)S.ccache[k]={t:Date.now(),d:cs}}
+  const a=analyze(cs||[],sym);if(a.err)XR.err='Bu hisse için yeterli mum verisi yok.';else XR.a=a}catch(e){XR.err='Mum verisi alınamadı ('+String(e&&e.message||e).slice(0,60)+').'}
+ XR.busy=false;if(XR.sym===sym)xrayRender()}
+// analyze puanının gerekçeleri (AL yönü) — düz Türkçe
+function xrayWhy(a,o){const up=a.side==='AL',G=[],P=[];
+ // ön şartlar (üçü birden yoksa not C) — analyze() 'gate' ile aynı
+ G.push([up?a.above50:!a.above50,up?(a.above50?'Fiyat 50\'lik ortalamanın üstünde':'Fiyat 50\'lik ortalamanın altında'):'Fiyat 50\'lik ortalamanın altında (yön aşağı)']);
+ G.push([up?a.vwUp:!a.vwUp,a.vwUp?'Fiyat günün ortalama maliyetinin (VWAP) üstünde':'Fiyat günün ortalama maliyetinin (VWAP) altında']);
+ G.push([a.atrPct>=0.3,a.atrPct>=0.3?'Yeterince hareketli':'Çok durgun, hedefe gitmeyebilir']);
+ // puan maddeleri (her biri 1 puan; 5+ = A, 3–4 = B)
+ const nr=a.ref&&(Math.abs(a.pocD)<=0.6||Math.abs(up?a.valD:a.vahD)<=0.6);
+ P.push([up?a.stk===1:a.stk===-1,(up?a.stk===1:a.stk===-1)?'Ortalamalar düzgün sıralı (9 > 21 > 50)':'Ortalamalar düzgün sıralı değil']);
+ P.push([a.dir===a.side&&a.bars<=3,a.dir===a.side&&a.bars<=3?'Kısa ortalamalar az önce kesişti ('+a.bars+' mum önce)':'Yeni bir kesişim yok']);
+ P.push([a.vr>=1.2,a.vr!=null?'Son mumun hacmi ortalamanın '+nf(a.vr,1)+' katı'+(a.vr>=1.2?'':' (1,2 katı gerekir)'):'Hacim bilgisi yok']);
+ P.push([!!nr,nr?'Hacmin yoğun olduğu bölgeye (destek) yakın':'Hacim yoğun bölgeden uzak']);
+ const vn=up?(a.vwD>=0&&a.vwD<=1.5):(a.vwD<=0&&a.vwD>=-1.5);
+ P.push([vn,vn?'VWAP\'a yakın, geç kalınmamış':a.vwD!=null&&Math.abs(a.vwD)>1.5?'VWAP\'tan uzaklaşmış (%'+nf(Math.abs(a.vwD),1)+'), kovalamak riskli':'VWAP\'ın ters tarafında']);
+ P.push([a.nss>=2,a.nss>=2?a.nss+' kurulum aynı anda':'Birden fazla kurulum yok']);
+ return {G,P}}
+function xrayRender(){const body=document.getElementById('xr_body');if(!body)return;const sym=XR.sym,o=S.umap[sym]||null,a=XR.a,tf=S.stf||'15';
+ if(XR.busy){return}
+ let h='<div class="xhd"><div><b>'+htmlEsc(sym)+'</b><small>'+htmlEsc(String(o&&o.description||'').slice(0,34))+(o&&o.sector?' · '+htmlEsc(secTr(o.sector)||o.sector):'')+'</small></div>'+
+  (o?'<div class="xpx"><b>'+nf(o.close)+'</b><i class="'+cls(o.change)+'">'+pct(o.change)+'</i></div>':'')+'</div>';
+ if(XR.err)h+='<div class="xnote">'+htmlEsc(XR.err)+'</div>';
+ if(a){const g=a.side==='AL'?a.grade:'C',W=xrayWhy(a,o),gOk=W.G.every(x=>x[0]);
+  const K=window.KSTAT,ka=K&&K.src&&K.src['firsat-A'],kb=K&&K.src&&K.src['firsat-B'],kr=x=>x&&x.h+x.s?'%'+Math.round(x.h/(x.h+x.s)*100)+' ('+(x.h+x.s)+' sinyal)':'henüz veri yok';
+  const gt={A:'Güçlü kurulum',B:'Orta kurulum',C:'Zayıf / kurulum yok'}[g];
+  h+='<div class="xgr g'+g+'"><div class="xg">'+g+'</div><div class="xgt"><b>'+gt+'</b><span>'+(a.side==='AL'?'Yön: yukarı':'Yön: aşağı, alış için uygun değil')+' · 6\'da '+a.pts+' puan</span>'+
+   (g==='C'?'<small>'+(gOk?'Puan 3\'ün altında; sistem bu durumda sinyal vermez.':'Ön şartlar tutmuyor; sistem bu durumda sinyal vermez.')+'</small>':'<small>Sistemin '+g+' notlu sinyallerinin son 10 gündeki başarısı: '+kr(g==='A'?ka:kb)+'</small>')+'</div></div>';
+  if(o){const pr=o.pr||{},meter=(lab,v)=>{if(v==null)return '<div class="mt"><span>'+lab+'</span><b>–</b><i><u style="width:0"></u></i></div>';const c=v>=70?'var(--up)':v<=30?'var(--dn)':'var(--acc)';return '<div class="mt"><span>'+lab+'</span><b style="color:'+c+'">'+v+'</b><i><u style="width:'+Math.max(4,Math.min(100,v))+'%;background:'+c+'"></u></i></div>'};
+   h+=mtfStrip(o)+'<div class="mts">'+meter('Hacim',pr.rv)+meter('Güç',pr.rs)+meter('Trend',pr.adx)+meter('Oynaklık',pr.atrp)+'</div>'+
+    '<div class="xnote sm">Puanlar 0–100: hissenin bugün tüm BIST içindeki sırası (100 = en yüksek).</div>'}
+  const li=L=>L.map(x=>'<div class="'+(x[0]?'ok':'no')+'">'+(x[0]?'✓':'○')+' '+x[1]+'</div>').join('');
+  h+='<div class="dsub">Ön şartlar (üçü de gerekli)</div><div class="xwhy">'+li(W.G)+'</div><div class="dsub">Puan: 6\'da '+a.pts+' (5 ve üstü A, 3–4 B)</div><div class="xwhy">'+li(W.P)+'</div>';
+  const ex=[];if(a.vcp)ex.push('⚡ Daralan sıkışma (VCP)'+(a.vcp.brk?' — kırdı':''));if(a.pull)ex.push('⚡ Ortalamaya geri çekilip döndü');if(a.kvw&&a.kvw.side==='AL')ex.push('⚡ VWAP\'tan sekti, 3 mum teyit');if(a.sq)ex.push('Fiyat sıkıştı (patlama öncesi olabilir)');
+  if(ex.length)h+='<div class="xchips">'+ex.map(x=>'<span>'+x+'</span>').join('')+'</div>';
+  const p=o?planOf(o,'AL',tf):null;
+  h+='<div class="dsub">Seviyeler</div><div class="xlv">'+
+   (p?'<div><small>Giriş</small><b>'+nf(p.entry)+'</b></div><div><small>Stop</small><b class="dn">'+nf(p.stop)+'</b><i>−%'+nf(p.riskPct,1)+'</i></div><div><small>Hedef</small><b class="up">'+nf(p.tgt)+'</b><i>'+nf(p.rr,1)+' kat ödül</i></div>':'')+
+   (a.ref?'<div><small>Destek (hacim)</small><b>'+nf(a.ref.val)+'</b></div><div><small>Yoğun bölge</small><b>'+nf(a.ref.poc)+'</b></div><div><small>Direnç (hacim)</small><b>'+nf(a.ref.vah)+'</b></div>':'')+'</div>'}
+ else if(!XR.err)h+='<div class="xnote">⏳ inceleniyor…</div>';
+ // uyarılar
+ const wn=[];try{(sigNotes(sym)||[]).forEach(x=>wn.push(['w',x]))}catch(e){}
+ try{if(o)(warnsOf(o,'AL',tf)||[]).slice(0,3).forEach(x=>wn.push(x))}catch(e){}
+ try{(NOWK.list||[]).filter(k=>String(k.syms||'').split(',').includes(sym)).slice(0,2).forEach(k=>wn.push([k.yon<0?'w':'ok','KAP '+new Date(k.t).toLocaleDateString('tr-TR',{day:'numeric',month:'short'})+': '+htmlEsc(k.ad||k.tip||'')+(k.subj?' — '+htmlEsc(String(k.subj).slice(0,60)):'')]))}catch(e){}
+ if(wn.length)h+='<div class="dsub">Dikkat</div><div class="warns">'+wn.map(x=>'<div class="'+(x[0]==='ok'?'ok':'')+'">'+(x[0]==='ok'?'✓ ':'⚠ ')+x[1]+'</div>').join('')+'</div>';
+ // hissenin karnesi
+ const ks=XR.ks,SN={algi:'⚡ Algı','firsat-A':'🅰️ Fırsat A','firsat-B':'🅱️ Fırsat B',momentum:'🧪 Momentum',radar:'📡 Radar',tavan:'🚀 Tavan'};
+ h+='<div class="dsub">Sistemin bu hissedeki karnesi (60 gün)</div>';
+ if(!ks)h+='<div class="xnote sm">Yükleniyor…</div>';
+ else if(!(ks.src||[]).length)h+='<div class="xnote sm">Sistem son 60 günde bu hisseye sinyal vermedi.</div>';
+ else{const tot=ks.src.reduce((x,r)=>({h:x.h+(r.h||0),s:x.s+(r.s||0)}),{h:0,s:0});
+  h+='<div class="xks">'+ks.src.map(r=>{const m=(r.h||0)+(r.s||0);return '<div><span>'+(SN[r.src]||(String(r.src).startsWith('kap-')?'📰 KAP haberi':r.src))+'</span><b>'+r.n+' sinyal</b><i class="'+(m?(r.h/m>=.5?'up':'dn'):'')+'">'+(m?r.h+' tuttu, '+r.s+' tutmadı':'sonuçlanmadı')+'</i></div>'}).join('')+'</div>'+
+   (tot.h+tot.s?'<div class="xnote sm">Toplam: '+(tot.h+tot.s)+' sonuçlanan sinyalin %'+Math.round(tot.h/(tot.h+tot.s)*100)+'\'i tuttu.</div>':'')}
+ h+='<div class="xbtn"><button onclick="xrayClose();selectSym(\''+sym+'\',\'bist\');showTab(\'chart\')">📈 Grafiği aç</button><button onclick="xrayWatch(\''+sym+'\')">'+(W().includes(sym)?'⭐ İzlemede':'☆ İzlemeye ekle')+'</button></div>'+
+  '<div class="xnote sm" style="text-align:center">Bu bir yatırım tavsiyesi değildir; not, teknik göstergelerin anlık özetidir.</div>';
+ body.innerHTML=h}
+function xrayWatch(sym){if(!W().includes(sym)){W().push(sym);try{saveWL()}catch(e){LS.set('wl',WL)}try{renderWatch()}catch(e){}}xrayRender()}
 </script>
 </body>
 </html>

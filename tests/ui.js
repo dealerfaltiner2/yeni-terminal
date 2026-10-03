@@ -103,6 +103,13 @@ async function page(b, opt) {
       const pp = await T(() => { paperLoad(true); return new Promise(res => setTimeout(() => { const now = paperCard(), full = paperFull(); res({ now, full }); }, 1500)); });
       ok('Kâğıt bot: Şimdi kartı toplam TL gösteriyor', /Kâğıt üzerinde bot/.test(pp.now) && /\+140 TL/.test(pp.now) && /BOTUN KASASI/.test(pp.now), pp.now.slice(0, 200));
       ok('Kâğıt bot: Karne bölümü gün gün, kaynak ve açık işlem tablosu', /Gün gün/.test(pp.full) && /botta kapalı/.test(pp.full) && /ASELS/.test(pp.full) && /Botun kuralları/.test(pp.full) && /Bot yarışı/.test(pp.full) && /henüz ölçülmedi/.test(pp.full) && /YARIŞINDA ÖNDE/.test(pp.now));
+      const xr = await T(() => new Promise(res => { const o = S.uni.slice().sort((a, b) => b.voltl - a.voltl)[0]; const cs = []; let px = o.close * 0.95; const t0 = Math.floor(Date.now() / 1000) - 200 * 900;
+        for (let i = 0; i < 200; i++) { const op = px; px = px * (1.0015 + Math.sin(i / 5) * 0.002); cs.push({ time: t0 + i * 900, open: op, high: Math.max(op, px) * 1.002, low: Math.min(op, px) * 0.998, close: px, volume: 1e5 }); }
+        S.ccache['b:' + o.name + ':15min'] = { t: Date.now(), d: cs }; xrayOpen(o.name);
+        setTimeout(() => { const t = document.getElementById('xr_body').textContent; xrayGo('YOKBOYLE1'); setTimeout(() => { const t2 = document.getElementById('xr_body').innerText; xrayClose(); res({ t, t2 }); }, 200); }, 1500); }));
+      ok('Hisse röntgeni: not, ön şartlar, puan, seviyeler, karne görünüyor', /Ön şartlar/i.test(xr.t) && /Puan: 6'da/i.test(xr.t) && /Seviyeler/i.test(xr.t) && /karnesi/i.test(xr.t) && /tavsiyesi değildir/.test(xr.t), xr.t.slice(0, 160));
+      ok('Hisse röntgeni: olmayan hisse için uyarı', /bulamadım/.test(xr.t2));
+      ok('Fırsat kartında ölçerler Detay\'a basmadan görünüyor', await T(() => { showTab('op'); const c = document.querySelector('#oplist .card.v6'); return !!c && !!c.querySelector(':scope > .mts') && !!c.querySelector(':scope > .mtf'); }));
       ok('Deneme laboratuvarı listeleniyor', await T(() => /Deneme laboratuvarı/.test(labHtml()) && /Momentum/.test(labHtml())));
       ok('yeni ikon kurulumu: yapıştırılan bilgi adres + kodu yerine koyuyor', su.got === 'wss://x.test/k' && su.own === 'kod123', JSON.stringify(su));
       const mm = await T(() => { const D = []; let c = 100; for (let i = 0; i < 25; i++) { c = i === 24 ? c * 1.04 : i >= 20 ? c * 1.01 : c; D.push({ open: c, high: c * 1.035, low: c * 0.965, close: c, volume: 2e6 }); }

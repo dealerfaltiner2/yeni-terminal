@@ -121,6 +121,10 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
 - v8.4 (03.10) BOT YARIŞI (sinyaller DEĞİŞMEDİ): sig'e tx (çabuk çıkış: ±K en çok 60 mum, gelmezse 60. mum kapanışı), pbn/pb (geri çekilme girişi: 30 dk içinde px×0,995'e inerse oradan ±K yarışı, gelmezse gün sonu; pbn 0 = giriş yok, -1 = ölçülemedi).
   sigOutcome hesaplar; eski sinyaller sigBackfill ile tamamlanır (ölçülecek sinyal yokken, çalışmada 3 hisse, son 6 gün). paper.js botRace: mevcut / güçlü Algı / öğle arası yok (11–13) / geri çekilme / çabuk çık / günlük fren (2 stop).
   Karne'de '🏁 Bot yarışı' tablosu, Şimdi kartında 'önde' satırı, karne mesajında önde olan, Cuma raporunda haftalık sıralama. 2–3 hafta sonra kazanan kural Fatih onayıyla gerçek sinyale.
+- v8.5 (03.10) HİSSE RÖNTGENİ (arkadaşların isteği): xrayOpen(sym) alt sayfa (#xray). Şimdi'nin en üstünde arama çubuğu, Fırsat araç çubuğunda 🔍.
+  analyze() (15 dk mum, Fırsat derin taramayla aynı not) → A/B/C + ön şartlar (gate) + 6 puan maddesi (analyze'a yalnız bilgi alanı stk/nss eklendi, not mantığı DEĞİŞMEDİ),
+  mtfStrip + ölçerler, planOf seviyeleri + hacim profili, warnsOf/sigNotes/KAP uyarıları, hissenin 60 günlük karnesi (Worker /sigsym, sig_sym indeksi, 5 dk önbellek), 'yatırım tavsiyesi değildir'.
+  Fırsat kartı: zaman dilimi şeridi + 4 ölçer artık Detay'a basmadan görünür.
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.
