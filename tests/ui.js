@@ -101,7 +101,7 @@ async function page(b, opt) {
       const ja = await T(() => { const o = S.jr; S.jr = [1, -1, 2, -0.5, 1.5, 0.8].map((p, i) => ({ s: 'H' + i, k: i % 2 ? 'algi' : 'momentum', e: 10, l: 9.8, r: p, pct: p, dt: '2026-10-05 0' + (7 + (i % 3)) + ':30', closeD: '2026-10-05' })); const h = jrAnalysis(); S.jr = o; return h; });
       ok('İşlem analizim: kazanma oranı ve saat/kaynak tablosu çıkıyor', /%67/.test(ja) && /Kaynak/.test(ja) && /Saat/.test(ja));
       const pp = await T(() => { paperLoad(true); return new Promise(res => setTimeout(() => { const now = paperCard(), full = paperFull(); res({ now, full }); }, 1500)); });
-      ok('Kâğıt bot: Şimdi kartı toplam TL gösteriyor', /Kâğıt üzerinde bot/.test(pp.now) && /\+140 TL/.test(pp.now), pp.now.slice(0, 200));
+      ok('Kâğıt bot: Şimdi kartı toplam TL gösteriyor', /Kâğıt üzerinde bot/.test(pp.now) && /\+140 TL/.test(pp.now) && /BOTUN KASASI/.test(pp.now), pp.now.slice(0, 200));
       ok('Kâğıt bot: Karne bölümü gün gün, kaynak ve açık işlem tablosu', /Gün gün/.test(pp.full) && /botta kapalı/.test(pp.full) && /ASELS/.test(pp.full) && /Botun kuralları/.test(pp.full) && /Bot yarışı/.test(pp.full) && /henüz ölçülmedi/.test(pp.full) && /yarışında önde/.test(pp.now));
       ok('Deneme laboratuvarı listeleniyor', await T(() => /Deneme laboratuvarı/.test(labHtml()) && /Momentum/.test(labHtml())));
       ok('yeni ikon kurulumu: yapıştırılan bilgi adres + kodu yerine koyuyor', su.got === 'wss://x.test/k' && su.own === 'kod123', JSON.stringify(su));

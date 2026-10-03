@@ -3240,7 +3240,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="8.4";window.APPV=APP_VER;
+  const APP_VER="8.4.1";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4361,6 +4361,25 @@ tr.row:active td{background:var(--card2)}
 .labm{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px;font-size:11.5px;color:var(--txt2)}.labm b{color:#fff}.labm b.up{color:var(--up)}.labm b.dn{color:#ff7a88}
 .labm em{font-style:normal;font-weight:700;color:var(--dim)}.labr.canli .labm em{color:var(--up)}.labr.red .labm em{color:#ff7a88}.labr.bulgu .labm em{color:#7dd3fc}
 .labn{font-size:11.5px;color:var(--dim);margin-top:3px;line-height:1.45}
+.pp2{border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 14px 12px;margin-bottom:12px;background:radial-gradient(120% 80% at 0% 0%,rgba(0,211,160,.10),transparent 60%),linear-gradient(180deg,#111a26,#0b111a);box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.pp2-empty{font-size:13px;color:var(--txt2);line-height:1.5}
+.pp2-top{display:flex;gap:10px;align-items:flex-start}.pp2-main{flex:1;min-width:0}
+.pp2-main small,.pp2-today small,.pp2-race small{display:block;font-size:9.5px;letter-spacing:.8px;font-weight:800;color:var(--dim)}
+.pp2-big{font-size:32px;font-weight:900;letter-spacing:-.5px;line-height:1.1;margin:3px 0 2px;font-variant-numeric:tabular-nums;color:#fff}.pp2-big.up{color:var(--up)}.pp2-big.dn{color:#ff7a88}
+.pp2-main span{font-size:11.5px;color:var(--txt2)}.pp2-main span b{color:#fff}
+.pp2-today{text-align:right;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:8px 10px;min-width:92px}
+.pp2-today b{display:block;font-size:16px;color:#fff;margin:2px 0;font-variant-numeric:tabular-nums}.pp2-today b.up{color:var(--up)}.pp2-today b.dn{color:#ff7a88}.pp2-today i{font-style:normal;font-size:10.5px;color:var(--dim)}
+.pp2-chart{position:relative;height:74px;margin:12px -2px 4px}.pp2-eq{width:100%;height:100%;display:block;overflow:visible}.pp2-eq .z{stroke:rgba(255,255,255,.18);stroke-width:1;stroke-dasharray:3 4;vector-effect:non-scaling-stroke}
+.pp2-dot{position:absolute;right:-3px;width:8px;height:8px;border-radius:50%;transform:translateY(-50%);box-shadow:0 0 0 4px rgba(0,211,160,.18)}
+.pp2-st{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}.pp2-st div{text-align:center;padding:7px 2px;border-radius:12px;background:rgba(255,255,255,.035)}
+.pp2-st b{display:block;font-size:14.5px;color:#fff;font-variant-numeric:tabular-nums}.pp2-st b.up{color:var(--up)}.pp2-st b.dn{color:#ff7a88}.pp2-st small{font-size:10px;color:var(--dim)}
+.pp2-days{display:flex;gap:6px;margin-top:8px;overflow-x:auto;scrollbar-width:none}.pp2-days::-webkit-scrollbar{display:none}
+.pp2-days span{flex:1;min-width:58px;border-radius:10px;padding:5px 6px;text-align:center;border:1px solid rgba(255,255,255,.06)}.pp2-days span.up{background:rgba(0,211,160,.08)}.pp2-days span.dn{background:rgba(255,122,136,.08)}
+.pp2-days small{display:block;font-size:10px;color:var(--dim)}.pp2-days b{font-size:12.5px;font-variant-numeric:tabular-nums}.pp2-days .up b{color:var(--up)}.pp2-days .dn b{color:#ff7a88}
+.pp2-race{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;border-radius:14px;background:linear-gradient(90deg,rgba(251,191,36,.12),rgba(251,191,36,.03));border:1px solid rgba(251,191,36,.22);text-decoration:none}
+.pp2-race .f{font-size:18px}.pp2-race .t{flex:1;min-width:0}.pp2-race .t small{color:#fbbf24}.pp2-race .t b{display:block;font-size:13.5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pp2-race .v{font-weight:900;font-size:14px;font-variant-numeric:tabular-nums}.pp2-race .v.up{color:var(--up)}.pp2-race .v.dn{color:#ff7a88}.pp2-race .ar{color:var(--dim);font-size:18px}
+.pp2-n{margin-top:9px;font-size:10.5px;color:var(--dim);text-align:center}
 .pp{border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:12px;background:linear-gradient(180deg,rgba(125,211,252,.06),rgba(255,255,255,.015));margin-bottom:12px}
 .pp-k{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pp-k div{background:rgba(255,255,255,.04);border-radius:12px;padding:9px}
 .pp-k small{display:block;font-size:10.5px;color:var(--dim);font-weight:700}.pp-k b{display:block;font-size:18px;color:#fff;font-variant-numeric:tabular-nums;margin:2px 0}.pp-k b.up{color:var(--up)}.pp-k b.dn{color:#ff7a88}.pp-k i{font-style:normal;font-size:11px;color:var(--txt2)}
@@ -4929,14 +4948,29 @@ function paperLive(){const V=PAPER.v;if(!V)return{n:0,pl:0,L:[]};const sl=(V.cfg
 function paperCard(){paperLoad();const V=PAPER.v;
  let h=nSec('🤖','Kâğıt üzerinde bot','Ayrıntı','lab');
  if(!V)return h+'<div class="nempty">'+(PAPER.err?'Bot sonuçları alınamadı ('+htmlEsc(PAPER.err)+').':'Bot sonuçları yükleniyor…')+'</div>';
- const td=todayStr(),D=(V.days||[]).find(x=>x.d===td),lv=paperLive(),T=V.tot||{};
- const bd=(D?D.pl:0)+lv.pl,bn=(D?D.n:0)+lv.n;
- const last=(V.days||[]).slice(0,10).reverse(),mx=Math.max(1,...last.map(d=>Math.abs(d.pl)));
- h+='<div class="pp"><div class="pp-k"><div><small>Bugün</small><b class="'+cls(bd)+'">'+(bn?ptl(bd):'–')+'</b><i>'+(bn?bn+' işlem'+(lv.n?' · '+lv.n+' açık':''):'işlem yok')+'</i></div>'+
-  '<div><small>Başından beri</small><b class="'+cls(T.pl)+'">'+(T.n?ptl(T.pl):'–')+'</b><i>'+(T.n?T.n+' işlem · '+T.gun+' gün':'henüz işlem yok')+'</i></div></div>';
- if(last.length)h+='<div class="pp-bars">'+last.map(d=>'<div title="'+d.d+' · '+ptl(d.pl)+'"><i class="'+(d.pl>=0?'up':'dn')+'" style="height:'+Math.max(4,Math.abs(d.pl)/mx*100)+'%"></i><span>'+d.d.slice(8)+'</span></div>').join('')+'</div>';
- const L=(V.bots||[]).find(b=>b.n);if(L&&(V.bots||[]).filter(b=>b.n).length>1)h+='<div class="pp-lead">🏁 Bot yarışında önde: <b>'+htmlEsc(L.ad)+'</b> <span class="'+cls(L.pl)+'">'+ptl(L.pl)+'</span></div>';
- return h+'<div class="pp-n">Gerçek para yok. Pusula\'nın sinyallerine bot girseydi ne kazanırdı, onu gösterir.</div></div>'}
+ const td=todayStr(),D=(V.days||[]).find(x=>x.d===td),lv=paperLive(),T=V.tot||{},C=V.cfg||{};
+ const bd=(D?D.pl:0)+lv.pl,bn=(D?D.n:0)+lv.n,AY=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+ const dlab=d=>(+d.slice(8))+' '+AY[+d.slice(5,7)-1];
+ if(!T.n)return h+'<div class="pp2"><div class="pp2-empty">Bot henüz işlem yapmadı. İlk sinyalle birlikte burada kasası görünecek.</div></div>';
+ // kasa eğrisi: işlem işlem birikimli kâr/zarar
+ const TR=(V.trades||[]).slice().reverse();let base=T.pl-TR.reduce((a,x)=>a+x.pl,0),cum=base;const P=[base];TR.forEach(x=>{cum+=x.pl;P.push(cum)});if(lv.n)P.push(cum+lv.pl);
+ const mn=Math.min(0,...P),mx=Math.max(0,...P),rg=(mx-mn)||1,W=300,H=74,pad=6;
+ const X=i=>P.length>1?i/(P.length-1)*W:W/2,Y=v=>pad+(1-(v-mn)/rg)*(H-2*pad);
+ const line=P.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join(' '),up=P[P.length-1]>=0,col=up?'var(--up)':'#ff7a88';
+ const svg='<svg class="pp2-eq" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none"><defs><linearGradient id="ppgr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+(up?'#00d3a0':'#ff7a88')+'" stop-opacity=".35"/><stop offset="1" stop-color="'+(up?'#00d3a0':'#ff7a88')+'" stop-opacity="0"/></linearGradient></defs>'+
+  '<line x1="0" x2="'+W+'" y1="'+Y(0).toFixed(1)+'" y2="'+Y(0).toFixed(1)+'" class="z"/><path d="'+line+' L'+W+' '+H+' L0 '+H+' Z" fill="url(#ppgr)"/><path d="'+line+'" fill="none" stroke="'+col+'" stroke-width="2.2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>'+
+  '<i class="pp2-dot" style="top:'+(Y(P[P.length-1])/H*100).toFixed(1)+'%;background:'+col+'"></i>';
+ const kasa=(C.cap||100000)+T.pl,wr=T.n?Math.round((T.kar||0)/T.n*100):0;
+ h+='<div class="pp2"><div class="pp2-top"><div class="pp2-main"><small>BOTUN KASASI · BAŞINDAN BERİ</small><div class="pp2-big '+cls(T.pl)+'">'+ptl(T.pl)+'</div>'+
+  '<span>'+nf(C.cap||100000,0)+' TL → <b>'+nf(kasa,0)+' TL</b> · '+(T.pct>=0?'+':'')+'%'+nf(T.pct,2)+'</span></div>'+
+  '<div class="pp2-today"><small>BUGÜN</small><b class="'+(bn?cls(bd):'')+'">'+(bn?ptl(bd):'–')+'</b><i>'+(bn?bn+' işlem'+(lv.n?' · '+lv.n+' açık':''):'işlem yok')+'</i></div></div>'+
+  '<div class="pp2-chart">'+svg+'</div>'+
+  '<div class="pp2-st"><div><b>'+T.n+'</b><small>işlem</small></div><div><b class="'+(wr>=50?'up':'dn')+'">%'+wr+'</b><small>kârlı işlem</small></div><div><b>'+(T.iyi||0)+'/'+(T.gun||0)+'</b><small>kârlı gün</small></div><div><b class="dn">'+(T.dd?ptl(T.dd).replace(' TL',''):'0')+'</b><small>en kötü düşüş</small></div></div>';
+ const last=(V.days||[]).slice(0,5).reverse();
+ if(last.length)h+='<div class="pp2-days">'+last.map(d=>'<span class="'+(d.pl>=0?'up':'dn')+'"><small>'+dlab(d.d)+'</small><b>'+ptl(d.pl).replace(' TL','')+'</b></span>').join('')+'</div>';
+ const BW=(V.bots||[]).filter(b=>b.n);
+ if(BW.length>1)h+='<a class="pp2-race" href="#" onclick="showTab(\'lab\');return false"><span class="f">🏁</span><span class="t"><small>BOT YARIŞINDA ÖNDE</small><b>'+htmlEsc(BW[0].ad)+'</b></span><span class="v '+cls(BW[0].pl)+'">'+ptl(BW[0].pl)+'</span><span class="ar">›</span></a>';
+ return h+'<div class="pp2-n">Gerçek para yok · Pusula\'nın sinyallerine bot girseydi ne olurdu</div></div>'}
 function paperFull(){paperLoad();const V=PAPER.v;
  let h='<div class="ppf"><div class="labh"><b>🤖 Kâğıt üzerinde bot</b><small>Gerçek para yok, emir yok. Pusula\'nın sinyallerine bir bot girseydi ne olurdu, gerçek fiyatlarla hesaplanır. Birkaç hafta kârda kalırsa bir sonraki adım (onaylı bot) konuşulur.</small></div>';
  if(!V)return h+'<div class="pp-n">'+(PAPER.err?'Sonuçlar alınamadı ('+htmlEsc(PAPER.err)+'). <a href="#" onclick="paperLoad(true);return false">Yeniden dene</a>':'Yükleniyor…')+'</div></div>';
