@@ -779,7 +779,8 @@ async function autoRun(manual){
       '4S teyit: '+(htfOk?'✓ uyumlu':'✗')+' · Puan: '+Math.round(c.sc)+'\n'+
       (a.ref?('POC '+nf(a.ref.poc)+' · VAH '+nf(a.ref.vah)+' · VAL '+nf(a.ref.val)+'\n'):'')+
       sigNoteTxt(c.o.name).replace(/^\n/,'')+(sigNotes(c.o.name).length?'\n':'')+'#'+c.o.name+' #'+dir;
-     await tgSend(txt);try{pushMsg('firsat',txt,c.o.name)}catch(e){}
+     // v8.8 (Fatih: 'sadece önemli bildirimler'): Telegram'a yalnız A notlu AL; B ve SAT yalnız karneye yazılır
+     if(a.grade==='A'&&dir==='AL')await tgSend(txt);
      S.sentSig.push(key);sent++;
      beep();notify('BIST · Sinyal gönderildi',c.o.name+' '+dir);
      seenAAdd(c.o.name,dir);
@@ -2978,6 +2979,7 @@ function dayEndCheck(){
  if(now.getHours()*60+now.getMinutes()<1090)return; // 18:10 sonrasi
  const t=todayStr();
  if(S.lastReport===t)return;
+ return; // v8.8: kapalı — sunucunun akşam karne mesajı aynı işi görüyor (çift mesaj olmasın)
  if(!S.tgTok||!S.tgChat)return;
  S.lastReport=t;LS.set('lastReport',t);
  const todays=S.sigHist.filter(x=>String(x.k).indexOf('|'+t)>=0);
@@ -3241,7 +3243,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="8.7.2";window.APPV=APP_VER;
+  const APP_VER="8.8";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3583,7 +3585,7 @@ function tvReconnectReport(){
      e.mute=muted(sc);
      AL.log.push(e);AL.dirty=true;saveLog(true);
      st.cnt=0;st.cool=now+30*60000;stage='ates';
-     if(!e.mute)tg(msgFire(e,f,o));
+     if(!e.mute&&f.fc>=.8)tg(msgFire(e,f,o));   // v8.8: Telegram'a yalnız 💪 GÜÇLÜ (karnede %60'a karşı %43); hepsi karneye yazılmaya devam eder
      sigPost({src:'algi',sym:sym,t:now,px:p0,sc:sc,dir:'AL',meta:{fa:f.fa!=null?+(+f.fa).toFixed(1):null,rv:f.rv!=null?+(+f.rv).toFixed(1):null,fc:f.fc!=null?+(+f.fc).toFixed(2):null,ch:f.ch!=null?+(+f.ch).toFixed(2):null,brk:!!f.brk,abv:!!f.abv,bid:!!f.fd,tema:!!gOk,endeks:!!hOk,sig:!(o.voltl>=1e7),sessiz:!!e.mute}});
      try{notify('⚡ Algı: '+sym,'Skor '+sc+' · '+nf(f.p))}catch(x){}
      try{if(window.sigToast){const w=[];if(f.fa>=2.5)w.push('Hacim normalin '+nf(f.fa,1)+' katı');else if(f.rv!=null&&f.rv>=2)w.push('Günlük hacim '+nf(f.rv,1)+' kat');if(f.fc!=null)w.push('Alıcı oranı %'+nf(f.fc*100,0));if(f.fe)w.push('30 dk zirvesini VWAP üstünde kırdı');else if(f.fd)w.push('Alış kademesi yükseliyor');if(gOk)w.push('Sektörde hareket var');
@@ -4874,7 +4876,8 @@ function pushRender(){const el=document.getElementById('pushsec');if(!el)return;
    '<button class="g pri" onclick="pushOn()"'+(app?'':' disabled')+'>🔔 Bildirimleri aç</button>')+
   (on?'<div class="pushcats">'+PUSHC.map(([k,t])=>'<label><input type="checkbox" '+(pushCats().includes(k)?'checked':'')+' onchange="pushCatSet(\''+k+'\',this.checked)"> '+t+'</label>').join('')+'</div>':'')}
 // sinyal bildirimi: Telegram'la aynı kural — motor canlıysa yalnız motor gönderir
-function pushMsg(cat,text,sym){try{
+function pushMsg(cat,text,sym){return; // v8.8: uygulama bildirimleri kapalı (Fatih: yalnız Telegram)
+try{
  if(!LS.get('ownTok','')||!pushBase())return;if(!BOTMODE&&S.botAlive)return;
  const plain=String(text||'').replace(/<br\s*\/?>/g,'\n').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').trim();
  const L=plain.split('\n').filter(Boolean),title=(L[0]||'BIST Pusula').slice(0,80),body=L.slice(1).join(' · ').slice(0,240);

@@ -74,9 +74,9 @@ function kapMsg(r, esc, q) {
 function wantTg(r, big, watch) {
   if (r.tip === 'icerden') return false; // 03.10 (Fatih onayı): içeriden alım-satım haberleri karnede %44 → yalnız karneye yazılır
   const syms = String(r.syms).split(',');
-  if (syms.some(s => watch.has(s)) && r.onem >= 1) return true;
+  if (syms.some(s => watch.has(s)) && r.onem >= 2) return true; // v8.8: izleme listesinde de yalnız önemli (≥2)
   if (r.onem >= 3) return true;
-  if (r.onem >= 2 && (r.yon !== 0 || r.tip === 'bilanco') && syms.some(s => big.has(s))) return true;
+  // v8.8 (Fatih: 'sadece önemli bildirimler'): BIST 100'deki önem-2 haberler artık Telegram'a gitmez (karneye yazılır)
   return false;
 }
 export async function kapPoll(env, h) {

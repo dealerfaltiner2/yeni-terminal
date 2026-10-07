@@ -49,6 +49,8 @@ export async function pushEnsure(env) {
 }
 // Gönder: msg = {title, body, url, tag, cat}. Aboneliği silinmiş (404/410) cihazlar tablodan çıkarılır.
 export async function pushSend(env, msg, max = 6) {
+  // v8.8 (07.10, Fatih: 'yalnız Telegram'a gelsin'): uygulama bildirimleri KAPALI. Açmak için bu satırı kaldır.
+  if (!msg || !msg.force) return { ok: true, n: 0, kapali: true };
   if (!env.BT) return { ok: false };
   await pushEnsure(env);
   const subs = (await env.BT.prepare('SELECT ep, p256dh, auth, cats FROM push LIMIT 10').all()).results || [];

@@ -19,7 +19,7 @@ export async function tavanScan(env, h) {
     const cfg = await h.kvGet(env, 'cfg', null), names = L.slice(0, 25).map(x => x.s).join(', ');
     const msg = '🚀 <b>TAVAN KAPANANLAR (deneme)</b> · ' + L.length + ' hisse\n' + h.esc(names) +
       '\n<i>Geçmiş 13 ayda tavan kapananların %76\'sı ertesi gün yukarı açıldı (ortalama +%1,8). Yarın açılış farkı karnede ölçülecek.</i>';
-    try { await h.tgSend(cfg, msg); } catch (e) {}
+    // v8.8: tavan listesi Telegram'a gitmez (karne mesajındaki tavan bloğu yeterli)
     try { await h.pushSend(env, { cat: 'tavan', title: '🚀 Tavan kapananlar · ' + L.length + ' hisse', body: names + ' — yarın açılış farkı ölçülecek (deneme)', url: './', tag: 'tavan' + day }, 3); } catch (e) {}
   }
   return { n: L.length };
