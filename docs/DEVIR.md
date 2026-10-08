@@ -107,6 +107,12 @@ Her işlemde %0,1 kayma düşüldü. Eski <15.03.2026 / yeni ≥. İşlem başı
 - ÖNERİ (3 Kasım'da Fatih'e): canlı Momentum ±1,5 → ±2'ye geçiş adayı (iki dönemde de daha iyi, hisseye bağımlı değil). 'Stop −3 kapanış' bot yarışına deneme botu olarak eklenebilir; gerçek sinyal olmaz.
   Yeni dönem eski dönemin yarısı kadar kazandırıyor → avantaj küçülüyor olabilir; canlı karne bunu doğrulamalı.
 
+- 09.10 ek testler: (1) Momentum'u ertesi güne taşımak belirgin iyileştirmiyor (ertesi kapanış +1,85/+0,87 vs aynı gün kapanış +1,54/+0,58; ertesi açılış daha kötü) → gün içi kalsın.
+  (2) Günün en iyi 1 hissesini seçmek (dün/5 gün en çok, en oynak, sabah en zayıf) hepsini almaktan tutarlı iyi DEĞİL → hepsini al.
+  (3) CANLI karne, saate göre (algi+firsat+radar, AL, kapanışa kadar tutma rc): 10–11 −1,30 · 11–13 −0,41 · 13–15 −0,34 · 15–18 −0,60 → gün içi sinyaller hareketi KOVALIYOR (bölüm 4 ile aynı ders).
+     İlke: "güçlü hisse, SAKİN an" (Momentum gibi) — hareket eden hisseyi değil, güçlü ama o an durgun hisseyi al.
+  (4) Ertesi gün açılış (tüm hisseler): tavan kapanan +1,76/+2,13 (%76–77 yukarı) — en güçlü etki ama tavana kilitlenince alınamaz; −%5 ve kötüsü kapanan ertesi gün −0,94/−2,54 (%31–45 yukarı) → ertesi gün bu hisselere AL sinyali verme (filtre adayı).
+  Sıradaki (dakikalık mum gerekir): Momentum hisselerinde 10:30 dışı sakin-an girişleri; gün sonu 'tavana gidiyor' adayı (17:00'de +%7 üstü) ertesi açılış testi; çıkış (yarısı +%2, kalanı izleyen stop).
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
 - v6.6 (29.09 akşamı): karne özetinde "Filtre kontrolü" — endeks artı/eksi ve oynak/sakin ayrımı kendi sinyallerimizde. 1–2 hafta sonra bak; tutarsa sinyal kapısı öner.
