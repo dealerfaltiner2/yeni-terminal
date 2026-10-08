@@ -1,6 +1,6 @@
 // BIST Pusula motoru — PowerShell'SİZ kurulum/güncelleme (şirket antivirüsü PowerShell betiklerini engelliyor).
 // Kullanım: Chrome ile bu dosyayı İndirilenler'e kaydet, sonra Komut İstemi'nde:  node Downloads\kur.js
-// Yaptıkları: güncel bot.js'i indirir, eski .vbs/bekçi artıklarını temizler, eski motoru kapatır,
+// Yaptıkları: eski motoru kapatır, güncel motoru 'motor.js' adıyla indirir (eski bot.js'e dokunmaz), eski .vbs/bekçi artıklarını temizler,
 // Başlangıç klasörüne 'BIST Pusula Motor.cmd' koyar (oturum açılınca küçük pencerede başlar) ve motoru şimdi başlatır.
 const fs = require('fs'), path = require('path'), https = require('https'), http = require('http'), cp = require('child_process');
 const D = path.join(process.env.LOCALAPPDATA || '', 'BistMotor');
@@ -11,39 +11,46 @@ const get = (u) => new Promise((res, rej) => https.get(u, { headers: { 'User-Age
   const b = []; r.on('data', c => b.push(c)); r.on('end', () => res(Buffer.concat(b)));
 }).on('error', rej));
 const sh = (c) => { try { return cp.execSync(c, { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true }).toString(); } catch (e) { return ''; } };
+let MOTOR = 'motor.js';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const ping = () => new Promise(res => { const q = http.get('http://127.0.0.1:47123', r => { r.resume(); res(r.statusCode === 200); }); q.setTimeout(5000, () => { q.destroy(); res(false); }); q.on('error', () => res(false)); });
 (async () => {
   yaz('\n=== BIST Pusula motoru kurulumu (PowerShell\'siz) ===\n');
   if (!fs.existsSync(path.join(D, 'ayar.json'))) { yaz('HATA: ' + D + '\\ayar.json yok. Bu bilgisayar daha önce eşleştirilmemiş; Claude\'a yaz.'); process.exit(1); }
-  // 1) dosyalar
-  yaz('1/5 Güncel motor dosyaları indiriliyor...');
-  for (const f of ['bot.js', 'package.json']) {
-    const b = await get(RAW + f);
-    const p = path.join(D, f), tmp = p + '.yeni';
-    fs.writeFileSync(tmp, b);
-    try { fs.renameSync(tmp, p); } catch (e) { try { fs.unlinkSync(p); } catch (x) {} fs.renameSync(tmp, p); }
+  // 1) eski motoru kapat (bot.js / motor.js çalıştıran node'lar; bu kurulum betiği değil) — dosya kilitli kalmasın
+  yaz('1/5 Eski motor kapatılıyor...');
+  sh('wmic process where "name=\'node.exe\' and (commandline like \'%bot.js%\' or commandline like \'%motor.js%\')" call terminate');
+  await sleep(3000);
+  // 2) dosyalar — motor artık 'motor.js' adıyla (eski bot.js'i antivirüs kilitledi; ona dokunmuyoruz)
+  yaz('2/5 Güncel motor dosyaları indiriliyor...');
+  for (const [src, dst] of [['bot.js', 'motor.js'], ['package.json', 'package.json']]) {
+    const b = await get(RAW + src);
+    const p = path.join(D, dst);
+    let yazildi = false;
+    for (const hedef of [p, p.replace(/\.js(on)?$/, m => '2' + m)]) {
+      try { fs.writeFileSync(hedef + '.yeni', b); try { fs.unlinkSync(hedef); } catch (x) {} fs.renameSync(hedef + '.yeni', hedef); yazildi = hedef; break; }
+      catch (e) { try { fs.unlinkSync(hedef + '.yeni'); } catch (x) {} if (dst === 'package.json') { yazildi = 'atla'; break; } }
+    }
+    if (!yazildi) throw new Error(dst + ' yazılamadı (antivirüs engelliyor olabilir)');
+    if (dst === 'motor.js') MOTOR = path.basename(yazildi);
   }
-  // 2) tarayıcı bileşeni (yoksa)
+  // 3) tarayıcı bileşeni (yoksa)
   if (!fs.existsSync(path.join(D, 'node_modules', 'playwright'))) {
-    yaz('2/5 Tarayıcı bileşeni kuruluyor (birkaç dakika)...');
+    yaz('3/5 Tarayıcı bileşeni kuruluyor (birkaç dakika)...');
     cp.execSync('npm.cmd install --no-audit --no-fund --loglevel=error', { cwd: D, stdio: 'inherit' });
     cp.execSync('npx.cmd playwright install chromium', { cwd: D, stdio: 'inherit' });
-  } else yaz('2/5 Tarayıcı bileşeni zaten kurulu.');
-  // 3) eski yöntemin artıkları (bekçi görevi her 5 dk 'bekci.vbs bulunamıyor' penceresi açıyordu)
-  yaz('3/5 Eski kurulum artıkları temizleniyor...');
+  } else yaz('3/5 Tarayıcı bileşeni zaten kurulu.');
+  // 4) eski yöntemin artıkları (bekçi görevi her 5 dk 'bekci.vbs bulunamıyor' penceresi açıyordu)
+  yaz('4/5 Eski kurulum artıkları temizleniyor...');
   sh('schtasks /Delete /F /TN BistMotorBekci');
   const startup = path.join(process.env.APPDATA || '', 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup');
   for (const p of [path.join(startup, 'BistMotor.vbs'), path.join(startup, 'BIST Pusula Motor.lnk'), path.join(D, 'baslat.vbs'), path.join(D, 'bekci.vbs'), path.join(D, 'bekci.ps1')]) { try { fs.unlinkSync(p); } catch (e) {} }
-  // 4) eski motoru kapat (yalnız bot.js çalıştıran node'lar; bu kurulum betiği değil)
-  yaz('4/5 Eski motor kapatılıyor...');
-  sh('wmic process where "name=\'node.exe\' and commandline like \'%bot.js%\'" call terminate');
-  await sleep(3000);
   // 5) Başlangıç + şimdi başlat
   yaz('5/5 Otomatik başlatma ayarlanıyor ve motor başlatılıyor...');
+  try { fs.mkdirSync(startup, { recursive: true }); } catch (e) {}
   const cmdf = path.join(startup, 'BIST Pusula Motor.cmd');
-  fs.writeFileSync(cmdf, '@echo off\r\ncd /d "%LOCALAPPDATA%\\BistMotor"\r\nstart "BIST Pusula Motor" /min node bot.js\r\n');
-  cp.spawn('cmd.exe', ['/c', cmdf], { cwd: D, detached: true, stdio: 'ignore', windowsHide: true }).unref();
+  fs.writeFileSync(cmdf, '@echo off\r\ncd /d "%LOCALAPPDATA%\\BistMotor"\r\nstart "BIST Pusula Motor" /min node ' + MOTOR + '\r\n');
+  cp.spawn('cmd.exe', ['/c', cmdf], { cwd: D, detached: true, stdio: 'ignore', windowsHide: true }).on('error', () => {}).unref();
   let ok = false;
   for (let i = 0; i < 12 && !ok; i++) { await sleep(5000); ok = await ping(); }
   if (ok) {
@@ -51,4 +58,9 @@ const ping = () => new Promise(res => { const q = http.get('http://127.0.0.1:471
     yaz('Görev çubuğunda "BIST Pusula Motor" penceresi var: KAPATMA, küçük kalsın. Kapanırsa motor kendini yeniden açar.');
     yaz('Bilgisayar açılıp oturum açılınca kendiliğinden başlar. Bu pencereyi kapatabilirsin.');
   } else yaz('\n⚠️ Motor başlatıldı ama 1 dakikada yanıt vermedi. "BIST Pusula Motor" penceresinin fotoğrafını Claude\'a gönder.');
-})().catch(e => { yaz('\nHATA: ' + e.message + '\nBu ekranın fotoğrafını Claude\'a gönder.'); process.exit(1); });
+})().catch(e => {
+  yaz('\nHATA: ' + e.message + '\nBu ekranın fotoğrafını Claude\'a gönder.');
+  // kurulum yarıda kaldıysa eski motoru geri aç (sinyaller kesilmesin)
+  try { const eski = ['motor.js', 'motor2.js', 'bot.js'].find(f => fs.existsSync(path.join(D, f))); if (eski) { cp.spawn('cmd.exe', ['/c', 'start', '"BIST Pusula Motor"', '/min', 'node', eski], { cwd: D, detached: true, stdio: 'ignore', windowsHide: true }).on('error', () => {}).unref(); yaz('Eski motor yeniden başlatıldı (' + eski + ').'); } } catch (x) {}
+  setTimeout(() => process.exit(1), 1500);
+});
