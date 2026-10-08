@@ -135,9 +135,9 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
 - v8.8 (07.10, Fatih: 'çok mesaj geliyor, yalnız Telegram ve yalnız önemli'): iPhone bildirimleri KAPALI (pushMsg ve sunucu pushSend erken döner; D1 push tablosu boşaltıldı).
   Telegram'a giden: Algı yalnız 💪 GÜÇLÜ (fc≥0,8), Fırsat otomatik taraması yalnız A notlu AL (B/SAT yalnız karne), Momentum, KAP önem 3 + izleme listesinde önem≥2 (BIST100 önem-2 artık gitmez),
   pozisyon asistanı, motor uyarısı, akşam karne + Cuma haftalık. KAPALI: tavan listesi mesajı, telefonun eski 'gün sonu raporu'. Karneye yazma HİÇBİRİNDE değişmedi.
-- 08.10 MOTOR BEKÇİSİ (pc/bekci.ps1 + bekci.vbs + bekci-kur.ps1): motor 08.10 15:30'da tamamen sustu (node süreci kapandı ya da ağ/uyku; bot.js yalnız tarayıcıyı yeniden başlatıyordu).
-  Görev Zamanlayıcı 'BistMotorBekci' (yönetici izni gerekmez, oturum açıkken 5 dk'da bir + oturum açılınca): 127.0.0.1:47123 yanıt vermezse node bot.js'i öldürüp baslat.vbs ile açar;
-  motor ayaktaysa api.altinerpano.com/echo'ya ulaşılamıyorsa bekci.log'a 'internet/şirket ağı' yazar. Kurulu motora ekleme: irm .../pc/bekci-kur.ps1 | iex. kur.ps1 artık bekçiyi de kurar; kaldir.ps1 siler.
+- 08.10 MOTOR (antivirüs uyumlu): iş PC'sinde Bitdefender Endpoint Security (kurumsal, istisna İSTENEMEZ) bot.js ve .vbs dosyalarını siliyordu (15:30 kapanmanın sebebi).
+  .vbs ve ayrı bekçi KALDIRILDI. bot.js iki rollü: 'node bot.js' = GÖZETMEN (görünür, simge durumunda pencere 'BIST Pusula Motor', kilit 47124) → 'node bot.js --isci' alt sürecini
+  çalıştırır; kapanırsa 10 sn sonra, 3 dk yanıt vermezse yeniden başlatır. Başlatma: Başlangıç klasöründe 'BIST Pusula Motor.lnk' (node.exe bot.js, küçültülmüş). kur.ps1 eski .vbs/görevi temizler.
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.

@@ -22,7 +22,7 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
 # 2) Motor dosyaları
 Yaz '2/5 Motor dosyaları indiriliyor...'
 $RAW = 'https://raw.githubusercontent.com/dealerfaltiner2/yeni-terminal/main/pc'
-foreach ($f in 'bot.js', 'package.json', 'baslat.vbs', 'bekci.ps1', 'bekci.vbs') { Invoke-WebRequest "$RAW/$f" -OutFile (Join-Path $D $f) -UseBasicParsing }
+foreach ($f in 'bot.js', 'package.json') { Invoke-WebRequest "$RAW/$f" -OutFile (Join-Path $D $f) -UseBasicParsing }
 
 # 3) Tarayıcı bileşeni
 Yaz '3/5 Tarayıcı bileşeni kuruluyor (ilk seferde ~150 MB)...'
@@ -48,23 +48,22 @@ if ($yeni -match '^[Ee]') {
 }
 
 # 5) Otomatik başlatma (oturum açılınca) + şimdi başlat
+# 08.10: .vbs betikleri KALDIRILDI (şirket antivirüsü siliyordu). Motor, Başlangıç klasöründeki bir KISAYOLLA
+# görünür ama simge durumunda küçültülmüş bir pencerede açılır; kapanırsa kendi gözetmeni yeniden başlatır.
 Yaz '5/5 Otomatik başlatma ayarlanıyor...'
-Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like '*BistMotor*' -or $_.CommandLine -like '*bot.js*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
-$vbs = Join-Path $D 'baslat.vbs'
-# Oturum açılınca otomatik başlasın: Başlangıç klasörü (yönetici izni gerekmez)
+Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like '*bot.js*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 $startup = [Environment]::GetFolderPath('Startup')
-Copy-Item $vbs (Join-Path $startup 'BistMotor.vbs') -Force
-Start-Process wscript.exe "`"$vbs`""
-# Bekçi: 5 dakikada bir motoru kontrol eder, kapanmışsa yeniden açar (yönetici izni gerekmez)
-try {
-  $bact = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument ('"' + (Join-Path $D 'bekci.vbs') + '"') -WorkingDirectory $D
-  $bt1 = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(2) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 3650)
-  $bt2 = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
-  $bset = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 4)
-  Register-ScheduledTask -TaskName 'BistMotorBekci' -Action $bact -Trigger $bt1, $bt2 -Settings $bset -Force | Out-Null
-  Yaz 'Bekçi eklendi: motor kapanırsa en geç 5 dakikada yeniden açılır.' 'Green'
-} catch { Yaz ('Bekçi eklenemedi (motor yine çalışır): ' + $_.Exception.Message) 'Yellow' }
-Start-Sleep -Seconds 20
+# eski yöntemin artıkları
+Remove-Item (Join-Path $startup 'BistMotor.vbs') -Force -ErrorAction SilentlyContinue
+foreach ($f in 'baslat.vbs', 'bekci.vbs', 'bekci.ps1') { Remove-Item (Join-Path $D $f) -Force -ErrorAction SilentlyContinue }
+try { Unregister-ScheduledTask -TaskName 'BistMotorBekci' -Confirm:$false -ErrorAction SilentlyContinue } catch {}
+$node = (Get-Command node).Source
+$ws = New-Object -ComObject WScript.Shell
+$lnk = $ws.CreateShortcut((Join-Path $startup 'BIST Pusula Motor.lnk'))
+$lnk.TargetPath = $node; $lnk.Arguments = 'bot.js'; $lnk.WorkingDirectory = $D; $lnk.WindowStyle = 7; $lnk.Description = 'BIST Pusula sinyal motoru'
+$lnk.Save()
+Start-Process -FilePath $node -ArgumentList 'bot.js' -WorkingDirectory $D -WindowStyle Minimized
+Start-Sleep -Seconds 25
 try { $s = Invoke-WebRequest 'http://127.0.0.1:47123' -UseBasicParsing -TimeoutSec 5; $ok = $s.StatusCode -eq 200 } catch { $ok = $false }
 # 6) İsteğe bağlı: bilgisayar açılınca OTURUM AÇILMADAN da başlasın (Görev Zamanlayıcı; Windows şifresi bir kez sorulur, hiçbir yere kaydedilmez/gönderilmez)
 $ots = Read-Host "`nBilgisayar yeniden başlayınca, sen oturum açmadan da motor çalışsın mı? (E/H)"
@@ -88,6 +87,7 @@ if ($ots -match '^[Ee]') {
 if ($ok) {
   Yaz "`n✅ Kuruldu. Sinyal motoru arka planda çalışıyor." 'Green'
   Yaz 'Durumunu görmek için tarayıcıda: http://127.0.0.1:47123'
+  Yaz 'Görev çubuğunda "BIST Pusula Motor" penceresi duracak: KAPATMA, küçük kalsın. Kapanırsa motor kendini yeniden açar.'
   Yaz 'Bilgisayar yeniden açılınca kendiliğinden başlar. Oturumu KAPATMA (ekranı kilitlemek sorun değil).'
 } else {
   Yaz "`n⚠️ Motor başlatıldı ama henüz yanıt vermiyor. 1 dakika sonra http://127.0.0.1:47123 adresine bak; açılmazsa '$D\motor.log' dosyasının ekran görüntüsünü Claude'a gönder." 'Yellow'

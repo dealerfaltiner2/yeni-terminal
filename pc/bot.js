@@ -3,6 +3,7 @@
 // - Bekçi: sayfanın nabzı (window.BOT.beat) 3 dk durursa ya da tarayıcı çökerse yeniden başlatır.
 // - Her gün 09:40 ve 18:25'te (İstanbul) tarayıcıyı yeniler → terminalin son sürümü yüklenir.
 // - Tek kopya: 127.0.0.1:47123 kilidi; aynı adreste durum sayfası (tarayıcıda http://127.0.0.1:47123 aç).
+// - Gözetmen (dosyanın sonu): düz 'node bot.js' motoru '--isci' alt süreci olarak çalıştırır ve kapanırsa yeniden açar.
 const fs = require('fs'), path = require('path'), http = require('http');
 const DIR = __dirname, LOG = path.join(DIR, 'motor.log');
 const SITE = process.env.BIST_SITE || 'https://dealerfaltiner2.github.io/yeni-terminal/';
@@ -63,7 +64,36 @@ async function session(cfg) {
     }
   } finally { try { await browser.close(); } catch (e) {} }
 }
-(async () => {
+// 08.10 GÖZETMEN: şirket antivirüsü (Bitdefender) gizli pencere açan .vbs betiklerini siliyordu → .vbs ve ayrı bekçi KALDIRILDI.
+// Artık bu dosya iki rol oynar: düz 'node bot.js' = GÖZETMEN (görünür, simge durumunda küçültülmüş pencere; tek kopya kilidi 47124),
+// 'node bot.js --isci' = asıl motor. Gözetmen motor kapanırsa 10 sn sonra, 3 dk yanıt vermezse yeniden başlatır.
+if (!process.argv.includes('--isci')) {
+  process.title = 'BIST Pusula Motor';
+  const lk = http.createServer((q, r) => { r.end('ok'); });
+  lk.once('error', () => { console.log('BIST Pusula motoru zaten çalışıyor. Bu pencereyi kapatabilirsin.'); setTimeout(() => process.exit(0), 8000); });
+  lk.listen(47124, '127.0.0.1', () => {
+    console.log('==============================================');
+    console.log('  BIST Pusula sinyal motoru — BU PENCEREYİ KAPATMA');
+    console.log('  (simge durumuna küçültebilirsin; durum: http://127.0.0.1:47123)');
+    console.log('==============================================');
+    log('gözetmen başladı');
+    const { spawn } = require('child_process');
+    let child = null, lastStart = 0, fails = 0;
+    const start = () => {
+      if (!fs.existsSync(__filename)) { log('bot.js bulunamadı (antivirüs silmiş olabilir) — kurulumu yeniden yap'); setTimeout(start, 60e3); return; }
+      lastStart = Date.now();
+      child = spawn(process.execPath, [__filename, '--isci'], { cwd: DIR, stdio: 'inherit', windowsHide: true });
+      child.on('exit', code => { log('motor kapandı (kod ' + code + ') → 10 sn sonra yeniden başlatılıyor'); child = null; setTimeout(start, 10e3); });
+    };
+    start();
+    const ping = () => new Promise(res => { const q = http.get('http://127.0.0.1:47123', r => { r.resume(); res(r.statusCode === 200); }); q.setTimeout(8000, () => { q.destroy(); res(false); }); q.on('error', () => res(false)); });
+    setInterval(async () => {
+      if (!child || Date.now() - lastStart < 3 * 60e3) return;
+      fails = (await ping()) ? 0 : fails + 1;
+      if (fails >= 3) { fails = 0; log('motor 3 dk yanıt vermedi → yeniden başlatılıyor'); try { child.kill(); } catch (e) {} }
+    }, 60e3);
+  });
+} else (async () => {
   try { await lock(); } catch (e) { log('motor zaten çalışıyor, bu kopya kapanıyor'); process.exit(0); }
   log('motor başladı');
   for (;;) {
