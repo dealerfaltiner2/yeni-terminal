@@ -113,6 +113,24 @@ Her işlemde %0,1 kayma düşüldü. Eski <15.03.2026 / yeni ≥. İşlem başı
      İlke: "güçlü hisse, SAKİN an" (Momentum gibi) — hareket eden hisseyi değil, güçlü ama o an durgun hisseyi al.
   (4) Ertesi gün açılış (tüm hisseler): tavan kapanan +1,76/+2,13 (%76–77 yukarı) — en güçlü etki ama tavana kilitlenince alınamaz; −%5 ve kötüsü kapanan ertesi gün −0,94/−2,54 (%31–45 yukarı) → ertesi gün bu hisselere AL sinyali verme (filtre adayı).
   Sıradaki (dakikalık mum gerekir): Momentum hisselerinde 10:30 dışı sakin-an girişleri; gün sonu 'tavana gidiyor' adayı (17:00'de +%7 üstü) ertesi açılış testi; çıkış (yarısı +%2, kalanı izleyen stop).
+## 6e. 09.10 gece MAKİNE ÖĞRENMESİ DENEMESİ (feat → sıkıştırılmış aktarım, 11.444 satır adr≥4, 279 gün)
+- Aktarım: D1 tablo `mlpack` (gün başına sıkıştırılmış satır, 64 karakterlik alfabe, 16 özellik + o10/o15/o20) → elle kopya + gün uzunluğu/sağlama toplamı kontrolü (280/280 doğru).
+  Sandbox'tan Cloudflare/Worker'a doğrudan erişim YOK (yalnız GitHub) — veri aktarımı bu yolla yapıldı.
+- Model: HistGradientBoosting, ay ay ileriye dönük (yalnız geçmiş aylarla eğit, sonraki ayı tahmin et; test 2025-11..2026-09, 11 ay).
+  Özellikler: 10:30 anlık feat + gün başlığı (md20/md5/mr30/artıda payı) + gün içi sıralar. Maliyet varsayımı %0,2 gidiş-dönüş.
+- SONUÇ: MODEL MOMENTUM'U GEÇEMEDİ.
+  ±1,5: model en iyi 1–2 hisse ort +0,17 (net ≈0), kazanma %48–50 · Momentum +0,29, kazanma %59, 11/11 ay artı.
+  ±2: model +0,13..+0,26 · Momentum +0,41 (net +0,21), en iyi 5 hisse hariç +0,21.
+  Stop −3/gün sonu: model top2 +0,55 ama en iyi 5 hisse hariç +0,15 (birkaç uçan hisseye bağlı); Momentum +0,61 ama 5 hisse hariç −0,16.
+  Şans kontrolü (hedef gün içinde karıştırılıp aynı model): top1 ±2 ort −0,31..+0,32 → modelin +0,26'sı şans aralığında.
+  Model puanı Momentum adaylarını TERS sıralıyor (puanı düşük yarı daha iyi) → filtre olarak da kullanılmaz.
+  Kazanma olasılığı sınıflandırıcısı (±1,5 önce hedef): %52–53 (taban %42) ama ortalama getiri +0,15 — maliyet sonrası sıfır.
+- Ders: tek bir 10:30 anlık görüntüsü (günlük özet özellikler) daha fazla bilgi taşımıyor; algoritmayı büyütmek çözmez.
+  Yeni kenar için YENİ BİLGİ gerekir: dakikalık mum arşivi (10:30'a kadar seyir şekli, hacim dağılımı), derinlik/emir defteri, takas/aracı kurum dağılımı.
+- Öneri (3 Kasım'dan SONRA, Fatih onayıyla): (1) Worker'a günlük dakikalık mum arşivi (seans sonrası, R2/D1; CPU sınırı için motor/iş PC'si de yazabilir),
+  (2) 2–3 ay arşiv birikince model yeniden denenir, (3) derinlik (İdeal) en büyük potansiyel yeni bilgi.
+  Momentum ±1,5 → ±2 önerisi geçerli (6d). Betikler: tools/ml/ (pack.py SQL üretir, check.py doğrular, decode.py çözer, model.py + m2.py test); yeniden gerekirse mlpack tablosundan aynı biçimle çözülür.
+
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
 - v6.6 (29.09 akşamı): karne özetinde "Filtre kontrolü" — endeks artı/eksi ve oynak/sakin ayrımı kendi sinyallerimizde. 1–2 hafta sonra bak; tutarsa sinyal kapısı öner.
