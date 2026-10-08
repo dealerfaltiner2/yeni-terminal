@@ -22,7 +22,7 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
 # 2) Motor dosyaları
 Yaz '2/5 Motor dosyaları indiriliyor...'
 $RAW = 'https://raw.githubusercontent.com/dealerfaltiner2/yeni-terminal/main/pc'
-foreach ($f in 'bot.js', 'package.json', 'baslat.vbs') { Invoke-WebRequest "$RAW/$f" -OutFile (Join-Path $D $f) -UseBasicParsing }
+foreach ($f in 'bot.js', 'package.json', 'baslat.vbs', 'bekci.ps1', 'bekci.vbs') { Invoke-WebRequest "$RAW/$f" -OutFile (Join-Path $D $f) -UseBasicParsing }
 
 # 3) Tarayıcı bileşeni
 Yaz '3/5 Tarayıcı bileşeni kuruluyor (ilk seferde ~150 MB)...'
@@ -55,6 +55,15 @@ $vbs = Join-Path $D 'baslat.vbs'
 $startup = [Environment]::GetFolderPath('Startup')
 Copy-Item $vbs (Join-Path $startup 'BistMotor.vbs') -Force
 Start-Process wscript.exe "`"$vbs`""
+# Bekçi: 5 dakikada bir motoru kontrol eder, kapanmışsa yeniden açar (yönetici izni gerekmez)
+try {
+  $bact = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument ('"' + (Join-Path $D 'bekci.vbs') + '"') -WorkingDirectory $D
+  $bt1 = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(2) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 3650)
+  $bt2 = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
+  $bset = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 4)
+  Register-ScheduledTask -TaskName 'BistMotorBekci' -Action $bact -Trigger $bt1, $bt2 -Settings $bset -Force | Out-Null
+  Yaz 'Bekçi eklendi: motor kapanırsa en geç 5 dakikada yeniden açılır.' 'Green'
+} catch { Yaz ('Bekçi eklenemedi (motor yine çalışır): ' + $_.Exception.Message) 'Yellow' }
 Start-Sleep -Seconds 20
 try { $s = Invoke-WebRequest 'http://127.0.0.1:47123' -UseBasicParsing -TimeoutSec 5; $ok = $s.StatusCode -eq 200 } catch { $ok = $false }
 # 6) İsteğe bağlı: bilgisayar açılınca OTURUM AÇILMADAN da başlasın (Görev Zamanlayıcı; Windows şifresi bir kez sorulur, hiçbir yere kaydedilmez/gönderilmez)
