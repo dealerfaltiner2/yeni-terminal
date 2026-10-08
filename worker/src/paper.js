@@ -8,8 +8,11 @@
 const TRMS = 3 * 3600e3;
 import { sigEnsure } from './sig.js';
 const trDay = ms => new Date(ms + TRMS).toISOString().slice(0, 10);
-export const PAPER_SRCS = ['firsat-A', 'firsat-B', 'algi', 'momentum', 'radar', 'sessiz'];
-const K15 = new Set(['momentum', 'sessiz']);   // ±%1,5 ile ölçülen kaynaklar
+export const PAPER_SRCS = ['firsat-A', 'firsat-B', 'algi', 'momentum', 'radar', 'sessiz', 'dunguclu'];
+const K15 = new Set(['momentum', 'sessiz', 'dunguclu']);
+// Sessiz kayıt botları: Telegram'daki yarış satırlarında gösterilmez (yalnız Karne ekranı)
+export const QUIET_BOTS = new Set(['sessiz', 'dunguclu', 'momgk']);
+const metaOf = r => { try { return (typeof r.meta === 'string' ? JSON.parse(r.meta) : r.meta) || {}; } catch (e) { return {}; } };   // ±%1,5 ile ölçülen kaynaklar
 export const PAPER_DEF = { amt: 20000, cap: 100000, max: 5, srcs: ['firsat-A', 'firsat-B', 'algi', 'momentum'], algiG: false, slip: 0.1, start: '2026-09-29' };
 const r2 = v => Math.round(v * 100) / 100;
 
@@ -82,7 +85,9 @@ export const BOTS = [
   { k: 'geri', ad: 'Geri çekilmede gir', not: 'Hemen almaz; 30 dk içinde fiyat %0,5 geri gelirse oradan alır, gelmezse geçer.' },
   { k: 'cabuk', ad: 'Çabuk çık', not: 'Hedef ya da stop 60 dk içinde gelmezse satar; gün sonunu beklemez.' },
   { k: 'fren', ad: 'Günlük fren', not: 'O gün 2 stop olduysa başka işlem açmaz.' },
-  { k: 'sessiz', ad: '🤫 Sessiz trend (deneme)', not: 'Yalnız sessiz kayıt sinyalleri: trendde, sabah sessiz ve sıkışık hisse, 10:30 alım, ±%1,5.' }
+  { k: 'sessiz', ad: '🤫 Sessiz trend (deneme)', not: 'Yalnız sessiz kayıt sinyalleri: trendde, sabah sessiz ve sıkışık hisse, 10:30 alım, ±%1,5.' },
+  { k: 'dunguclu', ad: '💪 Dün güçlü kapanış (deneme)', not: 'Sessiz kayıt: oynak hisse dünü günün tepesine yakın kapatmış, 10:30\'da yatay (−%1…+%1) → al, ±%1,5.' },
+  { k: 'momgk', ad: '🧪 Momentum + dün güçlü kapanış', not: 'Yalnız dünü günün tepesine yakın kapatan Momentum sinyalleri (dün kapanış yeri ≥ %70), ±%1,5.' }
 ];
 export function botRace(rows, c, today) {
   const wk = new Date(Date.parse(today) - 6 * 864e5).toISOString().slice(0, 10);
@@ -90,7 +95,9 @@ export function botRace(rows, c, today) {
     const days = new Map(); let n = 0, w = 0, l = 0, pl = 0, hafta = 0, eksik = 0, bugun = 0;
     for (const r of rows) {
       if (!r.done) continue;
-      if (b.k === 'sessiz' ? r.src !== 'sessiz' : !c.srcs.includes(r.src)) continue;
+      if (b.k === 'sessiz' || b.k === 'dunguclu') { if (r.src !== b.k) continue; }
+      else if (b.k === 'momgk') { if (r.src !== 'momentum' || !(+metaOf(r).yc >= 0.7)) continue; }
+      else if (!c.srcs.includes(r.src)) continue;
       if (r.src === 'algi' && (c.algiG || b.k === 'guclu') && !(fcOf(r) >= 0.8)) continue;
       if (b.k === 'saat') { const m = trM(r.t); if (m >= 660 && m < 780) continue; }
       const D = days.get(r.d) || (days.set(r.d, { syms: new Set(), stop: 0, pl: 0 }), days.get(r.d));
@@ -124,7 +131,7 @@ export async function paperCalc(env, fresh) {
   const c = paperCfg(raw);
   let rows = [];
   try { await sigEnsure(env); } catch (e) {}
-  try { rows = (await env.BT.prepare("SELECT d, t, src, sym, dir, px, done, o10, o15, rc, tx, pb, pbn, meta FROM sig WHERE d >= ? AND err IS NULL AND src IN ('firsat-A','firsat-B','algi','momentum','radar','sessiz')").bind(c.start).all()).results || []; } catch (e) { if (!/no such table/i.test(String(e && e.message))) throw e; }
+  try { rows = (await env.BT.prepare("SELECT d, t, src, sym, dir, px, done, o10, o15, rc, tx, pb, pbn, meta FROM sig WHERE d >= ? AND err IS NULL AND src IN ('firsat-A','firsat-B','algi','momentum','radar','sessiz','dunguclu')").bind(c.start).all()).results || []; } catch (e) { if (!/no such table/i.test(String(e && e.message))) throw e; }
   const v = { ok: true, at: Date.now(), ...paperSim(rows, c, trDay(Date.now())) };
   cache = { at: Date.now(), v };
   return v;
@@ -149,6 +156,6 @@ export async function paperLine(env, today) {
     const tl = n => (n >= 0 ? '+' : '−') + Math.abs(Math.round(n)).toLocaleString('tr-TR') + ' TL';
     return '\n\n🤖 <b>Kâğıt üzerinde bot</b> <i>(gerçek para yok)</i>\n   bugün: ' + (D ? D.n + ' işlem → <b>' + tl(D.pl) + '</b>' : 'işlem yok') +
       '\n   başından beri: ' + t.n + ' işlem, ' + t.gun + ' gün → <b>' + tl(t.pl) + '</b> (' + (t.pct >= 0 ? '+' : '') + '%' + String(t.pct).replace('.', ',') + ')' +
-      ((B0 => B0 ? '\n   🏁 yarışta önde: <b>' + B0.ad + '</b> (' + tl(B0.pl) + ')' : '')((v.bots || []).find(b => b.n && b.k !== 'sessiz')));
+      ((B0 => B0 ? '\n   🏁 yarışta önde: <b>' + B0.ad + '</b> (' + tl(B0.pl) + ')' : '')((v.bots || []).find(b => b.n && !QUIET_BOTS.has(b.k))));
   } catch (e) { return ''; }
 }

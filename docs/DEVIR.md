@@ -151,7 +151,7 @@ Her işlemde %0,1 kayma düşüldü. Eski <15.03.2026 / yeni ≥. İşlem başı
 - GECE ETKİSİ: hisselerde 10:30→kapanış ort −0,10, 17:30→ertesi açılış ort +0,2 (her iki dönemde, günlerin ~%70'i artı sepet).
   Gün içi alım bu ters rüzgârla yarışıyor. −%5 altı kapananlar ertesi sabah kötü, tavan kapananlar iyi (bilinen). Gece taşıma modeli düz sepetten iyi değil.
 - Maliyet notu: Fatih komisyon ödemiyor → gerçek maliyet ~1 fiyat adımı kayma (~%0,05–0,1); testlerde %0,1 kullanıldı.
-- ÖNERİ (Fatih onayıyla): 'Güçlü kapanış' + 'Momentum + güçlü kapanış' SESSİZ KAYIT olarak karneye (sessiz trend gibi, Telegram yok) → 3 Kasım'da canlı veriyle karar.
+- 09.10 Fatih ONAYLADI → v8.9'da eklendi (src 'dunguclu' + bot 'momgk'). Eski öneri metni: 'Güçlü kapanış' + 'Momentum + güçlü kapanış' SESSİZ KAYIT olarak karneye (sessiz trend gibi, Telegram yok) → 3 Kasım'da canlı veriyle karar.
   Canlıda yclv için dünün 1D mumu (tepe/dip/kapanış) yeter.
 
 ## 7. Bekleyen / fikir

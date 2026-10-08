@@ -3243,7 +3243,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="8.8";window.APPV=APP_VER;
+  const APP_VER="8.9";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4011,7 +4011,7 @@ document.getElementById('infosheet').addEventListener('click',e=>{if(e.target.cl
 </style>
 <script>
 /* ================= v6.9 SUNUCU KARNESİ ================= */
-const KSRC=[['firsat-A','🅰️ Fırsat A'],['firsat-B','🅱️ Fırsat B'],['algi','⚡ Algı'],['momentum','🧪 Momentum (deneme)'],['sessiz','🤫 Sessiz trend (sessiz kayıt)'],['radar','📡 Sunucu radarı']];
+const KSRC=[['firsat-A','🅰️ Fırsat A'],['firsat-B','🅱️ Fırsat B'],['algi','⚡ Algı'],['momentum','🧪 Momentum (deneme)'],['sessiz','🤫 Sessiz trend (sessiz kayıt)'],['dunguclu','💪 Dün güçlü kapanış (sessiz kayıt)'],['radar','📡 Sunucu radarı']];
 const KAPTR={is:'Yeni iş/sözleşme',ihale:'İhale',geri:'Geri alım',bedelsiz:'Bedelsiz',bedelli:'Bedelli',tahsisli:'Sermaye artırımı',teklif:'Pay alım teklifi',birlesme:'Birleşme/devir',tesvik:'Teşvik',temettu:'Temettü',bilanco:'Bilanço',not:'Kredi notu',icerden:'İçeriden alım-satım',yatirim:'Yatırım',varlik:'Varlık alım/satım',ozel:'Özel durum',risk:'Risk',kisit:'İşlem kısıtı',ceza:'Ceza/dava'};
 let KST_LOADING=null,KST_TRY=0;
 // hata mesajını bir kez göstermek için tek seferlik yeniden çizim (kstatLoad 60 sn kısıtlı olduğundan döngü olmaz)
@@ -4804,8 +4804,8 @@ function momCalc(D,px){ // D: bugünden ÖNCEKİ günlük mumlar (eskiden yeniye
  const n=D.length;if(n<22)return null;const pc=D[n-1].close;if(!(pc>0))return null;
  const d1=(pc/D[n-2].close-1)*100,d5=(pc/D[n-6].close-1)*100;
  let adr=0,to=0;for(let j=n-20;j<n;j++){adr+=(D[j].high-D[j].low)/D[j].close;to+=D[j].close*(D[j].volume||0)}
- adr=adr/20*100;to/=20;const r30=(px/pc-1)*100;
- return {d1,d5,adr,to,r30,pc,ok:d1>=3&&d5>=5&&adr>=6&&r30<1&&to>=5e7}}
+ adr=adr/20*100;to/=20;const r30=(px/pc-1)*100,y=D[n-1],yc=y.high>y.low?(y.close-y.low)/(y.high-y.low):null;
+ return {d1,d5,adr,to,r30,pc,yc,ok:d1>=3&&d5>=5&&adr>=6&&r30<1&&to>=5e7}}
 async function momScan(force){
  const d=momDay();if(MOM.busy||(!force&&MOM.day===d))return null;
  const t=new Date(Date.now()+3*3600e3),m=t.getUTCHours()*60+t.getUTCMinutes(),wd=t.getUTCDay();
@@ -4826,7 +4826,7 @@ async function momScan(force){
   out.sort((a,b)=>b.d5-a.d5);
   for(const x of out.slice(0,6)){
    const tp=x.px*1.015,sp=x.px*0.985;
-   sigPost({src:'momentum',sym:x.s,t:Date.now(),px:x.px,sc:Math.round(x.d5),dir:'AL',meta:{d1:+x.d1.toFixed(1),d5:+x.d5.toFixed(1),adr:+x.adr.toFixed(1),r30:+x.r30.toFixed(2)}});
+   sigPost({src:'momentum',sym:x.s,t:Date.now(),px:x.px,sc:Math.round(x.d5),dir:'AL',meta:{d1:+x.d1.toFixed(1),d5:+x.d5.toFixed(1),adr:+x.adr.toFixed(1),r30:+x.r30.toFixed(2),yc:x.yc!=null?+x.yc.toFixed(2):null}});
    if(S.tgTok&&S.tgChat&&(BOTMODE||!S.botAlive)){try{await tgSend('🧪 <b>MOMENTUM (deneme) · '+htmlEsc(x.s)+'</b>\n'+
     'Fiyat '+nf(x.px)+' · bugün '+pct(x.r30)+' · dün '+pct(x.d1)+' · 5 günde '+pct(x.d5)+'\n'+
     'Günlük ortalama oynaklık %'+nf(x.adr,1)+(x.sec?' · '+htmlEsc(secTr(x.sec)):'')+'\n'+
@@ -4972,7 +4972,7 @@ function labHtml(){const D={canli:['🟢','Canlıda deneniyor'],bulgu:['🔵','G
    Gerçek para yok, emir yok. Sunucu (/paper) karnedeki sinyalleri "bot alsaydı ne olurdu?" diye hesaplar:
    seçili kaynaklar, işlem başına sabit tutar, Momentum ±%1,5 / diğerleri ±%1, gelmezse gün sonu kapanışı, %0,1 kayma payı, günde en çok N işlem. */
 const PAPER={at:0,v:null,err:null,busy:false};
-const PSRC={'firsat-A':'🅰️ Fırsat A','firsat-B':'🅱️ Fırsat B',algi:'⚡ Algı',momentum:'🧪 Momentum',radar:'📡 Radar',sessiz:'🤫 Sessiz trend'};
+const PSRC={'firsat-A':'🅰️ Fırsat A','firsat-B':'🅱️ Fırsat B',algi:'⚡ Algı',momentum:'🧪 Momentum',radar:'📡 Radar',sessiz:'🤫 Sessiz trend',dunguclu:'💪 Dün güçlü kapanış'};
 function paperLoad(force){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||PAPER.busy)return;if(!force&&Date.now()-PAPER.at<120e3)return;
  PAPER.busy=true;PAPER.at=Date.now();
  fetch(dq(b+'/paper')).then(r=>r.json()).then(j=>{if(j&&j.ok){PAPER.v=j;PAPER.err=null}else PAPER.err=(j&&j.error)||'alınamadı'}).catch(()=>{PAPER.err='sunucuya ulaşılamadı'})
@@ -5118,7 +5118,7 @@ function xrayRender(){const body=document.getElementById('xr_body');if(!body)ret
  try{(NOWK.list||[]).filter(k=>String(k.syms||'').split(',').includes(sym)).slice(0,2).forEach(k=>wn.push([k.yon<0?'w':'ok','KAP '+new Date(k.t).toLocaleDateString('tr-TR',{day:'numeric',month:'short'})+': '+htmlEsc(k.ad||k.tip||'')+(k.subj?' — '+htmlEsc(String(k.subj).slice(0,60)):'')]))}catch(e){}
  if(wn.length)h+='<div class="dsub">Dikkat</div><div class="warns">'+wn.map(x=>'<div class="'+(x[0]==='ok'?'ok':'')+'">'+(x[0]==='ok'?'✓ ':'⚠ ')+x[1]+'</div>').join('')+'</div>';
  // hissenin karnesi
- const ks=XR.ks,SN={algi:'⚡ Algı','firsat-A':'🅰️ Fırsat A','firsat-B':'🅱️ Fırsat B',momentum:'🧪 Momentum',radar:'📡 Radar',tavan:'🚀 Tavan'};
+ const ks=XR.ks,SN={algi:'⚡ Algı','firsat-A':'🅰️ Fırsat A','firsat-B':'🅱️ Fırsat B',momentum:'🧪 Momentum',radar:'📡 Radar',tavan:'🚀 Tavan',sessiz:'🤫 Sessiz trend',dunguclu:'💪 Dün güçlü kapanış'};
  h+='<div class="dsub">Sistemin bu hissedeki karnesi (60 gün)</div>';
  if(!ks)h+='<div class="xnote sm">Yükleniyor…</div>';
  else if(!(ks.src||[]).length)h+='<div class="xnote sm">Sistem son 60 günde bu hisseye sinyal vermedi.</div>';
@@ -5172,6 +5172,41 @@ async function sesScan(force){
  }finally{SES.busy=false}
 }
 setInterval(()=>{try{sesScan(false)}catch(e){}},30000);
+/* ================= v8.9 DÜN GÜÇLÜ KAPANIŞ (SESSİZ KAYIT) =================
+   Araştırma (docs/DEVIR.md 6f, 15 dk mumlar, 14 ay): oynak hisse (20 gün ort. günlük aralık ≥%6) dünü günün tepesine yakın kapatmış
+   (dün kapanış yeri = (kapanış−dip)/(tepe−dip) ≥ 0,70) ve 10:30'da yatay (önceki kapanışa göre −%1…+%1) → 10:30'da al.
+   Geçmişte ±%2: eski %64 / yeni %62; ±%1,5: %62 / %59. Ayrıca Momentum sinyallerine 'yc' (dün kapanış yeri) yazılır → 'Momentum + dün güçlü' botu.
+   SESSİZ KAYIT: Telegram, bildirim, ekranda sinyal YOK — yalnız karneye 'dunguclu' kaynağı (±%1,5 ile ölçülür) + bot yarışı.
+   Motor varsa motor, yoksa ana cihaz; hafta içi 10:31–10:50 arasında günde bir kez. */
+const DGK={day:LS.get('dgDay',''),busy:false,last:null};
+function dgCalc(D,px){ // D: bugünden ÖNCEKİ günlük mumlar (eskiden yeniye)
+ const n=D.length;if(n<22)return null;const y=D[n-1],pc=y.close;if(!(pc>0)||!(px>0))return null;
+ let adr=0,to=0;for(let j=n-20;j<n;j++){adr+=(D[j].high-D[j].low)/D[j-1].close;to+=D[j].close*(D[j].volume||0)}
+ adr=adr/20*100;to/=20;const yc=y.high>y.low?(pc-y.low)/(y.high-y.low):null,r30=(px/pc-1)*100;
+ return {adr,to,yc,r30,pc,ok:adr>=6&&yc!=null&&yc>=0.7&&r30>=-1&&r30<=1&&to>=5e7}}
+async function dgScan(force){
+ const d=momDay();if(DGK.busy||(!force&&DGK.day===d))return null;
+ const t=new Date(Date.now()+3*3600e3),m=t.getUTCHours()*60+t.getUTCMinutes(),wd=t.getUTCDay();
+ if(!force){if(wd<1||wd>5||m<631||m>=650)return null;if(!(BOTMODE||(!S.botAlive&&LS.get('ownTok',''))))return null}
+ if(!(S.uni&&S.uni.length))return null;
+ DGK.busy=true;
+ try{
+  const q=s=>{const x=S.quotes[s];return x&&x.close>0?x.close:null};
+  const dk=x=>typeof x.time==='string'?x.time.slice(0,10):new Date(x.time*1000+3*3600e3).toISOString().slice(0,10);
+  // ön eleme (yalnız hız için): araştırmadaki gibi büyük hisseler (piyasa değerine göre ilk 120), bugün yatay
+  const pre=S.uni.filter(o=>o.close>0&&(o.market_cap_basic||0)>0).sort((a,b)=>(b.market_cap_basic||0)-(a.market_cap_basic||0)).slice(0,120)
+   .filter(o=>o.change!=null&&Math.abs(o.change)<=1.2).slice(0,70);
+  const out=[];
+  for(const o of pre){let cs;try{cs=await getBars(o.name,'1day')}catch(e){continue}
+   const D=(cs||[]).filter(x=>dk(x)<d),px=q(o.name)||o.close,r=dgCalc(D,px);
+   if(r&&r.ok)out.push(Object.assign({s:o.name,px},r))}
+  DGK.day=d;LS.set('dgDay',d);DGK.last={at:Date.now(),aday:pre.length,list:out};
+  out.sort((a,b)=>b.yc-a.yc);
+  for(const x of out.slice(0,10))sigPost({src:'dunguclu',sym:x.s,t:Date.now(),px:x.px,sc:Math.round(x.yc*100),dir:'AL',meta:{yc:+x.yc.toFixed(2),adr:+x.adr.toFixed(1),r30:+x.r30.toFixed(2)}});
+  return out;
+ }finally{DGK.busy=false}
+}
+setInterval(()=>{try{dgScan(false)}catch(e){}},30000);
 /* ================= v8.7 CLAUDE PİYASA YORUMU =================
    Zamanlanmış Claude görevi (hafta içi 10:40, 14:40, 18:40) piyasayı ve Pusula verilerini okur, yorumu D1 'yorum' tablosuna yazar.
    Terminal /yorum'dan okur (5 dk'da bir). Metin düz yazı; **kalın** ve satır başları desteklenir, HTML kaçırılır. */

@@ -142,6 +142,10 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   Kurulum/güncelleme: pc/kur.js (Chrome ile indir → Komut İstemi: node Downloads\kur.js): önce eski motoru kapatır (bot.js/motor.js), repodaki pc/bot.js'i PC'ye 'motor.js' adıyla indirir
   (PC'deki eski bot.js'i Bitdefender kilitledi: üzerine yazma EPERM → ona dokunulmaz; motor.js de yazılamazsa motor2.js), BistMotorBekci görevini ve .vbs artıklarını siler,
   Başlangıç'a 'BIST Pusula Motor.cmd' (start /min node motor.js) yazar ve başlatır; hata olursa eski motoru geri açar. ayar.json gerekir (eşleştirme yeniden gerekirse kur.ps1 sorunlu).
+- v8.9 (09.10, Fatih onayıyla) DÜN GÜÇLÜ KAPANIŞ — SESSİZ KAYIT (araştırma DEVIR 6f): dgScan() 10:31–10:50 bir kez (motor ya da motor yokken ana cihaz), günlük mumlardan dgCalc:
+  adr≥6 (20 gün, (tepe−dip)/önceki kapanış), dün kapanış yeri yc=(kapanış−dip)/(tepe−dip)≥0,70, 10:30 değişimi −%1…+%1, 20g ort. ciro ≥50 Mn → src 'dunguclu' (en çok 10), ±%1,5 ile ölçülür.
+  Momentum sinyallerinin meta'sına yc eklendi. Bot yarışında '💪 Dün güçlü kapanış' + '🧪 Momentum + dün güçlü kapanış' (momentum & yc≥0,7). QUIET_BOTS (paper.js) Telegram yarış satırlarında gösterilmez;
+  'dunguclu' karne mesajında ve sigToday'de yok (sessiz gibi). 3 Kasım değerlendirmesine dahil.
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.

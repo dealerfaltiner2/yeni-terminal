@@ -122,6 +122,9 @@ async function page(b, opt) {
       const yr = await T(() => new Promise(res => { yorumLoad(true); setTimeout(() => { renderNow(); const e = document.querySelector('#nowbody .yrm'); res({ hd: document.getElementById('nowbody').textContent.includes('Pusula\'nın piyasa yorumu'), txt: e ? e.textContent : '', xss: !!window.__XSS || !!document.querySelector('#nowbody .yrm img'), b: !!(e && e.querySelector('.yrm-b b')) }); }, 1200); }));
       ok('Claude yorumu Şimdi ekranında (kalın yazı, maddeler, önceki yorumlar)', /Açılış sonrası/.test(yr.txt) && /Bankalar güçlü/.test(yr.txt) && /Önceki yorumlar/.test(yr.txt) && yr.b && yr.hd, yr.txt.slice(0, 120));
       ok('Claude yorumundaki HTML çalıştırılmadı', !yr.xss);
+      { const g = await T(() => { const D = []; let c = 100; for (let i = 0; i < 25; i++) { const h = c * 1.04, l = c * 0.97; D.push({ open: c, high: h, low: l, close: c, volume: 1e6 }); } D[24] = { open: 100, high: 104, low: 96, close: 103, volume: 1e6 };
+          return { a: dgCalc(D, 103.5), b: dgCalc(D, 105), c: dgCalc(D.map((x, i) => i === 24 ? { ...x, close: 97 } : x), 97.2) }; });
+        ok('Dün güçlü kapanış: kural hesabı (kapanış yeri, oynaklık, 10:30 yatay)', g.a && g.a.ok && Math.abs(g.a.yc - 0.875) < 1e-6 && Math.abs(g.a.adr - 7.05) < 0.01 && g.b && !g.b.ok && g.c && !g.c.ok, JSON.stringify(g)); }
       ok('Deneme laboratuvarı listeleniyor', await T(() => /Deneme laboratuvarı/.test(labHtml()) && /Momentum/.test(labHtml())));
       ok('yeni ikon kurulumu: yapıştırılan bilgi adres + kodu yerine koyuyor', su.got === 'wss://x.test/k' && su.own === 'kod123', JSON.stringify(su));
       const mm = await T(() => { const D = []; let c = 100; for (let i = 0; i < 25; i++) { c = i === 24 ? c * 1.04 : i >= 20 ? c * 1.01 : c; D.push({ open: c, high: c * 1.035, low: c * 0.965, close: c, volume: 2e6 }); }

@@ -36,7 +36,7 @@ ok('ayar sınırları', c.amt === 1000 && c.max === 30 && c.srcs.join() === 'alg
     { ...R('2026-10-02', T('14:00'), 'firsat-B', 'C1', 10, 2, 2, -2), tx: -1, pbn: 1, pb: -1 },
     { ...R('2026-10-02', T('15:00'), 'firsat-B', 'D1', 10, 1, 1, 2), tx: 0.5, pbn: null, pb: null } ];
   const v = paperSim(rr, { amt: 10000, max: 5, slip: 0 }, '2026-10-02'), B = Object.fromEntries(v.bots.map(b => [b.k, b]));
-  ok('yarış: 7 bot, en çok kazanan en üstte', v.bots.length === 7 && v.bots[0].pl >= v.bots[6].pl);
+  ok('yarış: 9 bot, en çok kazanan en üstte', v.bots.length === 9 && v.bots[0].pl >= v.bots[8].pl);
   ok('mevcut bot = ana bot', B.mevcut.pl === v.tot.pl && B.mevcut.n === 4, B.mevcut.pl + ' / ' + v.tot.pl);
   ok('güçlüler: zayıf Algı alınmaz', B.guclu.n === 3);
   ok('öğle arası: 11:30 sinyali alınmaz', B.saat.n === 3 && B.saat.pl === -100, B.saat.pl);
@@ -44,5 +44,10 @@ ok('ayar sınırları', c.amt === 1000 && c.max === 30 && c.srcs.join() === 'alg
   ok('geri çekilme: gelmeyen atlanır, ölçülmeyen eksik sayılır', B.geri.n === 2 && B.geri.eksik === 1 && B.geri.pl === Math.round(1005 * 9.95 * 0.01) + Math.round(1005 * 9.95 * -0.01), B.geri.pl);
   { const v2 = paperSim([...rr, { ...R('2026-10-02', T('10:31'), 'sessiz', 'S1', 10, 2, 1, 0) }], { amt: 10000, max: 5, slip: 0 }, '2026-10-02'), S2 = v2.bots.find(b => b.k === 'sessiz'), M2 = v2.bots.find(b => b.k === 'mevcut');
     ok('sessiz trend botu: yalnız kendi sinyali, ±%1,5', S2.n === 1 && S2.pl === 150 && M2.n === 4, JSON.stringify(S2)); }
+  { const extra = [R('2026-10-02', T('10:31'), 'dunguclu', 'G1', 10, 2, 2, 0), R('2026-10-02', T('10:32'), 'momentum', 'M1', 10, 2, 1, 0, { meta: '{"yc":0.85}' }), R('2026-10-02', T('10:32'), 'momentum', 'M2', 10, 2, 2, 0, { meta: { yc: 0.3 } })];
+    const v3 = paperSim([...rr, ...extra], { amt: 10000, max: 5, slip: 0 }, '2026-10-02'), G = v3.bots.find(b => b.k === 'dunguclu'), MG = v3.bots.find(b => b.k === 'momgk'), M3 = v3.bots.find(b => b.k === 'mevcut');
+    ok('dün güçlü kapanış botu: yalnız kendi sinyali, ±%1,5 stop', G.n === 1 && G.pl === -150, JSON.stringify(G));
+    ok('Momentum + dün güçlü: yalnız yc≥0,7 olan Momentum', MG.n === 1 && MG.pl === 150, JSON.stringify(MG));
+    ok('dün güçlü kapanış ana bota karışmıyor', M3 && !v3.trades.some(x => x.src === 'dunguclu')); }
   ok('çabuk çıkış: 60 dk sonucu kullanılır', B.cabuk.n === 4 && B.cabuk.pl === -40 - 100 - 100 + 50, B.cabuk.pl); }
 console.log(`KÂĞIT BOT: ${pass}/${pass + fail} geçti`); process.exit(fail ? 1 : 0);
