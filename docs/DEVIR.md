@@ -94,6 +94,19 @@ Hedef: hedef = stop (±%1, ±%1,5, ±%2) iken %60+ tutan, 10:30'da bilinebilen �
   Sessiz trend ∩ Momentum: %88 / %75 ama n 17/21 (çok az). Haftanın günü dağılımı: 46–69 (Çarşamba zayıf, küçük n).
 - 03.10 Fatih kararı: bir ay bekle; Sessiz trend SESSİZ KAYIT olarak açıldı (v8.6, src 'sessiz', bildirim yok). ~3 Kasım'da toplu değerlendirme.
 
+## 6d. 09.10 gece MOMENTUM DERİN İNCELEME (feat, 242 sinyal, 155 gün; canlı kuralla aynı: d1≥3, d5≥5, adr≥6, r30<1; ciro şartı feat'te yok)
+Her işlemde %0,1 kayma düşüldü. Eski <15.03.2026 / yeni ≥. İşlem başına ortalama % (taban = diğer tüm hisse-günler: −0,16…−0,32):
+- ±%1: +0,05 / +0,09 (avantaj yok denecek kadar az) · ±%1,5 (CANLI): +0,33 / +0,19 · ±%2: +0,60 / +0,26
+- Stop −%3, hedef yok, kapanışta sat (mae ≤ −3 → −3, yoksa rest; bu hesap SIRADAN BAĞIMSIZ, kesin): +1,34 / +0,51. Stopsuz kapanış: +1,54 / +0,58 ama yeni dönemde işlemlerin %13'ü −%5 ve kötüsü.
+- Hisse yoğunluğu: en sık 5 hisse (PASEU, KLRHO, KTLEV, DSTKF, EFOR) 242'nin 96'sı. ±1,5/±2 yarışı onlar hariç de tutuyor (yeni dönem ±1,5 kazanma %60, +0,20).
+  'Stop −3 kapanış' kârı ise büyük ölçüde bu koşuculardan: 5'i hariç yeni dönem +0,07 → kırılgan.
+- Piyasa filtresi (piyasa genişliği = o gün tüm hisselerin 20g ort. getirisi; endeks 10:30 yönü): iki dönemde tutarlı fark YOK (hücreler küçük). Momentum'da piyasa kapısı önerme.
+- Seri/düşüş (eşit tutar, toplam % = işlem başına % toplamı): ±1,5 en derin düşüş −10,6, en uzun 6 zararlı gün; ±2 −10,9 / 6; stop−3 −13,2 / 5, en kötü gün −9,3.
+  20.000 TL/işlemde ±2: 13 ayda ~+21.000 TL, en derin düşüş ~2.200 TL (kayma dışı maliyet, taban kilidi, likidite hesaba katılmadı).
+- Ay ay (stop−3): 14 ayın 10'u artı. ±2: 14 ayın 10'u artı.
+- ÖNERİ (3 Kasım'da Fatih'e): canlı Momentum ±1,5 → ±2'ye geçiş adayı (iki dönemde de daha iyi, hisseye bağımlı değil). 'Stop −3 kapanış' bot yarışına deneme botu olarak eklenebilir; gerçek sinyal olmaz.
+  Yeni dönem eski dönemin yarısı kadar kazandırıyor → avantaj küçülüyor olabilir; canlı karne bunu doğrulamalı.
+
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
 - v6.6 (29.09 akşamı): karne özetinde "Filtre kontrolü" — endeks artı/eksi ve oynak/sakin ayrımı kendi sinyallerimizde. 1–2 hafta sonra bak; tutarsa sinyal kapısı öner.
