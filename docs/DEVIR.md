@@ -131,6 +131,29 @@ Her işlemde %0,1 kayma düşüldü. Eski <15.03.2026 / yeni ≥. İşlem başı
   (2) 2–3 ay arşiv birikince model yeniden denenir, (3) derinlik (İdeal) en büyük potansiyel yeni bilgi.
   Momentum ±1,5 → ±2 önerisi geçerli (6d). Betikler: tools/ml/ (pack.py SQL üretir, check.py doğrular, decode.py çözer, model.py + m2.py test); yeniden gerekirse mlpack tablosundan aynı biçimle çözülür.
 
+## 6f. 09.10 gece ZENGİN VERİ (15 dk mumlar) — İLK GERÇEK İLERLEME
+- VERİ YOLU (önemli): D1 MCP sorgusunun BÜYÜK sonucu Claude Code'da otomatik dosyaya kaydediliyor (~/.claude/projects/.../tool-results/*.txt, belirteç harcamadan).
+  `SELECT sym,data FROM bars ORDER BY sym LIMIT 10 OFFSET n` × 14 → 132 satır (101 hisse+XU100 @15 = 10.000 mum ≈ 14 ay; 30 hisse 5 dk ≈ 50 gün), ~50 MB, okuma ~132 satır.
+  Veriyi REPOYA KOYMA (herkese açık, TradingView verisi). Betikler: tools/ml/build_rich.py (özellik + sonuç), tools/ml/rich_model.py (ileriye dönük model).
+- Yeni özellikler: dünün kapanış yeri (yclv = (kapanış−dip)/(tepe−dip)), dünün son saati, dün VWAP farkı, gün içi VWAP farkı, aynı saate kadar hacim/20g ort. (vrT),
+  aralıktaki yer, endekse göre fark; 10 giriş saati (10:30…17:30); sonuç ±1/±1,5/±2 yarışı (aynı mumda ikisi → stop), gün sonu, ertesi açılış.
+- TUZAK (düzeltildi): ilk model tabana yakın (−%8…−10) hisseleri seçiyordu — taban sınırı yüzünden −%2 stop matematiksel olarak gelemiyor; gerçekte satılamazsın.
+  Bundan sonra her testte −%7 < 10:30 değişimi < +%7 şartı.
+- MODEL (10:30, ±2, günde 1 hisse, test 11 ay ileriye dönük): ort +0,55, hedef önce %59, 10/11 ay artı, en çok seçilen 5 hisse hariç +0,33. Şans (karıştırılmış) −0,07.
+  Seçtikleri: oynak (adr ~7), 20 günde güçlü (d20 ~+30), zirveye yakın, DÜNÜ GÜÇLÜ KAPATMIŞ (yclv ~0,84), 10:30'da sakin (değişim ~0, hacim normalin altında).
+  Diğer saatler (11:00 sonrası) zayıf — en iyi giriş 10:30.
+- MODELDEN ÇIKAN SADE KURALLAR (eski <15.03 / yeni ≥15.03, ±2 ort / hedef önce %):
+  Momentum                         +0,71 %70 / +0,30 %58
+  Momentum + dün güçlü kapanış (yclv≥0,7)   +0,64 %68 / +0,47 %63  (±1,5: %63/%62; ±1: %54/%62) — 12/14 ay artı, 5 hisse hariç +0,29
+  Momentum + yclv≥0,7 + 10:30 hacmi normalin altı (vrT<1)  +0,59 %64 / +0,60 %65 (az işlem: 50/57)
+  YENİ "GÜÇLÜ KAPANIŞ" (adr≥6, yclv≥0,7, 10:30 değişimi −1…+1): +0,44 %64 / +0,45 %62, 12/14 ay, 306 işlem 165 gün, Momentum'la 109 ortak.
+  Eşik taraması pürüzsüz (yclv 0,6→0,8 ve adr 5→7 hep aynı yönde) → tek eşiğe uydurma gibi durmuyor.
+- GECE ETKİSİ: hisselerde 10:30→kapanış ort −0,10, 17:30→ertesi açılış ort +0,2 (her iki dönemde, günlerin ~%70'i artı sepet).
+  Gün içi alım bu ters rüzgârla yarışıyor. −%5 altı kapananlar ertesi sabah kötü, tavan kapananlar iyi (bilinen). Gece taşıma modeli düz sepetten iyi değil.
+- Maliyet notu: Fatih komisyon ödemiyor → gerçek maliyet ~1 fiyat adımı kayma (~%0,05–0,1); testlerde %0,1 kullanıldı.
+- ÖNERİ (Fatih onayıyla): 'Güçlü kapanış' + 'Momentum + güçlü kapanış' SESSİZ KAYIT olarak karneye (sessiz trend gibi, Telegram yok) → 3 Kasım'da canlı veriyle karar.
+  Canlıda yclv için dünün 1D mumu (tepe/dip/kapanış) yeter.
+
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
 - v6.6 (29.09 akşamı): karne özetinde "Filtre kontrolü" — endeks artı/eksi ve oynak/sakin ayrımı kendi sinyallerimizde. 1–2 hafta sonra bak; tutarsa sinyal kapısı öner.
