@@ -137,7 +137,10 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   pozisyon asistanı, motor uyarısı, akşam karne + Cuma haftalık. KAPALI: tavan listesi mesajı, telefonun eski 'gün sonu raporu'. Karneye yazma HİÇBİRİNDE değişmedi.
 - 08.10 MOTOR (antivirüs uyumlu): iş PC'sinde Bitdefender Endpoint Security (kurumsal, istisna İSTENEMEZ) bot.js ve .vbs dosyalarını siliyordu (15:30 kapanmanın sebebi).
   .vbs ve ayrı bekçi KALDIRILDI. bot.js iki rollü: 'node bot.js' = GÖZETMEN (görünür, simge durumunda pencere 'BIST Pusula Motor', kilit 47124) → 'node bot.js --isci' alt sürecini
-  çalıştırır; kapanırsa 10 sn sonra, 3 dk yanıt vermezse yeniden başlatır. Başlatma: Başlangıç klasöründe 'BIST Pusula Motor.lnk' (node.exe bot.js, küçültülmüş). kur.ps1 eski .vbs/görevi temizler.
+  çalıştırır; kapanırsa 10 sn sonra, 3 dk yanıt vermezse yeniden başlatır.
+  Bitdefender ATC 'ATC.SuspiciousBehavior' PowerShell'i (iex irm + görev/betik oluşturma) engelliyor ve oluşturduğu dosyaları temizliyor → iş PC'sinde PowerShell KULLANMA.
+  Kurulum/güncelleme: pc/kur.js (Chrome ile indir → Komut İstemi: node Downloads\kur.js): bot.js indirir, BistMotorBekci görevini ve .vbs artıklarını siler, eski motoru kapatır,
+  Başlangıç'a 'BIST Pusula Motor.cmd' (start /min node bot.js) yazar ve başlatır. ayar.json gerekir (eşleştirme yeniden gerekirse kur.ps1 sorunlu).
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.
