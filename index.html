@@ -780,8 +780,8 @@ async function autoRun(manual){
       '4S teyit: '+(htfOk?'✓ uyumlu':'✗')+' · Puan: '+Math.round(c.sc)+'\n'+
       (a.ref?('POC '+nf(a.ref.poc)+' · VAH '+nf(a.ref.vah)+' · VAL '+nf(a.ref.val)+'\n'):'')+
       sigNoteTxt(c.o.name).replace(/^\n/,'')+(sigNotes(c.o.name).length?'\n':'')+'#'+c.o.name+' #'+dir;
-     // v8.8 (Fatih: 'sadece önemli bildirimler'): Telegram'a yalnız A notlu AL; B ve SAT yalnız karneye yazılır
-     if(a.grade==='A'&&dir==='AL')await tgSend(txt);
+     // v8.8 (Fatih: 'sadece önemli bildirimler'): SAT yalnız karneye yazılır. v9.2 (09.10, Fatih): B notlu AL da Telegram'a gider (hedef +%3 / stop −%1)
+     if((a.grade==='A'||a.grade==='B')&&dir==='AL')await tgSend(txt);
      S.sentSig.push(key);sent++;
      beep();notify('BIST · Sinyal gönderildi',c.o.name+' '+dir);
      seenAAdd(c.o.name,dir);
@@ -3244,7 +3244,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="9.1";window.APPV=APP_VER;
+  const APP_VER="9.2";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
