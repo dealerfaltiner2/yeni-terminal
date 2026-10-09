@@ -125,6 +125,16 @@ async function page(b, opt) {
       { const g = await T(() => { const D = []; let c = 100; for (let i = 0; i < 25; i++) { const h = c * 1.04, l = c * 0.97; D.push({ open: c, high: h, low: l, close: c, volume: 1e6 }); } D[24] = { open: 100, high: 104, low: 96, close: 103, volume: 1e6 };
           return { a: dgCalc(D, 103.5), b: dgCalc(D, 105), c: dgCalc(D.map((x, i) => i === 24 ? { ...x, close: 97 } : x), 97.2) }; });
         ok('Dün güçlü kapanış: kural hesabı (kapanış yeri, oynaklık, 10:30 yatay)', g.a && g.a.ok && Math.abs(g.a.yc - 0.875) < 1e-6 && Math.abs(g.a.adr - 7.05) < 0.01 && g.b && !g.b.ok && g.c && !g.c.ok, JSON.stringify(g)); }
+      { const f = await T(() => { const t = Date.UTC(2026, 9, 12, 8, 30); FLOW.st = {}; FLOW.cur = {};   // Pazartesi 11:30 İstanbul
+          flowTick('ZZT', { lp: 10, volume: 1000, bid: 9.99, ask: 10.01 }, t);   // ilk mesaj: sayılmaz
+          flowTick('ZZT', { lp: 10.01, volume: 1500 }, t);                       // satış fiyatından → alıcılı 500
+          flowTick('ZZT', { lp: 9.99, volume: 1800 }, t);                        // alış fiyatından → satıcılı 300
+          flowTick('ZZT', { bid: 9.98, ask: 10 }, t);                            // yalnız kademe değişti
+          flowTick('ZZT', { lp: 9.99, volume: 1900 }, t);                        // arada, fiyat aynı → önceki yön (satıcılı) 100
+          flowTick('ZZT', { lp: 10, volume: 2000 }, t);                          // satış fiyatında → alıcılı 100
+          flowTick('ZZT', { lp: 10, volume: 2100 }, Date.UTC(2026, 9, 10, 8, 30));   // Cumartesi → sayılmaz
+          const r = FLOW.cur['2026-10-12|690'] && FLOW.cur['2026-10-12|690'].ZZT; FLOW.cur = {}; FLOW.st = {}; return r; });
+        ok('emir akışı: alıcılı/satıcılı ayrımı (motor kaydı)', f && f[0] === 690 && f[1] === 600 && f[2] === 400 && f[3] === 0 && f[4] === 4 && f[5] === 10 && f[6] === 9.98 && f[7] === 10, JSON.stringify(f)); }
       ok('Deneme laboratuvarı listeleniyor', await T(() => /Deneme laboratuvarı/.test(labHtml()) && /Momentum/.test(labHtml())));
       ok('yeni ikon kurulumu: yapıştırılan bilgi adres + kodu yerine koyuyor', su.got === 'wss://x.test/k' && su.own === 'kod123', JSON.stringify(su));
       const mm = await T(() => { const D = []; let c = 100; for (let i = 0; i < 25; i++) { c = i === 24 ? c * 1.04 : i >= 20 ? c * 1.01 : c; D.push({ open: c, high: c * 1.035, low: c * 0.965, close: c, volume: 2e6 }); }

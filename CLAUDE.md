@@ -164,3 +164,7 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
 - Sosyal medya şimdilik yok (manipülasyon riski); ileride 'anormal ilgi uyarısı' olabilir.
 - İçeriden alım-satım KAP'ında alış/satış ayrımı yok (detay uç noktası: /tr/api/notification/attachment-detail/{idx}).
 - v9.3 (09.10 gece, Fatih: 'stop %1'i geçmesin'): SESSİZ çıkış botları (Telegram/ekranda sinyal YOK, yalnız Karne bot yarışı): 'mom4' Momentum +%4/−%1 (sig.o41: 1 hedef, 2 stop, 0 ikisi de yok → rc) ve 'momh' Momentum hedefsiz −%1 (sig.h1 = −1 ya da gün sonu %). sigOutcome hesaplar, sigBackfill son 6 günü tamamlar. Canlı sinyal mesajları +%3/−%1 KALDI. 2–3 hafta sonra kazanan çıkış Fatih onayıyla mesajlara.
+- v9.4 (10.10, Fatih onayıyla) EMİR AKIŞI KAYDI (derinlik yerine geçen bilgi; yalnız araştırma, sinyal YOK): motor (BOTMODE) qsd'deki her hacim artışını flowTick ile alıcılı/satıcılı ayırır
+  (fiyat ≥ önceki satış fiyatı → alıcılı, ≤ alış fiyatı → satıcılı, arada → fiyat yönü, aynı → önceki yön). Dakika satırı [dk, alıcılı, satıcılı, belirsiz, işlem sayısı, son, alış, satış].
+  flowFlush 5 dk'da bir /flow (sahip yolu, worker/src/flow.js) → D1 tablo flow (d, m, n, data = ham JSON, çözülmeden). Motor 200 hisse izler (telefon 100). 10:00 dakikası açılış seansını içerir — araştırmada at.
+  Plan: 4–6 hafta biriksin → Momentum adaylarının 10:30'a kadarki alıcılı/satıcılı dengesiyle +%3/−%1 sonucu karşılaştırılır (DEVIR 6i).

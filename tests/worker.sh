@@ -33,6 +33,9 @@ chk "kod ikinci kez kullanılamaz" "$(curl -s -m 10 -X POST -d "{\"c\":\"$PC\"}"
 chk "yanlış kod reddedilir" "$(curl -s -m 10 -X POST -d '{"c":"AAAAA-BBBBB"}' "http://localhost:$PORT/pair")" "geçersiz"
 curl -s -m 10 "$B/hello?dev=motor0000000001&bot=1&own=$OWN" >/dev/null
 chk "motor nabzı sonrası hello: bot=true" "$(curl -s -m 10 "$B/hello?dev=eskicihaz0001")" '"bot": ?true'
+chk "emir akışı sahipsiz yazılamaz" "$(curl -s -m 10 -X POST -d '{"v":1}' "$B/flow?d=2026-10-12&m=600&n=1&dev=eskicihaz0001")" "ana cihaz"
+chk "emir akışı kaydı (sahip)" "$(curl -s -m 10 -X POST -d '{"v":1,"s":{"ZZT":[[600,1,2,0,3,10,9.9,10]]}}' "$B/flow?d=2026-10-12&m=600&n=1&dev=eskicihaz0001&own=$OWN")" '"ok": ?true'
+chk "emir akışı bozuk gün reddedilir" "$(curl -s -m 10 -X POST -d '{"v":1}' "$B/flow?d=x&m=600&dev=eskicihaz0001&own=$OWN")" 'eksik'
 chk "hata defterine yazma" "$(curl -s -m 10 -X POST -d '{"items":[{"k":"hata","m":"test hatası","w":"x.js:1","tab":"now","v":"7.2"}]}' "$B/errlog?dev=eskicihaz0001")" '"n": ?1'
 curl -s -m 10 -X POST -d '{"items":[{"k":"hata","m":"test hatası","w":"x.js:1"}]}' "$B/errlog?dev=eskicihaz0001" >/dev/null
 chk "aynı hata sayaçla tek satır" "$(npx -y wrangler@3 d1 execute bist_bt --local --command "SELECT n FROM err WHERE msg='test hatası'" 2>/dev/null)" '"n": ?2'
