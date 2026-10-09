@@ -19,7 +19,7 @@ export async function sigEnsure(env) {
   try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN adr REAL').run(); } catch (e) {} // v6.6: hissenin son 20 gün ortalama günlük aralığı % (oynaklık)
   // v8.4 bot yarışı ölçümleri: tx = çabuk çıkış (±K en çok 60 dk, gelmezse 60. dk kapanışı) sonucu %;
   // pbn = geri çekilme girişi oldu mu (1 evet, 0 hayır, -1 ölçülemedi), pb = o girişin sonucu % (±K yarışı, gelmezse gün sonu)
-  for (const c of ['tx REAL', 'pb REAL', 'pbn INTEGER', 'o31 INTEGER']) { try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN ' + c).run(); } catch (e) {} }
+  for (const c of ['tx REAL', 'pb REAL', 'pbn INTEGER', 'o31 INTEGER', 'o41 INTEGER', 'h1 REAL']) { try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN ' + c).run(); } catch (e) {} }
   // v9.0: o31 eklenmeden önce ölçülmüş sinyaller — sırası kesin olanlar mfe/mae'den bir kez doldurulur (meta 'o31fill').
   // +%3 ve −%1 ikisi birden olduysa sıra bilinmez → boş kalır (son 6 gün sigBackfill dakikalık mumlarla tamamlar).
   try {
@@ -102,8 +102,10 @@ export function sigOutcome(bars, r, ib) {
   }
   const r2 = v => v == null || !isFinite(v) ? null : Math.round(v * 100) / 100;
   // v8.4 bot yarışı (yalnız AL): K = Momentum %1,5, diğerleri %1. Aynı mumda hedef ve stop → stop (temkinli).
-  let tx = null, pb = null, pbn = null;
+  let tx = null, pb = null, pbn = null, h1 = null;
   if (up) {
+    // v9.3 (09.10, Fatih: 'stop %1'i geçmesin'): hedefsiz çıkış — −%1 stop, gelmezse gün sonu kapanışı (bot yarışı 'momh')
+    { const sl = px * 0.99; h1 = null; for (const b of B) { if (b[3] <= sl) { h1 = -1; break; } } if (h1 == null) h1 = (B[B.length - 1][4] / px - 1) * 100; }
     const K = (r.src === 'momentum' || r.src === 'sessiz' || r.src === 'dunguclu') ? 1.5 : 1;
     // çabuk çıkış: sinyalden sonraki 60 mum içinde ±K; gelmezse 60. mumun kapanışında sat
     { const tg = px * (1 + K / 100), sl = px * (1 - K / 100); let res = null, lc = null;
@@ -120,7 +122,7 @@ export function sigOutcome(bars, r, ib) {
         pb = rr != null ? rr : (B[B.length - 1][4] / pe - 1) * 100;
       } }
   }
-  return { px: r2(px), pre: pc ? r2((px / pc - 1) * 100) : null, o10: race(1), o15: race(1.5), o31: race(3, 1), r15: r2(at(15)), r60: r2(at(60)), rc: r2(sg * (B[B.length - 1][4] / px - 1) * 100), mfe: r2(mfe), mae: r2(mae), idx: r2(idx), tx: r2(tx), pb: r2(pb), pbn };
+  return { px: r2(px), pre: pc ? r2((px / pc - 1) * 100) : null, o10: race(1), o15: race(1.5), o31: race(3, 1), o41: race(4, 1), h1: r2(h1), r15: r2(at(15)), r60: r2(at(60)), rc: r2(sg * (B[B.length - 1][4] / px - 1) * 100), mfe: r2(mfe), mae: r2(mae), idx: r2(idx), tx: r2(tx), pb: r2(pb), pbn };
 }
 // Seans dışında her dakika: bekleyen sinyallerden 5 hisseyi ölç; hepsi bitince özeti gönder
 import { errAdd } from './err.js';
@@ -196,8 +198,8 @@ export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
     FAIL.delete(r.sym);
     const o = bars.length ? sigOutcome(bars, r, ib) : { err: st.err };
     const adr = adrOf(toBars(gd['BIST:' + r.sym]), r.d);
-    await env.BT.prepare('UPDATE sig SET done = 1, px = coalesce(px, ?), pre = ?, o10 = ?, o15 = ?, o31 = ?, r15 = ?, r60 = ?, rc = ?, mfe = ?, mae = ?, idx = ?, adr = ?, tx = ?, pb = ?, pbn = ?, err = ? WHERE id = ?')
-      .bind(o.px ?? null, o.pre ?? null, o.o10 ?? null, o.o15 ?? null, o.o31 ?? null, o.r15 ?? null, o.r60 ?? null, o.rc ?? null, o.mfe ?? null, o.mae ?? null, o.idx ?? null, adr, o.tx ?? null, o.pb ?? null, o.pbn ?? null, o.err || null, r.id).run();
+    await env.BT.prepare('UPDATE sig SET done = 1, px = coalesce(px, ?), pre = ?, o10 = ?, o15 = ?, o31 = ?, o41 = ?, h1 = ?, r15 = ?, r60 = ?, rc = ?, mfe = ?, mae = ?, idx = ?, adr = ?, tx = ?, pb = ?, pbn = ?, err = ? WHERE id = ?')
+      .bind(o.px ?? null, o.pre ?? null, o.o10 ?? null, o.o15 ?? null, o.o31 ?? null, o.o41 ?? null, o.h1 ?? null, o.r15 ?? null, o.r60 ?? null, o.rc ?? null, o.mfe ?? null, o.mae ?? null, o.idx ?? null, adr, o.tx ?? null, o.pb ?? null, o.pbn ?? null, o.err || null, r.id).run();
     n++;
   }
   if (syms.some(x => KILL[x])) { for (const x of syms) delete KILL[x]; await ms('sig_kill', KILL); }
@@ -227,10 +229,10 @@ export async function sigSym(env, sym) {
 // Yalnız ölçülecek sinyal yokken çalışır; her çalışmada en çok 3 hisse. Önce pbn = -1 yazılır (yarıda kesilirse sonsuza dek denenmesin).
 export async function sigBackfill(env, fetchBarsTV) {
   const now = Date.now();
-  const rows = (await env.BT.prepare("SELECT id, d, t, sym, dir, px, src FROM sig INDEXED BY sig_t WHERE t > ? AND done = 1 AND err IS NULL AND ((pbn IS NULL AND dir = 'AL' AND src IN ('firsat-A','firsat-B','algi','momentum','radar','sessiz','dunguclu')) OR (o31 IS NULL AND mfe >= 3 AND mae <= -1)) AND px > 0 LIMIT 80").bind(now - 6 * 86400e3).all()).results || [];
+  const rows = (await env.BT.prepare("SELECT id, d, t, sym, dir, px, src FROM sig INDEXED BY sig_t WHERE t > ? AND done = 1 AND err IS NULL AND ((pbn IS NULL AND dir = 'AL' AND src IN ('firsat-A','firsat-B','algi','momentum','radar','sessiz','dunguclu')) OR (o31 IS NULL AND mfe >= 3 AND mae <= -1) OR (o41 IS NULL AND dir = 'AL' AND src = 'momentum')) AND px > 0 LIMIT 80").bind(now - 6 * 86400e3).all()).results || [];
   if (!rows.length) return null;
   const syms = [...new Set(rows.map(r => r.sym))].slice(0, 3), batch = rows.filter(r => syms.includes(r.sym));
-  await env.BT.prepare('UPDATE sig SET pbn = coalesce(pbn, -1), o31 = coalesce(o31, -1) WHERE id IN (' + batch.map(() => '?').join(',') + ')').bind(...batch.map(r => r.id)).run();
+  await env.BT.prepare('UPDATE sig SET pbn = coalesce(pbn, -1), o31 = coalesce(o31, -1), o41 = coalesce(o41, -1) WHERE id IN (' + batch.map(() => '?').join(',') + ')').bind(...batch.map(r => r.id)).run();
   const today = trDay(now), oldest = batch.reduce((a, r) => (r.d < a ? r.d : a), today);
   const cd = Math.max(0, Math.round((Date.parse(today) - Date.parse(oldest)) / 86400e3));
   const got = await fetchBarsTV(env, syms.map(s => 'BIST:' + s), '1', Math.min(2500, 650 + 520 * cd), 15000);
@@ -240,7 +242,7 @@ export async function sigBackfill(env, fetchBarsTV) {
     if (!bars.length) continue;
     const o = sigOutcome(bars, r, null);
     if (o.err) continue;
-    await env.BT.prepare('UPDATE sig SET tx = ?, pb = ?, pbn = ?, o31 = ? WHERE id = ?').bind(o.tx ?? null, o.pb ?? null, o.pbn ?? null, o.o31 ?? null, r.id).run();
+    await env.BT.prepare('UPDATE sig SET tx = ?, pb = ?, pbn = ?, o31 = ?, o41 = ?, h1 = ? WHERE id = ?').bind(o.tx ?? null, o.pb ?? null, o.pbn ?? null, o.o31 ?? null, o.o41 ?? null, o.h1 ?? null, r.id).run();
     n++;
   }
   return { tamamlama: n, hisse: syms, kalan: rows.length - batch.length };

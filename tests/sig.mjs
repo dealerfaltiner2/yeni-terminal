@@ -86,6 +86,8 @@ ok('takılı kayıt kalmadı', !meta('sig_run') && db.prepare("SELECT count(*) n
   ok('+%3/−%1: −%0,5 geri çekilme sonra +%2 → sonuçsuz (0)', o.o31 === 0, 'o31=' + o.o31);
   ok('+%3/−%1: önce +%3 → kazandı', sigOutcome(mkb(i => i < 10 ? 100 : i < 50 ? 99.2 : 103.1), r, []).o31 === 1);
   ok('+%3/−%1: önce −%1 → kaybetti (sonra +%3 gelse de)', sigOutcome(mkb(i => i < 10 ? 100 : i < 50 ? 98.9 : 104), r, []).o31 === 2);
+  { const q = sigOutcome(mkb(i => i < 10 ? 100 : i < 50 ? 103.2 : 104.1), r, []); ok('+%4/−%1: +%3 gelip +%4 de gelince kazandı; hedefsiz çıkış gün sonu', q.o31 === 1 && q.o41 === 1 && q.h1 === 4.1, JSON.stringify([q.o31, q.o41, q.h1])); }
+  { const q = sigOutcome(mkb(i => i < 10 ? 100 : i < 50 ? 103.2 : 98.8), r, []); ok('+%4/−%1: +%3 sonra düşüş → +%4 kaybetti, hedefsiz −%1', q.o31 === 1 && q.o41 === 2 && q.h1 === -1, JSON.stringify([q.o31, q.o41, q.h1])); }
   o = sigOutcome(mkb(i => 100 + i * 0.001), r, []);
   ok('geri çekilme olmadı → işlem yok', o.pbn === 0 && o.pb === null);
   o = sigOutcome(mkb(i => i < 10 ? 100 : 98.9), r, []);
