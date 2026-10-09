@@ -175,6 +175,23 @@ Her işlemde %0,1 kayma düşüldü. Eski <15.03.2026 / yeni ≥. İşlem başı
   hedef +5 stop −1,5 +0,71 · iz süren stop +0,47 · +1,5'te stop girişe +0,41 · geri çekilmede gir +0,47 (yeni 0,22) · 3 gün tut +0,46.
   DERS: kazananı +3'te kesmek kazancın üçte birini bırakıyor; asıl iyileştirme sinyalde değil ÇIKIŞTA. Öneri: bot yarışına sessiz '+4/−1,5' ve 'hedefsiz −1' botları.
 
+## 6i. 10.10 gece YENİ GİRİŞ FİKİRLERİ (+%3/−%1, aynı gün, %0,1 maliyet; 15 dk mumlar, 100 hisse, 14 ay, 20g ort. ciro ≥50 Mn)
+Betikler: tools/ml/prep.py (S.pkl), ideas.py, summ.py, night.py, late.py, mom2.py. İşlem başı ort / kazanma % / ay artı / en çok kazandıran 5 hisse hariç:
+- KARŞILAŞTIRMA Momentum (10:30): +0,29 · %33 · 9/14 · +0,04 (hedefsiz −1: +0,55)
+- İlk saat tepesini kırınca al −0,08 · 20 gün zirvesini kırınca −0,10 · hacim patlaması + güçlü mum −0,05 · yükselen hissede VWAP dönüşü +0,13 (top5 hariç +0,07)
+  boşlukla açılıp tutunan +0,28 (84 gün, top5 hariç +0,05) · aşağı açılıp artıya dönen −0,12 · endeks düşerken güçlü hisse −0,07 · dün tavan → ertesi gün açılışta al +0,04 (10:30'da −0,07).
+  → HİÇBİRİ Momentum'u geçmedi.
+- GECE: TAVAN KAPANIŞTA ALINIRSA ertesi gün +%3/−%1: +1,64, kazanma %55, 14/14 ay, top5 hariç +1,28 (kazancın çoğu açılış boşluğu: ort +1,9).
+  AMA alıcılı tavanda emir genelde dolmaz; dolanlar büyük ihtimalle zayıf olanlar (ters seçilim). Dolabilir sürüm (17:45/18:00'de +%7–9'dakini al) zayıf: +0,26..+0,48, top5 hariç ~0.
+  Canlı 'tavan' karnesi ertesi gün açılıştan ölçüyor → geçmişte ~0 (canlıda 12/30 iyi görünse de az örnek).
+  Derinlik verisi gelirse (İdeal): tavan kuyruğu lot/sıra bilgisiyle 'dolabilir tavan' araştırılabilir — derinliğin somut bir kullanım yeri.
+- Giriş saati (Momentum): 10:00 +0,19 · 10:15 +0,03 · 10:30 +0,29 · 11:00 +0,24 · 12:00 +0,15 → 10:30 kalsın.
+- ŞÜPHELİ ADAY: Momentum + 10:30'da BIST 100 ≤ +%0,3: +0,59 · %40 · 13/14 ay · top5 hariç +0,34 (eşik eğrisi düzgün; >0,3 günlerde −0,03..+0,0).
+  Ama: gün karıştırma testi eşik seçimiyle %6 şans; 11:00 girişte etki TERS; Dün güçlü kapanış ve oynak hisselerde etki yok/ters → büyük ihtimalle tesadüf.
+  Canlı ilk hafta (05–09.10): endeks ≤0,3 günleri 5/13, >0,3 günleri 2/8 (aynı yönde, çok az). sig.idx zaten var → yeni ölçüm gerekmez; 3 Kasım'da canlı karneyle bak.
+- Hafta günü (Salı iyi, Perşembe kötü) — çoklu deneme gürültüsü sayıldı, kullanılmadı.
+- SONUÇ: fiyat/hacim mumlarından yeni giriş kuralı çıkmadı. Kazanç kaynağı hâlâ Momentum + doğru çıkış (6h). Yeni bilgi = derinlik / takas.
+
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
 - v6.6 (29.09 akşamı): karne özetinde "Filtre kontrolü" — endeks artı/eksi ve oynak/sakin ayrımı kendi sinyallerimizde. 1–2 hafta sonra bak; tutarsa sinyal kapısı öner.
