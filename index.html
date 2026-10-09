@@ -775,6 +775,7 @@ async function autoRun(manual){
      const txt='<b>'+(dir==='AL'?'🟢 AL':'🔴 SAT')+'</b> · <b>'+htmlEsc(c.o.name)+'</b> · Not '+a.grade+'\n'+
       htmlEsc(c.o.description||'')+'\n'+
       'Fiyat: '+nf(c.o.close)+' ('+pct(c.o.change)+')\n'+
+      (dir==='AL'?'Hedef <b>'+nf(c.o.close*1.03)+'</b> (+%3) · Stop <b>'+nf(c.o.close*0.99)+'</b> (−%1)\n':'')+
       'Kurulum: '+c.ss.map(x=>htmlEsc(SNAME[x])).join(', ')+'\n'+
       '4S teyit: '+(htfOk?'✓ uyumlu':'✗')+' · Puan: '+Math.round(c.sc)+'\n'+
       (a.ref?('POC '+nf(a.ref.poc)+' · VAH '+nf(a.ref.vah)+' · VAL '+nf(a.ref.val)+'\n'):'')+
@@ -3243,7 +3244,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="9.0";window.APPV=APP_VER;
+  const APP_VER="9.1";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3524,7 +3525,7 @@ function tvReconnectReport(){
    'Fiyat '+P(e.p0)+' · Gün '+sp(f.ch||0)+' · Skor <b>'+e.sc+'</b>\n'+
    'Akış '+P(f.fa,1)+'x · RVOL '+(f.rv!=null?P(f.rv,1)+'x':'-')+' · Alım %'+nf((f.fc||0)*100,0)+
    (fl.length?'\n✓ '+fl.join(' · '):'')+
-   '\nHedef '+P(e.tp)+' ('+sp(e.stp*2)+') · Stop '+P(e.sp)+' (−%'+nf(e.stp,2)+') · 15 dk'+
+   '\nHedef <b>'+P(e.p0*1.03)+'</b> (+%3) · Stop <b>'+P(e.p0*0.99)+'</b> (−%1)'+   // v9.0: Fatih'in başarı tanımı
    (e.f.sh?'\n⚠ Sığ hisse — manipülasyon riski':'')+(f.fc>=.8?'\n💪 Güçlü: alıcı oranı %80 üstü (deneme etiketi; karnede ayrı ölçülüyor)':'')+sigNoteTxt(e.s);
  }
 
