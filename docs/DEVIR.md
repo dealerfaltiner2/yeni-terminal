@@ -154,6 +154,16 @@ Her işlemde %0,1 kayma düşüldü. Eski <15.03.2026 / yeni ≥. İşlem başı
 - 09.10 Fatih ONAYLADI → v8.9'da eklendi (src 'dunguclu' + bot 'momgk'). Eski öneri metni: 'Güçlü kapanış' + 'Momentum + güçlü kapanış' SESSİZ KAYIT olarak karneye (sessiz trend gibi, Telegram yok) → 3 Kasım'da canlı veriyle karar.
   Canlıda yclv için dünün 1D mumu (tepe/dip/kapanış) yeter.
 
+## 6g. 09.10 sabah FATİH'İN BAŞARI TANIMI: "sinyalden sonra +%3 gelmesi başarıdır, gün kapanışı baz alınmasın"
+- Ölçüm (15 dk mumlar, 10:30 girişi, −%7…+%7 arası; eski <15.03 / yeni): taban: gün içinde +%3'e ulaşma %19/%18 (−%3'e de %15/%17).
+  Oynak hepsi (adr≥6): %42/%41 · Momentum: %61/%54 (−3 de %29/%36), +3 önce/−3 önce %70/%61, 3 iş günü içinde +3 %79/%70.
+  Momentum + dün güçlü: %63/%57, önce/−3 %70/%64, 3 günde %80/%76 · Dün güçlü kapanış: %48/%51, önce/−3 %67/%62, 3 günde %72/%77.
+  Sessiz trend benzeri: %41/%39. +3 hedefli model (günde 1): gün içi %56, önce/−3 %61 — Momentum'dan iyi değil (şans %23 / %55).
+- CANLI KARNE (09.10'a kadar, mfe/mae): +%3'e ulaşan → Algı 25/207 (%12), Fırsat B 21/137 (%15), Fırsat A 1/13, Radar 24/52 (%46, ama −3 de 33),
+  Momentum 11/19 (%58; −3 de 7), Tavan 47/73. Algı/Fırsat ±%1 için tasarlandı; +%3 tanımında zayıflar.
+- Dikkat: "+3'e ulaştı" tek başına yanıltıcı (oynak hisse hem +3 hem −3 görür). Doğru ölçü: +3 mü önce, −K mı önce (K = Fatih'in stopu).
+- Bekleyen: karnede ölçünün +3'e çevrilmesi (Fatih'in stop tercihi sorulacak) — seans dışında, testli.
+
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
 - v6.6 (29.09 akşamı): karne özetinde "Filtre kontrolü" — endeks artı/eksi ve oynak/sakin ayrımı kendi sinyallerimizde. 1–2 hafta sonra bak; tutarsa sinyal kapısı öner.
