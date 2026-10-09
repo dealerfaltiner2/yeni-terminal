@@ -164,6 +164,13 @@ Her işlemde %0,1 kayma düşüldü. Eski <15.03.2026 / yeni ≥. İşlem başı
 - Dikkat: "+3'e ulaştı" tek başına yanıltıcı (oynak hisse hem +3 hem −3 görür). Doğru ölçü: +3 mü önce, −K mı önce (K = Fatih'in stopu).
 - Bekleyen: karnede ölçünün +3'e çevrilmesi (Fatih'in stop tercihi sorulacak) — seans dışında, testli.
 
+## 6h. 09.10 gece "+%3 hedef / −%1 stop" için en iyi ne yapılabilir (15 dk mumlar, ileriye dönük test 2025-11..2026-09)
+- Rastgele hisse (10:30): +3 önce %13, −1 önce %61, işlem başı −0,06.
+- Momentum: +3 önce %33, işlem başı +0,39 (5 hisse hariç +0,20), 8/11 ay artı · Momentum + dün güçlü: %34, +0,43, 9/11 ay.
+- Model (+3/−1 getirisini tahmin, günde 1): 10:30 +0,27 · 11:00 +0,39 · 12:00 +0,33 — Momentum'u geçmiyor, en çok seçilen 5 hisse çıkınca ~0.
+- SONUÇ: bu veriyle ulaşılabilecek tavan işlem başı ~+0,3–0,4 (günde 1–2 işlem). "Her gün %3" verinin hiçbir köşesinde yok (Fatih'e dürüstçe söylendi).
+  Daha fazlası için yeni bilgi gerekir (derinlik/takas). Karar: Momentum ailesi + disiplinli risk, canlı karne 3 hafta.
+
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
 - v6.6 (29.09 akşamı): karne özetinde "Filtre kontrolü" — endeks artı/eksi ve oynak/sakin ayrımı kendi sinyallerimizde. 1–2 hafta sonra bak; tutarsa sinyal kapısı öner.
