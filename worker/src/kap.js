@@ -192,7 +192,7 @@ export async function kapList(env, url, json) {
   let res = {};
   if (rs.length) {
     const lo = rs[rs.length - 1].t - 86400e3;
-    const ss = (await env.BT.prepare("SELECT sym, meta, o10, r15, r60, rc, mfe, pre FROM sig WHERE src LIKE 'kap-%' AND done = 1 AND err IS NULL AND t >= ? LIMIT 400").bind(lo).all()).results || [];
+    const ss = (await env.BT.prepare("SELECT sym, meta, o31 o10, r15, r60, rc, mfe, pre FROM sig WHERE src LIKE 'kap-%' AND done = 1 AND err IS NULL AND t >= ? LIMIT 400").bind(lo).all()).results || [];
     ss.forEach(x => { try { const m = JSON.parse(x.meta || '{}'); if (m.idx) res[m.idx + '|' + x.sym] = { o10: x.o10, r15: x.r15, r60: x.r60, rc: x.rc, mfe: x.mfe, pre: x.pre }; } catch (e) {} });
   }
   return json({ ok: true, list: rs.map(r => Object.assign(r, { ad: KAP_AD[r.tip] || r.tip, olcum: res[r.idx + '|' + String(r.syms).split(',')[0]] || null })) });

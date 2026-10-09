@@ -83,6 +83,9 @@ ok('takılı kayıt kalmadı', !meta('sig_run') && db.prepare("SELECT count(*) n
   ok('geri çekilme: 30 dk içinde %0,5 düştü → giriş var, sonra hedef', o.pbn === 1 && o.pb === 1, JSON.stringify(o));
   ok('çabuk çıkış: 60 dk içinde hedef yok → 60. dakikanın kapanışı', o.tx === 0.3, 'tx=' + o.tx);
   ok('normal yarış (gün boyu) hedefi buldu', o.o10 === 1);
+  ok('+%3/−%1: −%0,5 geri çekilme sonra +%2 → sonuçsuz (0)', o.o31 === 0, 'o31=' + o.o31);
+  ok('+%3/−%1: önce +%3 → kazandı', sigOutcome(mkb(i => i < 10 ? 100 : i < 50 ? 99.2 : 103.1), r, []).o31 === 1);
+  ok('+%3/−%1: önce −%1 → kaybetti (sonra +%3 gelse de)', sigOutcome(mkb(i => i < 10 ? 100 : i < 50 ? 98.9 : 104), r, []).o31 === 2);
   o = sigOutcome(mkb(i => 100 + i * 0.001), r, []);
   ok('geri çekilme olmadı → işlem yok', o.pbn === 0 && o.pb === null);
   o = sigOutcome(mkb(i => i < 10 ? 100 : 98.9), r, []);

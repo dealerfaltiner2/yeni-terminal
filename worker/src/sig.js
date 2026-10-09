@@ -1,5 +1,7 @@
 // v5.7 SİNYAL KARNESİ — her sinyal kaydedilir, seans bitince 1 dk mumlarla sonucu ölçülür, 18:20'de Telegram özeti.
 // Sonuç kodları (o10 = ±%1, o15 = ±%1,5): 1 = hedef önce, 2 = stop önce (aynı mumda ikisi → stop, temkinli), 0 = ikisi de yok.
+// v9.0 (09.10, Fatih): BAŞARI = sinyalden sonra +%3 gelmesi, stop −%1, gün kapanışı baz alınmaz → o31 (aynı gün; 0 = ikisi de gelmedi = sonuçsuz).
+// Karne, haftalık rapor, Karne ekranı ve röntgen artık o31'e bakar. Eski sinyallerde sıra bilinmiyorsa (mfe≥3 ve mae≤−1) o31 boş kalır.
 const TRMS = 3 * 3600e3;
 export const trDay = ms => new Date(ms + TRMS).toISOString().slice(0, 10);
 const trMin = ms => { const d = new Date(ms + TRMS); return d.getUTCHours() * 60 + d.getUTCMinutes(); };
@@ -17,7 +19,16 @@ export async function sigEnsure(env) {
   try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN adr REAL').run(); } catch (e) {} // v6.6: hissenin son 20 gün ortalama günlük aralığı % (oynaklık)
   // v8.4 bot yarışı ölçümleri: tx = çabuk çıkış (±K en çok 60 dk, gelmezse 60. dk kapanışı) sonucu %;
   // pbn = geri çekilme girişi oldu mu (1 evet, 0 hayır, -1 ölçülemedi), pb = o girişin sonucu % (±K yarışı, gelmezse gün sonu)
-  for (const c of ['tx REAL', 'pb REAL', 'pbn INTEGER']) { try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN ' + c).run(); } catch (e) {} }
+  for (const c of ['tx REAL', 'pb REAL', 'pbn INTEGER', 'o31 INTEGER']) { try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN ' + c).run(); } catch (e) {} }
+  // v9.0: o31 eklenmeden önce ölçülmüş sinyaller — sırası kesin olanlar mfe/mae'den bir kez doldurulur (meta 'o31fill').
+  // +%3 ve −%1 ikisi birden olduysa sıra bilinmez → boş kalır (son 6 gün sigBackfill dakikalık mumlarla tamamlar).
+  try {
+    const f = await env.BT.prepare("SELECT v FROM meta WHERE k = 'o31fill'").first();
+    if (!f) {
+      await env.BT.prepare("UPDATE sig SET o31 = CASE WHEN mfe >= 3 AND mae > -1 THEN 1 WHEN mae <= -1 AND mfe < 3 THEN 2 WHEN mfe < 3 AND mae > -1 THEN 0 END WHERE o31 IS NULL AND done = 1 AND mfe IS NOT NULL AND mae IS NOT NULL").run();
+      await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('o31fill', ?)").bind(String(Date.now())).run();
+    }
+  } catch (e) {}
   ready = true;
 }
 // v6.6: son 20 tamamlanmış günün ortalama günlük aralığı (%), feat tablosundaki 'adr' ile aynı formül: ort((yüksek−düşük)/kapanış)
@@ -71,8 +82,8 @@ export function sigOutcome(bars, r, ib) {
   const up = r.dir !== 'SAT', sg = up ? 1 : -1;
   const px = r.px > 0 ? r.px : B[0][1];                          // fiyatsız sinyal (KAP) → sinyalden sonraki ilk mumun açılışı
   let pc = null; for (const b of bars) { if (b[0] < ds) pc = b[4]; else break; }
-  const race = K => {
-    const tg = px * (1 + sg * K / 100), sl = px * (1 - sg * K / 100);
+  const race = (K, S = K) => {
+    const tg = px * (1 + sg * K / 100), sl = px * (1 - sg * S / 100);
     for (const b of B) {
       if (up ? b[3] <= sl : b[2] >= sl) return 2;
       if (up ? b[2] >= tg : b[3] <= tg) return 1;
@@ -109,7 +120,7 @@ export function sigOutcome(bars, r, ib) {
         pb = rr != null ? rr : (B[B.length - 1][4] / pe - 1) * 100;
       } }
   }
-  return { px: r2(px), pre: pc ? r2((px / pc - 1) * 100) : null, o10: race(1), o15: race(1.5), r15: r2(at(15)), r60: r2(at(60)), rc: r2(sg * (B[B.length - 1][4] / px - 1) * 100), mfe: r2(mfe), mae: r2(mae), idx: r2(idx), tx: r2(tx), pb: r2(pb), pbn };
+  return { px: r2(px), pre: pc ? r2((px / pc - 1) * 100) : null, o10: race(1), o15: race(1.5), o31: race(3, 1), r15: r2(at(15)), r60: r2(at(60)), rc: r2(sg * (B[B.length - 1][4] / px - 1) * 100), mfe: r2(mfe), mae: r2(mae), idx: r2(idx), tx: r2(tx), pb: r2(pb), pbn };
 }
 // Seans dışında her dakika: bekleyen sinyallerden 5 hisseyi ölç; hepsi bitince özeti gönder
 import { errAdd } from './err.js';
@@ -185,8 +196,8 @@ export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
     FAIL.delete(r.sym);
     const o = bars.length ? sigOutcome(bars, r, ib) : { err: st.err };
     const adr = adrOf(toBars(gd['BIST:' + r.sym]), r.d);
-    await env.BT.prepare('UPDATE sig SET done = 1, px = coalesce(px, ?), pre = ?, o10 = ?, o15 = ?, r15 = ?, r60 = ?, rc = ?, mfe = ?, mae = ?, idx = ?, adr = ?, tx = ?, pb = ?, pbn = ?, err = ? WHERE id = ?')
-      .bind(o.px ?? null, o.pre ?? null, o.o10 ?? null, o.o15 ?? null, o.r15 ?? null, o.r60 ?? null, o.rc ?? null, o.mfe ?? null, o.mae ?? null, o.idx ?? null, adr, o.tx ?? null, o.pb ?? null, o.pbn ?? null, o.err || null, r.id).run();
+    await env.BT.prepare('UPDATE sig SET done = 1, px = coalesce(px, ?), pre = ?, o10 = ?, o15 = ?, o31 = ?, r15 = ?, r60 = ?, rc = ?, mfe = ?, mae = ?, idx = ?, adr = ?, tx = ?, pb = ?, pbn = ?, err = ? WHERE id = ?')
+      .bind(o.px ?? null, o.pre ?? null, o.o10 ?? null, o.o15 ?? null, o.o31 ?? null, o.r15 ?? null, o.r60 ?? null, o.rc ?? null, o.mfe ?? null, o.mae ?? null, o.idx ?? null, adr, o.tx ?? null, o.pb ?? null, o.pbn ?? null, o.err || null, r.id).run();
     n++;
   }
   if (syms.some(x => KILL[x])) { for (const x of syms) delete KILL[x]; await ms('sig_kill', KILL); }
@@ -204,9 +215,9 @@ export async function sigSym(env, sym) {
   const c = symCache.get(sym); if (c && Date.now() - c.at < 5 * 60e3) return c.v;
   await sigEnsure(env);
   const from = trDay(Date.now() - 60 * 86400e3);
-  const HS = "CASE WHEN src IN ('momentum','sessiz','dunguclu') THEN o15 ELSE o10 END";
+  const HS = 'o31';   // v9.0: −%1'e düşmeden +%3 geldi mi
   const rows = (await env.BT.prepare("SELECT src, count(*) n, sum(" + HS + " = 1) h, sum(" + HS + " = 2) s, max(d) son FROM sig INDEXED BY sig_sym WHERE sym = ? AND d >= ? AND done = 1 AND err IS NULL AND src <> 'kap-devre' GROUP BY src").bind(sym, from).all()).results || [];
-  const last = (await env.BT.prepare("SELECT d, t, src, o10, o15, rc FROM sig INDEXED BY sig_sym WHERE sym = ? AND d >= ? AND done = 1 AND err IS NULL AND src <> 'kap-devre' ORDER BY d DESC, t DESC LIMIT 6").bind(sym, from).all()).results || [];
+  const last = (await env.BT.prepare("SELECT d, t, src, o31, o10, o15, rc FROM sig INDEXED BY sig_sym WHERE sym = ? AND d >= ? AND done = 1 AND err IS NULL AND src <> 'kap-devre' ORDER BY d DESC, t DESC LIMIT 6").bind(sym, from).all()).results || [];
   const v = { ok: true, sym, src: rows, last };
   if (symCache.size > 200) symCache.clear();
   symCache.set(sym, { at: Date.now(), v });
@@ -216,10 +227,10 @@ export async function sigSym(env, sym) {
 // Yalnız ölçülecek sinyal yokken çalışır; her çalışmada en çok 3 hisse. Önce pbn = -1 yazılır (yarıda kesilirse sonsuza dek denenmesin).
 export async function sigBackfill(env, fetchBarsTV) {
   const now = Date.now();
-  const rows = (await env.BT.prepare("SELECT id, d, t, sym, dir, px, src FROM sig INDEXED BY sig_t WHERE t > ? AND done = 1 AND err IS NULL AND pbn IS NULL AND dir = 'AL' AND px > 0 AND src IN ('firsat-A','firsat-B','algi','momentum','radar','sessiz','dunguclu') LIMIT 80").bind(now - 6 * 86400e3).all()).results || [];
+  const rows = (await env.BT.prepare("SELECT id, d, t, sym, dir, px, src FROM sig INDEXED BY sig_t WHERE t > ? AND done = 1 AND err IS NULL AND ((pbn IS NULL AND dir = 'AL' AND src IN ('firsat-A','firsat-B','algi','momentum','radar','sessiz','dunguclu')) OR (o31 IS NULL AND mfe >= 3 AND mae <= -1)) AND px > 0 LIMIT 80").bind(now - 6 * 86400e3).all()).results || [];
   if (!rows.length) return null;
   const syms = [...new Set(rows.map(r => r.sym))].slice(0, 3), batch = rows.filter(r => syms.includes(r.sym));
-  await env.BT.prepare('UPDATE sig SET pbn = -1 WHERE id IN (' + batch.map(() => '?').join(',') + ')').bind(...batch.map(r => r.id)).run();
+  await env.BT.prepare('UPDATE sig SET pbn = coalesce(pbn, -1), o31 = coalesce(o31, -1) WHERE id IN (' + batch.map(() => '?').join(',') + ')').bind(...batch.map(r => r.id)).run();
   const today = trDay(now), oldest = batch.reduce((a, r) => (r.d < a ? r.d : a), today);
   const cd = Math.max(0, Math.round((Date.parse(today) - Date.parse(oldest)) / 86400e3));
   const got = await fetchBarsTV(env, syms.map(s => 'BIST:' + s), '1', Math.min(2500, 650 + 520 * cd), 15000);
@@ -229,19 +240,19 @@ export async function sigBackfill(env, fetchBarsTV) {
     if (!bars.length) continue;
     const o = sigOutcome(bars, r, null);
     if (o.err) continue;
-    await env.BT.prepare('UPDATE sig SET tx = ?, pb = ?, pbn = ? WHERE id = ?').bind(o.tx ?? null, o.pb ?? null, o.pbn ?? null, r.id).run();
+    await env.BT.prepare('UPDATE sig SET tx = ?, pb = ?, pbn = ?, o31 = ? WHERE id = ?').bind(o.tx ?? null, o.pb ?? null, o.pbn ?? null, o.o31 ?? null, r.id).run();
     n++;
   }
   return { tamamlama: n, hisse: syms, kalan: rows.length - batch.length };
 }
-const SRC_AD = { radar: '📡 Sunucu radarı (mesajı kapalı)', algi: '⚡ Algı', 'firsat-A': '🅰️ Fırsat A', 'firsat-B': '🅱️ Fırsat B', momentum: '🧪 Momentum (deneme · ±%1,5)' };
+const SRC_AD = { radar: '📡 Sunucu radarı (mesajı kapalı)', algi: '⚡ Algı', 'firsat-A': '🅰️ Fırsat A', 'firsat-B': '🅱️ Fırsat B', momentum: '🧪 Momentum (deneme)' };
 const KAP_TR = { is: 'Yeni iş/sözleşme', ihale: 'İhale', geri: 'Geri alım', bedelsiz: 'Bedelsiz', bedelli: 'Bedelli', tahsisli: 'Sermaye artırımı', teklif: 'Pay alım teklifi', birlesme: 'Birleşme/devir', tesvik: 'Teşvik', temettu: 'Temettü', bilanco: 'Bilanço', not: 'Kredi notu', icerden: 'İçeriden alım-satım', yatirim: 'Yatırım', varlik: 'Varlık alım/satım', ozel: 'Özel durum', risk: 'Risk (konkordato vb.)', kisit: 'İşlem kısıtı', ceza: 'Ceza/dava' };
 // v6.6 FİLTRE KONTROLÜ — araştırmada bulunan iki filtre kendi sinyallerimizde de tutuyor mu? (tüm günler, yalnız AL, KAP hariç)
 // Endeks: sinyal anında XU100 önceki kapanışa göre artıda mı (idx ≥ 0). Oynaklık: son 20 gün ortalama günlük aralık %5 ve üstü mü (adr).
 export async function filterBlock(env, pc) {
   try {
     await sigEnsure(env);
-    const f = await env.BT.prepare("SELECT sum(idx >= 0 AND o10 = 1) eah, sum(idx >= 0 AND o10 = 2) eas, sum(idx < 0 AND o10 = 1) eeh, sum(idx < 0 AND o10 = 2) ees, sum(adr >= 5 AND o10 = 1) oyh, sum(adr >= 5 AND o10 = 2) oys, sum(adr < 5 AND o10 = 1) sah, sum(adr < 5 AND o10 = 2) sas FROM sig WHERE done = 1 AND err IS NULL AND dir = 'AL' AND src NOT LIKE 'kap-%'").first();
+    const f = await env.BT.prepare("SELECT sum(idx >= 0 AND o31 = 1) eah, sum(idx >= 0 AND o31 = 2) eas, sum(idx < 0 AND o31 = 1) eeh, sum(idx < 0 AND o31 = 2) ees, sum(adr >= 5 AND o31 = 1) oyh, sum(adr >= 5 AND o31 = 2) oys, sum(adr < 5 AND o31 = 1) sah, sum(adr < 5 AND o31 = 2) sas FROM sig WHERE done = 1 AND err IS NULL AND dir = 'AL' AND src NOT LIKE 'kap-%'").first();
     if (!f) return '';
     const v = k => +f[k] || 0;
     const ln = (ad, h, s) => '\n   ' + ad + ': ' + (h + s ? (h + s) + ' sinyal → <b>%' + pc(h, h + s) + '</b>' : 'henüz yok');
@@ -271,17 +282,17 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
     await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sigsum_try', ?)").bind(JSON.stringify({ d: today, n: tryN, at: now })).run();
   }
   // momentum ±%1,5 ile ölçülür (araştırması öyle) → h/s o15'ten
-  const HS = "CASE WHEN src IN ('momentum','sessiz','dunguclu') THEN o15 ELSE o10 END";
+  const HS = 'o31';   // v9.0: −%1'e düşmeden +%3 geldi mi
   const R = (await env.BT.prepare("SELECT src, count(*) n, sum(" + HS + " = 1) h, sum(" + HS + " = 2) s FROM sig WHERE d = ? AND err IS NULL AND done = 1 AND src <> 'kap-devre' GROUP BY src ORDER BY n DESC").bind(today).all()).results || [];
   if (!R.length) { if (!force) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sigsum', ?)").bind(today).run(); return { mesaj: 'bugün sinyal yok' }; }
   const A = (await env.BT.prepare("SELECT src, count(*) n, sum(" + HS + " = 1) h, sum(" + HS + " = 2) s, count(DISTINCT d) g FROM sig WHERE err IS NULL AND done = 1 AND src <> 'kap-devre' GROUP BY src").bind().all()).results || [];
   // 03.10: Algı 'güçlü' (alıcı oranı ≥%80) ayrı ölçülür — bir hafta sonra yalnız güçlüler gönderilsin mi kararı için
-  const AG = (await env.BT.prepare("SELECT (json_extract(meta, '$.fc') >= 0.8) g, sum(d = ?) n, sum(d = ? AND o10 = 1) h, sum(d = ? AND o10 = 2) s, count(*) tn, sum(o10 = 1) th, sum(o10 = 2) ts FROM sig WHERE src = 'algi' AND err IS NULL AND done = 1 GROUP BY 1").bind(today, today, today).all()).results || [];
+  const AG = (await env.BT.prepare("SELECT (json_extract(meta, '$.fc') >= 0.8) g, sum(d = ?) n, sum(d = ? AND o31 = 1) h, sum(d = ? AND o31 = 2) s, count(*) tn, sum(o31 = 1) th, sum(o31 = 2) ts FROM sig WHERE src = 'algi' AND err IS NULL AND done = 1 GROUP BY 1").bind(today, today, today).all()).results || [];
   const best = (await env.BT.prepare("SELECT sym, max(mfe) mfe FROM sig WHERE d = ? AND err IS NULL AND done = 1 AND src <> 'kap-devre' GROUP BY sym ORDER BY mfe DESC LIMIT 3").bind(today).all()).results || [];
   const pc = (a, b) => b ? Math.round(a / b * 100) : 0;
   const line = (h, s) => (h + s ? (h ? '✅ ' + h + ' kazandı' : '') + (h && s ? ' · ' : '') + (s ? '❌ ' + s + ' kaybetti' : '') + ' → <b>%' + pc(h, h + s) + '</b>' : 'sonuçlanan yok');
   const d = today.split('-');
-  let msg = '📊 <b>SİNYAL KARNESİ · ' + d[2] + '.' + d[1] + '</b>\n<i>Her sinyalde önce +%1 mi geldi, −%1 mi?</i>';
+  let msg = '📊 <b>SİNYAL KARNESİ · ' + d[2] + '.' + d[1] + '</b>\n<i>Başarı: sinyalden sonra −%1\'e düşmeden +%3 geldi mi? (gün içinde ikisi de gelmeyen sayılmaz)</i>';
   const ORD = ['firsat-A', 'firsat-B', 'algi', 'momentum', 'radar'], rk = x => { const i = ORD.indexOf(x); return i < 0 ? 99 : i; };
   for (const r of R.filter(r => !String(r.src).startsWith('kap-') && r.src !== 'tavan' && r.src !== 'sessiz' && r.src !== 'dunguclu').sort((a, b) => rk(a.src) - rk(b.src))) {
     msg += '\n\n<b>' + esc(SRC_AD[r.src] || r.src) + '</b> — ' + r.n + ' sinyal\n   ' + line(r.h, r.s);
@@ -322,7 +333,7 @@ export async function sigToday(env) {
   if (todayCache.v && Date.now() - todayCache.at < 30e3) return todayCache.v;
   await sigEnsure(env);
   const d0 = Date.parse(trDay(Date.now()) + 'T00:00:00Z') - TRMS;
-  const rows = (await env.BT.prepare("SELECT t, src, sym, dir, px, sc, meta, done, o10, o15, mfe, mae, rc FROM sig INDEXED BY sig_t WHERE t >= ? AND src NOT LIKE 'kap-%' AND src NOT IN ('sessiz','dunguclu') ORDER BY t DESC LIMIT 60").bind(d0).all()).results || [];
+  const rows = (await env.BT.prepare("SELECT t, src, sym, dir, px, sc, meta, done, o10, o15, o31, mfe, mae, rc FROM sig INDEXED BY sig_t WHERE t >= ? AND src NOT LIKE 'kap-%' AND src NOT IN ('sessiz','dunguclu') ORDER BY t DESC LIMIT 60").bind(d0).all()).results || [];
   const v = { ok: true, at: Date.now(), list: rows.map(r => { let m = null; try { m = r.meta ? JSON.parse(r.meta) : null; } catch (e) {} return { ...r, meta: m }; }) };
   todayCache = { at: Date.now(), v };
   return v;
@@ -334,13 +345,13 @@ export async function sigStats(env) {
   if (statCache.v && Date.now() - statCache.at < 5 * 60e3) return statCache.v;
   await sigEnsure(env);
   const from = trDay(Date.now() - 16 * 86400e3);
-  const rows = (await env.BT.prepare("SELECT d, src, count(*) n, sum(o10 = 1) h, sum(o10 = 2) s FROM sig WHERE d >= ? AND done = 1 AND err IS NULL AND src <> 'kap-devre' GROUP BY d, src").bind(from).all()).results || [];
+  const rows = (await env.BT.prepare("SELECT d, src, count(*) n, sum(o31 = 1) h, sum(o31 = 2) s FROM sig WHERE d >= ? AND done = 1 AND err IS NULL AND src <> 'kap-devre' GROUP BY d, src").bind(from).all()).results || [];
   const days = [...new Set(rows.map(r => r.d))].sort().reverse().slice(0, 10);
   const src = {};
   for (const r of rows) if (days.includes(r.d)) { const x = src[r.src] || (src[r.src] = { n: 0, h: 0, s: 0 }); x.n += r.n; x.h += r.h || 0; x.s += r.s || 0; }
   const byDay = days.map(d => ({ d, src: Object.fromEntries(rows.filter(r => r.d === d).map(r => [r.src, { n: r.n, h: r.h || 0, s: r.s || 0 }])) }));
   const last = days[0] || null;
-  const list = last ? ((await env.BT.prepare("SELECT t, src, sym, o10, mfe, rc FROM sig WHERE d = ? AND done = 1 AND err IS NULL AND src NOT LIKE 'kap-%' ORDER BY t DESC LIMIT 40").bind(last).all()).results || []) : [];
+  const list = last ? ((await env.BT.prepare("SELECT t, src, sym, o31 o10, mfe, rc FROM sig WHERE d = ? AND done = 1 AND err IS NULL AND src NOT LIKE 'kap-%' ORDER BY t DESC LIMIT 40").bind(last).all()).results || []) : [];
   const pend = await env.BT.prepare('SELECT count(*) n FROM sig WHERE done = 0 AND t < ?').bind(Date.now()).first();
   const v = { ok: true, at: Date.now(), gun: days.length, days: byDay, src, last, list, bekleyen: pend ? pend.n : 0 };
   statCache = { at: Date.now(), v };
@@ -355,15 +366,15 @@ export async function weeklySummary(env, tgSend, kvGet, esc, pushSend) {
   const ws = await env.BT.prepare("SELECT v FROM meta WHERE k = 'weeksum'").first(); if (ws && ws.v === today) return null;
   await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('weeksum', ?)").bind(today).run();
   const from = new Date(Date.now() + TRMS - 6 * 864e5).toISOString().slice(0, 10);
-  const HS = "CASE WHEN src IN ('momentum','sessiz','dunguclu') THEN o15 ELSE o10 END";
+  const HS = 'o31';   // v9.0: −%1'e düşmeden +%3 geldi mi
   const R = (await env.BT.prepare("SELECT src, count(*) n, sum(" + HS + " = 1) h, sum(" + HS + " = 2) s, avg(rc) rc FROM sig WHERE d >= ? AND done = 1 AND err IS NULL AND src NOT LIKE 'kap-%' AND src <> 'tavan' GROUP BY src").bind(from).all()).results || [];
-  const AG = (await env.BT.prepare("SELECT (json_extract(meta, '$.fc') >= 0.8) g, sum(o10 = 1) h, sum(o10 = 2) s FROM sig WHERE src = 'algi' AND d >= ? AND done = 1 AND err IS NULL GROUP BY 1").bind(from).all()).results || [];
-  const K = (await env.BT.prepare("SELECT src, count(*) n, sum(o10 = 1) h, sum(o10 = 2) s FROM sig WHERE d >= ? AND done = 1 AND err IS NULL AND src LIKE 'kap-%' AND src <> 'kap-devre' GROUP BY src HAVING n >= 8").bind(from).all()).results || [];
+  const AG = (await env.BT.prepare("SELECT (json_extract(meta, '$.fc') >= 0.8) g, sum(o31 = 1) h, sum(o31 = 2) s FROM sig WHERE src = 'algi' AND d >= ? AND done = 1 AND err IS NULL GROUP BY 1").bind(from).all()).results || [];
+  const K = (await env.BT.prepare("SELECT src, count(*) n, sum(o31 = 1) h, sum(o31 = 2) s FROM sig WHERE d >= ? AND done = 1 AND err IS NULL AND src LIKE 'kap-%' AND src <> 'kap-devre' GROUP BY src HAVING n >= 8").bind(from).all()).results || [];
   const T = await env.BT.prepare("SELECT count(*) n, avg(pre) g, sum(pre > 0) up FROM sig WHERE src = 'tavan' AND d >= ? AND done = 1 AND err IS NULL AND pre IS NOT NULL").bind(from).first();
   const pc = (a, b) => b ? Math.round(a / b * 100) : 0;
   const AD = { 'firsat-A': '🅰️ Fırsat A', 'firsat-B': '🅱️ Fırsat B', algi: '⚡ Algı', momentum: '🧪 Momentum (deneme)', radar: '📡 Radar (mesajı kapalı)' };
   const ORD = ['firsat-A', 'firsat-B', 'algi', 'momentum', 'radar'];
-  let msg = '🗓 <b>HAFTALIK KARNE</b> · ' + from.slice(8) + '.' + from.slice(5, 7) + ' – ' + today.slice(8) + '.' + today.slice(5, 7) + '\n<i>Önce hedef mi geldi, stop mu? (Momentum ±%1,5, diğerleri ±%1)</i>';
+  let msg = '🗓 <b>HAFTALIK KARNE</b> · ' + from.slice(8) + '.' + from.slice(5, 7) + ' – ' + today.slice(8) + '.' + today.slice(5, 7) + '\n<i>Başarı: −%1\'e düşmeden +%3 geldi mi?</i>';
   const oner = [];
   for (const k of ORD) {
     const r = R.find(x => x.src === k); if (!r) continue; const t = r.h + r.s, p = pc(r.h, t);

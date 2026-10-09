@@ -146,6 +146,9 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   adr≥6 (20 gün, (tepe−dip)/önceki kapanış), dün kapanış yeri yc=(kapanış−dip)/(tepe−dip)≥0,70, 10:30 değişimi −%1…+%1, 20g ort. ciro ≥50 Mn → src 'dunguclu' (en çok 10), ±%1,5 ile ölçülür.
   Momentum sinyallerinin meta'sına yc eklendi. Bot yarışında '💪 Dün güçlü kapanış' + '🧪 Momentum + dün güçlü kapanış' (momentum & yc≥0,7). QUIET_BOTS (paper.js) Telegram yarış satırlarında gösterilmez;
   'dunguclu' karne mesajında ve sigToday'de yok (sessiz gibi). 3 Kasım değerlendirmesine dahil.
+- v9.0 (09.10, Fatih: 'sinyalden sonra +%3 başarıdır, gün kapanışı baz alınmasın, stop −%1'): sig'e o31 (−%1'den önce +%3; aynı gün; 0 = sonuçsuz, sayılmaz).
+  Karne mesajı, haftalık rapor, /sigstats (Karne ekranı), röntgen, filtre kontrolü, KAP tepkisi artık o31. Eski satırlar sigEnsure'de bir kez mfe/mae'den (meta 'o31fill'); ikisi birden olanlar boş → son 6 gün sigBackfill.
+  Renk/çizgi: başabaş %25 (kCol ≥35 yeşil, ≥25 sarı). Momentum mesajı ve Canlı takip: hedef +%3, stop −%1. o10/o15 ölçülmeye DEVAM ediyor (bot yarışı ve kâğıt bot hâlâ ±%1/±%1,5 — değişmedi).
 - Fatih'in tercihi: tablolar/mesajlar sade ve Türkçe olsun; simge/kısaltma yerine düz cümle.
 - v6.6 FİLTRE KONTROLÜ (yalnız worker/src/sig.js): sig tablosuna `adr` (son 20 gün ort. günlük aralık %, feat ile aynı formül; sigEval ayrı '1D' çekimiyle, gelmezse boş).
   Endeks zaten `idx` (sinyal anı XU100, önceki kapanışa göre). Karne özetinde '🔎 Filtre kontrolü': endeks artı/eksi, oynak (≥%5)/sakin — tüm günler, yalnız AL, KAP hariç.
