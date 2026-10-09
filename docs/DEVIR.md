@@ -170,6 +170,10 @@ Her işlemde %0,1 kayma düşüldü. Eski <15.03.2026 / yeni ≥. İşlem başı
 - Model (+3/−1 getirisini tahmin, günde 1): 10:30 +0,27 · 11:00 +0,39 · 12:00 +0,33 — Momentum'u geçmiyor, en çok seçilen 5 hisse çıkınca ~0.
 - SONUÇ: bu veriyle ulaşılabilecek tavan işlem başı ~+0,3–0,4 (günde 1–2 işlem). "Her gün %3" verinin hiçbir köşesinde yok (Fatih'e dürüstçe söylendi).
   Daha fazlası için yeni bilgi gerekir (derinlik/takas). Karar: Momentum ailesi + disiplinli risk, canlı karne 3 hafta.
+- 09.10 gece ÇIKIŞ/GİRİŞ TESTİ (Momentum 241 sinyal, 15 dk mumlar; işlem başı ort, eski/yeni): şu anki +3/−1 +0,42 (0,41/0,44) ·
+  hedef +4 +0,60 (0,62/0,58) · hedef +6 +0,68 · hedefsiz stop −1 gün sonu +0,69 (0,62/0,76) · hedef +4 stop −1,5 +0,74 (0,89/0,60, 5 hisse hariç +0,35) ·
+  hedef +5 stop −1,5 +0,71 · iz süren stop +0,47 · +1,5'te stop girişe +0,41 · geri çekilmede gir +0,47 (yeni 0,22) · 3 gün tut +0,46.
+  DERS: kazananı +3'te kesmek kazancın üçte birini bırakıyor; asıl iyileştirme sinyalde değil ÇIKIŞTA. Öneri: bot yarışına sessiz '+4/−1,5' ve 'hedefsiz −1' botları.
 
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
