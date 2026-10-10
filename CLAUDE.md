@@ -28,6 +28,7 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
 
 ## Bilinen dersler
 - D1 ücretsiz: günde 5M satır OKUMA. bars tablosunu json_each ile tarama (~5M satır). Özet tablolar kullan.
+  10.10: kaph.js'in indekssiz 'WHERE st = 0 ORDER BY …' sorgusu her dakika tüm tabloyu okudu → sınır doldu (Cumartesi, gece 03:00'te sıfırlanır). DAKİKALIK HER SORGU İNDEKSLİ OLMALI (EXPLAIN QUERY PLAN ile 'SEARCH … USING INDEX' gör).
 - Ücretsiz Cloudflare: istek başına 10 ms CPU → canlı akış Worker kodundan GEÇMEMELİ (direct=1).
 - TradingView quote_add_symbols: bayrak objesi ekleme; 20'lik paketler, sırayla (tvPump).
 - SEANS SAATİNDE (hafta içi 09:55–18:15) PUSH YAPMA: Workers Builds include path '*' → HER push Worker'ı yeniden yayınlar → herkesin canlı

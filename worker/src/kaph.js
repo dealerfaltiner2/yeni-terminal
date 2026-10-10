@@ -40,6 +40,8 @@ export async function kaphStep(env, UA, now = Date.now()) {
   const cur = await env.BT.prepare("SELECT v FROM meta WHERE k = 'kaph_day'").first();
   if (!cur) return null;   // başlatılmamış
   await env.BT.prepare('CREATE TABLE IF NOT EXISTS kaph (idx INTEGER PRIMARY KEY, t INTEGER, d TEXT, sym TEXT, kind TEXT, subj TEXT, summ TEXT, txt TEXT, st INTEGER DEFAULT 0)').run();
+  // 10.10 DERS: indekssiz 'WHERE st = 0 ORDER BY …' her dakika tüm tabloyu okuyordu → D1 günlük 5M okuma sınırı doldu. Artık indeksle 3 satır okunur.
+  await env.BT.prepare('CREATE INDEX IF NOT EXISTS kaph_st ON kaph (st, kind, idx)').run();
   const today = tr.toISOString().slice(0, 10);
   // 1) liste: dünden eski günler sırayla
   if (cur.v < today) {
@@ -60,7 +62,8 @@ export async function kaphStep(env, UA, now = Date.now()) {
     return { gun: cur.v, satir: rows.length - 1 };
   }
   // 2) detay: bekleyenlerden en çok 3 (geri alımlarda detay gerekmez)
-  const P = (await env.BT.prepare("SELECT idx FROM kaph WHERE st = 0 ORDER BY (kind = 'is') DESC, idx LIMIT 3").all()).results || [];
+  let P = (await env.BT.prepare("SELECT idx FROM kaph INDEXED BY kaph_st WHERE st = 0 AND kind = 'is' ORDER BY idx LIMIT 3").all()).results || [];
+  if (!P.length) P = (await env.BT.prepare("SELECT idx FROM kaph INDEXED BY kaph_st WHERE st = 0 AND kind = 'icerden' ORDER BY idx LIMIT 3").all()).results || [];
   if (!P.length) {
     const s = await env.BT.prepare("SELECT kind, count(*) n, sum(st = 1) ok FROM kaph GROUP BY kind").all();
     await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kaph_st', ?)").bind(JSON.stringify({ bitti: new Date(now).toISOString(), ...Object.fromEntries((s.results || []).map(x => [x.kind, x.n + '/' + x.ok])) })).run();
