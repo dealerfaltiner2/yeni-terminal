@@ -4,6 +4,7 @@ import { tavanScan } from './tavan.js';
 import { posRoute, posWatch } from './pos.js';
 import { pushRoute, pushSend } from './push.js';
 import { ecalPoll, ecalRoute } from './ecal.js';
+import { tedbirRoute } from './tedbir.js';
 import { probe } from './probe.js';
 import { paperRoute } from './paper.js';
 // BIST TV Köprüsü v5.5 — Cloudflare Worker (bist-tv)
@@ -710,7 +711,7 @@ const OWN_ROUTES = new Set(['sync', 'prefs', 'cron-test', 'pine-sync', 'pine-tes
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
 const DEV_GRACE = Date.UTC(2026, 9, 6); // 6 Ekim 2026
-const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key', 'paper', 'sigsym', 'yorum']);
+const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key', 'paper', 'sigsym', 'yorum', 'tedbir']);
 const devCache = new Map();
 let ownerCache = { v: undefined, at: 0 }, devReady = false;
 async function ownerTok(env) {
@@ -951,6 +952,7 @@ export default {
       case 'tv-scan': return tvScan(request, env);
       case 'midas': return midasProxy();
       case 'ecal': return ecalRoute(env, json);
+      case 'tedbir': return tedbirRoute(env, json);
       case 'set-syms': return json({ ok: true });
       case 'pull': return json({});
       case 'scan': if (request.method === 'POST') return scan(request, env, url); break;

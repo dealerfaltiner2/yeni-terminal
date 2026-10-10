@@ -15,6 +15,7 @@ rm -f out_scripts.js
 echo "== Karne mantığı"; node sig.mjs 2>/dev/null || fail=1
 echo "== KAP haberleri"; node kap.mjs 2>/dev/null || fail=1
 echo "== KAP geçmişi (araştırma)"; node kaph.mjs 2>/dev/null || fail=1
+echo "== Borsa tedbirleri"; node tedbir.mjs 2>/dev/null || fail=1
 echo "== Pozisyon asistanı + bildirim"; node pos.mjs || fail=1
 echo "== Kâğıt üzerinde bot"; node paper.mjs || fail=1
 echo "== Arayüz"; timeout 300 node ui.js || fail=1

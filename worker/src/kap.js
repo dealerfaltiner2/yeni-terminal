@@ -2,6 +2,7 @@
 // Her bildirim: sınıflandır (tür, yön, önem) → D1 'kap' tablosu → önemliyse Telegram → Sinyal Karnesi'ne (src 'kap-<tür>')
 // yazılır; seans sonrası tepkisi ölçülür. Gece gelen önemliler 09:30'da tek mesajda özetlenir.
 import { sigAdd, trDay } from './sig.js';
+import { tedbirAdd } from './tedbir.js';
 const TRMS = 3 * 3600e3;
 const KAP_URL = 'https://www.kap.org.tr/tr/api/disclosure/members/byCriteria';
 const trParts = ms => { const d = new Date(ms + TRMS); return { wd: d.getUTCDay(), m: d.getUTCHours() * 60 + d.getUTCMinutes(), day: d.toISOString().slice(0, 10) }; };
@@ -131,6 +132,8 @@ export async function kapPoll(env, h) {
     part.forEach((r0, i) => { if (res[i] && res[i].meta && res[i].meta.changes) isNew.add(r0.idx); });
   }
   last = Math.max(last, ...rows.map(r0 => r0.idx));
+  // v10.0: yeni Borsa tedbiri haberleri → meta 'tedbir' (yalnız 'kisit' satırı geldiğinde 1 okuma + 1 yazma)
+  try { await tedbirAdd(env, rows.filter(x => isNew.has(x.idx)), now); } catch (e) {}
   // Karne: önem ≥ 1 olan her hisse haberi ölçülsün (ilk çalışmada da — sadece Telegram atlanır)
   for (const r0 of rows.filter(x => isNew.has(x.idx))) {
     if (r0.onem < 1 || !r0.syms || r0.tip === 'devre') continue; // devre kesici haber değil, hareketin sonucu → karneye yazılmaz

@@ -863,9 +863,12 @@ function ownQ(){const t=LS.get('ownTok','');return t?('own='+encodeURIComponent(
 function qAdd(u,q){return q?(u+(u.indexOf('?')<0?'?':'&')+q):u}
 // v6.1: SİNYAL KARNESİ — ana cihazdaki sinyaller sunucuya yazılır, seans sonrası sonucu ölçülür
 // v9.9 (10.10): her sinyale o anki temel oranlar not düşülür (yalnız ölçüm; sinyal kuralı değişmez): pe = F/K, pb = PD/DD, mc = piyasa değeri (milyar TL)
-function sigFund(sym){const u=S.umap&&S.umap[sym];if(!u)return null;const r={},n=(v,k)=>{v=+v;return isFinite(v)&&v!==0?Math.round(v*k)/k:null};
+function sigFund(sym){const u=(S.umap&&S.umap[sym])||{};const r={},n=(v,k)=>{v=+v;return isFinite(v)&&v!==0?Math.round(v*k)/k:null};
  const pe=n(u.price_earnings_ttm,10),pb=n(u.price_book_fundamental,100),mc=n((+u.market_cap_basic||0)/1e9,10);
- if(pe!=null)r.pe=pe;if(pb!=null)r.pb=pb;if(mc!=null)r.mc=mc;return Object.keys(r).length?r:null}
+ if(pe!=null)r.pe=pe;if(pb!=null)r.pb=pb;if(mc!=null)r.mc=mc;
+ try{const tb=tedbOf(sym);if(tb)r.tb=tb.map(e=>e.k).join(',')}catch(e){}
+ try{const rv=n(rvolOf(u),100);if(rv!=null)r.rv=rv}catch(e){} // v10.0 olağandışı hacim: göreli hacim (bugün ÷ normal) — yalnız ölçüm
+ return Object.keys(r).length?r:null}
 function sigPost(o){try{if(!LS.get('ownTok',''))return;const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||!o||!(o.px>0))return;
  const d=new Date(Date.now()+3*3600e3),m=d.getUTCHours()*60+d.getUTCMinutes(),wd=d.getUTCDay();if(wd<1||wd>5||m<600||m>=1080)return;
  o.t=o.t||Date.now();try{const f=sigFund(o.sym);if(f)o.meta=Object.assign({},o.meta||{},f)}catch(e){}
@@ -3250,7 +3253,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="9.9";window.APPV=APP_VER;
+  const APP_VER="10.0";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4461,7 +4464,15 @@ function ecImp(e){return e.im>=1||(e.c==='TR'&&/inflation|interest rate|repo|gdp
 function ecNear(ileri){const n=Date.now();return (ECAL.list||[]).filter(e=>ecImp(e)&&e.t>n-10*60e3&&e.t<n+ileri*60e3)}
 function earnDays(sym){const o=(S.umap&&S.umap[sym])||{},ts=+o.earnings_release_next_date;if(!(ts>0))return null;
  const day=x=>Math.floor((x+3*3600e3)/864e5),d=day(ts*1000)-day(Date.now());return d>=0&&d<=7?d:null}
-function sigNotes(sym){const a=[];try{const d=earnDays(sym);if(d!=null)a.push(d===0?'Bilanço bugün açıklanıyor':d===1?'Bilanço yarın açıklanıyor':'Bilanço '+d+' gün sonra');
+// v10.0 (11.10) BORSA TEDBİRLERİ: sunucu KAP'tan çıkarır (/tedbir); sinyale uyarı notu + karneye 'tb' (yalnız ölçüm, sinyal kuralı değişmez)
+let TEDB={map:{},t:0};
+function tedbLoad(){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||Date.now()-TEDB.t<30*60e3)return;TEDB.t=Date.now();
+ fetch(dq(b+'/tedbir')).then(r=>r.json()).then(j=>{if(j&&j.ok&&j.map)TEDB.map=j.map}).catch(()=>{})}
+setTimeout(tedbLoad,4000);setInterval(tedbLoad,10*60e3); // motor (başsız) da yüklesin — Şimdi ekranı çizilmese bile
+function tedbOf(sym){const a=TEDB.map&&TEDB.map[sym];return Array.isArray(a)&&a.length?a:null}
+function tedbTxt(sym){const a=tedbOf(sym);if(!a)return '';const dm=t=>{const d=new Date(t+3*3600e3);return String(d.getUTCDate()).padStart(2,'0')+'.'+String(d.getUTCMonth()+1).padStart(2,'0')};
+ return 'Borsa tedbiri: '+a.map(e=>e.ad+' ('+dm(e.t)+')').join(', ')}
+function sigNotes(sym){const a=[];try{const tb=tedbTxt(sym);if(tb)a.push(tb);const d=earnDays(sym);if(d!=null)a.push(d===0?'Bilanço bugün açıklanıyor':d===1?'Bilanço yarın açıklanıyor':'Bilanço '+d+' gün sonra');
  ecNear(30).slice(0,2).forEach(e=>a.push(ecHm(e.t)+' '+(e.c==='TR'?'Türkiye':'ABD')+' verisi: '+ecTitle(e)))}catch(e){}return a}
 function sigNoteTxt(sym){const a=sigNotes(sym);return a.length?'\n⚠️ '+a.join(' · '):''}
 /* ================= v7.1 ŞİMDİ ================= */
@@ -4640,7 +4651,7 @@ function nMe(){const td=todayStr(),J=S.jr||[];const cl=J.filter(j=>j.closeD===td
  if(days.length){h+='<div class="nme-c"><small>Sistemin son '+days.length+' günü · kazanma oranı (KAP hariç)</small><div class="nme-bars">'+days.map(d=>'<div title="'+d.d+'"><i class="'+(d.p==null?'':d.p>=55?'up':d.p>=50?'mid':'dn')+'" style="height:'+(d.p==null?4:Math.max(6,d.p))+'%"></i><span>'+d.d.slice(8)+'</span></div>').join('')+'<em style="bottom:50%"></em></div></div>'}
  return h+'</div>'}
 function renderNow(){
- const el=document.getElementById('nowbody');if(!el)return;nowKapLoad();ecalLoad();idxLoad();sigTodayLoad();
+ const el=document.getElementById('nowbody');if(!el)return;nowKapLoad();ecalLoad();tedbLoad();idxLoad();sigTodayLoad();
  const s=nowSess(),today=new Date(Date.now()+3*3600e3).toISOString().slice(0,10);
  let h='<div class="xsearch" onclick="xrayOpen()"><b>🔍</b><span>Hisse sorgula: not, puan, seviye</span><em>RÖNTGEN</em></div>'+nHero(),main='',side='';
  const prepTime=s.wk&&((s.m>=480&&s.m<600)||s.m>=1095);

@@ -192,3 +192,9 @@ Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ"
   Fatih'e her Cuma 'o haftanın gerçek sinyalleri, 100.000 TL ile girseydin' tablosu verilecek.
 - v9.9 (10.10, Fatih onayıyla) TEMEL ORAN NOTU: sigPost her sinyalin meta'sına sigFund(sym) ekler — pe (F/K), pb (PD/DD), mc (piyasa değeri, milyar TL), S.umap'teki TradingView tarama değerlerinden.
   Yalnız ölçüm; sinyal kuralı değişmez. Birkaç hafta sonra: ucuz/sağlam şirketlerin sinyalleri daha mı iyi (o31, h1)? Geçmiş test YAPILAMAZ (geçmiş oran yok, bugünkü oranla geçmiş test yanıltır).
+- v10.0 (11.10, Fatih: 'ücretsiz olanları sırayla ekle') VERİ ZENGİNLEŞTİRME — yalnız not/ölçüm, sinyal kuralı DEĞİŞMEDİ:
+  1) BORSA TEDBİRLERİ worker/src/tedbir.js: KAP 'kisit' haberleri → meta 'tedbir' {SEMBOL:[{k,t}]} (brut/tek/aciga/kredi/durdur/diger; 30 gün, durdurma 1 gün; 'kaldırıldı' haberi siler).
+     Dakikalık işe ek okuma YOK (kap.js yalnız yeni kisit satırında tedbirAdd); meta yoksa /tedbir bir kez kap_t indeksiyle kurar. /tedbir DATA yolu. Terminal TEDB (10 dk'da bir, motor da yükler):
+     sigNotes'a 'Borsa tedbiri: …' uyarısı (Telegram sinyal mesajı, Şimdi, röntgen), sigFund meta.tb. tests/tedbir.mjs.
+  3) OLAĞANDIŞI HACİM: sigFund meta.rv = göreli hacim (rvolOf). Ekranda/Telegram'da yeni yazı yok (Algı zaten gösteriyor).
+  2) TEMETTÜ/BÖLÜNME: TradingView alan adı doğrulanınca (probe:col_ex_dividend_date_upcoming) eklenecek — bilinmeyen alan taramayı bozar, doğrulamadan BASE'e ekleme.
