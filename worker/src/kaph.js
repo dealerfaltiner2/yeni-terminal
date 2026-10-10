@@ -65,6 +65,9 @@ export async function kaphStep(env, UA, now = Date.now()) {
   let P = (await env.BT.prepare("SELECT idx FROM kaph INDEXED BY kaph_st WHERE st = 0 AND kind = 'is' ORDER BY idx LIMIT 3").all()).results || [];
   if (!P.length) P = (await env.BT.prepare("SELECT idx FROM kaph INDEXED BY kaph_st WHERE st = 0 AND kind = 'icerden' ORDER BY idx LIMIT 3").all()).results || [];
   if (!P.length) {
+    // 11.10 DERS: iş bitince bu sayım (tüm tablo) her dakika çalışıp okuma sınırını yine doldurdu → günde bir kez say.
+    const st = await env.BT.prepare("SELECT v FROM meta WHERE k = 'kaph_st'").first();
+    try { if (st && String(JSON.parse(st.v).bitti || '').slice(0, 10) === new Date(now).toISOString().slice(0, 10)) return { bitti: true }; } catch (e) {}
     const s = await env.BT.prepare("SELECT kind, count(*) n, sum(st = 1) ok FROM kaph GROUP BY kind").all();
     await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kaph_st', ?)").bind(JSON.stringify({ bitti: new Date(now).toISOString(), ...Object.fromEntries((s.results || []).map(x => [x.kind, x.n + '/' + x.ok])) })).run();
     return { bitti: true };

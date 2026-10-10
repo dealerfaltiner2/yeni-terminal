@@ -35,4 +35,6 @@ r = await kaphStep(env, 'x', sat);
 ok('bugüne gelince detay: yalnız iş/içeriden çekilir', r && r.detay === 1 && db.prepare('SELECT txt FROM kaph WHERE idx = 11').get().txt === 'Tutar 5 milyon TL', JSON.stringify(r));
 r = await kaphStep(env, 'x', sat);
 ok('hepsi bitince durum özeti', r && r.bitti && /is/.test(db.prepare("SELECT v FROM meta WHERE k='kaph_st'").get().v));
+{ const v1 = db.prepare("SELECT v FROM meta WHERE k='kaph_st'").get().v; await kaphStep(env, 'x', sat + 60e3); await kaphStep(env, 'x', sat + 120e3);
+  ok('bitince her dakika tabloyu yeniden saymaz (okuma sınırı)', db.prepare("SELECT v FROM meta WHERE k='kaph_st'").get().v === v1); }
 const f = res.filter(x => !x).length; console.log(`KAP GEÇMİŞİ: ${res.length - f}/${res.length} geçti`); process.exit(f ? 1 : 0);
