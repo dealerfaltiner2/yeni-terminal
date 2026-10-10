@@ -192,6 +192,16 @@ Betikler: tools/ml/prep.py (S.pkl), ideas.py, summ.py, night.py, late.py, mom2.p
 - Hafta günü (Salı iyi, Perşembe kötü) — çoklu deneme gürültüsü sayıldı, kullanılmadı.
 - SONUÇ: fiyat/hacim mumlarından yeni giriş kuralı çıkmadı. Kazanç kaynağı hâlâ Momentum + doğru çıkış (6h). Yeni bilgi = derinlik / takas.
 
+## 6j. 10.10 OLAY ARAŞTIRMASI (fiyat kalıbı değil, hisseyi hareket ettiren olaylar; veri: SPK bültenleri + BORSA günlük fiyat, ham veri scratchpad'de, repoda yok)
+- SPK BEDELSİZ ONAYI (2024/07–2026/10, 213 olay, 3 yıl bülten okundu): önceki kapanış → bülten günü +1,9 (Perşembe +2,7), ertesi açılış boşluğu +1,7 (%76 artı),
+  ertesi gün açılıştan sonra −0,5; ertesi açılışta al +3/−1: 39 kazan / 112 kayıp. Bülten AKŞAM yayımlanıyor (haber saatleri 20:20–23:52) → hareket alınamıyor. SİNYAL YOK.
+- HALKA ARZ (2024–2026/09, 86 arz): tavanla açılanlara girilemez (5 günde +22 ama alınamaz). Tavanla AÇILMAYAN (alınabilen) 22 arz: 5 gün −6,8, 20 gün −14,6.
+  Tavan serisi bozulunca kapanışta al: ertesi açılış −2,6, 10 gün medyan −14,6. → 'yeni halka arzda tavan bozulunca / tavanla açılmayınca alma' UYARI adayı.
+- ENDEKS DEĞİŞİKLİĞİ (11 dönem 2024Q2–2026Q4, 232 olay; BIST30 listeleri tek kaynaktan okundu, şüpheli): BIST100'e GİREN: duyurudan sonraki açılıştan geçerlilik öncesi kapanışa endekse göre +3,1 (medyan +2,3, %64 artı)
+  ama dönemden döneme −2,7…+13 (2026Q4'ün 27 olayı ortalamayı şişiriyor). BIST100'den ÇIKAN: −4,2 (medyan −2,2), geçerlilik sonrası 5 gün −2,0. → 'çıkacak hissede alım sinyali verme' FİLTRE adayı (yılda 4 kez).
+- KAP haber tutarı (2) ve içeriden alış/satış (3): KAP detay ucu Worker'dan çalışıyor (attachment-detail JSON + HTML; 'Yeni İş İlişkisi' taksonomi formu, içeriden bildiriminde metin 'satış işlemi yapılmıştır').
+  Geçmiş gün listesi de çalışıyor (byCriteria fromDate=toDate, ~100 KB/gün). v9.5 kaph.js 2025-10-01'den bugüne topluyor (seans dışında). Canlı karne: kap-geri 300 olay 75/163 (%31,5 > %25 başabaş), kap-is 8/30.
+
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
 - v6.6 (29.09 akşamı): karne özetinde "Filtre kontrolü" — endeks artı/eksi ve oynak/sakin ayrımı kendi sinyallerimizde. 1–2 hafta sonra bak; tutarsa sinyal kapısı öner.
