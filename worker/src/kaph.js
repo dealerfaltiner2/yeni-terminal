@@ -60,7 +60,7 @@ export async function kaphStep(env, UA, now = Date.now()) {
     return { gun: cur.v, satir: rows.length - 1 };
   }
   // 2) detay: bekleyenlerden en çok 3 (geri alımlarda detay gerekmez)
-  const P = (await env.BT.prepare('SELECT idx FROM kaph WHERE st = 0 ORDER BY idx LIMIT 3').all()).results || [];
+  const P = (await env.BT.prepare('SELECT idx FROM kaph WHERE st = 0 ORDER BY (kind = 'is') DESC, idx LIMIT 3').all()).results || [];
   if (!P.length) {
     const s = await env.BT.prepare("SELECT kind, count(*) n, sum(st = 1) ok FROM kaph GROUP BY kind").all();
     await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kaph_st', ?)").bind(JSON.stringify({ bitti: new Date(now).toISOString(), ...Object.fromEntries((s.results || []).map(x => [x.kind, x.n + '/' + x.ok])) })).run();
