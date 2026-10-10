@@ -174,3 +174,5 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   Araştırma 10.10 (DEVIR 6j): SPK bedelsiz onayı (etki açılışta biter, alınamaz), halka arz (alınabilenler 20 günde −%15), endeks değişikliği (BIST100'den çıkacaklar −%4) → sinyal yok; uyarı adayları.
 - v9.6 (10.10, Fatih: 'çalışanı bul, nasıl bulacağını sen bul'): Momentum Telegram mesajı artık 'Stop −%1 · hedef yok, stop gelmezse 17:55'te sat' (geçmiş 14 ay: +%3'te satmak +0,29, gün sonu +0,55/işlem, 11/14 ay artı; en çok kazandıran 5 hisse hariç +0,12; en uzun kayıp serisi 16).
   Giriş kuralı DEĞİŞMEDİ; karne yine o31 (+%3/−%1) ölçer, bot yarışında 'momh' (hedefsiz −%1) bu çıkışın canlı ölçüsü. Toast'ta hedef yok.
+- v9.7 (10.10) ÖĞLE TREND GÜNÜ — SESSİZ KAYIT (keşif motoru, DEVIR 6k): ogScan() 12:00–12:15 bir kez (motor ya da motor yokken ana cihaz): S.idxCh ≥ +0,8 ise piyasa değeri ilk 120'den açılıştan ≥ +%2, değişim < +7 → en çok 3, src 'oglen' (meta ro/it/ch).
+  Telegram/ekranda sinyal YOK; karne ekranı + bot yarışı 'oglen' (h1 = stop −1, hedefsiz). sigToday ve karne mesajında gösterilmez. PAPER_SRCS/QUIET_BOTS'ta.

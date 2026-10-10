@@ -36,7 +36,7 @@ ok('ayar sınırları', c.amt === 1000 && c.max === 30 && c.srcs.join() === 'alg
     { ...R('2026-10-02', T('14:00'), 'firsat-B', 'C1', 10, 2, 2, -2), tx: -1, pbn: 1, pb: -1 },
     { ...R('2026-10-02', T('15:00'), 'firsat-B', 'D1', 10, 1, 1, 2), tx: 0.5, pbn: null, pb: null } ];
   const v = paperSim(rr, { amt: 10000, max: 5, slip: 0 }, '2026-10-02'), B = Object.fromEntries(v.bots.map(b => [b.k, b]));
-  ok('yarış: 11 bot, en çok kazanan en üstte', v.bots.length === 11 && v.bots[0].pl >= v.bots[10].pl);
+  ok('yarış: 12 bot, en çok kazanan en üstte', v.bots.length === 12 && v.bots[0].pl >= v.bots[11].pl);
   ok('mevcut bot = ana bot', B.mevcut.pl === v.tot.pl && B.mevcut.n === 4, B.mevcut.pl + ' / ' + v.tot.pl);
   ok('güçlüler: zayıf Algı alınmaz', B.guclu.n === 3);
   ok('öğle arası: 11:30 sinyali alınmaz', B.saat.n === 3 && B.saat.pl === -100, B.saat.pl);
@@ -51,6 +51,9 @@ ok('ayar sınırları', c.amt === 1000 && c.max === 30 && c.srcs.join() === 'alg
     { const ex2 = [R('2026-10-02', T('10:33'), 'momentum', 'Q1', 10, 2, 1, 0.5, { o41: 1, h1: 5 }), R('2026-10-02', T('10:34'), 'momentum', 'Q2', 10, 2, 2, 0.5, { o41: 0, h1: 0.5 }), R('2026-10-02', T('10:35'), 'momentum', 'Q3', 10, 2, 2, 0.5, { o41: null, h1: null })];
       const v4 = paperSim([...rr, ...ex2], { amt: 10000, max: 5, slip: 0 }, '2026-10-02'), B4 = v4.bots.find(b => b.k === 'mom4'), BH = v4.bots.find(b => b.k === 'momh');
       ok('Momentum +%4/−%1 botu: +4 ve gün sonu, ölçülmeyen eksik', B4.n === 2 && B4.pl === 400 + 50 && B4.eksik === 1, JSON.stringify(B4));
+      { const ex3 = [R('2026-10-02', T('12:01'), 'oglen', 'O1', 10, 2, 2, 0.5, { h1: -1 }), R('2026-10-02', T('12:01'), 'oglen', 'O2', 10, 2, 2, 0.5, { h1: 2.5 })];
+        const v5 = paperSim([...rr, ...ex3], { amt: 10000, max: 5, slip: 0 }, '2026-10-02'), BO = v5.bots.find(b => b.k === 'oglen');
+        ok('Öğle trend günü botu: yalnız kendi sinyali, hedefsiz −%1', BO && BO.n === 2 && BO.pl === -100 + 250 && !v5.trades.some(x => x.src === 'oglen'), JSON.stringify(BO)); }
       ok('Momentum hedefsiz −%1 botu: gün sonu sonuçları', BH.n === 2 && BH.pl === 500 + 50 && BH.eksik === 1, JSON.stringify(BH)); }
     ok('dün güçlü kapanış ana bota karışmıyor', M3 && !v3.trades.some(x => x.src === 'dunguclu')); }
   ok('çabuk çıkış: 60 dk sonucu kullanılır', B.cabuk.n === 4 && B.cabuk.pl === -40 - 100 - 100 + 50, B.cabuk.pl); }

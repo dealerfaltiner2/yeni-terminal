@@ -296,7 +296,7 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
   const d = today.split('-');
   let msg = '📊 <b>SİNYAL KARNESİ · ' + d[2] + '.' + d[1] + '</b>\n<i>Başarı: sinyalden sonra −%1\'e düşmeden +%3 geldi mi? (gün içinde ikisi de gelmeyen sayılmaz)</i>';
   const ORD = ['firsat-A', 'firsat-B', 'algi', 'momentum', 'radar'], rk = x => { const i = ORD.indexOf(x); return i < 0 ? 99 : i; };
-  for (const r of R.filter(r => !String(r.src).startsWith('kap-') && r.src !== 'tavan' && r.src !== 'sessiz' && r.src !== 'dunguclu').sort((a, b) => rk(a.src) - rk(b.src))) {
+  for (const r of R.filter(r => !String(r.src).startsWith('kap-') && r.src !== 'tavan' && r.src !== 'sessiz' && r.src !== 'dunguclu' && r.src !== 'oglen').sort((a, b) => rk(a.src) - rk(b.src))) {
     msg += '\n\n<b>' + esc(SRC_AD[r.src] || r.src) + '</b> — ' + r.n + ' sinyal\n   ' + line(r.h, r.s);
     const a = A.find(x => x.src === r.src);
     if (a && a.g > 1) msg += '\n   <i>tüm günler: ' + a.n + ' sinyal → %' + pc(a.h, a.h + a.s) + '</i>';
@@ -335,7 +335,7 @@ export async function sigToday(env) {
   if (todayCache.v && Date.now() - todayCache.at < 30e3) return todayCache.v;
   await sigEnsure(env);
   const d0 = Date.parse(trDay(Date.now()) + 'T00:00:00Z') - TRMS;
-  const rows = (await env.BT.prepare("SELECT t, src, sym, dir, px, sc, meta, done, o10, o15, o31, mfe, mae, rc FROM sig INDEXED BY sig_t WHERE t >= ? AND src NOT LIKE 'kap-%' AND src NOT IN ('sessiz','dunguclu') ORDER BY t DESC LIMIT 60").bind(d0).all()).results || [];
+  const rows = (await env.BT.prepare("SELECT t, src, sym, dir, px, sc, meta, done, o10, o15, o31, mfe, mae, rc FROM sig INDEXED BY sig_t WHERE t >= ? AND src NOT LIKE 'kap-%' AND src NOT IN ('sessiz','dunguclu','oglen') ORDER BY t DESC LIMIT 60").bind(d0).all()).results || [];
   const v = { ok: true, at: Date.now(), list: rows.map(r => { let m = null; try { m = r.meta ? JSON.parse(r.meta) : null; } catch (e) {} return { ...r, meta: m }; }) };
   todayCache = { at: Date.now(), v };
   return v;

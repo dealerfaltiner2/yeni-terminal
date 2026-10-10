@@ -3245,7 +3245,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="9.6";window.APPV=APP_VER;
+  const APP_VER="9.7";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4013,7 +4013,7 @@ document.getElementById('infosheet').addEventListener('click',e=>{if(e.target.cl
 </style>
 <script>
 /* ================= v6.9 SUNUCU KARNESİ ================= */
-const KSRC=[['firsat-A','🅰️ Fırsat A'],['firsat-B','🅱️ Fırsat B'],['algi','⚡ Algı'],['momentum','🧪 Momentum (deneme)'],['sessiz','🤫 Sessiz trend (sessiz kayıt)'],['dunguclu','💪 Dün güçlü kapanış (sessiz kayıt)'],['radar','📡 Sunucu radarı']];
+const KSRC=[['firsat-A','🅰️ Fırsat A'],['firsat-B','🅱️ Fırsat B'],['algi','⚡ Algı'],['momentum','🧪 Momentum (deneme)'],['sessiz','🤫 Sessiz trend (sessiz kayıt)'],['dunguclu','💪 Dün güçlü kapanış (sessiz kayıt)'],['oglen','🕛 Öğle trend günü (sessiz kayıt)'],['radar','📡 Sunucu radarı']];
 const KAPTR={is:'Yeni iş/sözleşme',ihale:'İhale',geri:'Geri alım',bedelsiz:'Bedelsiz',bedelli:'Bedelli',tahsisli:'Sermaye artırımı',teklif:'Pay alım teklifi',birlesme:'Birleşme/devir',tesvik:'Teşvik',temettu:'Temettü',bilanco:'Bilanço',not:'Kredi notu',icerden:'İçeriden alım-satım',yatirim:'Yatırım',varlik:'Varlık alım/satım',ozel:'Özel durum',risk:'Risk',kisit:'İşlem kısıtı',ceza:'Ceza/dava'};
 let KST_LOADING=null,KST_TRY=0;
 // hata mesajını bir kez göstermek için tek seferlik yeniden çizim (kstatLoad 60 sn kısıtlı olduğundan döngü olmaz)
@@ -5022,7 +5022,7 @@ function labHtml(){const D={canli:['🟢','Canlıda deneniyor'],bulgu:['🔵','G
    Gerçek para yok, emir yok. Sunucu (/paper) karnedeki sinyalleri "bot alsaydı ne olurdu?" diye hesaplar:
    seçili kaynaklar, işlem başına sabit tutar, Momentum ±%1,5 / diğerleri ±%1, gelmezse gün sonu kapanışı, %0,1 kayma payı, günde en çok N işlem. */
 const PAPER={at:0,v:null,err:null,busy:false};
-const PSRC={'firsat-A':'🅰️ Fırsat A','firsat-B':'🅱️ Fırsat B',algi:'⚡ Algı',momentum:'🧪 Momentum',radar:'📡 Radar',sessiz:'🤫 Sessiz trend',dunguclu:'💪 Dün güçlü kapanış'};
+const PSRC={'firsat-A':'🅰️ Fırsat A','firsat-B':'🅱️ Fırsat B',algi:'⚡ Algı',momentum:'🧪 Momentum',radar:'📡 Radar',sessiz:'🤫 Sessiz trend',dunguclu:'💪 Dün güçlü kapanış',oglen:'🕛 Öğle trend günü',oglen:'🕛 Öğle trend günü'};
 function paperLoad(force){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||PAPER.busy)return;if(!force&&Date.now()-PAPER.at<120e3)return;
  PAPER.busy=true;PAPER.at=Date.now();
  fetch(dq(b+'/paper')).then(r=>r.json()).then(j=>{if(j&&j.ok){PAPER.v=j;PAPER.err=null}else PAPER.err=(j&&j.error)||'alınamadı'}).catch(()=>{PAPER.err='sunucuya ulaşılamadı'})
@@ -5257,6 +5257,29 @@ async function dgScan(force){
  }finally{DGK.busy=false}
 }
 setInterval(()=>{try{dgScan(false)}catch(e){}},30000);
+/* ================= v9.7 ÖĞLE TREND GÜNÜ — SESSİZ KAYIT (araştırma DEVIR 6k, keşif motoru) =================
+   12:00'de BIST 100 önceki kapanışa göre ≥ +%0,8 ise: piyasa değerine göre ilk 120 hisseden bugün AÇILIŞTAN ≥ +%2 yükselmiş, günlük değişimi < +%7 olanlar
+   → en çok 3 (açılıştan en çok yükselen) src 'oglen'. Telegram/bildirim/ekranda sinyal YOK; karne + bot yarışı (stop −%1, hedef yok, gün sonu). */
+const OGK={day:LS.get('ogDay',''),busy:false,last:null};
+function ogPick(uni,ix){
+ if(!(ix>=0.8))return [];
+ return (uni||[]).filter(o=>o&&o.close>0&&o.open>0&&(o.market_cap_basic||0)>0).sort((a,b)=>(b.market_cap_basic||0)-(a.market_cap_basic||0)).slice(0,120)
+  .map(o=>({s:o.name,px:o.close,ro:(o.close/o.open-1)*100,ch:o.change})).filter(x=>x.ro>=2&&x.ch!=null&&x.ch<7).sort((a,b)=>b.ro-a.ro).slice(0,3);
+}
+function ogScan(force){
+ const d=momDay();if(OGK.busy||(!force&&OGK.day===d))return null;
+ const t=new Date(Date.now()+3*3600e3),m=t.getUTCHours()*60+t.getUTCMinutes(),wd=t.getUTCDay();
+ if(!force){if(wd<1||wd>5||m<720||m>=735)return null;if(!(BOTMODE||(!S.botAlive&&LS.get('ownTok',''))))return null}
+ if(!(S.uni&&S.uni.length)||S.idxCh==null)return null;
+ OGK.busy=true;
+ try{
+  const ix=+S.idxCh,out=ogPick(S.uni,ix);
+  OGK.day=d;LS.set('ogDay',d);OGK.last={at:Date.now(),ix,list:out};
+  for(const x of out)sigPost({src:'oglen',sym:x.s,t:Date.now(),px:x.px,sc:Math.round(x.ro*10),dir:'AL',meta:{ro:+x.ro.toFixed(2),it:+ix.toFixed(2),ch:+(+x.ch).toFixed(2)}});
+  return out;
+ }finally{OGK.busy=false}
+}
+setInterval(()=>{try{ogScan(false)}catch(e){}},30000);
 /* ================= v8.7 CLAUDE PİYASA YORUMU =================
    Zamanlanmış Claude görevi (hafta içi 10:40, 14:40, 18:40) piyasayı ve Pusula verilerini okur, yorumu D1 'yorum' tablosuna yazar.
    Terminal /yorum'dan okur (5 dk'da bir). Metin düz yazı; **kalın** ve satır başları desteklenir, HTML kaçırılır. */

@@ -135,6 +135,10 @@ async function page(b, opt) {
           flowTick('ZZT', { lp: 10, volume: 2100 }, Date.UTC(2026, 9, 10, 8, 30));   // Cumartesi → sayılmaz
           const r = FLOW.cur['2026-10-12|690'] && FLOW.cur['2026-10-12|690'].ZZT; FLOW.cur = {}; FLOW.st = {}; return r; });
         ok('emir akışı: alıcılı/satıcılı ayrımı (motor kaydı)', f && f[0] === 690 && f[1] === 600 && f[2] === 400 && f[3] === 0 && f[4] === 4 && f[5] === 10 && f[6] === 9.98 && f[7] === 10, JSON.stringify(f)); }
+      { const og = await T(() => { const U = [{ name: 'AA', close: 103, open: 100, change: 4, market_cap_basic: 9e9 }, { name: 'BB', close: 101, open: 100, change: 1, market_cap_basic: 8e9 },
+          { name: 'CC', close: 110, open: 100, change: 8, market_cap_basic: 7e9 }, { name: 'DD', close: 105, open: 100, change: 5, market_cap_basic: 6e9 }];
+          return { a: ogPick(U, 1.0).map(x => x.s).join(), b: ogPick(U, 0.5).length }; });
+        ok('Öğle trend günü: endeks ≥+0,8 iken açılıştan ≥+%2, tavana yakın olmayan, en güçlü önce', og.a === 'DD,AA' && og.b === 0, JSON.stringify(og)); }
       ok('Deneme laboratuvarı listeleniyor', await T(() => /Deneme laboratuvarı/.test(labHtml()) && /Momentum/.test(labHtml())));
       ok('yeni ikon kurulumu: yapıştırılan bilgi adres + kodu yerine koyuyor', su.got === 'wss://x.test/k' && su.own === 'kod123', JSON.stringify(su));
       const mm = await T(() => { const D = []; let c = 100; for (let i = 0; i < 25; i++) { c = i === 24 ? c * 1.04 : i >= 20 ? c * 1.01 : c; D.push({ open: c, high: c * 1.035, low: c * 0.965, close: c, volume: 2e6 }); }

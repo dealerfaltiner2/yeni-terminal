@@ -202,6 +202,13 @@ Betikler: tools/ml/prep.py (S.pkl), ideas.py, summ.py, night.py, late.py, mom2.p
 - KAP haber tutarı (2) ve içeriden alış/satış (3): KAP detay ucu Worker'dan çalışıyor (attachment-detail JSON + HTML; 'Yeni İş İlişkisi' taksonomi formu, içeriden bildiriminde metin 'satış işlemi yapılmıştır').
   Geçmiş gün listesi de çalışıyor (byCriteria fromDate=toDate, ~100 KB/gün). v9.5 kaph.js 2025-10-01'den bugüne topluyor (seans dışında). Canlı karne: kap-geri 300 olay 75/163 (%31,5 > %25 başabaş), kap-is 8/30.
 
+## 6k. 10.10 KEŞİF MOTORU (tools/ml/engine.py): 672.436 kural tek seferde (23 özellik × 9 eşik × 2 yön, tek ve ikili koşul) × 4 giriş saati (10:30/11:00/12:00/14:00) × 2 çıkış (+3/−1 ve hedefsiz −1)
+- Matris çarpımıyla saniyeler içinde. Eğitim <2026-03-01, doğrulama 03-01..06-14, test ≥06-15. Eğitimde ilk 200 → doğrulamada > +0,3: 232 kural (ŞANS kontrolü: karıştırılmış sonuçla 6–13) → kalıcı yapı VAR.
+  Ama 232'nin test ortalaması +0,03 (yarısı artı) — çoğu tesadüfe yakın. Not: test dönemine sıralamada bakıldı → bundan sonrası CANLI sessiz kayıtla doğrulanacak.
+- Öne çıkan aile: 12:00 'TREND GÜNÜ' — endeks ≥ +0,8 VE hisse açılıştan ≥ +2: 919 işlem / yalnız 54 gün; işlem başı +0,38 (dönemler +0,32/+0,55/+0,33, 5 hisse hariç +0,33),
+  eşik yüzeyi düzgün (açılıştan getiri ve endeks arttıkça artıyor). AMA gün ortalaması +0,18–0,23, günde en çok 3 seçilince +0,27 (5 hisse hariç +0,07) — kazanç birkaç güçlü güne yığılmış.
+  → v9.7 sessiz kayıt 'oglen' (en çok 3, piyasa değeri ilk 120, değişim < +7, stop −1 hedefsiz). Diğer adaylar: 11:00 'd5≥5,9 & dün hacmi düşük (yvr≤0,49)', 'aralık dar & d20≥20' (sessiz trende benzer).
+
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
 - v6.6 (29.09 akşamı): karne özetinde "Filtre kontrolü" — endeks artı/eksi ve oynak/sakin ayrımı kendi sinyallerimizde. 1–2 hafta sonra bak; tutarsa sinyal kapısı öner.
