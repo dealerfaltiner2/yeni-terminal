@@ -200,7 +200,10 @@ Betikler: tools/ml/prep.py (S.pkl), ideas.py, summ.py, night.py, late.py, mom2.p
 - ENDEKS DEĞİŞİKLİĞİ (11 dönem 2024Q2–2026Q4, 232 olay; BIST30 listeleri tek kaynaktan okundu, şüpheli): BIST100'e GİREN: duyurudan sonraki açılıştan geçerlilik öncesi kapanışa endekse göre +3,1 (medyan +2,3, %64 artı)
   ama dönemden döneme −2,7…+13 (2026Q4'ün 27 olayı ortalamayı şişiriyor). BIST100'den ÇIKAN: −4,2 (medyan −2,2), geçerlilik sonrası 5 gün −2,0. → 'çıkacak hissede alım sinyali verme' FİLTRE adayı (yılda 4 kez).
 - KAP haber tutarı (2) ve içeriden alış/satış (3): KAP detay ucu Worker'dan çalışıyor (attachment-detail JSON + HTML; 'Yeni İş İlişkisi' taksonomi formu, içeriden bildiriminde metin 'satış işlemi yapılmıştır').
-  Geçmiş gün listesi de çalışıyor (byCriteria fromDate=toDate, ~100 KB/gün). v9.5 kaph.js 2025-10-01'den bugüne topluyor (seans dışında). Canlı karne: kap-geri 300 olay 75/163 (%31,5 > %25 başabaş), kap-is 8/30.
+  Geçmiş gün listesi de çalışıyor (byCriteria fromDate=toDate, ~100 KB/gün).
+- PAY GERİ ALIMI (kaph 'geri', 2.174 bildirim / 187 hisse, 2025-10..2026-10; 15 dk mumu olan 32 büyük hissede 322 olay, giriş: seans içiyse sonraki mum, değilse ertesi 10:00):
+  +3/−1 ort +0,05 (aynı hisselerin sıradan günü −0,13), hedefsiz +0,17, 6/12 ay, en çok kazandıran 5 hisse hariç −0,29; 30 günde ilk bildirim 47 olay +0,07. → zayıf, SİNYAL YOK.
+  'Yeni iş ilişkisi' detay metninde tutar 'oda_ExplanationTextBlock' açıklamasında ('1.570.000 Usd tutarlı', '732.000 Avro') → düzenli ifadeyle çıkarılabilir. v9.5 kaph.js 2025-10-01'den bugüne topluyor (seans dışında). Canlı karne: kap-geri 300 olay 75/163 (%31,5 > %25 başabaş), kap-is 8/30.
 
 ## 6k. 10.10 KEŞİF MOTORU (tools/ml/engine.py): 672.436 kural tek seferde (23 özellik × 9 eşik × 2 yön, tek ve ikili koşul) × 4 giriş saati (10:30/11:00/12:00/14:00) × 2 çıkış (+3/−1 ve hedefsiz −1)
 - Matris çarpımıyla saniyeler içinde. Eğitim <2026-03-01, doğrulama 03-01..06-14, test ≥06-15. Eğitimde ilk 200 → doğrulamada > +0,3: 232 kural (ŞANS kontrolü: karıştırılmış sonuçla 6–13) → kalıcı yapı VAR.
