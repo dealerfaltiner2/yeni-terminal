@@ -7,6 +7,16 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
 **ÖNCE `docs/DEVIR.md` DOSYASINI BAŞTAN SONA OKU** — ayrıntılı geçmiş, kararlar, denenip tutmayanlar ve sıradaki işlerin nasıl yapılacağı orada.
 %60 araması için hazır araçlar: `tools/feat_pack.py` + `tools/feat_search.py`.
 
+## AJAN DÜZENİ (11.10, Fatih'in isteği — birden çok Claude aynı anda çalışıyor, HER AJAN UYAR)
+Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ" ya da "Rolün: ARAŞTIRMACI". Rol söylenmediyse ARAŞTIRMACI gibi davran ve sor.
+- GELİŞTİRİCİ (aynı anda yalnız BİR tane): kod yazar, `bash tests/run.sh` geçince yayınlar. Yayından hemen önce `git pull --rebase`; çakışma varsa başkasının değişikliğini ezme, birleştir.
+  Push yalnız hafta içi 18:20–09:50 arası ya da hafta sonu. Yayından sonra check-runs'ta 'Workers Builds: bist-tv' success'i doğrula.
+- ARAŞTIRMACI (en çok bir-iki tane): karne/D1/geçmiş veriyi inceler, sonucu Fatih'e ve docs/DEVIR.md'ye (yalnız kendi bölümüne) yazar. index.html ve worker/ dosyalarına DOKUNMAZ, push yapmaz
+  (DEVIR notunu commit'leyebilir ama push'u GELİŞTİRİCİ'ye bırakır ya da seans dışında yalnız docs/ değişikliğiyle yapar). D1'de büyük tarama yapmaz (okuma sınırı ortak): veriyi küçük parçalarla al, yerelde hesapla.
+- ZAMANLANMIŞ GÖREVLER: akşam bakımı (hafta içi 18:53) GELİŞTİRİCİ kurallarıyla çalışır; piyasa yorumu yalnız D1 `yorum` tablosuna yazar, koda dokunmaz.
+- HERKES İÇİN: sunucunun DAKİKALIK işine yeni sorgu ekleyen, EXPLAIN QUERY PLAN ile indeks kullandığını gösterir (count/GROUP BY/indekssiz WHERE yasak). Yeni toplayıcı/araştırma işi eklemek GELİŞTİRİCİ'nin işidir ve Fatih onayı ister.
+  Sinyal kuralı/eşik değişikliği yalnız Fatih onayıyla. Yaptığın her kalıcı değişikliği bu dosyaya kısa not olarak ekle (sonraki ajan buradan öğrenir).
+
 ## Parçalar
 - `index.html` — tek dosyalık terminal (GitHub Pages: https://dealerfaltiner2.github.io/yeni-terminal/).
   `APP_VER` sürüm numarası; her değişiklikte artır (güncelleme bandı buna bakar).
