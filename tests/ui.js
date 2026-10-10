@@ -139,6 +139,9 @@ async function page(b, opt) {
           { name: 'CC', close: 110, open: 100, change: 8, market_cap_basic: 7e9 }, { name: 'DD', close: 105, open: 100, change: 5, market_cap_basic: 6e9 }];
           return { a: ogPick(U, 1.0).map(x => x.s).join(), b: ogPick(U, 0.5).length }; });
         ok('Öğle trend günü: endeks ≥+0,8 iken açılıştan ≥+%2, tavana yakın olmayan, en güçlü önce', og.a === 'DD,AA' && og.b === 0, JSON.stringify(og)); }
+      { const fu = await T(() => { S.umap = S.umap || {}; S.umap.ZZF = { price_earnings_ttm: 12.345, price_book_fundamental: 1.234, market_cap_basic: 45.6e9 }; S.umap.ZZG = { price_earnings_ttm: null };
+          const r = [sigFund('ZZF'), sigFund('ZZG'), sigFund('YOKYOK')]; delete S.umap.ZZF; delete S.umap.ZZG; return r; });
+        ok('sinyale temel oran notu (F/K, PD/DD, piyasa değeri)', fu[0] && fu[0].pe === 12.3 && fu[0].pb === 1.23 && fu[0].mc === 45.6 && fu[1] === null && fu[2] === null, JSON.stringify(fu)); }
       ok('Deneme laboratuvarı listeleniyor', await T(() => /Deneme laboratuvarı/.test(labHtml()) && /Momentum/.test(labHtml())));
       ok('yeni ikon kurulumu: yapıştırılan bilgi adres + kodu yerine koyuyor', su.got === 'wss://x.test/k' && su.own === 'kod123', JSON.stringify(su));
       const mm = await T(() => { const D = []; let c = 100; for (let i = 0; i < 25; i++) { c = i === 24 ? c * 1.04 : i >= 20 ? c * 1.01 : c; D.push({ open: c, high: c * 1.035, low: c * 0.965, close: c, volume: 2e6 }); }

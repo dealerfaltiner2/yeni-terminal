@@ -862,9 +862,14 @@ function devQ(){let dg='';try{if(typeof TVL!=='undefined'&&TVL.dlog&&TVL.dlog.le
 function ownQ(){const t=LS.get('ownTok','');return t?('own='+encodeURIComponent(t)):''}
 function qAdd(u,q){return q?(u+(u.indexOf('?')<0?'?':'&')+q):u}
 // v6.1: SİNYAL KARNESİ — ana cihazdaki sinyaller sunucuya yazılır, seans sonrası sonucu ölçülür
+// v9.9 (10.10): her sinyale o anki temel oranlar not düşülür (yalnız ölçüm; sinyal kuralı değişmez): pe = F/K, pb = PD/DD, mc = piyasa değeri (milyar TL)
+function sigFund(sym){const u=S.umap&&S.umap[sym];if(!u)return null;const r={},n=(v,k)=>{v=+v;return isFinite(v)&&v!==0?Math.round(v*k)/k:null};
+ const pe=n(u.price_earnings_ttm,10),pb=n(u.price_book_fundamental,100),mc=n((+u.market_cap_basic||0)/1e9,10);
+ if(pe!=null)r.pe=pe;if(pb!=null)r.pb=pb;if(mc!=null)r.mc=mc;return Object.keys(r).length?r:null}
 function sigPost(o){try{if(!LS.get('ownTok',''))return;const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||!o||!(o.px>0))return;
  const d=new Date(Date.now()+3*3600e3),m=d.getUTCHours()*60+d.getUTCMinutes(),wd=d.getUTCDay();if(wd<1||wd>5||m<600||m>=1080)return;
- o.t=o.t||Date.now();fetch(qAdd(b+'/siglog?'+devQ(),ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(o)}).catch(()=>{})}catch(e){}}
+ o.t=o.t||Date.now();try{const f=sigFund(o.sym);if(f)o.meta=Object.assign({},o.meta||{},f)}catch(e){}
+ fetch(qAdd(b+'/siglog?'+devQ(),ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(o)}).catch(()=>{})}catch(e){}}
 // v6.6: MİSAFİR MODU — ana cihaz belirlenmişse ve bu cihazda kod yoksa: Telegram + yedek gizli, eski kopyalanmış Telegram bilgisi bir kez silinir
 function isGuest(){return !!LS.get('ownClaimed',0)&&!LS.get('ownTok','')}
 function guestApply(){
@@ -3245,7 +3250,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="9.8";window.APPV=APP_VER;
+  const APP_VER="9.9";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');

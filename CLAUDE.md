@@ -178,3 +178,5 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   Telegram/ekranda sinyal YOK; karne ekranı + bot yarışı 'oglen' (h1 = stop −1, hedefsiz). sigToday ve karne mesajında gösterilmez. PAPER_SRCS/QUIET_BOTS'ta.
 - v9.8 (10.10): Momentum mesajı +%3/−%1'e GERİ alındı (ilk canlı hafta 05–09.10, 23 sinyal: +3/−1 +8,66 puan, hedefsiz −11,72). Hedefsiz çıkış 'momh' botunda ölçülmeye devam; canlıda 2 hafta üst üste önde olursa değişir.
   Fatih'e her Cuma 'o haftanın gerçek sinyalleri, 100.000 TL ile girseydin' tablosu verilecek.
+- v9.9 (10.10, Fatih onayıyla) TEMEL ORAN NOTU: sigPost her sinyalin meta'sına sigFund(sym) ekler — pe (F/K), pb (PD/DD), mc (piyasa değeri, milyar TL), S.umap'teki TradingView tarama değerlerinden.
+  Yalnız ölçüm; sinyal kuralı değişmez. Birkaç hafta sonra: ucuz/sağlam şirketlerin sinyalleri daha mı iyi (o31, h1)? Geçmiş test YAPILAMAZ (geçmiş oran yok, bugünkü oranla geçmiş test yanıltır).
