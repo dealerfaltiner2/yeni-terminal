@@ -168,3 +168,7 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   (fiyat ≥ önceki satış fiyatı → alıcılı, ≤ alış fiyatı → satıcılı, arada → fiyat yönü, aynı → önceki yön). Dakika satırı [dk, alıcılı, satıcılı, belirsiz, işlem sayısı, son, alış, satış].
   flowFlush 5 dk'da bir /flow (sahip yolu, worker/src/flow.js) → D1 tablo flow (d, m, n, data = ham JSON, çözülmeden). Motor 200 hisse izler (telefon 100). 10:00 dakikası açılış seansını içerir — araştırmada at.
   Plan: 4–6 hafta biriksin → Momentum adaylarının 10:30'a kadarki alıcılı/satıcılı dengesiyle +%3/−%1 sonucu karşılaştırılır (DEVIR 6i).
+- v9.5 (10.10) KAP GEÇMİŞİ TOPLAYICI (worker/src/kaph.js, yalnız araştırma): seans dışında dakikada bir — meta 'kaph_day' imleciyle her çalışmada 1 günün KAP listesi (byCriteria, geçmiş gün de çalışıyor)
+  → D1 kaph (kind: is = yeni iş/sipariş, icerden = pay alım satım bildirimi, geri = şirketin geri alımı); sonra bekleyenlerin detayı /tr/api/notification/attachment-detail/{idx} (en çok 3/çalışma) düz metin txt (≤12000).
+  Bitince meta 'kaph_st'. Başlatma: meta 'kaph_day'='2025-10-01'. Amaç: haber tutarı ÷ piyasa değeri ve içeriden ALIŞ/SATIŞ ayrımının fiyat etkisi (DEVIR 6j). KAP sayfaları WebFetch'te robots engelli → yalnız Worker toplar.
+  Araştırma 10.10 (DEVIR 6j): SPK bedelsiz onayı (etki açılışta biter, alınamaz), halka arz (alınabilenler 20 günde −%15), endeks değişikliği (BIST100'den çıkacaklar −%4) → sinyal yok; uyarı adayları.

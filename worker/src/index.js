@@ -1,4 +1,5 @@
 import { flowRoute } from './flow.js';
+import { kaphStep } from './kaph.js';
 import { tavanScan } from './tavan.js';
 import { posRoute, posWatch } from './pos.js';
 import { pushRoute, pushSend } from './push.js';
@@ -1012,6 +1013,7 @@ export default {
       if (!inSess) { try { await btStep(env); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'btStep: ' + String(e && e.message || e).slice(0, 200), 'btStep'); } }
       try { await ecalPoll(env, UA); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'ekonomik takvim: ' + String(e && e.message || e).slice(0, 150), 'ecal'); }
       try { await probe(env, scanRaw, UA); } catch (e) {}
+      try { await kaphStep(env, UA); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'KAP geçmişi: ' + String(e && e.message || e).slice(0, 150), 'kaphStep'); }
       await hb('5-tamam');
     })());
   }
