@@ -3245,7 +3245,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="9.4";window.APPV=APP_VER;
+  const APP_VER="9.6";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4878,10 +4878,10 @@ async function momScan(force){
    if(S.tgTok&&S.tgChat&&(BOTMODE||!S.botAlive)){try{await tgSend('🧪 <b>MOMENTUM (deneme) · '+htmlEsc(x.s)+'</b>\n'+
     'Fiyat '+nf(x.px)+' · bugün '+pct(x.r30)+' · dün '+pct(x.d1)+' · 5 günde '+pct(x.d5)+'\n'+
     'Günlük ortalama oynaklık %'+nf(x.adr,1)+(x.sec?' · '+htmlEsc(secTr(x.sec)):'')+'\n'+
-    'Hedef <b>'+nf(tp)+'</b> (+%3) · Stop <b>'+nf(sp)+'</b> (−%1)\n'+
-    '<i>Deneme: geçmişte −%1 gelmeden +%3 gelme oranı %33 (kâr için %25 yeter), şimdi canlı ölçülüyor.</i>'+sigNoteTxt(x.s))}catch(e){}}
+    'Stop <b>'+nf(sp)+'</b> (−%1) · Hedef yok: stop gelmezse <b>17:55\'te sat</b>\n'+
+    '<i>Neden hedef yok: geçmiş 14 ayda +%3\'te satmak işlem başı +%0,29, kazananı gün sonuna kadar tutmak +%0,55 getirdi (14 ayın 11\'i artı). İşlemlerin çoğu küçük stopla biter, birkaç büyük kazanç hepsini öder — her sinyale aynı tutarla gir. Yatırım tavsiyesi değildir.</i>'+sigNoteTxt(x.s))}catch(e){}}
    try{pushMsg('momentum','🧪 MOMENTUM (deneme) · '+x.s+'\nFiyat '+nf(x.px)+' · hedef '+nf(tp)+' · stop '+nf(sp),x.s)}catch(e){}
-   try{sigToast({src:'momentum',sym:x.s,dir:'AL',label:'🧪 MOMENTUM · deneme',why:['Dün '+pct(x.d1),'5 günde '+pct(x.d5),'Oynaklık %'+nf(x.adr,1)],entry:x.px,stop:sp,tgt:tp,jr:false})}catch(e){}
+   try{sigToast({src:'momentum',sym:x.s,dir:'AL',label:'🧪 MOMENTUM · stop −%1, gün sonu çık',why:['Dün '+pct(x.d1),'5 günde '+pct(x.d5),'Oynaklık %'+nf(x.adr,1)],entry:x.px,stop:sp,tgt:null,jr:false})}catch(e){}
   }
   return out;
  }finally{MOM.busy=false}
@@ -5000,7 +5000,7 @@ function jrAnalysis(){const C=(S.jr||[]).filter(j=>j.r!=null&&j.pct!=null);
 (function(){const _rj=renderJr;window.renderJr=renderJr=function(){_rj.apply(this,arguments);try{const el=document.getElementById('jrstat');if(el)el.insertAdjacentHTML('afterbegin',jrAnalysis())}catch(e){}}})();
 // Deneme laboratuvarı: test edilen fikirler ve sonuçları (13 aylık veri: eski dönem = 15.03.2026 öncesi, yeni = sonrası; taban 10:30 alımı ~%43)
 const LAB=[
- {ad:'Momentum (5 gün +%5, dün +%3, oynak, sabah koşmamış)',kural:'10:30\'da al · +%3 hedef / −%1 stop (başabaş %25)',eski:32,yeni:34,n:241,be:25,durum:'canli',not:'3 Ekim\'den beri canlı deneme — karnede "Momentum" satırı.'},
+ {ad:'Momentum (5 gün +%5, dün +%3, oynak, sabah koşmamış)',kural:'10:30\'da al · stop −%1, hedef yok, gün sonu çık (10.10\'dan beri Telegram böyle; karne yine +%3/−%1 ölçer)',eski:32,yeni:34,n:241,be:25,durum:'canli',not:'Geçmiş 14 ay: +%3\'te satmak işlem başı +%0,29, gün sonuna tutmak +%0,55 (11/14 ay artı, kârlı işlem %31, en uzun kayıp serisi 16). Bot yarışında "hedefsiz −%1" botu.'},
  {ad:'Momentum + dün güçlü kapanış',kural:'10:30\'da al · +%3 / −%1',eski:30,yeni:36,n:192,be:25,durum:'canli',not:'9 Ekim\'den beri bot yarışında ayrı bot. Geçmişte gün içinde +%3\'e ulaşma %63/%57.'},
 {ad:'Dün güçlü kapanış (oynak, dünü tepeye yakın kapatmış, 10:30\'da yatay)',kural:'10:30\'da al · +%3 / −%1',eski:25,yeni:34,n:306,be:25,durum:'canli',not:'9 Ekim\'den beri SESSİZ KAYIT: bildirim yok, karne ve bot yarışında "💪 Dün güçlü kapanış".'},
 {ad:'Sessiz trend (trendde, zirveye yakın, sabah hacimsiz ve sıkışık, oynak hisse)',kural:'10:30\'da al · ±%1,5',eski:60,yeni:60,n:250,durum:'canli',not:'4 Ekim\'den beri SESSİZ KAYIT: bildirim yok, yalnız karne ve bot yarışında "🤫 Sessiz trend". Bir ay sonra bakılacak.'},

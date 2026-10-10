@@ -172,3 +172,5 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   → D1 kaph (kind: is = yeni iş/sipariş, icerden = pay alım satım bildirimi, geri = şirketin geri alımı); sonra bekleyenlerin detayı /tr/api/notification/attachment-detail/{idx} (en çok 3/çalışma) düz metin txt (≤12000).
   Bitince meta 'kaph_st'. Başlatma: meta 'kaph_day'='2025-10-01'. Amaç: haber tutarı ÷ piyasa değeri ve içeriden ALIŞ/SATIŞ ayrımının fiyat etkisi (DEVIR 6j). KAP sayfaları WebFetch'te robots engelli → yalnız Worker toplar.
   Araştırma 10.10 (DEVIR 6j): SPK bedelsiz onayı (etki açılışta biter, alınamaz), halka arz (alınabilenler 20 günde −%15), endeks değişikliği (BIST100'den çıkacaklar −%4) → sinyal yok; uyarı adayları.
+- v9.6 (10.10, Fatih: 'çalışanı bul, nasıl bulacağını sen bul'): Momentum Telegram mesajı artık 'Stop −%1 · hedef yok, stop gelmezse 17:55'te sat' (geçmiş 14 ay: +%3'te satmak +0,29, gün sonu +0,55/işlem, 11/14 ay artı; en çok kazandıran 5 hisse hariç +0,12; en uzun kayıp serisi 16).
+  Giriş kuralı DEĞİŞMEDİ; karne yine o31 (+%3/−%1) ölçer, bot yarışında 'momh' (hedefsiz −%1) bu çıkışın canlı ölçüsü. Toast'ta hedef yok.
