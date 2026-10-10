@@ -176,3 +176,5 @@ Test etmeden yayınlama ("dikkatli yaz, test et öyle ver").
   Giriş kuralı DEĞİŞMEDİ; karne yine o31 (+%3/−%1) ölçer, bot yarışında 'momh' (hedefsiz −%1) bu çıkışın canlı ölçüsü. Toast'ta hedef yok.
 - v9.7 (10.10) ÖĞLE TREND GÜNÜ — SESSİZ KAYIT (keşif motoru, DEVIR 6k): ogScan() 12:00–12:15 bir kez (motor ya da motor yokken ana cihaz): S.idxCh ≥ +0,8 ise piyasa değeri ilk 120'den açılıştan ≥ +%2, değişim < +7 → en çok 3, src 'oglen' (meta ro/it/ch).
   Telegram/ekranda sinyal YOK; karne ekranı + bot yarışı 'oglen' (h1 = stop −1, hedefsiz). sigToday ve karne mesajında gösterilmez. PAPER_SRCS/QUIET_BOTS'ta.
+- v9.8 (10.10): Momentum mesajı +%3/−%1'e GERİ alındı (ilk canlı hafta 05–09.10, 23 sinyal: +3/−1 +8,66 puan, hedefsiz −11,72). Hedefsiz çıkış 'momh' botunda ölçülmeye devam; canlıda 2 hafta üst üste önde olursa değişir.
+  Fatih'e her Cuma 'o haftanın gerçek sinyalleri, 100.000 TL ile girseydin' tablosu verilecek.
