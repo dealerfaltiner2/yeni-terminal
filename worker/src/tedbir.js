@@ -14,7 +14,7 @@ export function tedbirKinds(txt) {
   if (/açığa satış.{0,20}yasa/.test(s)) out.push('aciga');
   if (/kredili işlem.{0,20}(yasa|kapsam dışı)/.test(s)) out.push('kredi');
   if (/(işlem sırası|pay sırası).{0,30}(durdur|kapat|açıl|açma)/.test(s)) out.push('durdur');
-  if (/pazar değişikliği|pazarına alın/.test(s)) out.push('yip');
+  if (/pazar(ına|'a|a) alın/.test(s)) out.push('yip');   // yalnız 'Pazar Değişikliği' yazan BISTECH tekrar duyurusu yok sayılır
   if (s.split('|').some(x => x.trim() === 'hak kullanımı')) out.push('hak');
   return out;
 }
@@ -23,7 +23,7 @@ export function tedbirPut(m, x) {
   const txt = (x.subj || '') + ' | ' + (x.summ || ''), low = txt.toLocaleLowerCase('tr'), kinds = tedbirKinds(txt);
   if (!kinds.length) return m;
   // pazar değişikliği: yalnız 'yakın izleme pazarına alınması' tedbirdir; başka pazara alınma YİP'i kaldırır
-  const lift = LIFT.test(low) || (kinds.includes('yip') && !/yakın izleme/.test(low));
+  const lift = LIFT.test(low) || (kinds.includes('yip') && !/yakın izleme pazarına alın/.test(low));
   for (const s of String(x.syms || '').split(',').filter(Boolean)) {
     let a = (m[s] || []).filter(e => !kinds.includes(e.k) || e.t > x.t);
     if (!lift) for (const k of kinds) if (!a.some(e => e.k === k)) a.push({ k, t: x.t });

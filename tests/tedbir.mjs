@@ -17,6 +17,9 @@ ok('tür: tek fiyat', tedbirKinds('Tek Fiyat Yöntemi ile işlem görmesi').join
 ok('tür: işlem durdurma', tedbirKinds('Pay İşlem Sırası Kapatma / Açma | Pay Sırasının İşleme Kapatılması').join() === 'durdur');
 ok('tür: Yakın İzleme Pazarı', tedbirKinds('Pazar Değişikliği | Payların Yakın İzleme Pazarına Alınması').join() === 'yip');
 ok('tür: hak kullanımı (Borsa duyurusu)', tedbirKinds('BISTECH Pay Piyasası Alım Satım Sistemi Duyurusu | Hak Kullanımı').join() === 'hak' && tedbirKinds('Hak Kullanımı | ').join() === 'hak');
+{ let q = tedbirPut({}, { syms: 'USAK', subj: 'Pazar Değişikliği', summ: 'Payların Yakın İzleme Pazarına Alınması', t: now - 2 * D });
+  q = tedbirPut(q, { syms: 'USAK', subj: 'BISTECH Pay Piyasası Alım Satım Sistemi Duyurusu', summ: 'Pazar Değişikliği', t: now - D }); const a = !!q.USAK;
+  q = tedbirPut(q, { syms: 'USAK', subj: 'Pazar Değişikliği', summ: "Payların Ana Pazar'a Alınması", t: now }); ok('YİP: BISTECH tekrar duyurusu silmez, başka pazara alınma siler', a && !q.USAK); }
 ok('tür: ilgisiz Borsa duyurusu boş', tedbirKinds('BISTECH Pay Piyasası Alım Satım Sistemi Duyurusu | İşleme Açılan Varantlar').length === 0 && tedbirKinds('Endeks Şirketlerinde Değişiklik | -').length === 0);
 { let q = tedbirPut({}, { syms: 'MEGAP', subj: 'Pay İşlem Sırası Kapatma / Açma', summ: 'Pay Sırasının İşleme Kapatılması', t: now - 3600e3 });
   const a = !!q.MEGAP; q = tedbirPut(q, { syms: 'MEGAP', subj: 'Pay İşlem Sırası Kapatma / Açma', summ: 'Pay Sırasının İşleme Açılması', t: now });
