@@ -216,6 +216,14 @@ Betikler: tools/ml/prep.py (S.pkl), ideas.py, summ.py, night.py, late.py, mom2.p
   eşik yüzeyi düzgün (açılıştan getiri ve endeks arttıkça artıyor). AMA gün ortalaması +0,18–0,23, günde en çok 3 seçilince +0,27 (5 hisse hariç +0,07) — kazanç birkaç güçlü güne yığılmış.
   → v9.7 sessiz kayıt 'oglen' (en çok 3, piyasa değeri ilk 120, değişim < +7, stop −1 hedefsiz). Diğer adaylar: 11:00 'd5≥5,9 & dün hacmi düşük (yvr≤0,49)', 'aralık dar & d20≥20' (sessiz trende benzer).
 
+## 6l. 11.10 D1 OKUMA BÜTÇESİ ÖLÇÜMÜ (ARAŞTIRMACI; MCP rows_read ile, sig ~2.500 satır iken)
+- sigBackfill seçimi (sig_t, son 6 gün): 1.537 satır/çağrı — seans DIŞINDA her dakika (ölçülecek sinyal yokken) → günde ~1,3M. EN BÜYÜK KALEM.
+- paperCalc (/paper, 2 dk önbellek, isolate başına): 2.510 satır (tüm tablo; 'd >= start' sig_d kullanmıyor gibi) → istemci sayısıyla günde 1–2M olabilir.
+- sigStats (/sigstats, 5 dk önbellek): 2.430 satır → günde ~0,7M. sig tablosu günde ~150–250 satır büyüyor → bu üçü doğrusal ARTAR; birkaç hafta içinde 5M sınırı hafta içi de dolabilir.
+- ÖNERİ (GELİŞTİRİCİ işi, Fatih onayıyla): (1) sigBackfill'i 'iş yoksa' meta bayrağıyla atla (yeni ölçüm gelene kadar) ya da 15 dk'da bir çalıştır; (2) paperCalc ve sigStats sonucunu karne ölçümünden sonra meta'ya bir kez yaz, /paper ve /sigstats meta'dan okusun;
+  (3) worker fetch'i try/catch ile sar → D1 kapalıyken CORS'lu anlaşılır 503 (şu an 'Load failed'); ownerTok D1 hatasında son bilinen değeri kullansın (taslak: araştırmacı oturumunda git stash 'D1 dayaniklilik').
+- err tablosu (son 7 gün): yalnız kendini toparlama kayıtları (canlı veri 60 sn gelmedi ×10, karne ölçümü yarıda kesildi ×2) — çözülmemiş gerçek hata yok. Motor canlı (bot_seen 11.10 04:57), cron 5-tamam.
+
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
 - v6.6 (29.09 akşamı): karne özetinde "Filtre kontrolü" — endeks artı/eksi ve oynak/sakin ayrımı kendi sinyallerimizde. 1–2 hafta sonra bak; tutarsa sinyal kapısı öner.
