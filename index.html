@@ -867,7 +867,8 @@ function sigFund(sym){const u=(S.umap&&S.umap[sym])||{};const r={},n=(v,k)=>{v=+
  const pe=n(u.price_earnings_ttm,10),pb=n(u.price_book_fundamental,100),mc=n((+u.market_cap_basic||0)/1e9,10);
  if(pe!=null)r.pe=pe;if(pb!=null)r.pb=pb;if(mc!=null)r.mc=mc;
  try{const tb=tedbOf(sym);if(tb)r.tb=tb.map(e=>e.k).join(',')}catch(e){}
- try{const rv=n(rvolOf(u),100);if(rv!=null)r.rv=rv}catch(e){} // v10.0 olağandışı hacim: göreli hacim (bugün ÷ normal) — yalnız ölçüm
+ try{const rv=n(rvolOf(u),100);if(rv!=null)r.rv=rv}catch(e){}
+ try{const dv=divDays(sym);if(dv!=null)r.dv=dv}catch(e){} // v10.0 olağandışı hacim: göreli hacim (bugün ÷ normal) — yalnız ölçüm
  return Object.keys(r).length?r:null}
 function sigPost(o){try{if(!LS.get('ownTok',''))return;const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||!o||!(o.px>0))return;
  const d=new Date(Date.now()+3*3600e3),m=d.getUTCHours()*60+d.getUTCMinutes(),wd=d.getUTCDay();if(wd<1||wd>5||m<600||m>=1080)return;
@@ -1067,7 +1068,7 @@ const TFDEF=[
  {id:'D',lab:'Günlük',sfx:'',htf:'|1W',htfLab:'Hafta',vwap:false}
 ];
 const TFMAP={};TFDEF.forEach(t=>TFMAP[t.id]=t);
-const BASE=['name','description','close','change','change_abs','open','high','low','volume','market_cap_basic','price_earnings_ttm','price_book_fundamental','dividends_yield_current','sector','relative_volume_10d_calc','relative_volume_intraday|5','price_52_week_high','price_52_week_low','update_mode','Perf.W','Perf.1M','EMA20','EMA200','earnings_release_next_date'];
+const BASE=['name','description','close','change','change_abs','open','high','low','volume','market_cap_basic','price_earnings_ttm','price_book_fundamental','dividends_yield_current','sector','relative_volume_10d_calc','relative_volume_intraday|5','price_52_week_high','price_52_week_low','update_mode','Perf.W','Perf.1M','EMA20','EMA200','earnings_release_next_date','ex_dividend_date_upcoming'];
 function tfCols(sfx,vwap){
  const c=['close','EMA20','EMA50','EMA200','RSI','ADX','ATR','BB.upper','BB.lower','MACD.macd','MACD.signal','Stoch.K','Stoch.D'].map(x=>x+sfx);
  if(vwap)c.push('VWAP'+sfx);
@@ -3253,7 +3254,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="10.0";window.APPV=APP_VER;
+  const APP_VER="10.1";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4472,7 +4473,10 @@ setTimeout(tedbLoad,4000);setInterval(tedbLoad,10*60e3); // motor (başsız) da 
 function tedbOf(sym){const a=TEDB.map&&TEDB.map[sym];return Array.isArray(a)&&a.length?a:null}
 function tedbTxt(sym){const a=tedbOf(sym);if(!a)return '';const dm=t=>{const d=new Date(t+3*3600e3);return String(d.getUTCDate()).padStart(2,'0')+'.'+String(d.getUTCMonth()+1).padStart(2,'0')};
  return 'Borsa tedbiri: '+a.map(e=>e.ad+' ('+dm(e.t)+')').join(', ')}
-function sigNotes(sym){const a=[];try{const tb=tedbTxt(sym);if(tb)a.push(tb);const d=earnDays(sym);if(d!=null)a.push(d===0?'Bilanço bugün açıklanıyor':d===1?'Bilanço yarın açıklanıyor':'Bilanço '+d+' gün sonra');
+// v10.0 temettü: TradingView ex_dividend_date_upcoming (sunucu denemesiyle doğrulandı 11.10) — hak kullanım günü fiyat temettü kadar düşük açılır
+function divDays(sym){const o=(S.umap&&S.umap[sym])||{},ts=+o.ex_dividend_date_upcoming;if(!(ts>0))return null;
+ const day=x=>Math.floor((x+3*3600e3)/864e5),d=day(ts*1000)-day(Date.now());return d>=0&&d<=3?d:null}
+function sigNotes(sym){const a=[];try{const tb=tedbTxt(sym);if(tb)a.push(tb);const dv=divDays(sym);if(dv!=null)a.push(dv===0?'Temettü hak kullanımı bugün (fiyat temettü kadar düşük açılır)':dv===1?'Yarın temettü hak kullanımı (fiyat temettü kadar düşük açılacak)':'Temettü hak kullanımı '+dv+' gün sonra');const d=earnDays(sym);if(d!=null)a.push(d===0?'Bilanço bugün açıklanıyor':d===1?'Bilanço yarın açıklanıyor':'Bilanço '+d+' gün sonra');
  ecNear(30).slice(0,2).forEach(e=>a.push(ecHm(e.t)+' '+(e.c==='TR'?'Türkiye':'ABD')+' verisi: '+ecTitle(e)))}catch(e){}return a}
 function sigNoteTxt(sym){const a=sigNotes(sym);return a.length?'\n⚠️ '+a.join(' · '):''}
 /* ================= v7.1 ŞİMDİ ================= */

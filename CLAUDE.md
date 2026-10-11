@@ -193,8 +193,11 @@ Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ"
 - v9.9 (10.10, Fatih onayıyla) TEMEL ORAN NOTU: sigPost her sinyalin meta'sına sigFund(sym) ekler — pe (F/K), pb (PD/DD), mc (piyasa değeri, milyar TL), S.umap'teki TradingView tarama değerlerinden.
   Yalnız ölçüm; sinyal kuralı değişmez. Birkaç hafta sonra: ucuz/sağlam şirketlerin sinyalleri daha mı iyi (o31, h1)? Geçmiş test YAPILAMAZ (geçmiş oran yok, bugünkü oranla geçmiş test yanıltır).
 - v10.0 (11.10, Fatih: 'ücretsiz olanları sırayla ekle') VERİ ZENGİNLEŞTİRME — yalnız not/ölçüm, sinyal kuralı DEĞİŞMEDİ:
-  1) BORSA TEDBİRLERİ worker/src/tedbir.js: KAP 'kisit' haberleri → meta 'tedbir' {SEMBOL:[{k,t}]} (brut/tek/aciga/kredi/durdur/diger; 30 gün, durdurma 1 gün; 'kaldırıldı' haberi siler).
-     Dakikalık işe ek okuma YOK (kap.js yalnız yeni kisit satırında tedbirAdd); meta yoksa /tedbir bir kez kap_t indeksiyle kurar. /tedbir DATA yolu. Terminal TEDB (10 dk'da bir, motor da yükler):
+  1) BORSA TEDBİRLERİ worker/src/tedbir.js: KAP'taki Borsa duyuruları → meta 'tedbir' {SEMBOL:[{k,t}]}. DİKKAT (D1'de görüldü): VBTS tedbirleri (brüt takas/tek fiyat/açığa/kredili) KAP'ta YAYINLANMIYOR;
+     KAP'tan gelenler: 'Pay İşlem Sırası Kapatma / Açma' (durdur, 1 gün; 'İşleme Açılması' siler), 'Pazar Değişikliği — Yakın İzleme Pazarına Alınması' (yip, 180 gün; başka pazara alınma siler),
+     Borsa'nın 'Hak Kullanımı' duyurusu (hak, 2 gün). Tür metinden (kap tipi 'diger' olabilir). VBTS için ayrı ücretsiz kaynak bulunursa eklenecek.
+     Dakikalık işe ek okuma YOK (kap.js yalnız tedbir türü çıkan yeni satırda tedbirAdd); meta yoksa /tedbir bir kez kap_t indeksiyle (180 gün) kurar. Mantık değişirse meta 'tedbir'i sil (yeniden kurulur). /tedbir DATA yolu. Terminal TEDB (10 dk'da bir, motor da yükler):
      sigNotes'a 'Borsa tedbiri: …' uyarısı (Telegram sinyal mesajı, Şimdi, röntgen), sigFund meta.tb. tests/tedbir.mjs.
   3) OLAĞANDIŞI HACİM: sigFund meta.rv = göreli hacim (rvolOf). Ekranda/Telegram'da yeni yazı yok (Algı zaten gösteriyor).
-  2) TEMETTÜ/BÖLÜNME: TradingView alan adı doğrulanınca (probe:col_ex_dividend_date_upcoming) eklenecek — bilinmeyen alan taramayı bozar, doğrulamadan BASE'e ekleme.
+  2) TEMETTÜ (v10.1): BASE'e 'ex_dividend_date_upcoming' (probe ile doğrulandı: unix saniye, yoksa null). divDays(sym) 0–3 gün → sigNotes 'Yarın temettü hak kullanımı…', meta.dv.
+     Bölünme/bedelsiz için ayrı TradingView alanı DOĞRULANMADI; Borsa'nın KAP 'Hak Kullanımı' duyurusu (tedbir 'hak') bunu kapsıyor. Bilinmeyen alan taramayı bozar → doğrulamadan BASE'e alan ekleme.

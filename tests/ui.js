@@ -102,6 +102,8 @@ async function page(b, opt) {
       ok('İşlem analizim: kazanma oranı ve saat/kaynak tablosu çıkıyor', /%67/.test(ja) && /Kaynak/.test(ja) && /Saat/.test(ja));
       const tb = await T(() => { TEDB.map = { ZZZ: [{ k: 'brut', ad: 'Brüt takas', t: Date.now() - 864e5 }] }; const n = sigNotes('ZZZ'), f = sigFund('ZZZ'), f2 = sigFund(S.uni[0].name); TEDB.map = {}; return { n: n.join(' | '), f, f2 }; });
       ok('Borsa tedbiri: sinyal uyarısı ve karne notu (tb), göreli hacim notu (rv)', /Borsa tedbiri: Brüt takas \(\d\d\.\d\d\)/.test(tb.n) && tb.f && tb.f.tb === 'brut' && tb.f2 && !tb.f2.tb, JSON.stringify(tb));
+      const dvx = await T(() => { const k = S.uni[0].name, o = S.umap[k], old = o.ex_dividend_date_upcoming; o.ex_dividend_date_upcoming = Math.floor(Date.now() / 1000) + 86400; const n = sigNotes(k).join(' | '), f = sigFund(k); o.ex_dividend_date_upcoming = old; return { n, dv: f && f.dv }; });
+      ok('Temettü: yarın hak kullanımı uyarısı ve karne notu (dv)', /Yarın temettü hak kullanımı/.test(dvx.n) && dvx.dv === 1, JSON.stringify(dvx));
       const pp = await T(() => { paperLoad(true); return new Promise(res => setTimeout(() => { const now = paperCard(), full = paperFull(); res({ now, full }); }, 1500)); });
       ok('Kâğıt bot: Şimdi kartı toplam TL gösteriyor', /Kâğıt üzerinde bot/.test(pp.now) && /\+140 TL/.test(pp.now) && /BOTUN KASASI/.test(pp.now), pp.now.slice(0, 200));
       ok('Kâğıt bot: Karne bölümü gün gün, kaynak ve açık işlem tablosu', /Gün gün/.test(pp.full) && /botta kapalı/.test(pp.full) && /ASELS/.test(pp.full) && /Botun kuralları/.test(pp.full) && /Bot yarışı/.test(pp.full) && /henüz ölçülmedi/.test(pp.full) && /YARIŞINDA ÖNDE/.test(pp.now));
