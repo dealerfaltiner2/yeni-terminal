@@ -24,6 +24,7 @@ export function kaphTime(v) {
 }
 // Detay yanıtından (JSON içinde HTML) düz metin: tüm metin alanları birleştirilir, etiketler atılır.
 export function kaphText(raw) {
+  if (typeof raw === 'string' && raw.length > 150000) raw = raw.slice(0, 150000);   // dev ek: işlemci sınırı (kırpılmış JSON ham metin olarak işlenir)
   let j; try { j = JSON.parse(raw); } catch (e) { j = raw; }
   const out = [];
   const walk = v => { if (typeof v === 'string') { if (v.length > 2) out.push(v); } else if (Array.isArray(v)) v.forEach(walk); else if (v && typeof v === 'object') Object.values(v).forEach(walk); };
@@ -75,6 +76,9 @@ export async function kaphStep(env, UA, now = Date.now()) {
   let n = 0;
   for (const p of P) {
     let txt = null, st = -1;
+    // 11.10 DERS: çok büyük bir bildirim (NTHOL 1619094) işlenirken çalışma işlemci sınırında iz bırakmadan kesildi → satır st=0 kaldı,
+    // her dakika aynı bildirim denendi, toplayıcı durdu (cron_hb hiç '5-tamam' olmadı). Önce 'denendi' (-1) yaz; başarıda 1 olur.
+    await env.BT.prepare('UPDATE kaph SET st = -1 WHERE idx = ?').bind(p.idx).run();
     try {
       const r = await fetch(DET_URL + p.idx, { headers: H(UA), signal: AbortSignal.timeout(10000) });
       if (r.ok) { txt = kaphText(await r.text()); st = 1; n++; }

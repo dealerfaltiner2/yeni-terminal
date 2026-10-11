@@ -40,6 +40,7 @@ Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ"
 - D1 ücretsiz: günde 5M satır OKUMA. bars tablosunu json_each ile tarama (~5M satır). Özet tablolar kullan.
   10.10: kaph.js'in indekssiz 'WHERE st = 0 ORDER BY …' sorgusu her dakika tüm tabloyu okudu → sınır doldu (Cumartesi, gece 03:00'te sıfırlanır). DAKİKALIK HER SORGU İNDEKSLİ OLMALI (EXPLAIN QUERY PLAN ile 'SEARCH … USING INDEX' gör).
   11.10: aynı gün gece sınır YİNE doldu — kaph iş bitince 'GROUP BY kind' sayımını (tüm tablo) her dakika yapıyordu → artık günde bir (meta kaph_st.bitti bugünse atla). Dakikalık yolda count/GROUP BY YASAK.
+  11.10 akşam: kaph detay toplayıcı NTHOL 1619094'te takıldı (çalışma işlemci sınırında kesiliyor, satır st=0 kalıyordu → aynı bildirim her dakika; cron_hb hiç '5-tamam' olmadı). Artık detay çekmeden önce st=-1, yanıt 150k karakterde kırpılır.
 - Ücretsiz Cloudflare: istek başına 10 ms CPU → canlı akış Worker kodundan GEÇMEMELİ (direct=1).
 - TradingView quote_add_symbols: bayrak objesi ekleme; 20'lik paketler, sırayla (tvPump).
 - SEANS SAATİNDE (hafta içi 09:55–18:15) PUSH YAPMA: Workers Builds include path '*' → HER push Worker'ı yeniden yayınlar → herkesin canlı

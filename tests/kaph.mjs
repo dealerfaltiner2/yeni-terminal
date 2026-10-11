@@ -37,4 +37,10 @@ r = await kaphStep(env, 'x', sat);
 ok('hepsi bitince durum özeti', r && r.bitti && /is/.test(db.prepare("SELECT v FROM meta WHERE k='kaph_st'").get().v));
 { const v1 = db.prepare("SELECT v FROM meta WHERE k='kaph_st'").get().v; await kaphStep(env, 'x', sat + 60e3); await kaphStep(env, 'x', sat + 120e3);
   ok('bitince her dakika tabloyu yeniden saymaz (okuma sınırı)', db.prepare("SELECT v FROM meta WHERE k='kaph_st'").get().v === v1); }
+{ db.prepare("INSERT INTO kaph (idx,t,d,sym,kind,subj,summ,txt,st) VALUES (99,0,'2026-10-01','X','icerden','s','m',NULL,0)").run();
+  db.prepare("DELETE FROM meta WHERE k='kaph_st'").run();
+  const of = globalThis.fetch; globalThis.fetch = async () => { throw new Error('kesildi'); };
+  await kaphStep(env, 'x', sat + 180e3); globalThis.fetch = of;
+  ok('detay çekilemeyen bildirim bir daha denenmez (toplayıcı takılmaz)', db.prepare('SELECT st FROM kaph WHERE idx = 99').get().st === -1); }
+ok('dev yanıt kırpılır', kaphText('x'.repeat(400000)).length <= 12000);
 const f = res.filter(x => !x).length; console.log(`KAP GEÇMİŞİ: ${res.length - f}/${res.length} geçti`); process.exit(f ? 1 : 0);
