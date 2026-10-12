@@ -53,6 +53,24 @@ export function kapEntry(ms) {
   while (d.getUTCDay() === 0 || d.getUTCDay() === 6) d = new Date(d.getTime() + 86400e3);
   return d.getTime() + 9 * 3600e3 + 59 * 60e3 - TRMS; // 09:59 TR
 }
+// 12.10: İŞLEMCİ — akşam günün listesi büyüyünce (≈400 bildirim) her dakikaki TAM JSON ayrıştırma 10 ms sınırını aşıyordu; iş KAP adımında
+// iz bırakmadan kesildi, kap_last ilerlemedi → her dakika aynı yük, karne/tavan/rapor da çalışmadı. Artık yalnız numaralar taranır,
+// yalnız YENİ bildirimlerin nesneleri tek tek ayrıştırılır. Biçim beklenenden farklıysa (iç içe nesne, metinde süslü parantez) null → eski tam ayrıştırma.
+export function kapFresh(raw, last, lim = 40) {
+  const re = /"disclosureIndex"\s*:\s*"?(\d+)/g, hits = [], seen = new Set(); let m, any = false;
+  while ((m = re.exec(raw))) { any = true; const n = +m[1]; if (n > last && !seen.has(n)) { seen.add(n); hits.push([n, m.index]); } }
+  if (!any) return null;
+  hits.sort((a, b) => a[0] - b[0]);
+  const out = [];
+  for (const [n, p] of hits.slice(0, lim)) {
+    const a = raw.lastIndexOf('{', p), b = raw.indexOf('}', p);
+    if (a < 0 || b < 0) return null;
+    let o; try { o = JSON.parse(raw.slice(a, b + 1)); } catch (e) { return null; }
+    if (!o || typeof o !== 'object' || +o.disclosureIndex !== n) return null;
+    out.push(o);
+  }
+  return out;
+}
 const KAPC = { len: -1, from: '', empty: false };   // son KAP yanıtının uzunluğu (değişmediyse ayrıştırma atlanır)
 let ready = false;
 async function kapEnsure(env) {
@@ -93,13 +111,16 @@ export async function kapPoll(env, h) {
   // 01.10: İŞLEMCİ — günün tüm listesi her dakika ayrıştırılıyordu (akşamları ~1 MB). Yanıt bir öncekiyle aynı uzunluktaysa yeni bildirim yoktur → ayrıştırma atlanır.
   const raw = await r.text();
   if (KAPC.len === raw.length && KAPC.from === from && KAPC.empty) return { yeni: 0 };
-  let arr; try { arr = JSON.parse(raw); } catch (e) { throw new Error('KAP yanıtı okunamadı'); }
-  if (!Array.isArray(arr)) throw new Error('KAP yanıtı dizi değil');
-  KAPC.len = raw.length; KAPC.from = from; KAPC.empty = false;
   const lastRow = await env.BT.prepare("SELECT v FROM meta WHERE k = 'kap_last'").first();
   let last = lastRow ? +lastRow.v : 0;
   // en eskiden başla, çalışma başına en fazla 40 (ücretsiz plan istek sınırı) — birikmiş varsa sonraki dakikalarda devam
-  const fresh = arr.filter(x => +x.disclosureIndex > last).sort((a, b) => a.disclosureIndex - b.disclosureIndex).slice(0, 40);
+  let fresh = kapFresh(raw, last, 40);
+  if (fresh === null) {
+    let arr; try { arr = JSON.parse(raw); } catch (e) { throw new Error('KAP yanıtı okunamadı'); }
+    if (!Array.isArray(arr)) throw new Error('KAP yanıtı dizi değil');
+    fresh = arr.filter(x => +x.disclosureIndex > last).sort((a, b) => a.disclosureIndex - b.disclosureIndex).slice(0, 40);
+  }
+  KAPC.len = raw.length; KAPC.from = from; KAPC.empty = false;
   if (!fresh.length) { KAPC.empty = true; return { yeni: 0 }; }
   const cfg = await h.kvGet(env, 'cfg', null);
   const opt = (cfg && cfg.opt) || {};
@@ -123,8 +144,7 @@ export async function kapPoll(env, h) {
     r0.sent = tgOn && r0.syms && wantTg(r0, big, watch) ? (inWin ? 1 : 0) : 2; // 2 = gönderilmeyecek, 0 = sabah özetine
     if (r0.sent === 1) toSend.push(r0);
   }
-  // 01.10: ÇÖKMEYE DAYANIKLI — önce satırlar eklenir; yalnız GERÇEKTEN yeni eklenen satırlar karneye ve Telegram'a gider;
-  // 'kap_last' en sonda yazılır. Çalışma yarıda kesilirse sonraki dakika aynı bildirimleri yeniden dener (çift kayıt olmaz).
+  // 01.10: ÇÖKMEYE DAYANIKLI — önce satırlar eklenir; yalnız GERÇEKTEN yeni eklenen satırlar karneye ve Telegram'a gider (çift kayıt olmaz).
   const isNew = new Set();
   for (let k = 0; k < rows.length; k += 40) {
     const part = rows.slice(k, k + 40);
@@ -132,6 +152,9 @@ export async function kapPoll(env, h) {
     part.forEach((r0, i) => { if (res[i] && res[i].meta && res[i].meta.changes) isNew.add(r0.idx); });
   }
   last = Math.max(last, ...rows.map(r0 => r0.idx));
+  // 12.10: kap_last HEMEN yazılır — eklenmiş satırlar (INSERT OR IGNORE) yeniden denemede zaten 'yeni' sayılmıyordu; sonda yazmak yalnız
+  // çalışma kesildiğinde aynı 40 bildirimin her dakika yeniden işlenmesine (takılmaya) yol açıyordu.
+  await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_last', ?)").bind(String(last)).run();
   // v10.0: yeni Borsa tedbiri haberleri → meta 'tedbir' (yalnız 'kisit' satırı geldiğinde 1 okuma + 1 yazma)
   try { await tedbirAdd(env, rows.filter(x => isNew.has(x.idx)), now); } catch (e) {}
   // Karne: önem ≥ 1 olan her hisse haberi ölçülsün (ilk çalışmada da — sadece Telegram atlanır)
@@ -155,7 +178,6 @@ export async function kapPoll(env, h) {
   for (const r0 of toSend.filter(x => isNew.has(x.idx)).slice(0, 8)) { const q = Q[r0.syms.split(',')[0]]; const t = await h.tgSend(cfg, kapMsg(r0, h.esc, q)); if (t && t.ok) sent++;
     // v8.2: iPhone bildirimi (çalışma başına en çok 2 — işlemci sınırı)
     if (h.pushSend && pn < 2) { pn++; try { const s0 = r0.syms.split(',')[0]; await h.pushSend(env, { cat: 'kap', title: '📰 KAP · ' + s0 + ' · ' + (KAP_AD[r0.tip] || r0.tip), body: String(r0.subj || '') + (r0.summ ? ' — ' + r0.summ : '') + (q && q.close ? ' · ' + q.close + ' (' + (q.change >= 0 ? '+' : '') + (+q.change).toFixed(2) + '%)' : ''), url: './?s=' + s0, tag: 'kap' + r0.idx }, 2); } catch (e) {} } }
-  await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_last', ?)").bind(String(last)).run();
   return { yeni: rows.length, telegram: sent };
 }
 // Sabah 09:30 (hafta içi): gece biriken önemli KAP'lar tek mesajda

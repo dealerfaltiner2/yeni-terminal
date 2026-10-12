@@ -990,10 +990,17 @@ export default {
       // KAP: dakikada bir, her gün (gece gelenler sabah 09:30 özetinde). 01.10: karneden ÖNCE — zamana duyarlı ve hafif;
       // karne ölçümü ağırlaşıp çalışmayı yarıda kestirse bile haberler gecikmesin. Sabah özeti ayrı korumada (KAP sitesi çökse de gider).
       let kr = null, mr = null;
-      try {
+      // 12.10 SİGORTA: KAP adımı üst üste 3 kez yarıda kesildiyse (meta 'kap_kill' sayacı, adım bitince silinir) KAP yalnız 5 dakikada bir denenir;
+      // arada karne, tavan, rapor ve diğer işler çalışmaya devam eder (12.10 akşamı KAP takılınca karne raporu hiç gitmemişti).
+      let kk = 0; try { const r = await env.BT.prepare("SELECT v FROM meta WHERE k = 'kap_kill'").first(); kk = r ? +r.v || 0 : 0; } catch (e) {}
+      const kapSkip = kk >= 3 && new Date().getUTCMinutes() % 5 !== 0;
+      if (kk === 3 && !kapSkip) await errAdd(env, 'sunucu', 'toparlama', 'KAP adımı 3 kez yarıda kesildi, 5 dakikada bir deneniyor', 'kapPoll');
+      if (!kapSkip) try {
+        try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_kill', ?)").bind(String(kk + 1)).run(); } catch (e) {}
         kr = await kapPoll(env, { UA, tgSend, kvGet, esc, scanRaw, pushSend });
+        try { await env.BT.prepare("DELETE FROM meta WHERE k = 'kap_kill'").run(); } catch (e) {}
         if (kr && kr.yeni) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_st', ?)").bind(JSON.stringify({ at: Date.now(), ...kr })).run();
-      } catch (e) { await errAdd(env, 'sunucu', 'hata', 'KAP: ' + String(e && e.message || e).slice(0, 200), 'kapPoll'); try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_err', ?)").bind(new Date().toISOString() + ' ' + String(e && e.message || e).slice(0, 300)).run(); } catch {} }
+      } catch (e) { try { await env.BT.prepare("DELETE FROM meta WHERE k = 'kap_kill'").run(); } catch (e2) {} await errAdd(env, 'sunucu', 'hata', 'KAP: ' + String(e && e.message || e).slice(0, 200), 'kapPoll'); try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_err', ?)").bind(new Date().toISOString() + ' ' + String(e && e.message || e).slice(0, 300)).run(); } catch {} }
       try { mr = await kapMorning(env, { tgSend, kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'KAP sabah özeti: ' + String(e && e.message || e).slice(0, 200), 'kapMorning'); }
       try { const n = (kr && kr.telegram || 0) + (mr && mr.ozet ? 1 : 0); if (n) { const st = await kvGet(env, 'st', {}); if (st.cnt) { st.cnt.kap = (st.cnt.kap || 0) + n; await kvPut(env, 'st', st); } } } catch (e) {}
       try { await botWatch(env, tgSend, kvGet); } catch (e) {}

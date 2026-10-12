@@ -49,5 +49,22 @@ tgOk = true; sent.length = 0;
 r = await kapMorning(env, h);
 ok('sabah özeti parçalara bölündü (her biri 4096 altı)', sent.length >= 2 && sent.every(m => m.length < 4096), sent.map(m => m.length).join(','));
 ok('gönderilenler işaretlendi', db.prepare('SELECT count(*) n FROM kap WHERE sent=0 AND idx>=500').get().n === 5, 'kalan=' + db.prepare('SELECT count(*) n FROM kap WHERE sent=0 AND idx>=500').get().n);
+// 12.10: büyük günlük liste — yalnız yeni bildirimler ayrıştırılır; biçim farklıysa tam ayrıştırmaya düşer
+const { kapFresh } = await import(path.join(W, 'kap.js'));
+const big = []; for (let i = 0; i < 400; i++) big.push({ publishDate: '12.10.2026 18:00:00', kapTitle: 'Ş' + i, summary: 'özet ' + i, subject: 'Özel Durum', disclosureIndex: 2000 + i, relatedStocks: 'ASELS' });
+const raw = JSON.stringify(big.slice().reverse());
+let F = kapFresh(raw, 2389, 40);
+ok('kapFresh: yalnız yeniler, en eskiden', F && F.length === 10 && F[0].disclosureIndex === 2390 && F[9].disclosureIndex === 2399, F && F.map(x => x.disclosureIndex).join(','));
+ok('kapFresh: en çok 40', (kapFresh(raw, 0, 40) || []).length === 40 && kapFresh(raw, 0, 40)[0].disclosureIndex === 2000);
+ok('kapFresh: yeni yoksa boş', Array.isArray(kapFresh(raw, 5000)) && kapFresh(raw, 5000).length === 0);
+const odd = JSON.stringify([{ disclosureIndex: 7, summary: 'süslü } parantez', subject: 'x' }]);
+ok('kapFresh: metinde süslü parantez → tam ayrıştırmaya düşer', kapFresh(odd, 0) === null);
+ok('kapFresh: boş liste → tam ayrıştırma', kapFresh('[]', 0) === null);
+// takılma: Telegram gönderiminde çalışma ölürse kap_last yine de ilerlemiş olmalı
+at('2026-10-12', '18:14');
+KAP = [{ disclosureIndex: 900, publishDate: pub(Date.now() - 30e3), subject: 'Yeni İş İlişkisi', summary: 'sözleşme imzalandı', relatedStocks: 'ASELS', kapTitle: 'ASELSAN' }];
+const h2 = Object.assign({}, h, { tgSend: async () => { throw new Error('kesildi'); } });
+try { await kapPoll(env, h2); } catch (e) {}
+ok('çalışma sonda kesilse de kap_last ilerledi (her dakika aynı yük yok)', db.prepare("SELECT v FROM meta WHERE k='kap_last'").get().v === '900');
 console.log('\nKAP: ' + res.filter(Boolean).length + '/' + res.length + ' geçti');
 process.exit(res.every(Boolean) ? 0 : 1);
