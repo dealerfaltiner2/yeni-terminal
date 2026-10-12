@@ -20,6 +20,9 @@ export async function sigEnsure(env) {
   // v8.4 bot yarışı ölçümleri: tx = çabuk çıkış (±K en çok 60 dk, gelmezse 60. dk kapanışı) sonucu %;
   // pbn = geri çekilme girişi oldu mu (1 evet, 0 hayır, -1 ölçülemedi), pb = o girişin sonucu % (±K yarışı, gelmezse gün sonu)
   for (const c of ['tx REAL', 'pb REAL', 'pbn INTEGER', 'o31 INTEGER', 'o41 INTEGER', 'h1 REAL']) { try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN ' + c).run(); } catch (e) {} }
+  // v10.2 ERTESİ GÜN: ng = ertesi gün açılış farkı (sinyal günü kapanışına göre %), nh/nl/nc = ertesi gün tepe/dip/kapanış (sinyal fiyatına göre %),
+  // nt = 1 ertesi gün tavan (kapanış ≥ +%9,5), -1 taban, 0 değil; nx = 1 ölçüldü, negatif = deneme sayısı (en çok 3).
+  for (const c of ['ng REAL', 'nh REAL', 'nl REAL', 'nc REAL', 'nt INTEGER', 'nx INTEGER']) { try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN ' + c).run(); } catch (e) {} }
   // v9.0: o31 eklenmeden önce ölçülmüş sinyaller — sırası kesin olanlar mfe/mae'den bir kez doldurulur (meta 'o31fill').
   // +%3 ve −%1 ikisi birden olduysa sıra bilinmez → boş kalır (son 6 gün sigBackfill dakikalık mumlarla tamamlar).
   try {
@@ -138,7 +141,8 @@ export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
   if (!ready.length) {
     const sm = await sigSummary(env, tgSend, kvGet, esc, nf);
     if (sm) return sm;
-    try { return await sigBackfill(env, fetchBarsTV); } catch (e) { return { tamamlama_hata: String(e && e.message || e).slice(0, 120) }; }
+    try { const bf = await sigBackfill(env, fetchBarsTV); if (bf) return bf; } catch (e) { return { tamamlama_hata: String(e && e.message || e).slice(0, 120) }; }
+    try { return await sigNextDay(env, fetchBarsTV); } catch (e) { return { ertesi_hata: String(e && e.message || e).slice(0, 120) }; }
   }
   const old = ready.filter(r => now - r.t > 4 * 86400e3);
   for (const r of old) await env.BT.prepare("UPDATE sig SET done = 1, err = 'çok eski' WHERE id = ?").bind(r.id).run();
@@ -246,6 +250,45 @@ export async function sigBackfill(env, fetchBarsTV) {
     n++;
   }
   return { tamamlama: n, hisse: syms, kalan: rows.length - batch.length };
+}
+// v10.2 (13.10, Fatih onayıyla) ERTESİ GÜN ÖLÇÜMÜ — "bugün çıkan sinyal yarın ne yaptı?" (araştırma ajanı ve 3 Kasım değerlendirmesi için; sinyal kuralı değişmez).
+// Yalnız ölçülecek sinyal ve tamamlama yokken, en çok 10 dakikada bir (meta 'nx_at'); bir çalışmada en çok 6 hisse, günlük mum (15 adet). Okuma: sig_d indeksiyle son 6 iş günü.
+const wdNext = d => { let x = Date.parse(d + 'T00:00:00Z') + 864e5; while ([0, 6].includes(new Date(x).getUTCDay())) x += 864e5; return new Date(x).toISOString().slice(0, 10); };
+export function nextDayOf(daily, r) {
+  const bars = (daily || []).filter(b => b && b[4] > 0).map(b => ({ d: trDay(b[0] * 1000), o: b[1], h: b[2], l: b[3], c: b[4] }));
+  const i = bars.findIndex(b => b.d === r.d), n = bars.find(b => b.d > r.d);
+  if (i < 0 || !n || !(r.px > 0)) return null;
+  const c0 = bars[i].c, pct = (a, b) => Math.round((a / b - 1) * 10000) / 100;
+  const ch = pct(n.c, c0);
+  return { ng: pct(n.o, c0), nh: pct(n.h, r.px), nl: pct(n.l, r.px), nc: pct(n.c, r.px), nt: ch >= 9.5 ? 1 : ch <= -9.5 ? -1 : 0, nd: n.d };
+}
+export async function sigNextDay(env, fetchBarsTV, now = Date.now()) {
+  const at = await env.BT.prepare("SELECT v FROM meta WHERE k = 'nx_at'").first();
+  if (at && now - +at.v < 10 * 60e3 && now >= +at.v) return null;
+  await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('nx_at', ?)").bind(String(now)).run();
+  const today = trDay(now), m = trMin(now), wd = new Date(today + 'T00:00:00Z').getUTCDay();
+  // kapanmış son gün: bugün iş günüyse ve 18:15 geçtiyse bugün, değilse önceki gün
+  const closed = (wd >= 1 && wd <= 5 && m >= 1095) ? today : trDay(now - 864e5);
+  const days = []; let d = trDay(now - 12 * 864e5);
+  while (d < today) { if (wdNext(d) <= closed && ![0, 6].includes(new Date(d + 'T00:00:00Z').getUTCDay())) days.push(d); d = new Date(Date.parse(d + 'T00:00:00Z') + 864e5).toISOString().slice(0, 10); }
+  const want = days.slice(-6);
+  if (!want.length) return null;
+  const rows = (await env.BT.prepare('SELECT id, d, sym, px FROM sig INDEXED BY sig_d WHERE d IN (' + want.map(() => '?').join(',') + ") AND done = 1 AND err IS NULL AND px > 0 AND src NOT LIKE 'kap-%' AND (nx IS NULL OR (nx < 1 AND nx > -3)) LIMIT 300").bind(...want).all()).results || [];
+  if (!rows.length) return null;
+  const syms = [...new Set(rows.map(r => r.sym))].slice(0, 6), batch = rows.filter(r => syms.includes(r.sym));
+  const ids = batch.map(r => r.id);
+  await env.BT.prepare('UPDATE sig SET nx = coalesce(nx, 0) - 1 WHERE id IN (' + ids.map(() => '?').join(',') + ')').bind(...ids).run();
+  const got = await fetchBarsTV(env, syms.map(s => 'BIST:' + s), '1D', 15, 8000);
+  let n = 0, bekle = 0;
+  for (const r of batch) {
+    const st = got['BIST:' + r.sym], daily = st ? [...st.m.values()].filter(v => v && v.length >= 5).sort((a, b) => a[0] - b[0]) : [];
+    if (!daily.length) continue;   // veri gelmedi → deneme sayısı arttı, sonra yeniden
+    const o = nextDayOf(daily, r);
+    if (!o) { bekle++; await env.BT.prepare('UPDATE sig SET nx = coalesce(nx, 0) + 1 WHERE id = ?').bind(r.id).run(); continue; }   // ertesi gün mumu yok (tatil) → denemeyi geri al
+    await env.BT.prepare('UPDATE sig SET ng = ?, nh = ?, nl = ?, nc = ?, nt = ?, nx = 1 WHERE id = ?').bind(o.ng, o.nh, o.nl, o.nc, o.nt, r.id).run();
+    n++;
+  }
+  return { ertesi: n, bekleyen: bekle, hisse: syms, kalan: rows.length - batch.length };
 }
 const SRC_AD = { radar: '📡 Sunucu radarı (mesajı kapalı)', algi: '⚡ Algı', 'firsat-A': '🅰️ Fırsat A', 'firsat-B': '🅱️ Fırsat B', momentum: '🧪 Momentum (deneme)' };
 const KAP_TR = { is: 'Yeni iş/sözleşme', ihale: 'İhale', geri: 'Geri alım', bedelsiz: 'Bedelsiz', bedelli: 'Bedelli', tahsisli: 'Sermaye artırımı', teklif: 'Pay alım teklifi', birlesme: 'Birleşme/devir', tesvik: 'Teşvik', temettu: 'Temettü', bilanco: 'Bilanço', not: 'Kredi notu', icerden: 'İçeriden alım-satım', yatirim: 'Yatırım', varlik: 'Varlık alım/satım', ozel: 'Özel durum', risk: 'Risk (konkordato vb.)', kisit: 'İşlem kısıtı', ceza: 'Ceza/dava' };
