@@ -6,8 +6,12 @@ const TRMS = 3 * 3600e3;
 export const trDay = ms => new Date(ms + TRMS).toISOString().slice(0, 10);
 const trMin = ms => { const d = new Date(ms + TRMS); return d.getUTCHours() * 60 + d.getUTCMinutes(); };
 let ready = false;
+// 13.10 bakım: şema sürümü meta 'sig_schema'da. Eşitse tablo/indeks/ALTER adımları ATLANIR (her soğuk başlangıçta 14 başarısız ALTER
+// + 3 sorgu işlemci payını yiyordu → 13.10 akşamı karne ölçümü ve KAP adımı her dakika yarıda kesildi). Yeni sütun eklerken SÜRÜMÜ ARTIR.
+const SIG_SCHEMA = '10.2';
 export async function sigEnsure(env) {
   if (ready) return;
+  try { const s = await env.BT.prepare("SELECT v FROM meta WHERE k = 'sig_schema'").first(); if (s && s.v === SIG_SCHEMA) { ready = true; return; } } catch (e) {}
   await env.BT.batch([
     env.BT.prepare('CREATE TABLE IF NOT EXISTS sig (id INTEGER PRIMARY KEY AUTOINCREMENT, d TEXT, t INTEGER, src TEXT, sym TEXT, dir TEXT, px REAL, sc REAL, dev TEXT, meta TEXT, done INTEGER DEFAULT 0, o10 INTEGER, o15 INTEGER, r15 REAL, r60 REAL, rc REAL, mfe REAL, mae REAL, idx REAL, err TEXT)'),
     env.BT.prepare('CREATE INDEX IF NOT EXISTS sig_done ON sig(done, t)'),
@@ -32,6 +36,7 @@ export async function sigEnsure(env) {
       await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('o31fill', ?)").bind(String(Date.now())).run();
     }
   } catch (e) {}
+  try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sig_schema', ?)").bind(SIG_SCHEMA).run(); } catch (e) {}
   ready = true;
 }
 // v6.6: son 20 tamamlanmış günün ortalama günlük aralığı (%), feat tablosundaki 'adr' ile aynı formül: ort((yüksek−düşük)/kapanış)
