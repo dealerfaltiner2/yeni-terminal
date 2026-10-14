@@ -16,6 +16,8 @@
   "d1_databases": [
     { "binding": "BT", "database_name": "bist_bt", "database_id": "f45bd262-2d5b-4f62-94b5-36c30651b709" }
   ],
-  "triggers": { "crons": ["* * * * *"] },
+  // 14.10: üç zamanlayıcı = üç ayrı çalışma (her biri kendi 10 ms işlemci payı). Hepsi dakikada bir; index.js scheduled() event.cron'a göre ayırır:
+  // '* * * * *' ana iş · '*/1 * * * *' KAP · '0-59 * * * *' karne ölçümü. İfadeleri değiştirirsen index.js'deki CR_KAP / CR_SIG'i de değiştir.
+  "triggers": { "crons": ["* * * * *", "*/1 * * * *", "0-59 * * * *"] },
   "observability": { "enabled": true }
 }

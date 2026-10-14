@@ -960,12 +960,56 @@ export default {
     return json({ error: 'bilinmeyen yol: /' + route }, 404);
   },
   async scheduled(event, env, ctx) {
+    // 14.10 BÖLÜNDÜ: ücretsiz planda her ÇALIŞMA 10 ms işlemci alır. 12–14.10 akşamları alarm/KAP/karne aynı çalışmada olduğu için
+    // KAP ve karne her dakika işlemci sınırında kesildi (karne ölçülmedi, rapor gitmedi). Artık üç ayrı zamanlayıcı (wrangler.jsonc):
+    //   '* * * * *'    = ana iş (alarm/radar, duyuru, motor bekçisi, tavan, pozisyon, geçmiş test, takvim, KAP geçmişi) → meta 'cron_hb'
+    //   '*/1 * * * *'  = KAP (+ sabah özeti)                                                                     → meta 'cron_hb_kap'
+    //   '0-59 * * * *' = karne ölçümü (seans dışı) + haftalık rapor                                            → meta 'cron_hb_sig'
+    // Yardımcı zamanlayıcı son 3 dakikada çalışmadıysa (ör. Cloudflare tetiklemediyse) ana iş onun işini eskisi gibi kendisi yapar.
+    const CR_KAP = '*/1 * * * *', CR_SIG = '0-59 * * * *';
+    const hbk = (k, st) => env.BT.prepare('INSERT OR REPLACE INTO meta (k, v) VALUES (?, ?)').bind(k, Date.now() + ' ' + trNow().hm + ' ' + st).run().catch(() => {});
     // Dakikalık iş. Sıra (01.10): alarm/radar (cron) → duyuru → KAP → karne ölçümü (seans dışı) → geçmiş test.
     // Ücretsiz planda tüm çalışma 10 ms işlemci paylaşır; hafif ve zamana duyarlı işler önce.
     // Teşhis: meta 'cron_hb' = son çalışmanın saati + ulaştığı adım (iş yarıda kesilirse nerede kaldığı görünür).
     const hb = async st => { try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('cron_hb', ?)").bind(trNow().hm + ' ' + st).run(); } catch (e) {} };
+    const kapJob = async () => {
+      // KAP: dakikada bir, her gün (gece gelenler sabah 09:30 özetinde). 01.10: karneden ÖNCE — zamana duyarlı ve hafif;
+      // karne ölçümü ağırlaşıp çalışmayı yarıda kestirse bile haberler gecikmesin. Sabah özeti ayrı korumada (KAP sitesi çökse de gider).
+      let kr = null, mr = null;
+      // 12.10 SİGORTA: KAP adımı üst üste 3 kez yarıda kesildiyse (meta 'kap_kill' sayacı, adım bitince silinir) KAP yalnız 5 dakikada bir denenir;
+      // arada karne, tavan, rapor ve diğer işler çalışmaya devam eder (12.10 akşamı KAP takılınca karne raporu hiç gitmemişti).
+      let kk = 0; try { const r = await env.BT.prepare("SELECT v FROM meta WHERE k = 'kap_kill'").first(); kk = r ? +r.v || 0 : 0; } catch (e) {}
+      const kapSkip = kk >= 3 && new Date().getUTCMinutes() % 5 !== 0;
+      if (kk === 3 && !kapSkip) await errAdd(env, 'sunucu', 'toparlama', 'KAP adımı 3 kez yarıda kesildi, 5 dakikada bir deneniyor', 'kapPoll');
+      if (!kapSkip) try {
+        try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_kill', ?)").bind(String(kk + 1)).run(); } catch (e) {}
+        kr = await kapPoll(env, { UA, tgSend, kvGet, esc, scanRaw, pushSend });
+        try { await env.BT.prepare("DELETE FROM meta WHERE k = 'kap_kill'").run(); } catch (e) {}
+        if (kr && kr.yeni) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_st', ?)").bind(JSON.stringify({ at: Date.now(), ...kr })).run();
+      } catch (e) { try { await env.BT.prepare("DELETE FROM meta WHERE k = 'kap_kill'").run(); } catch (e2) {} await errAdd(env, 'sunucu', 'hata', 'KAP: ' + String(e && e.message || e).slice(0, 200), 'kapPoll'); try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_err', ?)").bind(new Date().toISOString() + ' ' + String(e && e.message || e).slice(0, 300)).run(); } catch {} }
+      try { mr = await kapMorning(env, { tgSend, kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'KAP sabah özeti: ' + String(e && e.message || e).slice(0, 200), 'kapMorning'); }
+      try { const n = (kr && kr.telegram || 0) + (mr && mr.ozet ? 1 : 0); if (n) { const st = await kvGet(env, 'st', {}); if (st.cnt) { st.cnt.kap = (st.cnt.kap || 0) + n; await kvPut(env, 'st', st); } } } catch (e) {}
+    };
+    const sigJob = async () => {
+      const T = trNow(); const inSess = T.wd >= 1 && T.wd <= 5 && T.m >= 590 && T.m < 1095;
+      if (!inSess) {
+        const t0 = Date.now(); let sr;
+        try { sr = await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf); } catch (e) { sr = { hata: String(e && e.message || e).slice(0, 200) }; await errAdd(env, 'sunucu', 'hata', 'karne: ' + sr.hata, 'sigEval'); }
+        try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sig_st', ?)").bind(new Date().toISOString() + ' ' + (Date.now() - t0) + 'ms ' + JSON.stringify(sr ?? null).slice(0, 300)).run(); } catch (e) {}
+        try { await weeklySummary(env, tgSend, kvGet, esc, pushSend); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'haftalık rapor: ' + String(e && e.message || e).slice(0, 150), 'weeklySummary'); }
+        // günlük karne gittiyse iPhone'a kısa haber (bir kez)
+        try { const T = trNow(); const ss = await env.BT.prepare("SELECT v FROM meta WHERE k = 'sigsum'").first(), sp = await env.BT.prepare("SELECT v FROM meta WHERE k = 'sigsum_push'").first();
+          if (ss && ss.v === T.day && (!sp || sp.v !== T.day)) { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sigsum_push', ?)").bind(T.day).run(); await pushSend(env, { cat: 'rapor', title: '📊 Günün karnesi hazır', body: 'Ayrıntılar Telegram\'da ve Pusula → Karne\'de.', url: './', tag: 'karne' + T.day }, 3); } } catch (e) {}
+      }
+    };
+    if (event && event.cron === CR_KAP) { ctx.waitUntil((async () => { await hbk('cron_hb_kap', '1-başladı'); await kapJob(); await hbk('cron_hb_kap', '2-bitti'); })()); return; }
+    if (event && event.cron === CR_SIG) { ctx.waitUntil((async () => { await hbk('cron_hb_sig', '1-başladı'); await sigJob(); await hbk('cron_hb_sig', '2-bitti'); })()); return; }
     ctx.waitUntil((async () => {
       await hb('1-başladı');
+      // yardımcılar canlı mı? (meta PK ile 2 satır)
+      let kapAlive = false, sigAlive = false;
+      try { const rs = (await env.BT.prepare("SELECT k, v FROM meta WHERE k IN ('cron_hb_kap', 'cron_hb_sig')").all()).results || [];
+        for (const r of rs) { const ok = Date.now() - (parseInt(r.v, 10) || 0) < 180e3; if (r.k === 'cron_hb_kap') kapAlive = ok; else sigAlive = ok; } } catch (e) {}
       try { await cron(env); }
       catch (e) { await errAdd(env, 'sunucu', 'hata', 'cron: ' + String(e && e.message || e), 'alarm/radar'); try { const st = await kvGet(env, 'st', {}); st.err = 'cron: ' + (e && e.message || e); st.lastRun = Date.now(); await kvPut(env, 'st', st); } catch {} }
       await hb('2-alarm/radar bitti');
@@ -987,38 +1031,14 @@ export default {
           }
         }
       } catch (e) {}
-      // KAP: dakikada bir, her gün (gece gelenler sabah 09:30 özetinde). 01.10: karneden ÖNCE — zamana duyarlı ve hafif;
-      // karne ölçümü ağırlaşıp çalışmayı yarıda kestirse bile haberler gecikmesin. Sabah özeti ayrı korumada (KAP sitesi çökse de gider).
-      let kr = null, mr = null;
-      // 12.10 SİGORTA: KAP adımı üst üste 3 kez yarıda kesildiyse (meta 'kap_kill' sayacı, adım bitince silinir) KAP yalnız 5 dakikada bir denenir;
-      // arada karne, tavan, rapor ve diğer işler çalışmaya devam eder (12.10 akşamı KAP takılınca karne raporu hiç gitmemişti).
-      let kk = 0; try { const r = await env.BT.prepare("SELECT v FROM meta WHERE k = 'kap_kill'").first(); kk = r ? +r.v || 0 : 0; } catch (e) {}
-      const kapSkip = kk >= 3 && new Date().getUTCMinutes() % 5 !== 0;
-      if (kk === 3 && !kapSkip) await errAdd(env, 'sunucu', 'toparlama', 'KAP adımı 3 kez yarıda kesildi, 5 dakikada bir deneniyor', 'kapPoll');
-      if (!kapSkip) try {
-        try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_kill', ?)").bind(String(kk + 1)).run(); } catch (e) {}
-        kr = await kapPoll(env, { UA, tgSend, kvGet, esc, scanRaw, pushSend });
-        try { await env.BT.prepare("DELETE FROM meta WHERE k = 'kap_kill'").run(); } catch (e) {}
-        if (kr && kr.yeni) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_st', ?)").bind(JSON.stringify({ at: Date.now(), ...kr })).run();
-      } catch (e) { try { await env.BT.prepare("DELETE FROM meta WHERE k = 'kap_kill'").run(); } catch (e2) {} await errAdd(env, 'sunucu', 'hata', 'KAP: ' + String(e && e.message || e).slice(0, 200), 'kapPoll'); try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_err', ?)").bind(new Date().toISOString() + ' ' + String(e && e.message || e).slice(0, 300)).run(); } catch {} }
-      try { mr = await kapMorning(env, { tgSend, kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'KAP sabah özeti: ' + String(e && e.message || e).slice(0, 200), 'kapMorning'); }
-      try { const n = (kr && kr.telegram || 0) + (mr && mr.ozet ? 1 : 0); if (n) { const st = await kvGet(env, 'st', {}); if (st.cnt) { st.cnt.kap = (st.cnt.kap || 0) + n; await kvPut(env, 'st', st); } } } catch (e) {}
+      if (!kapAlive) await kapJob();
       try { await botWatch(env, tgSend, kvGet); } catch (e) {}
       try { await tavanScan(env, { scanRaw, sigAdd, tgSend, kvGet, esc, pushSend }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'tavan takibi: ' + String(e && e.message || e).slice(0, 150), 'tavanScan'); }
       try { await posWatch(env, { scanRaw, kvGet, tgSend, esc, pushSend }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'pozisyon asistanı: ' + String(e && e.message || e).slice(0, 150), 'posWatch'); }
       await hb('3-KAP bitti');
-      const T = trNow(); const inSess = T.wd >= 1 && T.wd <= 5 && T.m >= 590 && T.m < 1095;
-      if (!inSess) {
-        const t0 = Date.now(); let sr;
-        try { sr = await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf); } catch (e) { sr = { hata: String(e && e.message || e).slice(0, 200) }; await errAdd(env, 'sunucu', 'hata', 'karne: ' + sr.hata, 'sigEval'); }
-        try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sig_st', ?)").bind(new Date().toISOString() + ' ' + (Date.now() - t0) + 'ms ' + JSON.stringify(sr ?? null).slice(0, 300)).run(); } catch (e) {}
-        try { await weeklySummary(env, tgSend, kvGet, esc, pushSend); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'haftalık rapor: ' + String(e && e.message || e).slice(0, 150), 'weeklySummary'); }
-        // günlük karne gittiyse iPhone'a kısa haber (bir kez)
-        try { const T = trNow(); const ss = await env.BT.prepare("SELECT v FROM meta WHERE k = 'sigsum'").first(), sp = await env.BT.prepare("SELECT v FROM meta WHERE k = 'sigsum_push'").first();
-          if (ss && ss.v === T.day && (!sp || sp.v !== T.day)) { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sigsum_push', ?)").bind(T.day).run(); await pushSend(env, { cat: 'rapor', title: '📊 Günün karnesi hazır', body: 'Ayrıntılar Telegram\'da ve Pusula → Karne\'de.', url: './', tag: 'karne' + T.day }, 3); } } catch (e) {}
-        await hb('4-karne bitti');
-      }
+      if (!sigAlive) { await sigJob(); await hb('4-karne bitti'); }
       // NABIZ/özellik geçmiş testi: seans DIŞINDA (ağır iş en sona)
+      const T = trNow(); const inSess = T.wd >= 1 && T.wd <= 5 && T.m >= 590 && T.m < 1095;
       if (!inSess) { try { await btStep(env); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'btStep: ' + String(e && e.message || e).slice(0, 200), 'btStep'); } }
       try { await ecalPoll(env, UA); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'ekonomik takvim: ' + String(e && e.message || e).slice(0, 150), 'ecal'); }
       try { await probe(env, scanRaw, UA); } catch (e) {}

@@ -2,10 +2,10 @@
 # Sunucuyu (Worker) yerelde çalıştırıp temel yolları dener: onay akışı, hata defteri, karne verisi, sahip yolları.
 # Gerçek Cloudflare'e DOKUNMAZ (wrangler dev --local, sahte ACCESS_KEY). Çıkış 0 = geçti.
 cd "$(dirname "$0")"
-T=$(mktemp -d); cp -r ../worker/src "$T/"; sed 's/"crons": \["\* \* \* \* \*"\]/"crons": []/' ../worker/wrangler.jsonc > "$T/wrangler.jsonc"; echo 'ACCESS_KEY=k123' > "$T/.dev.vars"
+T=$(mktemp -d); cp -r ../worker/src "$T/"; sed -E 's/"crons": \[[^]]*\]/"crons": []/' ../worker/wrangler.jsonc > "$T/wrangler.jsonc"; echo 'ACCESS_KEY=k123' > "$T/.dev.vars"
 cd "$T"; PORT=87$((RANDOM%90+10))
 npx -y wrangler@3 d1 execute bist_bt --local --command "CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT)" >/dev/null 2>&1
-(npx -y wrangler@3 dev --local --port $PORT > dev.log 2>&1 &) ; for i in $(seq 1 40); do curl -s -m 2 "http://localhost:$PORT/k123/" >/dev/null && break; sleep 1; done
+(npx -y wrangler@3 dev --local --test-scheduled --port $PORT > dev.log 2>&1 &) ; for i in $(seq 1 40); do curl -s -m 2 "http://localhost:$PORT/k123/" >/dev/null && break; sleep 1; done
 B=http://localhost:$PORT/k123; fail=0
 chk(){ if echo "$2" | grep -qE "$3"; then echo "✓ $1"; else echo "✗ $1 — $(echo "$2" | head -c 160)"; fail=1; fi; }
 chk "anahtarsız istek reddedilir" "$(curl -s -m 10 http://localhost:$PORT/yanlis/status)" "yetkisiz"
@@ -39,6 +39,17 @@ chk "emir akışı bozuk gün reddedilir" "$(curl -s -m 10 -X POST -d '{"v":1}' 
 chk "hata defterine yazma" "$(curl -s -m 10 -X POST -d '{"items":[{"k":"hata","m":"test hatası","w":"x.js:1","tab":"now","v":"7.2"}]}' "$B/errlog?dev=eskicihaz0001")" '"n": ?1'
 curl -s -m 10 -X POST -d '{"items":[{"k":"hata","m":"test hatası","w":"x.js:1"}]}' "$B/errlog?dev=eskicihaz0001" >/dev/null
 chk "aynı hata sayaçla tek satır" "$(npx -y wrangler@3 d1 execute bist_bt --local --command "SELECT n FROM err WHERE msg='test hatası'" 2>/dev/null)" '"n": ?2'
+# 14.10: üç zamanlayıcı — her biri kendi işini yapar (KAP ve karne ayrı çalışmada)
+q(){ npx -y wrangler@3 d1 execute bist_bt --local --command "$1" 2>/dev/null; }
+curl -s -m 60 "http://localhost:$PORT/__scheduled?cron=*/1+*+*+*+*" >/dev/null
+curl -s -m 60 "http://localhost:$PORT/__scheduled?cron=0-59+*+*+*+*" >/dev/null
+for i in $(seq 1 30); do q "SELECT v FROM meta WHERE k IN ('cron_hb_kap','cron_hb_sig')" | grep -c "2-bitti" | grep -q 2 && break; sleep 2; done
+chk "KAP zamanlayıcısı kendi işini bitirdi" "$(q "SELECT v FROM meta WHERE k='cron_hb_kap'")" '2-bitti'
+chk "karne zamanlayıcısı kendi işini bitirdi" "$(q "SELECT v FROM meta WHERE k='cron_hb_sig'")" '2-bitti'
+chk "yardımcılar ana işi başlatmadı" "$(q "SELECT count(*) c FROM meta WHERE k='cron_hb'")" '"c": ?0'
+curl -s -m 60 "http://localhost:$PORT/__scheduled?cron=*+*+*+*+*" >/dev/null
+for i in $(seq 1 40); do q "SELECT v FROM meta WHERE k='cron_hb'" | grep -q "5-tamam" && break; sleep 2; done
+chk "ana iş sona ulaştı" "$(q "SELECT v FROM meta WHERE k='cron_hb'")" '5-tamam'
 for p in $(pgrep -f "port $PORT"); do kill $p 2>/dev/null; done
 cd /; rm -rf "$T"
 [ $fail = 0 ] && echo "SUNUCU: geçti" || echo "SUNUCU: HATA VAR"; exit $fail
