@@ -1004,6 +1004,8 @@ export default {
     };
     if (event && event.cron === CR_KAP) { ctx.waitUntil((async () => { await hbk('cron_hb_kap', '1-başladı'); await kapJob(); await hbk('cron_hb_kap', '2-bitti'); })()); return; }
     if (event && event.cron === CR_SIG) { ctx.waitUntil((async () => { await hbk('cron_hb_sig', '1-başladı'); await sigJob(); await hbk('cron_hb_sig', '2-bitti'); })()); return; }
+    // Beklenmeyen bir zamanlayıcı ifadesi gelirse ana iş İKİNCİ KEZ çalışmasın (çift Telegram/radar olmasın); yalnız iz bırak.
+    if (event && event.cron && event.cron !== '* * * * *') { ctx.waitUntil(hbk('cron_unknown', String(event.cron).slice(0, 40))); return; }
     ctx.waitUntil((async () => {
       await hb('1-başladı');
       // yardımcılar canlı mı? (meta PK ile 2 satır)

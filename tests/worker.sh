@@ -50,6 +50,9 @@ chk "yardımcılar ana işi başlatmadı" "$(q "SELECT count(*) c FROM meta WHER
 curl -s -m 60 "http://localhost:$PORT/__scheduled?cron=*+*+*+*+*" >/dev/null
 for i in $(seq 1 40); do q "SELECT v FROM meta WHERE k='cron_hb'" | grep -q "5-tamam" && break; sleep 2; done
 chk "ana iş sona ulaştı" "$(q "SELECT v FROM meta WHERE k='cron_hb'")" '5-tamam'
+q "DELETE FROM meta WHERE k='cron_hb'" >/dev/null; curl -s -m 60 "http://localhost:$PORT/__scheduled?cron=5+*+*+*+*" >/dev/null; sleep 3
+chk "bilinmeyen zamanlayıcı ana işi çalıştırmaz" "$(q "SELECT count(*) c FROM meta WHERE k='cron_hb'")" '"c": ?0'
+chk "bilinmeyen zamanlayıcı iz bırakır" "$(q "SELECT v FROM meta WHERE k='cron_unknown'")" '"v": ?"[0-9]+ '
 for p in $(pgrep -f "port $PORT"); do kill $p 2>/dev/null; done
 cd /; rm -rf "$T"
 [ $fail = 0 ] && echo "SUNUCU: geçti" || echo "SUNUCU: HATA VAR"; exit $fail
