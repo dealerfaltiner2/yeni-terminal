@@ -349,6 +349,7 @@ td.sym{font-size:13.5px;letter-spacing:.2px}
 .sett{gap:10px}
 .alc{margin:8px 10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;cursor:pointer;font-size:13px;line-height:1.5}.alh{display:flex;align-items:center;gap:8px}.als{font-size:15.5px;letter-spacing:.3px}.alt{font-size:11.5px;font-weight:700;border:1px solid;border-radius:10px;padding:1px 8px}.alg{margin-left:auto;font-weight:700}.alb{position:relative;height:8px;border-radius:5px;background:rgba(148,163,184,.18);margin:8px 34px 6px 0}.alf{height:100%;border-radius:5px}.alm{position:absolute;top:-3px;width:2px;height:14px;background:#e2e8f0;opacity:.7}.alb span{position:absolute;right:-32px;top:-6px;font-weight:800;font-size:13px}.alx{color:var(--txt2)}.alok{color:#34d399;margin-top:4px;font-size:12.5px}.albad{color:#fbbf24;margin-top:4px;font-size:12.5px}.alw{margin-top:6px;color:var(--dim);font-size:12.5px}.alhelp{margin:10px 12px;font-size:12.5px;color:var(--dim);line-height:1.6}.alhelp summary{cursor:pointer;color:var(--txt2);font-weight:700;padding:6px 0}
 .kaprow{padding:10px 12px;margin:8px 10px;border:1px solid var(--line);border-left:4px solid #64748b;border-radius:10px;font-size:13px;line-height:1.45}.kaprow.y1{border-left-color:#10b981}.kaprow.y-1{border-left-color:#ef4444}.kaprow .kh{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.kaprow .kh b{font-size:14.5px;cursor:pointer;text-decoration:underline dotted}.kaprow .kt{margin-left:auto;color:var(--dim);font-size:11.5px}.kaprow .kg{font-size:11px;padding:1px 7px;border-radius:9px;background:rgba(148,163,184,.15)}.kaprow .ks{color:var(--txt2);margin-top:4px}.kaprow .km{margin-top:6px;font-size:11.5px;color:var(--dim)}.kaprow .km a{color:#60a5fa}
+.kaprow .ks{padding:0}.kaprow .kg{display:inline-block}
 .devrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;margin:6px 0;border:1px solid var(--line);border-radius:10px;font-size:13px}.devrow small{color:var(--dim);font-size:11.5px;line-height:1.5}.devrow .g{width:auto;flex:none;padding:7px 10px;font-size:12px;margin:0}.devrow.blk{opacity:.6;border-color:#c53030}.devbtns{display:flex;flex-direction:column;gap:6px;flex:none}
 .sett>b{font-size:11px;color:var(--txt2);letter-spacing:1.1px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
 .sett>b:first-child{margin-top:0;padding-top:0;border-top:0}
@@ -3264,7 +3265,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="10.4";window.APPV=APP_VER;
+  const APP_VER="10.5";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4520,7 +4521,8 @@ const SEC_TR={'Electronic Technology':'Elektronik','Finance':'Finans','Non-Energ
 function secTr(x){x=String(x||'');return SEC_TR[x]||x}
 function nAvatar(sym){sym=String(sym||'?');let h=0;for(const c of sym)h=(h*31+c.charCodeAt(0))%360;return '<span class="nav" style="--h:'+h+'">'+htmlEsc(sym.slice(0,2))+'</span>'}
 function nPill(ch){return ch!=null&&isFinite(ch)?'<i class="npill '+(ch>0?'up':ch<0?'dn':'')+'">'+pct(ch)+'</i>':''}
-function nSec(ic,t,link,tab,n){return '<div class="nsec"><span class="nsi">'+ic+'</span><b>'+t+'</b>'+(n?'<em>'+n+'</em>':'')+(link?'<a href="#" onclick="showTab(\''+tab+'\');return false">'+link+' ›</a>':'')+'</div>'}
+const NSEC_C={'⭐':'#fbbf24','🌊':'#38bdf8','💓':'#f472b6','💼':'#a78bfa','📊':'#34d399','🗓️':'#60a5fa','🛰️':'#22d3ee','🤖':'#c084fc','🧭':'#fbbf24'};
+function nSec(ic,t,link,tab,n){return '<div class="nsec"'+(NSEC_C[ic]?' style="--sc:'+NSEC_C[ic]+'"':'')+'><span class="nsi">'+ic+'</span><b>'+t+'</b>'+(n?'<em>'+n+'</em>':'')+(link?'<a href="#" onclick="showTab(\''+tab+'\');return false">'+link+' ›</a>':'')+'</div>'}
 function nowRow(o){ // {sym,src,cls,sub,val,chg,hot,onclick}
  const sp=sparkFor(o.sym,64,24);
  return '<div class="nrow'+(o.hot?' hot':'')+(o.dn?' dn':'')+'" onclick="'+(o.onclick||('selectSym(\''+o.sym+'\',\'bist\');showTab(\'chart\')'))+'">'+nAvatar(o.sym)+
@@ -4778,6 +4780,69 @@ html.cam .chip,html.cam .npill{border-color:rgba(255,255,255,.10)}
 html.cam .sett,html.cam .sett input,html.cam .sett select{background-color:rgba(255,255,255,.04)}
 html.cam #more .sh{background:rgba(16,20,40,.82);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,.12)}
 html.cam #xray .xsh,html.cam #infosheet .sh{background:rgba(16,20,40,.88)}
+/* ---- v10.5 (14.10) CAM: TÜM SEKMELER — Fırsat, Algı, Karne, KAP, İzleme, Grafik, Ayarlar, Röntgen + Şimdi renkleri (yalnız görünüm) ---- */
+html.cam .tab{--ta:#fbbf24}
+html.cam #t-now{--ta:#fbbf24}html.cam #t-op{--ta:#fbbf24}html.cam #t-algi{--ta:#2dd4bf}html.cam #t-lab{--ta:#a78bfa}html.cam #t-kap{--ta:#60a5fa}
+html.cam #t-watch{--ta:#f472b6}html.cam #t-chart{--ta:#38bdf8}html.cam #t-set{--ta:#94a3b8}html.cam #t-cal{--ta:#60a5fa}html.cam #t-jr{--ta:#34d399}
+html.cam .sechd{padding:14px 16px 10px}
+html.cam .sechd h1{display:flex;align-items:center;gap:9px;font-size:21px}
+html.cam .sechd h1::before{content:'';width:5px;height:20px;border-radius:3px;background:linear-gradient(180deg,var(--ta),color-mix(in srgb,var(--ta) 35%,transparent));box-shadow:0 0 12px color-mix(in srgb,var(--ta) 60%,transparent)}
+html.cam .sechd .ss{padding-left:14px}
+html.cam .ibtn{background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.12)!important;color:var(--txt)!important}
+/* alt sekme çubukları: koyu şerit yok, cam haplar */
+html.cam .bar{background:transparent;border-bottom:0}
+html.cam .bar button,html.cam .bar select,html.cam .bar input{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.11);color:var(--txt);border-radius:18px}
+html.cam .bar button.on{background:linear-gradient(135deg,rgba(251,191,36,.30),rgba(245,158,11,.16));border-color:rgba(251,191,36,.55);color:#fde68a}
+html.cam .seg{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:3px}
+html.cam .seg button{border-radius:11px!important;color:var(--txt2)!important}
+html.cam .seg button.on{background:linear-gradient(135deg,rgba(251,191,36,.32),rgba(245,158,11,.18))!important;color:#fde68a!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+html.cam #dirseg button[data-d=AL].on{background:linear-gradient(135deg,rgba(74,222,128,.32),rgba(34,197,94,.16))!important;color:#bbf7d0!important}
+html.cam #dirseg button[data-d=SAT].on{background:linear-gradient(135deg,rgba(251,143,143,.32),rgba(239,68,68,.16))!important;color:#fecaca!important}
+/* kartlar: hepsi aynı cam dil */
+html.cam .card,html.cam .card.v6,html.cam .alc,html.cam .kaprow,html.cam .lab,html.cam .sheet,html.cam .info{background:linear-gradient(160deg,rgba(255,255,255,.075),rgba(255,255,255,.028));border:1px solid rgba(255,255,255,.10);border-radius:20px;box-shadow:0 10px 26px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.07)}
+html.cam .card,html.cam .card.v6{margin:0 12px 12px;padding:14px}
+html.cam .card.top,html.cam .card.v6.top{background:radial-gradient(90% 80% at 100% 0%,rgba(251,191,36,.14),transparent 60%),linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.03));border-color:rgba(251,191,36,.40)}
+html.cam .card:active{background:rgba(255,255,255,.09)}
+html.cam .card.v6 .mtf span{border-radius:12px}
+html.cam .card.v6 .detbtn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);border-radius:14px}
+html.cam .card.v6 .plan{background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.07);border-radius:16px}
+html.cam .grid div{background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.09);border-radius:16px}
+html.cam .alc{margin:0 12px 12px}
+html.cam .alc.st-ates{background:radial-gradient(90% 80% at 100% 0%,rgba(74,222,128,.16),transparent 60%),linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.03));border-color:rgba(74,222,128,.45)}
+html.cam .alc.st-hazir{background:radial-gradient(90% 80% at 100% 0%,rgba(251,191,36,.12),transparent 60%),linear-gradient(160deg,rgba(255,255,255,.075),rgba(255,255,255,.03));border-color:rgba(251,191,36,.40)}
+/* KAP: yön rengi sol çizgi yerine kartın köşesinde ışık */
+html.cam .kaprow{margin:0 12px 12px;padding:13px 14px;border-left:1px solid rgba(255,255,255,.10)}
+html.cam .kaprow.y1{background:radial-gradient(80% 90% at 0% 0%,rgba(74,222,128,.13),transparent 60%),linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.028));border-color:rgba(74,222,128,.30)}
+html.cam .kaprow.y-1{background:radial-gradient(80% 90% at 0% 0%,rgba(251,143,143,.13),transparent 60%),linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.028));border-color:rgba(251,143,143,.30)}
+html.cam .kaprow .kh b{text-decoration:none;font-size:16px}
+html.cam .kaprow .kg{background:rgba(96,165,250,.16);color:#bfdbfe;border:1px solid rgba(96,165,250,.25);padding:2px 9px}
+html.cam .kaprow .km a{display:inline-block;margin-top:2px;padding:4px 10px;border-radius:12px;background:rgba(96,165,250,.12);text-decoration:none}
+/* tablolar: cam başlık, satır aralığı, sabit ilk sütun opak kalır (kayarken üst üste binmesin) */
+html.cam th{background:rgba(20,26,52,.92);color:#aab4d4;border-bottom:1px solid rgba(255,255,255,.10)}
+html.cam th:first-child{background:#141a34}
+html.cam td{border-bottom:1px solid rgba(255,255,255,.05)}
+html.cam td:first-child,html.cam tr:nth-child(even) td:first-child{background:#0c1124}
+html.cam .plan td:first-child{background:transparent}
+html.cam tr:nth-child(even) td{background-color:rgba(255,255,255,.018)}
+html.cam #watch,html.cam #oplist table,html.cam .ks table{border-radius:16px}
+html.cam #watch{margin:4px 12px 12px;border:1px solid rgba(255,255,255,.09);border-radius:18px;overflow:auto;background:rgba(255,255,255,.02)}
+/* Karne */
+html.cam .ksec{color:var(--ta);opacity:.9}
+html.cam .lab{padding:14px}
+/* Ayarlar: bölüm başlıkları renkli, alanlar cam */
+html.cam .sett>b{color:#c7d2fe;border-top-color:rgba(255,255,255,.08)}
+html.cam .sett input,html.cam .sett textarea,html.cam .sett select,html.cam .frow select,html.cam .frow input{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.11);border-radius:14px}
+html.cam .sett button.g{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.11);border-radius:14px}
+html.cam .sett button.pri,html.cam .sett button.g.pri{background:linear-gradient(135deg,#ffd166,#f59e0b);border:0;color:#131007;border-radius:14px;box-shadow:0 8px 22px rgba(245,158,11,.25)}
+html.cam .ppf td,html.cam .ppf th,html.cam .pp2 td,html.cam .pp2 th,html.cam .lab td,html.cam .lab th{background:transparent!important;position:static}
+html.cam .sett .note{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:14px}
+/* Röntgen */
+html.cam #xray .xh{background:rgba(16,20,40,.96)}
+/* Şimdi: bölüm başlığı simgeleri kendi renginde */
+html.cam .nsec{--sc:#94a3b8}
+html.cam .nsec .nsi{background:color-mix(in srgb,var(--sc) 20%,transparent);border-color:color-mix(in srgb,var(--sc) 40%,transparent);box-shadow:0 0 14px color-mix(in srgb,var(--sc) 25%,transparent)}
+html.cam .nsec b{color:color-mix(in srgb,var(--sc) 70%,#fff)}
+html.cam .nsec a{color:color-mix(in srgb,var(--sc) 75%,#fff)}
 @media (prefers-reduced-motion:reduce){html.cam *{transition:none!important}}
 </style>
 <script>

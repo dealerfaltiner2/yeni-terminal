@@ -213,3 +213,5 @@ Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ"
   Önizleme: Design canvas 'Pusula cam görünüm önizleme'. Sıradaki: Fırsat, Algı, Karne, Röntgen ekranları aynı dille (Fatih onayıyla).
 - v10.4 (14.10): 06.10'dan beri Fırsat sinyallerinin karnesinde 'kurulum' (pull = geri çekilme, kvw = Keskin VWAP, vcp, poc) hep BOŞTU — sinyaller motorun otomatik taramasından (autoRun) geliyor, o yolda S.deep yok.
   deepFlags(sym,dir,a): taze S.deep varsa onu, yoksa analyze() sonucundan (a.pull, a.kvw, a.vcp, POC yakınlığı) üretir; sigRecord (meta.kurulum, sigHist.setups) ve autoRun Telegram 'Kurulum:' satırı kullanır. Sinyal kuralı/puan DEĞİŞMEDİ.
+- v10.5 (14.10) CAM TÜM SEKMELER (yalnız CSS, html.cam altında; index.html v10.3 bloğunun sonunda): sekme başına renk --ta (sechd başlık çizgisi), .bar koyu şerit kalktı, seg/hap/kart/KAP/Algı/Ayarlar cam;
+  Karne (.ppf/.pp2/.lab) tablolarında sabit ilk sütun yok. Şimdi: nSec simge renkleri NSEC_C (simgeye göre --sc). HATA DÜZELTMESİ (iki temada): .kaprow .ks/.kg Karne'nin .ks/.kg sınıflarıyla çakışıyordu (KAP başlığı içerde, etiket ızgara).
