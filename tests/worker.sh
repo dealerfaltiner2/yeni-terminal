@@ -41,8 +41,8 @@ curl -s -m 10 -X POST -d '{"items":[{"k":"hata","m":"test hatası","w":"x.js:1"}
 chk "aynı hata sayaçla tek satır" "$(npx -y wrangler@3 d1 execute bist_bt --local --command "SELECT n FROM err WHERE msg='test hatası'" 2>/dev/null)" '"n": ?2'
 # 14.10: üç zamanlayıcı — her biri kendi işini yapar (KAP ve karne ayrı çalışmada)
 q(){ npx -y wrangler@3 d1 execute bist_bt --local --command "$1" 2>/dev/null; }
-curl -s -m 60 "http://localhost:$PORT/__scheduled?cron=*/1+*+*+*+*" >/dev/null
-curl -s -m 60 "http://localhost:$PORT/__scheduled?cron=0-59+*+*+*+*" >/dev/null
+curl -s -m 60 "http://localhost:$PORT/__scheduled?cron=*/2+*+*+*+*" >/dev/null
+curl -s -m 60 "http://localhost:$PORT/__scheduled?cron=1-59/2+*+*+*+*" >/dev/null
 for i in $(seq 1 30); do q "SELECT v FROM meta WHERE k IN ('cron_hb_kap','cron_hb_sig')" | grep -c "2-bitti" | grep -q 2 && break; sleep 2; done
 chk "KAP zamanlayıcısı kendi işini bitirdi" "$(q "SELECT v FROM meta WHERE k='cron_hb_kap'")" '2-bitti'
 chk "karne zamanlayıcısı kendi işini bitirdi" "$(q "SELECT v FROM meta WHERE k='cron_hb_sig'")" '2-bitti'

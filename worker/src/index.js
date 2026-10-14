@@ -963,10 +963,12 @@ export default {
     // 14.10 BÖLÜNDÜ: ücretsiz planda her ÇALIŞMA 10 ms işlemci alır. 12–14.10 akşamları alarm/KAP/karne aynı çalışmada olduğu için
     // KAP ve karne her dakika işlemci sınırında kesildi (karne ölçülmedi, rapor gitmedi). Artık üç ayrı zamanlayıcı (wrangler.jsonc):
     //   '* * * * *'    = ana iş (alarm/radar, duyuru, motor bekçisi, tavan, pozisyon, geçmiş test, takvim, KAP geçmişi) → meta 'cron_hb'
-    //   '*/1 * * * *'  = KAP (+ sabah özeti)                                                                     → meta 'cron_hb_kap'
-    //   '0-59 * * * *' = karne ölçümü (seans dışı) + haftalık rapor                                            → meta 'cron_hb_sig'
+    //   '*/2 * * * *'    = KAP (+ sabah özeti), çift dakikalar                                                 → meta 'cron_hb_kap'
+    //   '1-59/2 * * * *' = karne ölçümü (seans dışı) + haftalık rapor, tek dakikalar                          → meta 'cron_hb_sig'
+    // 14.10 gece: ilk sürümde '*/1' ve '0-59' kullanılmıştı — '* * * * *' ile AYNI zamanlama oldukları için Cloudflare hiç tetiklemedi
+    // (cron_hb_kap / cron_hb_sig hiç yazılmadı). Artık zamanlamalar gerçekten farklı.
     // Yardımcı zamanlayıcı son 3 dakikada çalışmadıysa (ör. Cloudflare tetiklemediyse) ana iş onun işini eskisi gibi kendisi yapar.
-    const CR_KAP = '*/1 * * * *', CR_SIG = '0-59 * * * *';
+    const CR_KAP = '*/2 * * * *', CR_SIG = '1-59/2 * * * *';
     const hbk = (k, st) => env.BT.prepare('INSERT OR REPLACE INTO meta (k, v) VALUES (?, ?)').bind(k, Date.now() + ' ' + trNow().hm + ' ' + st).run().catch(() => {});
     // Dakikalık iş. Sıra (01.10): alarm/radar (cron) → duyuru → KAP → karne ölçümü (seans dışı) → geçmiş test.
     // Ücretsiz planda tüm çalışma 10 ms işlemci paylaşır; hafif ve zamana duyarlı işler önce.

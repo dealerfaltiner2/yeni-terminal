@@ -11,7 +11,7 @@ const res = []; const ok = (n, c, i) => { res.push(!!c); console.log((c ? '✓ '
 const { sigEnsure, sigNextDay, nextDayOf } = await import(path.join(W, 'sig.js'));
 await sigEnsure(env);
 // 13.10 bakım: şema sürümü yazılmalı (sonraki soğuk başlangıçlar 14 ALTER'ı atlar — işlemci payı)
-ok('şema sürümü meta sig_schema yazıldı', (db.prepare("SELECT v FROM meta WHERE k = 'sig_schema'").get() || {}).v === '10.2');
+ok('şema sürümü meta sig_schema yazıldı', (db.prepare("SELECT v FROM meta WHERE k = 'sig_schema'").get() || {}).v === '10.6');
 ok('ertesi gün sütunları var', db.prepare('PRAGMA table_info(sig)').all().some(c => c.name === 'nx'));
 const sec = d => Date.parse(d + 'T07:00:00Z') / 1000;   // günlük mum zamanı (saniye)
 const bar = (d, o, h, l, c) => [sec(d), o, h, l, c, 1000];

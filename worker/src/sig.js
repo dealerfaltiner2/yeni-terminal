@@ -8,7 +8,7 @@ const trMin = ms => { const d = new Date(ms + TRMS); return d.getUTCHours() * 60
 let ready = false;
 // 13.10 bakım: şema sürümü meta 'sig_schema'da. Eşitse tablo/indeks/ALTER adımları ATLANIR (her soğuk başlangıçta 14 başarısız ALTER
 // + 3 sorgu işlemci payını yiyordu → 13.10 akşamı karne ölçümü ve KAP adımı her dakika yarıda kesildi). Yeni sütun eklerken SÜRÜMÜ ARTIR.
-const SIG_SCHEMA = '10.2';
+const SIG_SCHEMA = '10.6';
 export async function sigEnsure(env) {
   if (ready) return;
   try { const s = await env.BT.prepare("SELECT v FROM meta WHERE k = 'sig_schema'").first(); if (s && s.v === SIG_SCHEMA) { ready = true; return; } } catch (e) {}
@@ -36,6 +36,8 @@ export async function sigEnsure(env) {
       await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('o31fill', ?)").bind(String(Date.now())).run();
     }
   } catch (e) {}
+  // v10.6 (14.10, Fatih onayıyla): o315 = Momentum +%3 hedef / −%1,5 stop yarışı (1 hedef, 2 stop, 0 ikisi de yok → rc). Yalnız ölçüm (bot 'mom315').
+  try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN o315 INTEGER').run(); } catch (e) {}
   try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sig_schema', ?)").bind(SIG_SCHEMA).run(); } catch (e) {}
   ready = true;
 }
@@ -130,7 +132,7 @@ export function sigOutcome(bars, r, ib) {
         pb = rr != null ? rr : (B[B.length - 1][4] / pe - 1) * 100;
       } }
   }
-  return { px: r2(px), pre: pc ? r2((px / pc - 1) * 100) : null, o10: race(1), o15: race(1.5), o31: race(3, 1), o41: race(4, 1), h1: r2(h1), r15: r2(at(15)), r60: r2(at(60)), rc: r2(sg * (B[B.length - 1][4] / px - 1) * 100), mfe: r2(mfe), mae: r2(mae), idx: r2(idx), tx: r2(tx), pb: r2(pb), pbn };
+  return { px: r2(px), pre: pc ? r2((px / pc - 1) * 100) : null, o10: race(1), o15: race(1.5), o31: race(3, 1), o41: race(4, 1), o315: race(3, 1.5), h1: r2(h1), r15: r2(at(15)), r60: r2(at(60)), rc: r2(sg * (B[B.length - 1][4] / px - 1) * 100), mfe: r2(mfe), mae: r2(mae), idx: r2(idx), tx: r2(tx), pb: r2(pb), pbn };
 }
 // Seans dışında her dakika: bekleyen sinyallerden 5 hisseyi ölç; hepsi bitince özeti gönder
 import { errAdd } from './err.js';
@@ -207,8 +209,8 @@ export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
     FAIL.delete(r.sym);
     const o = bars.length ? sigOutcome(bars, r, ib) : { err: st.err };
     const adr = adrOf(toBars(gd['BIST:' + r.sym]), r.d);
-    await env.BT.prepare('UPDATE sig SET done = 1, px = coalesce(px, ?), pre = ?, o10 = ?, o15 = ?, o31 = ?, o41 = ?, h1 = ?, r15 = ?, r60 = ?, rc = ?, mfe = ?, mae = ?, idx = ?, adr = ?, tx = ?, pb = ?, pbn = ?, err = ? WHERE id = ?')
-      .bind(o.px ?? null, o.pre ?? null, o.o10 ?? null, o.o15 ?? null, o.o31 ?? null, o.o41 ?? null, o.h1 ?? null, o.r15 ?? null, o.r60 ?? null, o.rc ?? null, o.mfe ?? null, o.mae ?? null, o.idx ?? null, adr, o.tx ?? null, o.pb ?? null, o.pbn ?? null, o.err || null, r.id).run();
+    await env.BT.prepare('UPDATE sig SET done = 1, px = coalesce(px, ?), pre = ?, o10 = ?, o15 = ?, o31 = ?, o41 = ?, o315 = ?, h1 = ?, r15 = ?, r60 = ?, rc = ?, mfe = ?, mae = ?, idx = ?, adr = ?, tx = ?, pb = ?, pbn = ?, err = ? WHERE id = ?')
+      .bind(o.px ?? null, o.pre ?? null, o.o10 ?? null, o.o15 ?? null, o.o31 ?? null, o.o41 ?? null, o.o315 ?? null, o.h1 ?? null, o.r15 ?? null, o.r60 ?? null, o.rc ?? null, o.mfe ?? null, o.mae ?? null, o.idx ?? null, adr, o.tx ?? null, o.pb ?? null, o.pbn ?? null, o.err || null, r.id).run();
     n++;
   }
   if (syms.some(x => KILL[x])) { for (const x of syms) delete KILL[x]; await ms('sig_kill', KILL); }
@@ -238,10 +240,10 @@ export async function sigSym(env, sym) {
 // Yalnız ölçülecek sinyal yokken çalışır; her çalışmada en çok 3 hisse. Önce pbn = -1 yazılır (yarıda kesilirse sonsuza dek denenmesin).
 export async function sigBackfill(env, fetchBarsTV) {
   const now = Date.now();
-  const rows = (await env.BT.prepare("SELECT id, d, t, sym, dir, px, src FROM sig INDEXED BY sig_t WHERE t > ? AND done = 1 AND err IS NULL AND ((pbn IS NULL AND dir = 'AL' AND src IN ('firsat-A','firsat-B','algi','momentum','radar','sessiz','dunguclu')) OR (o31 IS NULL AND mfe >= 3 AND mae <= -1) OR (o41 IS NULL AND dir = 'AL' AND src = 'momentum')) AND px > 0 LIMIT 80").bind(now - 6 * 86400e3).all()).results || [];
+  const rows = (await env.BT.prepare("SELECT id, d, t, sym, dir, px, src FROM sig INDEXED BY sig_t WHERE t > ? AND done = 1 AND err IS NULL AND ((pbn IS NULL AND dir = 'AL' AND src IN ('firsat-A','firsat-B','algi','momentum','radar','sessiz','dunguclu')) OR (o31 IS NULL AND mfe >= 3 AND mae <= -1) OR (o41 IS NULL AND dir = 'AL' AND src = 'momentum') OR (o315 IS NULL AND dir = 'AL' AND src = 'momentum')) AND px > 0 LIMIT 80").bind(now - 6 * 86400e3).all()).results || [];
   if (!rows.length) return null;
   const syms = [...new Set(rows.map(r => r.sym))].slice(0, 3), batch = rows.filter(r => syms.includes(r.sym));
-  await env.BT.prepare('UPDATE sig SET pbn = coalesce(pbn, -1), o31 = coalesce(o31, -1), o41 = coalesce(o41, -1) WHERE id IN (' + batch.map(() => '?').join(',') + ')').bind(...batch.map(r => r.id)).run();
+  await env.BT.prepare('UPDATE sig SET pbn = coalesce(pbn, -1), o31 = coalesce(o31, -1), o41 = coalesce(o41, -1), o315 = coalesce(o315, -1) WHERE id IN (' + batch.map(() => '?').join(',') + ')').bind(...batch.map(r => r.id)).run();
   const today = trDay(now), oldest = batch.reduce((a, r) => (r.d < a ? r.d : a), today);
   const cd = Math.max(0, Math.round((Date.parse(today) - Date.parse(oldest)) / 86400e3));
   const got = await fetchBarsTV(env, syms.map(s => 'BIST:' + s), '1', Math.min(2500, 650 + 520 * cd), 15000);
@@ -251,7 +253,7 @@ export async function sigBackfill(env, fetchBarsTV) {
     if (!bars.length) continue;
     const o = sigOutcome(bars, r, null);
     if (o.err) continue;
-    await env.BT.prepare('UPDATE sig SET tx = ?, pb = ?, pbn = ?, o31 = ?, o41 = ?, h1 = ? WHERE id = ?').bind(o.tx ?? null, o.pb ?? null, o.pbn ?? null, o.o31 ?? null, o.o41 ?? null, o.h1 ?? null, r.id).run();
+    await env.BT.prepare('UPDATE sig SET tx = ?, pb = ?, pbn = ?, o31 = ?, o41 = ?, o315 = ?, h1 = ? WHERE id = ?').bind(o.tx ?? null, o.pb ?? null, o.pbn ?? null, o.o31 ?? null, o.o41 ?? null, o.o315 ?? null, o.h1 ?? null, r.id).run();
     n++;
   }
   return { tamamlama: n, hisse: syms, kalan: rows.length - batch.length };
@@ -409,6 +411,26 @@ export async function sigStats(env) {
 }
 
 // v8.2 HAFTALIK RAPOR — Cuma, günlük karne gittikten sonra bir kez. Son 7 günün özeti + sade öneriler.
+// v10.6 (14.10, Fatih onayıyla): Momentum'u farklı çıkışlarla yan yana — her sinyale 100.000 TL girilseydi (kayma hariç).
+// Yarış sonucu: 1 hedef, 2 stop, 0 ikisi de yok → gün sonu (rc). Ölçülmemiş (null / negatif) satır o çıkışta sayılmaz.
+export const MOM_EXITS = [
+  { k: 'o31', ad: '+%3 hedef / −%1 stop (şu anki mesaj)', tg: 3, sl: 1 },
+  { k: 'o315', ad: '+%3 hedef / −%1,5 stop', tg: 3, sl: 1.5 },
+  { k: 'o15', ad: '±%1,5', tg: 1.5, sl: 1.5 },
+  { k: 'h1', ad: 'Hedefsiz, −%1 stop, gün sonu sat', h: true }
+];
+export function momExits(rows, amt = 100000) {
+  return MOM_EXITS.map(e => {
+    let n = 0, w = 0, l = 0, pct = 0;
+    for (const r of rows) {
+      let p;
+      if (e.h) { if (r.h1 == null) continue; p = +r.h1; if (p <= -1 + 1e-9) l++; else if (p > 0) w++; }
+      else { const o = r[e.k]; if (o == null || o < 0 || (o === 0 && r.rc == null)) continue; p = o === 1 ? e.tg : o === 2 ? -e.sl : +r.rc; if (o === 1) w++; else if (o === 2) l++; }
+      n++; pct += p;
+    }
+    return { k: e.k, ad: e.ad, n, w, l, tl: Math.round(pct * amt / 100) };
+  });
+}
 export async function weeklySummary(env, tgSend, kvGet, esc, pushSend) {
   const d = new Date(Date.now() + TRMS), wd = d.getUTCDay(), m = d.getUTCHours() * 60 + d.getUTCMinutes(), today = d.toISOString().slice(0, 10);
   if (wd !== 5 || m < 1110) return null;
@@ -435,6 +457,15 @@ export async function weeklySummary(env, tgSend, kvGet, esc, pushSend) {
   }
   const gs = AG.find(g => g.g), go = AG.find(g => !g.g);
   if (gs && go && gs.h + gs.s >= 8 && go.h + go.s >= 8) { const a = pc(gs.h, gs.h + gs.s), b = pc(go.h, go.h + go.s); if (a - b >= 10) oner.push('Algı\'da güçlüler (%' + a + ') diğerlerinden (%' + b + ') belirgin iyi — yalnız güçlüleri göndermeyi önerebilirim.'); }
+  try {
+    const MR = (await env.BT.prepare("SELECT o31, o315, o15, h1, rc FROM sig INDEXED BY sig_d WHERE d >= ? AND src = 'momentum' AND dir = 'AL' AND done = 1 AND err IS NULL").bind(from).all()).results || [];
+    const ME = momExits(MR).filter(x => x.n);
+    if (ME.length) {
+      const tl = v => (v >= 0 ? '+' : '−') + Math.abs(v).toLocaleString('tr-TR') + ' TL';
+      msg += '\n\n🧪 <b>Momentum — hangi çıkış kazandırdı?</b>\n<i>Her sinyale 100.000 TL girilseydi (kayma hariç)</i>';
+      [...ME].sort((a, b) => b.tl - a.tl).forEach((x, i) => { msg += '\n   ' + (i + 1) + '. ' + esc(x.ad) + ': <b>' + tl(x.tl) + '</b> (' + x.n + ' işlem, ' + x.w + ' kazandı, ' + x.l + ' stop)'; });
+    }
+  } catch (e) {}
   if (T && T.n) msg += '\n\n🚀 <b>Tavan takibi</b> — ' + T.n + ' hisse · açılış ort. ' + (T.g >= 0 ? '+' : '') + '%' + (+T.g).toFixed(1) + ' · %' + pc(T.up, T.n) + ' yukarı açıldı';
   if (K.length) { msg += '\n\n📰 <b>KAP (en iyi ve en kötü)</b>'; const ks = K.map(r => ({ k: r.src.slice(4), n: r.n, p: pc(r.h, r.h + r.s) })).sort((a, b) => b.p - a.p); [...ks.slice(0, 2), ...ks.slice(-2)].filter((x, i, a) => a.indexOf(x) === i).forEach(x => { msg += '\n   ' + esc(KAP_TR[x.k] || x.k) + ': %' + x.p + ' (' + x.n + ')'; }); }
   try { const P = await paperCalc(env, true), W = P.days.filter(x => x.d >= from); if (W.length) { const pl = W.reduce((a, x) => a + x.pl, 0), n = W.reduce((a, x) => a + x.n, 0); msg += '\n\n🤖 <b>Kâğıt üzerinde bot</b> — bu hafta ' + n + ' işlem → <b>' + (pl >= 0 ? '+' : '−') + Math.abs(pl).toLocaleString('tr-TR') + ' TL</b> · ' + W.filter(x => x.pl > 0).length + '/' + W.length + ' gün kârda'; }

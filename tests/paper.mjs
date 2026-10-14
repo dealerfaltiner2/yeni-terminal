@@ -36,7 +36,7 @@ ok('ayar sınırları', c.amt === 1000 && c.max === 30 && c.srcs.join() === 'alg
     { ...R('2026-10-02', T('14:00'), 'firsat-B', 'C1', 10, 2, 2, -2), tx: -1, pbn: 1, pb: -1 },
     { ...R('2026-10-02', T('15:00'), 'firsat-B', 'D1', 10, 1, 1, 2), tx: 0.5, pbn: null, pb: null } ];
   const v = paperSim(rr, { amt: 10000, max: 5, slip: 0 }, '2026-10-02'), B = Object.fromEntries(v.bots.map(b => [b.k, b]));
-  ok('yarış: 12 bot, en çok kazanan en üstte', v.bots.length === 12 && v.bots[0].pl >= v.bots[11].pl);
+  ok('yarış: 13 bot, en çok kazanan en üstte', v.bots.length === 13 && v.bots[0].pl >= v.bots[12].pl);
   ok('mevcut bot = ana bot', B.mevcut.pl === v.tot.pl && B.mevcut.n === 4, B.mevcut.pl + ' / ' + v.tot.pl);
   ok('güçlüler: zayıf Algı alınmaz', B.guclu.n === 3);
   ok('öğle arası: 11:30 sinyali alınmaz', B.saat.n === 3 && B.saat.pl === -100, B.saat.pl);
@@ -50,6 +50,9 @@ ok('ayar sınırları', c.amt === 1000 && c.max === 30 && c.srcs.join() === 'alg
     ok('Momentum + dün güçlü: yalnız yc≥0,7 olan Momentum', MG.n === 1 && MG.pl === 150, JSON.stringify(MG));
     { const ex2 = [R('2026-10-02', T('10:33'), 'momentum', 'Q1', 10, 2, 1, 0.5, { o41: 1, h1: 5 }), R('2026-10-02', T('10:34'), 'momentum', 'Q2', 10, 2, 2, 0.5, { o41: 0, h1: 0.5 }), R('2026-10-02', T('10:35'), 'momentum', 'Q3', 10, 2, 2, 0.5, { o41: null, h1: null })];
       const v4 = paperSim([...rr, ...ex2], { amt: 10000, max: 5, slip: 0 }, '2026-10-02'), B4 = v4.bots.find(b => b.k === 'mom4'), BH = v4.bots.find(b => b.k === 'momh');
+      { const ex6 = [R('2026-10-02', T('10:33'), 'momentum', 'Q1', 10, 2, 1, 0.5, { o315: 1 }), R('2026-10-02', T('10:34'), 'momentum', 'Q2', 10, 2, 2, 0.5, { o315: 2 }), R('2026-10-02', T('10:35'), 'momentum', 'Q3', 10, 2, 2, 0.5, { o315: 0 }), R('2026-10-02', T('10:36'), 'momentum', 'Q4', 10, 2, 2, 0.5, { o315: -1 })];
+        const B6 = paperSim([...rr, ...ex6], { amt: 10000, max: 5, slip: 0 }, '2026-10-02').bots.find(b => b.k === 'mom315');
+        ok('Momentum +%3/−%1,5 botu: +3, −1,5, gün sonu; ölçülmeyen eksik', B6 && B6.n === 3 && B6.pl === 300 - 150 + 50 && B6.eksik === 1 && B6.w === 1 && B6.l === 1, JSON.stringify(B6)); }
       ok('Momentum +%4/−%1 botu: +4 ve gün sonu, ölçülmeyen eksik', B4.n === 2 && B4.pl === 400 + 50 && B4.eksik === 1, JSON.stringify(B4));
       { const ex3 = [R('2026-10-02', T('12:01'), 'oglen', 'O1', 10, 2, 2, 0.5, { h1: -1 }), R('2026-10-02', T('12:01'), 'oglen', 'O2', 10, 2, 2, 0.5, { h1: 2.5 })];
         const v5 = paperSim([...rr, ...ex3], { amt: 10000, max: 5, slip: 0 }, '2026-10-02'), BO = v5.bots.find(b => b.k === 'oglen');
