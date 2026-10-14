@@ -19,3 +19,17 @@ export function tgQuote(msg) {
   }
   return out.join('\n').replace(/<\/blockquote>\n(?!\n)/g, '</blockquote>');
 }
+// v10.8 // Karne mesajının piyasa bölümü ('   ' ile başlayan satırlar tgQuote ile alıntı kutusuna döner)
+export function mktBlock(v, esc) {
+  if (!v || !v.idx || !v.idx.length) return '';
+  const pct = x => (x >= 0 ? '+' : '−') + '%' + Math.abs(x).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const AD = { XU100: 'BIST 100', XU030: 'BIST 30', XBANK: 'Banka' };
+  const x1 = v.idx.find(x => x.s === 'XU100') || v.idx[0], rest = v.idx.filter(x => x !== x1);
+  let t = '\n\n🧭 <b>Piyasa</b>\n   ' + (AD[x1.s] || esc(x1.s)) + '   <code>' + Math.round(x1.c).toLocaleString('tr-TR') + '</code>   <b>' + pct(x1.ch) + '</b>';
+  if (rest.length) t += '\n   ' + rest.map(x => (AD[x.s] || esc(x.s)) + ' ' + pct(x.ch)).join(' · ');
+  if (x1.hi > x1.lo) { const p = (x1.c - x1.lo) / (x1.hi - x1.lo); t += '\n   ' + (p >= 0.8 ? 'Günü en yüksek seviyelere yakın kapattı.' : p <= 0.2 ? 'Günü en dipte kapattı, toparlanma olmadı.' : 'Günü gün içi aralığın ortasında kapattı.'); }
+  if (v.nu + v.nd) t += '\n   ' + v.nu + ' hisse yükseldi, ' + v.nd + ' hisse düştü.';
+  if (v.up && v.up.length) t += '\n   🟢 ' + v.up.map(x => esc(x.s) + ' ' + pct(x.ch)).join(' · ');
+  if (v.dn && v.dn.length) t += '\n   🔴 ' + v.dn.map(x => esc(x.s) + ' ' + pct(x.ch)).join(' · ');
+  return t;
+}

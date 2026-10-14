@@ -1,7 +1,7 @@
 import { tgPlain } from './tgfmt.js';
 import { flowRoute } from './flow.js';
 import { kaphStep } from './kaph.js';
-import { tavanScan } from './tavan.js';
+import { tavanScan, mktClose } from './tavan.js';
 import { posRoute, posWatch } from './pos.js';
 import { pushRoute, pushSend } from './push.js';
 import { ecalPoll, ecalRoute } from './ecal.js';
@@ -1040,6 +1040,7 @@ export default {
       } catch (e) {}
       if (!kapAlive) await kapJob();
       try { await botWatch(env, tgSend, kvGet); } catch (e) {}
+      try { await mktClose(env, { scanRaw }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'kapanış özeti: ' + String(e && e.message || e).slice(0, 150), 'mktClose'); }   // v10.8: karne mesajının piyasa bölümü
       try { await tavanScan(env, { scanRaw, sigAdd, tgSend, kvGet, esc, pushSend }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'tavan takibi: ' + String(e && e.message || e).slice(0, 150), 'tavanScan'); }
       try { await posWatch(env, { scanRaw, kvGet, tgSend, esc, pushSend }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'pozisyon asistanı: ' + String(e && e.message || e).slice(0, 150), 'posWatch'); }
       await hb('3-KAP bitti');

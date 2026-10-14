@@ -24,6 +24,7 @@ for (let i = 0; i < 3; i++) await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, 
 ok('CCC ölçüldü, BBB (verisiz) bekliyor', db.prepare("SELECT count(*) n FROM sig WHERE done=0").get().n === 1);
 ok('21:00 öncesi eksikken rapor gitmedi', sent.length === 0);
 ok('veri gelmeyen hisse toparlama olarak deftere yazıldı', db.prepare("SELECT count(*) n FROM err WHERE kind='toparlama'").get().n >= 1);
+db.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('mkt_close', ?)").run(JSON.stringify({ d: '2026-10-01', idx: [{ s: 'XU100', c: 12118.3, ch: -1.08, hi: 12253, lo: 12118 }, { s: 'XBANK', c: 1, ch: -1.35 }], up: [{ s: 'PASEU', ch: 7.24 }], dn: [{ s: 'TKFEN', ch: -7.46 }], nu: 150, nd: 380 }));
 tgOk = false; at('21:01'); await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf);
 ok('Telegram reddinde rapor gönderildi sayılmadı', sent.length === 1 && !meta('sigsum'));
 ok('rapor hatası deftere yazıldı', db.prepare("SELECT count(*) n FROM err WHERE msg LIKE 'karne raporu gönderilemedi%'").get().n === 1);
@@ -31,6 +32,7 @@ at('21:05'); await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf); ok('10 dk 
 tgOk = true; at('21:12'); await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf); ok('10 dk sonra gönderildi', sent.length === 2 && meta('sigsum') === '2026-10-01');
 at('21:20'); await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf); ok('bir kez gönderildikten sonra tekrar yok', sent.length === 2);
 ok('raporda veri gelmedi notu', /veri gelmedi/.test(sent[1]));
+ok('karne raporunun başında piyasa özeti (alıntı kutusunda)', /🧭 <b>Piyasa<\/b>\n<blockquote>BIST 100   <code>12\.118<\/code>/.test(sent[1]) && /Banka −%1,35/.test(sent[1]) && /150 hisse yükseldi, 380 hisse düştü/.test(sent[1]) && /🔴 TKFEN −%7,46<\/blockquote>/.test(sent[1]) && sent[1].indexOf('Piyasa') < sent[1].indexOf('radar'), JSON.stringify(sent[1].slice(0, 600)));
 // 01.10: ölçüm yarıda kesilirse (Cloudflare sınırı) aynı hisseler sonsuza dek takılmasın; kesen hisse ayıklansın
 const { sigOutcome } = await import(path.join(W, 'sig.js'));
 { const TR = 3 * 3600e3, day = ms => new Date(ms + TR).toISOString().slice(0, 10);

@@ -1,4 +1,4 @@
-import { tgQuote } from './tgfmt.js';
+import { tgQuote, mktBlock } from './tgfmt.js';
 // v5.7 SİNYAL KARNESİ — her sinyal kaydedilir, seans bitince 1 dk mumlarla sonucu ölçülür, 18:20'de Telegram özeti.
 // Sonuç kodları (o10 = ±%1, o15 = ±%1,5): 1 = hedef önce, 2 = stop önce (aynı mumda ikisi → stop, temkinli), 0 = ikisi de yok.
 // v9.0 (09.10, Fatih): BAŞARI = sinyalden sonra +%3 gelmesi, stop −%1, gün kapanışı baz alınmaz → o31 (aynı gün; 0 = ikisi de gelmedi = sonuçsuz).
@@ -346,6 +346,8 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
   const line = (h, s) => (h + s ? (h ? '✅ ' + h + ' kazandı' : '') + (h && s ? ' · ' : '') + (s ? '❌ ' + s + ' kaybetti' : '') + ' → <b>%' + pc(h, h + s) + '</b>' : 'sonuçlanan yok');
   const d = today.split('-');
   let msg = '📊 <b>Sinyal karnesi</b>   <i>' + d[2] + '.' + d[1] + '</i>\n<i>Başarı: sinyalden sonra −%1\'e düşmeden +%3 geldi mi? (gün içinde ikisi de gelmeyen sayılmaz)</i>';
+  // v10.8: en üstte kısa piyasa özeti (18:12'de tavan.js mktClose → meta 'mkt_close'; yoksa bölüm çıkmaz)
+  try { const mk = await env.BT.prepare("SELECT v FROM meta WHERE k = 'mkt_close'").first(); const mv = mk ? JSON.parse(mk.v) : null; if (mv && mv.d === today) msg += mktBlock(mv, esc); } catch (e) {}
   const ORD = ['firsat-A', 'firsat-B', 'algi', 'momentum', 'radar'], rk = x => { const i = ORD.indexOf(x); return i < 0 ? 99 : i; };
   for (const r of R.filter(r => !String(r.src).startsWith('kap-') && r.src !== 'tavan' && r.src !== 'sessiz' && r.src !== 'dunguclu' && r.src !== 'oglen').sort((a, b) => rk(a.src) - rk(b.src))) {
     msg += '\n\n<b>' + esc(SRC_AD[r.src] || r.src) + '</b> — ' + r.n + ' sinyal\n   ' + line(r.h, r.s);

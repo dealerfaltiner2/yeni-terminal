@@ -24,3 +24,27 @@ export async function tavanScan(env, h) {
   }
   return { n: L.length };
 }
+// v10.8 (14.10, Fatih: 'karne raporunun başına kısa piyasa özeti') — 18:12'den sonra bir kez: endeksler + çok işlem görenlerde
+// günün en çok yükselen/düşen 3'er hissesi + kaç hisse yükseldi/düştü → meta 'mkt_close'. Karne mesajı (sig.js sigSummary) en üstte kullanır.
+// Yalnız bilinen tarama alanları (name, close, change, high, low, volume) — bilinmeyen alan taramayı bozar.
+export async function mktClose(env, h) {
+  const d = new Date(Date.now() + TRMS), wd = d.getUTCDay(), m = d.getUTCHours() * 60 + d.getUTCMinutes(), day = d.toISOString().slice(0, 10);
+  if (wd < 1 || wd > 5 || m < 1092 || m > 1260) return null;
+  const done = await env.BT.prepare("SELECT v FROM meta WHERE k = 'mkt_close'").first();
+  try { if (done && JSON.parse(done.v).d === day) return null; } catch (e) {}
+  const scan = async b => (await h.scanRaw(env, JSON.stringify(b))).json();
+  const ix = await scan({ symbols: { tickers: ['BIST:XU100', 'BIST:XU030', 'BIST:XBANK'], query: { types: [] } }, columns: ['name', 'close', 'change', 'high', 'low'] });
+  const idx = (ix.data || []).map(x => ({ s: String(x.s).split(':').pop(), c: x.d[1], ch: x.d[2], hi: x.d[3], lo: x.d[4] })).filter(x => x.c > 0);
+  if (!idx.length) return null;   // veri yok → sonraki dakika yeniden
+  const side = async (op, ord) => {
+    const j = await scan({ filter: [{ left: 'type', operation: 'equal', right: 'stock' }, { left: 'change', operation: op, right: 0 }], columns: ['name', 'close', 'change', 'volume'], sort: { sortBy: 'change', sortOrder: ord }, range: [0, 60] });
+    const L = (j.data || []).map(x => ({ s: String(x.s).split(':').pop(), c: x.d[1], ch: x.d[2], tl: (x.d[1] || 0) * (x.d[3] || 0) }))
+      .filter(x => x.tl >= 100e6 && Math.abs(x.ch) < 9.4).slice(0, 3)   // 100 Mn TL üstü işlem; tavan/taban zaten karnede ayrı
+      .map(x => ({ s: x.s, ch: Math.round(x.ch * 100) / 100 }));
+    return { L, n: +j.totalCount || 0 };
+  };
+  const up = await side('greater', 'desc'), dn = await side('less', 'asc');
+  const v = { d: day, idx, up: up.L, dn: dn.L, nu: up.n, nd: dn.n };
+  await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('mkt_close', ?)").bind(JSON.stringify(v)).run();
+  return v;
+}
