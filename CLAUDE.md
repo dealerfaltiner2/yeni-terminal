@@ -211,3 +211,5 @@ Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ"
 - v10.3 (14.10, Fatih onayıyla) CAM GÖRÜNÜM (yalnız CSS, mantık yok): html.cam sınıfı (varsayılan açık; LS 'tema' = 'cam' | 'klasik'; Ayarlar → GÖRÜNÜM → Tema, temaSet()). index.html'deki son <style> bloğunun sonunda 'v10.3 CAM GÖRÜNÜM' bölümü.
   Gerçek bulanıklık (backdrop-filter) YALNIZ #top, #tabs, .nhero, .yrm, #more .sh — diğer kartlar (.nrow .nk .ncal .pp2 .xsearch .nempty .nqa) yarı saydam 'sahte cam' (iPhone pil/akıcılık). --panel opak kalır (pencereler okunur).
   Önizleme: Design canvas 'Pusula cam görünüm önizleme'. Sıradaki: Fırsat, Algı, Karne, Röntgen ekranları aynı dille (Fatih onayıyla).
+- v10.4 (14.10): 06.10'dan beri Fırsat sinyallerinin karnesinde 'kurulum' (pull = geri çekilme, kvw = Keskin VWAP, vcp, poc) hep BOŞTU — sinyaller motorun otomatik taramasından (autoRun) geliyor, o yolda S.deep yok.
+  deepFlags(sym,dir,a): taze S.deep varsa onu, yoksa analyze() sonucundan (a.pull, a.kvw, a.vcp, POC yakınlığı) üretir; sigRecord (meta.kurulum, sigHist.setups) ve autoRun Telegram 'Kurulum:' satırı kullanır. Sinyal kuralı/puan DEĞİŞMEDİ.

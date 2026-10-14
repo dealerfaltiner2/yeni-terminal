@@ -781,7 +781,7 @@ async function autoRun(manual){
       htmlEsc(c.o.description||'')+'\n'+
       'Fiyat: '+nf(c.o.close)+' ('+pct(c.o.change)+')\n'+
       (dir==='AL'?'Hedef <b>'+nf(c.o.close*1.03)+'</b> (+%3) · Stop <b>'+nf(c.o.close*0.99)+'</b> (−%1)\n':'')+
-      'Kurulum: '+c.ss.map(x=>htmlEsc(SNAME[x])).join(', ')+'\n'+
+      'Kurulum: '+c.ss.map(x=>htmlEsc(SNAME[x])).concat(deepFlags(c.o.name,dir,a).map(x=>htmlEsc(SNAME[x]||x))).join(', ')+'\n'+
       '4S teyit: '+(htfOk?'✓ uyumlu':'✗')+' · Puan: '+Math.round(c.sc)+'\n'+
       (a.ref?('POC '+nf(a.ref.poc)+' · VAH '+nf(a.ref.vah)+' · VAL '+nf(a.ref.val)+'\n'):'')+
       sigNoteTxt(c.o.name).replace(/^\n/,'')+(sigNotes(c.o.name).length?'\n':'')+'#'+c.o.name+' #'+dir;
@@ -2342,14 +2342,19 @@ function extBadges(n){
  if(x.bil&&x.bil[n]){const d=Math.ceil((new Date(x.bil[n])-Date.now())/864e5);if(d>=0&&d<=7)b.push('<span class="tag t2" title="Bilanço">⚠️Bilanço'+(d>=0?' '+d+'g':'')+'</span>')}
  return b.join('');
 }
+// v10.4 (14.10): derin tarama kurulumları (geri çekilme, Keskin VWAP, VCP, POC) otomatik taramada da (motor) karneye ve Telegram'a yazılsın.
+// 06.10'dan beri sinyaller motorun otomatik taramasından geliyordu; o yolda S.deep yoktu → kurulum hep boş kalıyordu. Sinyal kuralı DEĞİŞMEDİ.
+function deepFlags(sym,dir,a){const dp=S.deep[sym];if(dp&&dp.dir===dir&&dp.fl&&Date.now()-(dp.t||0)<30*60e3&&Object.keys(dp.fl).length)return Object.keys(dp.fl);
+ const f=[];if(!a)return f;if(a.vcp&&dir==='AL')f.push('vcp');if(a.pull&&dir==='AL')f.push('pull');if(a.kvw&&a.kvw.side===dir)f.push('kvw');
+ if(a.ref&&a.pocD!=null){const near=dir==='AL'?Math.min(Math.abs(a.pocD),Math.abs(a.valD)):Math.min(Math.abs(a.pocD),Math.abs(a.vahD));if(near<=0.6)f.push('poc')}return f}
 function sigRecord(sym,dir,a){
  const key=sym+'|'+dir+'|'+new Date().toISOString().slice(0,10);
  if(S.sigHist.some(r=>r.k===key))return;
  const o=S.umap[sym]||{};
- S.sigHist.unshift({k:key,sym:sym,dir:dir,ts:Date.now(),close:o.close||null,atrP:(a&&a.atrPct!=null)?a.atrPct:null,setups:Object.keys((S.deep[sym]&&S.deep[sym].fl)||{}),regime:S.reg?S.reg.mode:'-',grade:a?a.grade:null});
+ S.sigHist.unshift({k:key,sym:sym,dir:dir,ts:Date.now(),close:o.close||null,atrP:(a&&a.atrPct!=null)?a.atrPct:null,setups:deepFlags(sym,dir,a),regime:S.reg?S.reg.mode:'-',grade:a?a.grade:null});
  if(S.sigHist.length>200)S.sigHist.length=200;
  LS.set('sigHist',S.sigHist);
- if(a&&a.side===dir&&(a.grade==='A'||a.grade==='B'))sigPost({src:'firsat-'+a.grade,sym:sym,dir:dir,px:o.close,sc:a.pts!=null?a.pts:null,meta:{atr:(a&&a.atrPct!=null)?+(+a.atrPct).toFixed(2):null,kurulum:Object.keys((S.deep[sym]&&S.deep[sym].fl)||{}).slice(0,6),rejim:S.reg?S.reg.mode:'-'}});
+ if(a&&a.side===dir&&(a.grade==='A'||a.grade==='B'))sigPost({src:'firsat-'+a.grade,sym:sym,dir:dir,px:o.close,sc:a.pts!=null?a.pts:null,meta:{atr:(a&&a.atrPct!=null)?+(+a.atrPct).toFixed(2):null,kurulum:deepFlags(sym,dir,a).slice(0,6),rejim:S.reg?S.reg.mode:'-'}});
 }
 /* ================= sinyal → işlem günlüğü bağlantısı ================= */
 function seenAAdd(sym,dir){
@@ -3259,7 +3264,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="10.3";window.APPV=APP_VER;
+  const APP_VER="10.4";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');

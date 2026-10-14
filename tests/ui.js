@@ -106,6 +106,8 @@ async function page(b, opt) {
       ok('Temettü: yarın hak kullanımı uyarısı ve karne notu (dv)', /Yarın temettü hak kullanımı/.test(dvx.n) && dvx.dv === 1, JSON.stringify(dvx));
       const tm = await T(() => { const a = document.documentElement.classList.contains('cam'); temaSet('klasik'); const b = document.documentElement.classList.contains('cam'), on = (document.querySelector('#temaseg button.on') || {}).dataset; temaSet('cam'); return { a, b, on: on && on.v, c: document.documentElement.classList.contains('cam') }; });
       ok('Cam görünüm: varsayılan açık, Klasik ile kapanır, geri açılır', tm.a && !tm.b && tm.on === 'klasik' && tm.c, JSON.stringify(tm));
+      const dfx = await T(() => { delete S.deep.ZZQ; return { al: deepFlags('ZZQ', 'AL', { pull: { bars: 2 }, kvw: { side: 'AL' }, ref: {}, pocD: 0.3, valD: 2, vahD: 2 }), sat: deepFlags('ZZQ', 'SAT', { pull: { bars: 2 }, kvw: { side: 'AL' } }) }; });
+      ok('Otomatik taramada derin kurulumlar (geri çekilme, Keskin VWAP, POC) karneye yazılır', dfx.al.join() === 'pull,kvw,poc' && dfx.sat.length === 0, JSON.stringify(dfx));
       const pp = await T(() => { paperLoad(true); return new Promise(res => setTimeout(() => { const now = paperCard(), full = paperFull(); res({ now, full }); }, 1500)); });
       ok('Kâğıt bot: Şimdi kartı toplam TL gösteriyor', /Kâğıt üzerinde bot/.test(pp.now) && /\+140 TL/.test(pp.now) && /BOTUN KASASI/.test(pp.now), pp.now.slice(0, 200));
       ok('Kâğıt bot: Karne bölümü gün gün, kaynak ve açık işlem tablosu', /Gün gün/.test(pp.full) && /botta kapalı/.test(pp.full) && /ASELS/.test(pp.full) && /Botun kuralları/.test(pp.full) && /Bot yarışı/.test(pp.full) && /henüz ölçülmedi/.test(pp.full) && /YARIŞINDA ÖNDE/.test(pp.now));
