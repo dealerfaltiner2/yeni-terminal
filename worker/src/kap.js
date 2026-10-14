@@ -1,3 +1,4 @@
+import { tgKb, tgPct } from './tgfmt.js';
 // v5.8 KAP HABER — KAP'ın kendi JSON API'si (tek istekte günün TÜM bildirimleri), dakikada bir.
 // Her bildirim: sınıflandır (tür, yön, önem) → D1 'kap' tablosu → önemliyse Telegram → Sinyal Karnesi'ne (src 'kap-<tür>')
 // yazılır; seans sonrası tepkisi ölçülür. Gece gelen önemliler 09:30'da tek mesajda özetlenir.
@@ -82,12 +83,13 @@ async function kapEnsure(env) {
   ]);
   ready = true;
 }
+// v10.6 (14.10): tek tip başlık, haber metni alıntı kutusunda, fiyat kopyalanır; bağlantı yerine altta 'KAP'ta oku' + 'Grafik' düğmeleri
 function kapMsg(r, esc, q) {
-  const ic = r.yon > 0 ? '🟢' : r.yon < 0 ? '🔴' : '⚪';
+  const yon = r.yon > 0 ? '🟢 olumlu' : r.yon < 0 ? '🔴 olumsuz' : '⚪ yönü belirsiz';
   const hm = new Date(r.t + TRMS).toISOString().slice(11, 16);
-  const px = q ? '\nFiyat ' + q.close + ' · Gün ' + (q.change >= 0 ? '+' : '') + (Math.round(q.change * 100) / 100) + '%' : '';
-  const sm = r.summ && r.summ !== r.subj ? '\n' + esc(String(r.summ).slice(0, 220)) : '';
-  return ic + ' <b>KAP · ' + esc(r.syms) + '</b> · ' + esc(KAP_AD[r.tip] || r.tip) + ' · ' + hm + '\n' + esc(String(r.subj || '').slice(0, 120)) + sm + px + '\nhttps://www.kap.org.tr/tr/Bildirim/' + r.idx;
+  const subj = String(r.subj || '').slice(0, 120), sm = r.summ && r.summ !== r.subj ? String(r.summ).slice(0, 220) : '';
+  const px = q && q.close ? 'Hisse <code>' + Number(q.close).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</code>  bugün ' + tgPct(q.change) + ' · ' : '';
+  return '📰 <b>KAP · ' + esc(r.syms) + '</b>   <i>' + yon + ' · ' + esc(KAP_AD[r.tip] || r.tip) + '</i>\n<blockquote>' + (sm ? '<b>' + esc(subj) + '</b>\n' + esc(sm) : esc(subj)) + '</blockquote>' + px + 'saat ' + hm;
 }
 // Telegram kuralı: önem 3 → her hisse; önem 2 (yönlü ya da bilanço) → XU100 + izleme listesi; izleme listesi → önem ≥ 1
 function wantTg(r, big, watch) {
@@ -175,7 +177,7 @@ export async function kapPoll(env, h) {
   }
   let sent = 0;
   let pn = 0;
-  for (const r0 of toSend.filter(x => isNew.has(x.idx)).slice(0, 8)) { const q = Q[r0.syms.split(',')[0]]; const t = await h.tgSend(cfg, kapMsg(r0, h.esc, q)); if (t && t.ok) sent++;
+  for (const r0 of toSend.filter(x => isNew.has(x.idx)).slice(0, 8)) { const q = Q[r0.syms.split(',')[0]]; const t = await h.tgSend(cfg, kapMsg(r0, h.esc, q), tgKb(r0.syms.split(',')[0], r0.idx)); if (t && t.ok) sent++;
     // v8.2: iPhone bildirimi (çalışma başına en çok 2 — işlemci sınırı)
     if (h.pushSend && pn < 2) { pn++; try { const s0 = r0.syms.split(',')[0]; await h.pushSend(env, { cat: 'kap', title: '📰 KAP · ' + s0 + ' · ' + (KAP_AD[r0.tip] || r0.tip), body: String(r0.subj || '') + (r0.summ ? ' — ' + r0.summ : '') + (q && q.close ? ' · ' + q.close + ' (' + (q.change >= 0 ? '+' : '') + (+q.change).toFixed(2) + '%)' : ''), url: './?s=' + s0, tag: 'kap' + r0.idx }, 2); } catch (e) {} } }
   return { yeni: rows.length, telegram: sent };
@@ -189,9 +191,9 @@ export async function kapMorning(env, h) {
   const rs = (await env.BT.prepare('SELECT idx,t,syms,subj,summ,tip,yon,onem FROM kap WHERE sent = 0 ORDER BY onem DESC, idx DESC LIMIT 25').all()).results || [];
   if (!rs.length) return null;
   const cfg = await h.kvGet(env, 'cfg', null);
-  const lines = rs.map(r => (r.yon > 0 ? '🟢' : r.yon < 0 ? '🔴' : '⚪') + ' <b>' + h.esc(r.syms) + '</b> · ' + h.esc(KAP_AD[r.tip] || r.tip) + ' · ' + new Date(r.t + TRMS).toISOString().slice(5, 16).replace('T', ' ').replace(/^(\d\d)-(\d\d)/, '$2.$1') + '\n   ' + h.esc(String(r.summ || r.subj).slice(0, 110)));
+  const lines = rs.map(r => (r.yon > 0 ? '🟢' : r.yon < 0 ? '🔴' : '⚪') + ' <b>' + h.esc(r.syms) + '</b> · ' + h.esc(KAP_AD[r.tip] || r.tip) + ' · <i>' + new Date(r.t + TRMS).toISOString().slice(5, 16).replace('T', ' ').replace(/^(\d\d)-(\d\d)/, '$2.$1') + '</i>\n<blockquote>' + h.esc(String(r.summ || r.subj).slice(0, 110)) + '</blockquote>');
   // 01.10: Telegram tek mesajda en çok 4096 karakter → ~3500'lük parçalar; yalnız GİDEN satırlar 'gönderildi' işaretlenir
-  const parts = []; let cur = '🌅 <b>GECE GELEN ÖNEMLİ KAP\'LAR</b> (' + rs.length + ')\n', curIdx = [];
+  const parts = []; let cur = '🌅 <b>Gece gelen önemli KAP haberleri</b>   <i>' + rs.length + ' haber</i>\n', curIdx = [];
   rs.forEach((r, i) => { if (cur.length + lines[i].length > 3500 && curIdx.length) { parts.push([cur, curIdx]); cur = ''; curIdx = []; } cur += '\n' + lines[i]; curIdx.push(r.idx); });
   if (curIdx.length) parts.push([cur, curIdx]);
   let ok = 0;

@@ -1,3 +1,4 @@
+import { tgKb, tgPct } from './tgfmt.js';
 // v8.2 POZİSYON ASİSTANI — "Aldım" denen işlemleri sunucu dakikada bir izler (telefon kapalı olsa da).
 // D1 meta 'pos' = [{id, sym, e, sp, tp, lot, src, t, f:{up1,near,tp,sp}}]. Uyarılar: Telegram + iPhone bildirimi (kategori 'poz').
 // +%1'de "stopu girişe çek", stopa %0,3 kala "dikkat", hedef/stop geldi, 17:45'te "açık pozisyonun var" hatırlatması. 18:15'ten sonra liste temizlenir.
@@ -31,7 +32,7 @@ export async function posWatch(env, h) {
   const j = await r.json(); const Q = {}; (j.data || []).forEach(x => { Q[String(x.s).split(':').pop()] = x.d[1]; });
   const cfg = await h.kvGet(env, 'cfg', null);
   const say = async (title, body, sym, tag) => {
-    try { await h.tgSend(cfg, '<b>' + h.esc(title) + '</b>\n' + h.esc(body)); } catch (e) {}
+    try { await h.tgSend(cfg, '<b>' + h.esc(title) + '</b>\n<blockquote>' + h.esc(body) + '</blockquote>', tgKb(sym)); } catch (e) {}   // v10.6: alıntı kutusu + Grafik düğmesi
     try { await h.pushSend(env, { cat: 'poz', title, body, url: './?s=' + sym, tag }, 3); } catch (e) {}
   };
   let dirty = false, n = 0;
@@ -39,7 +40,7 @@ export async function posWatch(env, h) {
   for (const x of L) {
     const p = Q[x.sym]; if (!(p > 0)) { keep.push(x); continue; }
     const ch = (p / x.e - 1) * 100, f = x.f || (x.f = {});
-    const st = '\nGiriş ' + nf(x.e) + ' · şimdi ' + nf(p) + ' (' + (ch >= 0 ? '+' : '') + nf(ch) + '%)';
+    const st = '\nGiriş ' + nf(x.e) + ' · şimdi ' + nf(p) + ' · ' + tgPct(ch);
     if (p <= x.sp && !f.sp) { f.sp = 1; dirty = true; n++; await say('🛑 ' + x.sym + ' · stop seviyesi geldi', 'Stop ' + nf(x.sp) + st + '\nPlanına göre çık; izleme kapatıldı.', x.sym, 'poz' + x.id); continue; }
     if (x.tp && p >= x.tp && !f.tp) { f.tp = 1; dirty = true; n++; await say('🎯 ' + x.sym + ' · hedef geldi', 'Hedef ' + nf(x.tp) + st + '\nKârı al ya da stopu yükselterek devam et; izleme kapatıldı.', x.sym, 'poz' + x.id); continue; }
     if (ch >= 1 && !f.up1) { f.up1 = 1; dirty = true; n++; await say('📈 ' + x.sym + ' · +%1 kârda', 'Stopu giriş fiyatına (' + nf(x.e) + ') çekebilirsin; böylece işlem en kötü başa baş biter.' + st, x.sym, 'poz' + x.id); }

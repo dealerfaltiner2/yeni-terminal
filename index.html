@@ -724,12 +724,35 @@ window.addEventListener('error',function(e){
 $('#autoseg').onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;S.autoOn=+b.dataset.a;LS.set('autoOn',S.autoOn);[...$('#autoseg').children].forEach(x=>x.classList.toggle('on',x===b));$('#tgmsg').textContent=S.autoOn?'Otomatik tarama açık. Sayfa açık kaldığı sürece hafta içi 10:00–18:10 arası 15 dakikada bir çalışır.':''};
 function htmlEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function safeUrl(u){u=String(u||'');return /^https?:\/\//i.test(u)?u:'#'}
-async function tgSend(text){
+async function tgSend(text,kb){
  if(!S.tgTok||!S.tgChat)throw new Error('Token/Chat ID girilmemiş');
- const r=await fetch('https://api.telegram.org/bot'+S.tgTok+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:S.tgChat,text,parse_mode:'HTML',disable_web_page_preview:true})});
- const j=await r.json();
+ const j=await tgPost(S.tgTok,S.tgChat,text,kb);
  if(!j.ok)throw new Error(j.description||'Telegram hatası');
  return j;
+}
+/* v10.6 TELEGRAM KART DÜZENİ (Fatih 14.10: 'daha akıcı ve modern'): tek tip başlık, fiyat kutusu (alıntı + kopyalanır rakam), düz Türkçe, katlanır ayrıntı, altta düğmeler.
+   Telegram biçimi reddederse (eski uygulama, bozuk etiket) aynı mesaj düz metin olarak bir kez daha gider — mesaj kaybolmaz. */
+async function tgPost(tok,chat,text,kb){
+ const send=(t,html)=>fetch('https://api.telegram.org/bot'+tok+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({chat_id:chat,text:t,disable_web_page_preview:true},html?{parse_mode:'HTML'}:{},kb?{reply_markup:kb}:{}))}).then(r=>r.json());
+ let j=await send(text,true);
+ if(!j.ok&&/parse|entit|tag|button|markup/i.test(j.description||'')){kb=null;j=await send(tgPlain(text),false)}
+ return j;
+}
+function tgPlain(t){return String(t).replace(/<\/blockquote>/g,'\n').replace(/<[^>]+>/g,'').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&')}
+function tgPct(x){return x==null||!isFinite(x)?'-':(x>=0?'+':'−')+'%'+nf(Math.abs(x),2)}
+function tgKb(sym,kapIdx){const r=[];if(kapIdx)r.push({text:"📄 KAP'ta oku",url:'https://www.kap.org.tr/tr/Bildirim/'+kapIdx});
+ if(sym&&/^[A-Z0-9]{2,8}$/.test(sym))r.push({text:'📈 Grafik',url:'https://www.tradingview.com/chart/?symbol=BIST%3A'+sym});return r.length?{inline_keyboard:[r]}:null}
+// o = {ic, dir, sym, src, name, px, ch, tp, sl, why:[satır…], note, more}
+function tgCard(o){
+ const L=[o.ic+' <b>'+(o.dir||'AL')+' · '+htmlEsc(o.sym)+'</b>   <i>'+o.src+'</i>'];
+ if(o.name)L.push(htmlEsc(o.name));
+ let t=L.join('\n')+'\n<blockquote>Giriş   <code>'+nf(o.px)+'</code>   bugün '+tgPct(o.ch)+
+  (o.tp?'\nHedef   <code>'+nf(o.tp)+'</code>   '+tgPct((o.tp/o.px-1)*100).replace(',00',''):'')+
+  (o.sl?'\nStop     <code>'+nf(o.sl)+'</code>   '+tgPct((o.sl/o.px-1)*100).replace(',00',''):'')+'</blockquote>';
+ const W=(o.why||[]).filter(Boolean);if(W.length)t+='📌 '+W.join('\n');
+ if(o.note)t+=o.note;
+ if(o.more)t+='\n<blockquote expandable>'+o.more+'</blockquote>';
+ return t;
 }
 async function tgTest(){
  const m=$('#tgmsg');m.textContent='gönderiliyor...';
@@ -778,16 +801,14 @@ async function autoRun(manual){
      const m4=tfmOf(c.o,'240');
      const htfOk=m4&&m4.htf===sign;
      if(!htfOk)continue;
-     const txt='<b>'+(dir==='AL'?'🟢 AL':'🔴 SAT')+'</b> · <b>'+htmlEsc(c.o.name)+'</b> · Not '+a.grade+'\n'+
-      htmlEsc(c.o.description||'')+'\n'+
-      'Fiyat: '+nf(c.o.close)+' ('+pct(c.o.change)+')\n'+
-      (dir==='AL'?'Hedef <b>'+nf(c.o.close*1.03)+'</b> (+%3) · Stop <b>'+nf(c.o.close*0.99)+'</b> (−%1)\n':'')+
-      'Kurulum: '+c.ss.map(x=>htmlEsc(SNAME[x])).concat(deepFlags(c.o.name,dir,a).map(x=>htmlEsc(SNAME[x]||x))).join(', ')+'\n'+
-      '4S teyit: '+(htfOk?'✓ uyumlu':'✗')+' · Puan: '+Math.round(c.sc)+'\n'+
-      (a.ref?('POC '+nf(a.ref.poc)+' · VAH '+nf(a.ref.vah)+' · VAL '+nf(a.ref.val)+'\n'):'')+
-      sigNoteTxt(c.o.name).replace(/^\n/,'')+(sigNotes(c.o.name).length?'\n':'')+'#'+c.o.name+' #'+dir;
+     const kur=c.ss.map(x=>SNAME[x]).concat(deepFlags(c.o.name,dir,a).map(x=>SNAME[x]||x)).filter(Boolean);
+     const txt=tgCard({ic:dir==='AL'?'🟢':'🔴',dir,sym:c.o.name,src:'Fırsat · '+a.grade+' notu',name:c.o.description||'',px:c.o.close,ch:c.o.change,
+      tp:dir==='AL'?c.o.close*1.03:null,sl:dir==='AL'?c.o.close*0.99:null,
+      why:[kur.length?htmlEsc(kur.join(' · ')):'',(dir==='AL'?'4 saatlik grafik de yukarı':'4 saatlik grafik de aşağı')+' · puan '+Math.round(c.sc)+'/100'],
+      note:sigNoteTxt(c.o.name),
+      more:a.ref?'Hacim profili: en çok işlem '+nf(a.ref.poc)+' · üst sınır '+nf(a.ref.vah)+' · alt sınır '+nf(a.ref.val):''});
      // v8.8 (Fatih: 'sadece önemli bildirimler'): SAT yalnız karneye yazılır. v9.2 (09.10, Fatih): B notlu AL da Telegram'a gider (hedef +%3 / stop −%1)
-     if((a.grade==='A'||a.grade==='B')&&dir==='AL')await tgSend(txt);
+     if((a.grade==='A'||a.grade==='B')&&dir==='AL')await tgSend(txt,tgKb(c.o.name));
      S.sentSig.push(key);sent++;
      beep();notify('BIST · Sinyal gönderildi',c.o.name+' '+dir);
      seenAAdd(c.o.name,dir);
@@ -3265,7 +3286,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="10.5";window.APPV=APP_VER;
+  const APP_VER="10.7";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3527,13 +3548,12 @@ function tvReconnectReport(){
  }
 
  /* ---------- Telegram (kisisel sohbet) ---------- */
- function tg(text){try{pushMsg('algi',text)}catch(e){}if(!AL.cfg.tg||!AL.cfg.chat||!S.tgTok)return;if(!BOTMODE&&S.botAlive)return;   // v7.4: motor gönderiyor
- AL.q.push(text);pump()}
+ function tg(text,kb){try{pushMsg('algi',tgPlain(text))}catch(e){}if(!AL.cfg.tg||!AL.cfg.chat||!S.tgTok)return;if(!BOTMODE&&S.botAlive)return;   // v7.4: motor gönderiyor
+ AL.q.push({t:text,kb});pump()}
  async function pump(){
   if(AL.qBusy)return;AL.qBusy=true;
-  while(AL.q.length){const t=AL.q.shift();
-   try{const r=await fetch('https://api.telegram.org/bot'+S.tgTok+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:AL.cfg.chat,text:t,parse_mode:'HTML',disable_web_page_preview:true})});
-    const j=await r.json();if(!j.ok)AL.err='Telegram: '+(j.description||'hata');else AL.err=''}
+  while(AL.q.length){const q=AL.q.shift();
+   try{const j=await tgPost(S.tgTok,AL.cfg.chat,q.t,q.kb);if(!j.ok)AL.err='Telegram: '+(j.description||'hata');else AL.err=''}
    catch(e){AL.err='Telegram: '+(e.message||e)}
    await sleep(1200)}
   AL.qBusy=false;
@@ -3541,13 +3561,11 @@ function tvReconnectReport(){
  const P=(x,d)=>nf(x,d==null?2:d);
  const sp=x=>(x>=0?'+':'−')+'%'+nf(Math.abs(x),2);
  function msgFire(e,f,o){
-  const fl=[];if(e.f.D)fl.push('bid tırmanıyor');if(f.brk)fl.push(f.abv?'kırılım, VWAP üstü':'kırılım');if(e.f.G)fl.push('tema: '+(o.sector||'-').slice(0,22)+' ('+e.g+')');
-  return '⚡ <b>ALGI · '+e.s+'</b> ateşleme'+(f.fc>=.8?' · 💪 <b>GÜÇLÜ</b>':'')+'\n'+
-   'Fiyat '+P(e.p0)+' · Gün '+sp(f.ch||0)+' · Skor <b>'+e.sc+'</b>\n'+
-   'Akış '+P(f.fa,1)+'x · RVOL '+(f.rv!=null?P(f.rv,1)+'x':'-')+' · Alım %'+nf((f.fc||0)*100,0)+
-   (fl.length?'\n✓ '+fl.join(' · '):'')+
-   '\nHedef <b>'+P(e.p0*1.03)+'</b> (+%3) · Stop <b>'+P(e.p0*0.99)+'</b> (−%1)'+   // v9.0: Fatih'in başarı tanımı
-   (e.f.sh?'\n⚠ Sığ hisse — manipülasyon riski':'')+(f.fc>=.8?'\n💪 Güçlü: alıcı oranı %80 üstü (deneme etiketi; karnede ayrı ölçülüyor)':'')+sigNoteTxt(e.s);
+  const fl=[];if(e.f.D)fl.push('alış emirleri yükseliyor');if(f.brk)fl.push(f.abv?'VWAP üstünde kırılım':'kırılım');if(e.f.G)fl.push('sektör birlikte yükseliyor: '+htmlEsc((o.sector?secTr(o.sector):'-').slice(0,22))+' ('+e.g+' hisse)');
+  const w1=['Alıcılar %'+nf((f.fc||0)*100,0)];if(f.rv!=null)w1.push('hacim normalin '+P(f.rv,1)+' katı');
+  return tgCard({ic:'⚡',dir:'AL',sym:e.s,src:'Algı'+(f.fc>=.8?' · 💪 güçlü':''),px:e.p0,ch:f.ch||0,tp:e.p0*1.03,sl:e.p0*0.99,   // v9.0: hedef +%3, stop −%1
+   why:[w1.join(' · '),fl.join(' · '),'Para girişi '+P(f.fa,1)+' kat hızlandı · skor '+e.sc+'/100'],
+   note:(e.f.sh?'\n⚠️ Az işlem gören hisse — fiyatı kolay oynatılabilir':'')+sigNoteTxt(e.s)});
  }
 
  /* ---------- ana dongu (5 sn) ---------- */
@@ -3607,7 +3625,7 @@ function tvReconnectReport(){
      e.mute=muted(sc);
      AL.log.push(e);AL.dirty=true;saveLog(true);
      st.cnt=0;st.cool=now+30*60000;stage='ates';
-     if(!e.mute&&f.fc>=.8)tg(msgFire(e,f,o));   // v8.8: Telegram'a yalnız 💪 GÜÇLÜ (karnede %60'a karşı %43); hepsi karneye yazılmaya devam eder
+     if(!e.mute&&f.fc>=.8)tg(msgFire(e,f,o),tgKb(sym));   // v8.8: Telegram'a yalnız 💪 GÜÇLÜ (karnede %60'a karşı %43); hepsi karneye yazılmaya devam eder
      sigPost({src:'algi',sym:sym,t:now,px:p0,sc:sc,dir:'AL',meta:{fa:f.fa!=null?+(+f.fa).toFixed(1):null,rv:f.rv!=null?+(+f.rv).toFixed(1):null,fc:f.fc!=null?+(+f.fc).toFixed(2):null,ch:f.ch!=null?+(+f.ch).toFixed(2):null,brk:!!f.brk,abv:!!f.abv,bid:!!f.fd,tema:!!gOk,endeks:!!hOk,sig:!(o.voltl>=1e7),sessiz:!!e.mute}});
      try{notify('⚡ Algı: '+sym,'Skor '+sc+' · '+nf(f.p))}catch(x){}
      try{if(window.sigToast){const w=[];if(f.fa>=2.5)w.push('Hacim normalin '+nf(f.fa,1)+' katı');else if(f.rv!=null&&f.rv>=2)w.push('Günlük hacim '+nf(f.rv,1)+' kat');if(f.fc!=null)w.push('Alıcı oranı %'+nf(f.fc*100,0));if(f.fe)w.push('30 dk zirvesini VWAP üstünde kırdı');else if(f.fd)w.push('Alış kademesi yükseliyor');if(gOk)w.push('Sektörde hareket var');
@@ -3644,13 +3662,13 @@ function tvReconnectReport(){
    ['5','15','30','60'].forEach(m=>{if(e['r'+m]==null&&el>=+m)e['r'+m]=ret});
    // teyit: 5 dk icinde +1R ve akis suruyor (hedefe ayni anda degdiyse yalnizca hedef mesaji gider)
    if(!e.conf&&el<=5&&ret>=e.stp&&f.fa>=2){e.conf=true;AL.dirty=true;
-    if(AL.cfg.sOk&&!e.mute&&p<e.tp&&e.res==null)tg('✅ <b>'+e.s+'</b> hareket geldi · '+sp(ret)+' ('+nf(el,0)+' dk) · akış '+P(f.fa,1)+'x')}
+    if(AL.cfg.sOk&&!e.mute&&p<e.tp&&e.res==null)tg('✅ <b>'+e.s+'</b> · hareket geldi\n<blockquote>Sinyalden beri <b>'+sp(ret)+'</b> · '+nf(el,0)+' dakikada</blockquote>',tgKb(e.s))}
    if(e.res==null){
     if(e.gap){if(el>=15){e.res='eksik';AL.dirty=true}}
     else if(p<=e.sp){e.res='fail';e.resT=el;AL.dirty=true;
-     if(AL.cfg.sFail&&!e.mute)tg('❌ <b>'+e.s+'</b> stop · '+P(p)+' ('+sp(ret)+', '+nf(el,0)+' dk)')}
+     if(AL.cfg.sFail&&!e.mute)tg('❌ <b>'+e.s+'</b> · stop oldu\n<blockquote>Fiyat <code>'+P(p)+'</code> · <b>'+sp(ret)+'</b> · '+nf(el,0)+' dakikada</blockquote>')}
     else if(p>=e.tp){e.res='hit';e.resT=el;AL.dirty=true;
-     if(AL.cfg.sOk&&!e.mute)tg('🎯 <b>'+e.s+'</b> hedef · '+P(p)+' ('+sp(ret)+', '+nf(el,0)+' dk)')}
+     if(AL.cfg.sOk&&!e.mute)tg('🎯 <b>'+e.s+'</b> · hedefe ulaştı\n<blockquote>Fiyat <code>'+P(p)+'</code> · <b>'+sp(ret)+'</b> · '+nf(el,0)+' dakikada</blockquote>')}
     else if(el>=15){e.res='flat';if(e.r15==null)e.r15=ret;AL.dirty=true}
    }
    const fromCeil=e.ceil&&f.lim>0&&p<f.lim;
@@ -3658,7 +3676,7 @@ function tvReconnectReport(){
    if(!e.fade&&e.hi>e.p0*1.008&&f.fa!=null&&f.fa<1.5&&(!f.abv||giveBack||fromCeil)){
     e.fade=true;AL.dirty=true;
     const why=fromCeil?'tavandan koptu':!f.abv?'VWAP altı':'zirveden geri veriyor';
-    if(AL.cfg.sFade&&!e.mute)tg('🟠 <b>'+e.s+'</b> sönüyor — '+why+'\nZirve '+sp((e.hi/e.p0-1)*100)+' · şimdi '+sp(ret)+' · akış '+P(f.fa,1)+'x')}
+    if(AL.cfg.sFade&&!e.mute)tg('🟠 <b>'+e.s+'</b> · hareket sönüyor\n<blockquote>'+why+'\nZirvede '+sp((e.hi/e.p0-1)*100)+' · şimdi <b>'+sp(ret)+'</b></blockquote>',tgKb(e.s))}
   });
  }
 
@@ -4998,11 +5016,9 @@ async function momScan(force){
   for(const x of out.slice(0,6)){
    const tp=x.px*1.03,sp=x.px*0.99;   // v9.0: hedef +%3, stop −%1 (Fatih'in başarı tanımı)
    sigPost({src:'momentum',sym:x.s,t:Date.now(),px:x.px,sc:Math.round(x.d5),dir:'AL',meta:{d1:+x.d1.toFixed(1),d5:+x.d5.toFixed(1),adr:+x.adr.toFixed(1),r30:+x.r30.toFixed(2),yc:x.yc!=null?+x.yc.toFixed(2):null}});
-   if(S.tgTok&&S.tgChat&&(BOTMODE||!S.botAlive)){try{await tgSend('🧪 <b>MOMENTUM (deneme) · '+htmlEsc(x.s)+'</b>\n'+
-    'Fiyat '+nf(x.px)+' · bugün '+pct(x.r30)+' · dün '+pct(x.d1)+' · 5 günde '+pct(x.d5)+'\n'+
-    'Günlük ortalama oynaklık %'+nf(x.adr,1)+(x.sec?' · '+htmlEsc(secTr(x.sec)):'')+'\n'+
-    'Hedef <b>'+nf(tp)+'</b> (+%3) · Stop <b>'+nf(sp)+'</b> (−%1) · ikisi de gelmezse 17:55\'te sat\n'+
-    '<i>Geçmişte −%1 gelmeden +%3 gelme oranı %33 (kâr için %25 yeter). Yatırım tavsiyesi değildir.</i>'+sigNoteTxt(x.s))}catch(e){}}
+   if(S.tgTok&&S.tgChat&&(BOTMODE||!S.botAlive)){try{await tgSend(tgCard({ic:'🧪',dir:'AL',sym:x.s,src:'Momentum (deneme)',px:x.px,ch:x.r30,tp,sl:sp,
+    why:['Dün '+tgPct(x.d1)+' · 5 günde '+tgPct(x.d5)+(x.sec?' · '+htmlEsc(secTr(x.sec)):''),'Günlük ortalama oynaklık %'+nf(x.adr,1),"İkisi de gelmezse 17:55'te sat"],
+    note:sigNoteTxt(x.s)+'\n<i>Geçmişte %33 hedefe ulaştı (kâr için %25 yeter). Yatırım tavsiyesi değildir.</i>'}),tgKb(x.s))}catch(e){}}
    try{pushMsg('momentum','🧪 MOMENTUM (deneme) · '+x.s+'\nFiyat '+nf(x.px)+' · hedef '+nf(tp)+' · stop '+nf(sp),x.s)}catch(e){}
    try{sigToast({src:'momentum',sym:x.s,dir:'AL',label:'🧪 MOMENTUM',why:['Dün '+pct(x.d1),'5 günde '+pct(x.d5),'Oynaklık %'+nf(x.adr,1)],entry:x.px,stop:sp,tgt:tp,jr:false})}catch(e){}
   }

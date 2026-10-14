@@ -1,3 +1,4 @@
+import { tgPlain } from './tgfmt.js';
 import { flowRoute } from './flow.js';
 import { kaphStep } from './kaph.js';
 import { tavanScan } from './tavan.js';
@@ -274,14 +275,16 @@ const DEF_OPT = { al: 1, rd: 1, kap: 1, hl: 1, rdMin: 60 };
 async function kvGet(env, k, d) { if (!env.DB) return d; try { const v = await env.DB.get(k, 'json'); return v == null ? d : v; } catch { return d; } }
 async function kvPut(env, k, v) { if (!env.DB) return false; try { await env.DB.put(k, JSON.stringify(v)); return true; } catch { return false; } }
 
-async function tgSend(cfg, text) {
+// v10.6: kb = mesajın altındaki düğmeler (tgfmt.js tgKb). Telegram biçimi reddederse düz metin olarak bir kez daha denenir.
+async function tgSend(cfg, text, kb) {
   if (!cfg || !cfg.tgTok || !cfg.chat) return { ok: false, error: 'Telegram ayarı yok' };
+  const send = (t, html, k) => fetch('https://api.telegram.org/bot' + cfg.tgTok + '/sendMessage', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(Object.assign({ chat_id: cfg.chat, text: t, disable_web_page_preview: true }, html ? { parse_mode: 'HTML' } : {}, k ? { reply_markup: k } : {}))
+  }).then(r => r.json());
   try {
-    const r = await fetch('https://api.telegram.org/bot' + cfg.tgTok + '/sendMessage', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: cfg.chat, text, parse_mode: 'HTML', disable_web_page_preview: true })
-    });
-    const j = await r.json();
+    let j = await send(text, true, kb);
+    if (!j.ok && /parse|entit|tag|button|markup/i.test(j.description || '')) j = await send(tgPlain(text), false, null);
     return j.ok ? { ok: true } : { ok: false, error: j.description || 'hata' };
   } catch (e) { return { ok: false, error: e.message }; }
 }

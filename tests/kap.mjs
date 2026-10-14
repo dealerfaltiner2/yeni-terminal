@@ -23,6 +23,7 @@ let r = await kapPoll(env, h);
 ok('yeni bildirim işlendi', r.yeni === 1);
 ok('karneye yazıldı', db.prepare("SELECT count(*) n FROM sig WHERE src LIKE 'kap-%'").get().n === 1);
 ok('önem 3 taze haber Telegram\'a gitti', sent.length === 1);
+ok('KAP mesajı yeni düzende (alıntı kutusu, uzun bağlantı yok)', /^📰 <b>KAP · /.test(sent[0]) && /<blockquote>/.test(sent[0]) && !/https?:/.test(sent[0]), sent[0]);
 r = await kapPoll(env, h);
 ok('aynı yanıt: yeni yok', r.yeni === 0);
 r = await kapPoll(env, h);

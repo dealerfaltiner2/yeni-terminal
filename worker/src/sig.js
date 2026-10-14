@@ -1,3 +1,4 @@
+import { tgQuote } from './tgfmt.js';
 // v5.7 SİNYAL KARNESİ — her sinyal kaydedilir, seans bitince 1 dk mumlarla sonucu ölçülür, 18:20'de Telegram özeti.
 // Sonuç kodları (o10 = ±%1, o15 = ±%1,5): 1 = hedef önce, 2 = stop önce (aynı mumda ikisi → stop, temkinli), 0 = ikisi de yok.
 // v9.0 (09.10, Fatih): BAŞARI = sinyalden sonra +%3 gelmesi, stop −%1, gün kapanışı baz alınmaz → o31 (aynı gün; 0 = ikisi de gelmedi = sonuçsuz).
@@ -344,7 +345,7 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
   const pc = (a, b) => b ? Math.round(a / b * 100) : 0;
   const line = (h, s) => (h + s ? (h ? '✅ ' + h + ' kazandı' : '') + (h && s ? ' · ' : '') + (s ? '❌ ' + s + ' kaybetti' : '') + ' → <b>%' + pc(h, h + s) + '</b>' : 'sonuçlanan yok');
   const d = today.split('-');
-  let msg = '📊 <b>SİNYAL KARNESİ · ' + d[2] + '.' + d[1] + '</b>\n<i>Başarı: sinyalden sonra −%1\'e düşmeden +%3 geldi mi? (gün içinde ikisi de gelmeyen sayılmaz)</i>';
+  let msg = '📊 <b>Sinyal karnesi</b>   <i>' + d[2] + '.' + d[1] + '</i>\n<i>Başarı: sinyalden sonra −%1\'e düşmeden +%3 geldi mi? (gün içinde ikisi de gelmeyen sayılmaz)</i>';
   const ORD = ['firsat-A', 'firsat-B', 'algi', 'momentum', 'radar'], rk = x => { const i = ORD.indexOf(x); return i < 0 ? 99 : i; };
   for (const r of R.filter(r => !String(r.src).startsWith('kap-') && r.src !== 'tavan' && r.src !== 'sessiz' && r.src !== 'dunguclu' && r.src !== 'oglen').sort((a, b) => rk(a.src) - rk(b.src))) {
     msg += '\n\n<b>' + esc(SRC_AD[r.src] || r.src) + '</b> — ' + r.n + ' sinyal\n   ' + line(r.h, r.s);
@@ -369,6 +370,7 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
   msg += await paperLine(env, today);
   if (pend) msg += '\n\n⏳ ' + pend + ' sinyal için veri gelmedi; ölçülünce genel toplamlara eklenecek.';
   const cfg = await kvGet(env, 'cfg', null);
+  msg = tgQuote(msg);   // v10.6: alt satırlar alıntı kutusunda
   const t = await tgSend(cfg, msg);
   if (!force) {
     if (t && t.ok) await env.BT.batch([
@@ -446,7 +448,7 @@ export async function weeklySummary(env, tgSend, kvGet, esc, pushSend) {
   const pc = (a, b) => b ? Math.round(a / b * 100) : 0;
   const AD = { 'firsat-A': '🅰️ Fırsat A', 'firsat-B': '🅱️ Fırsat B', algi: '⚡ Algı', momentum: '🧪 Momentum (deneme)', radar: '📡 Radar (mesajı kapalı)' };
   const ORD = ['firsat-A', 'firsat-B', 'algi', 'momentum', 'radar'];
-  let msg = '🗓 <b>HAFTALIK KARNE</b> · ' + from.slice(8) + '.' + from.slice(5, 7) + ' – ' + today.slice(8) + '.' + today.slice(5, 7) + '\n<i>Başarı: −%1\'e düşmeden +%3 geldi mi?</i>';
+  let msg = '🗓 <b>Haftalık karne</b> · ' + from.slice(8) + '.' + from.slice(5, 7) + ' – ' + today.slice(8) + '.' + today.slice(5, 7) + '\n<i>Başarı: −%1\'e düşmeden +%3 geldi mi?</i>';
   const oner = [];
   for (const k of ORD) {
     const r = R.find(x => x.src === k); if (!r) continue; const t = r.h + r.s, p = pc(r.h, t);
@@ -473,7 +475,7 @@ export async function weeklySummary(env, tgSend, kvGet, esc, pushSend) {
   if (oner.length) msg += '\n\n💡 <b>Öneriler</b>\n' + oner.map(x => '• ' + esc(x)).join('\n');
   msg += '\n\n<i>Hiçbir değişiklik onayın olmadan yapılmaz.</i>';
   const cfg = await kvGet(env, 'cfg', null);
-  const t = await tgSend(cfg, msg);
+  const t = await tgSend(cfg, tgQuote(msg));   // v10.6
   try { await pushSend(env, { cat: 'rapor', title: '🗓 Haftalık karne hazır', body: R.map(r => (AD[r.src] || r.src).replace(/^\S+ /, '') + ' %' + pc(r.h, r.h + r.s)).join(' · ').slice(0, 220), url: './', tag: 'hafta' + today }, 3); } catch (e) {}
   return { gonderildi: !!(t && t.ok) };
 }
