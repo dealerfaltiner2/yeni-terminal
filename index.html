@@ -588,6 +588,8 @@ td.fl-up,td.fl-dn{border-radius:4px}
     <b>MİDAS CANLI VERİ</b>
     <div id="midasmsg" class="note">Yükleniyor...</div>
     <div class="note">Midas verisi <b>15 dk gecikmelidir</b>. Anlık fiyat, hacim ve alış/satış her zaman TradingView (Worker) akışından gelir. Midas yalnızca tavan/taban bilgisi için ve TradingView bağlantısı tamamen koparsa <b>“15 dk”</b> etiketli yedek fiyat olarak kullanılır; bu durumda CANLI rozeti yanmaz.</div>
+    <b>GÖRÜNÜM</b>
+    <div class="frow" style="padding:2px 0"><label>Tema</label><div class="seg" id="temaseg"><button data-v="cam" onclick="temaSet('cam')">Cam</button><button data-v="klasik" onclick="temaSet('klasik')">Klasik</button></div></div>
     <b>🔔 İPHONE BİLDİRİMLERİ</b>
     <div id="pushsec"></div>
     <div id="tgsec">
@@ -671,6 +673,9 @@ td.fl-up,td.fl-dn{border-radius:4px}
 // v7.4: iş bilgisayarı sinyal motoru — terminal ?bot=1 ile 'sunucu modu'nda açılır (Windows'ta başsız tarayıcı)
 window.BOTMODE=/[?&]bot=1(&|$)/.test(location.search);
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+// v10.3 görünüm: 'cam' (varsayılan) / 'klasik'
+function temaSet(v){LS.set('tema',v);document.documentElement.classList.toggle('cam',v!=='klasik');document.querySelectorAll('#temaseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===v))}
+document.documentElement.classList.toggle('cam',LS.get('tema','cam')!=='klasik');
 const $=s=>document.querySelector(s);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const nf=(n,d=2)=>(n==null||isNaN(n))?'-':Number(n).toLocaleString('tr-TR',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -3254,7 +3259,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="10.1";window.APPV=APP_VER;
+  const APP_VER="10.3";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4741,6 +4746,34 @@ function stJr(){const o=stCur;if(!o)return;if(o.jrDone){stClose();showTab('jr');
 .alc.st-ates .alt{animation:lvPulse 1.8s infinite}
 .alh .spk{margin-left:auto}.alh .spk+.alg{margin-left:6px}
 .card.v6 .crow>.spk{align-self:center;opacity:.95}
+
+/* ================= v10.3 CAM GÖRÜNÜM (Fatih 14.10) — yalnız görünüm; html.cam ile açılır, Ayarlar → Görünüm → Klasik ile kapanır =================
+   Pil/akıcılık: gerçek bulanıklık (backdrop-filter) yalnız üst bar, alt menü, BIST 100 kartı ve yorum kartında; diğer kartlar yarı saydam "sahte cam". */
+html.cam{--bg:#070a16;--panel:#0f1428;--panel2:#161c36;--line:rgba(255,255,255,.07);--line2:rgba(255,255,255,.11);--up:#4ade80;--upbg:rgba(74,222,128,.12);--dn:#fb8f8f;--dnbg:rgba(251,143,143,.12)}
+html.cam body{background:radial-gradient(520px 380px at 88% 2%,rgba(124,92,255,.28),transparent 70%),radial-gradient(460px 360px at 0% 34%,rgba(20,160,170,.20),transparent 70%),radial-gradient(520px 420px at 100% 78%,rgba(80,70,220,.18),transparent 70%),linear-gradient(180deg,#0b1024 0%,#070a16 100%);background-attachment:fixed}
+html.cam #top{background:rgba(14,18,36,.55);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border-bottom:1px solid rgba(255,255,255,.08);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+html.cam #symbtn,html.cam #regbadge{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12)}
+html.cam #tick{background:rgba(255,255,255,.03);border-bottom-color:rgba(255,255,255,.06)}
+html.cam #tabs{background:rgba(16,20,40,.62);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);border-top:1px solid rgba(255,255,255,.10);box-shadow:0 -10px 30px rgba(0,0,0,.45)}
+html.cam #tabs button.on{background:rgba(251,191,36,.13)!important;border-radius:16px}
+html.cam .nhero,html.cam .nhero.TREND,html.cam .nhero.ZAYIF,html.cam .yrm{border:1px solid rgba(255,255,255,.11);border-radius:24px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 16px 36px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.10)}
+html.cam .nhero{background:linear-gradient(160deg,rgba(255,255,255,.11),rgba(255,255,255,.04))}
+html.cam .nhero.TREND{background:radial-gradient(90% 120% at 100% 0%,rgba(74,222,128,.16),transparent 60%),linear-gradient(160deg,rgba(255,255,255,.10),rgba(255,255,255,.035))}
+html.cam .nhero.ZAYIF{background:radial-gradient(90% 120% at 100% 0%,rgba(251,143,143,.16),transparent 60%),linear-gradient(160deg,rgba(255,255,255,.10),rgba(255,255,255,.035))}
+html.cam .yrm{background:radial-gradient(120% 70% at 100% 0%,rgba(156,196,255,.12),transparent 60%),linear-gradient(160deg,rgba(255,255,255,.09),rgba(255,255,255,.035));border-color:rgba(156,196,255,.22)}
+html.cam .nmk div{background:rgba(255,255,255,.055);border-color:rgba(255,255,255,.09);border-radius:14px}
+html.cam .nrow,html.cam .nk,html.cam .ncal,html.cam .nempty,html.cam .pp2,html.cam .xsearch,html.cam .nqa button{background:linear-gradient(160deg,rgba(255,255,255,.075),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.10);border-radius:20px;box-shadow:0 10px 26px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.07)}
+html.cam .nrow{padding:12px 14px}
+html.cam .nrow:hover,html.cam .nk:hover{border-color:rgba(255,255,255,.20)}
+html.cam .nrow:active,html.cam .nk:active,html.cam .nqa button:active{transform:translateY(1px) scale(.99)}
+html.cam .nsec .nsi{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.08)}
+html.cam .nwarn{border-radius:16px;backdrop-filter:none}
+html.cam .card{border-bottom-color:rgba(255,255,255,.06)}
+html.cam .chip,html.cam .npill{border-color:rgba(255,255,255,.10)}
+html.cam .sett,html.cam .sett input,html.cam .sett select{background-color:rgba(255,255,255,.04)}
+html.cam #more .sh{background:rgba(16,20,40,.82);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,.12)}
+html.cam #xray .xsh,html.cam #infosheet .sh{background:rgba(16,20,40,.88)}
+@media (prefers-reduced-motion:reduce){html.cam *{transition:none!important}}
 </style>
 <script>
 /* ================= v7.2 KENDİNİ TOPARLAMA + HATA DEFTERİ =================
@@ -5314,5 +5347,6 @@ function yorumCard(){yorumLoad();const L=YRM.list;if(!L||!L.length)return '';con
  if(old.length)h+='<details class="yrm-o"'+(YRM.open?' open':'')+' ontoggle="YRM.open=this.open"><summary>Önceki yorumlar ('+old.length+')</summary>'+old.map(o=>'<div class="yrm-p"><div class="yrm-h"><span>'+(YSLOT[o.slot]||'Yorum')+'</span><em>'+yorumAge(o.t)+'</em></div><div class="yrm-b">'+yorumFmt(o.txt)+'</div></div>').join('')+'</details>';
  return h+'<div class="yrm-n">Yorum, terminal verisi ve karne üzerinden yazılır; yatırım tavsiyesi değildir.</div></div>'}
 </script>
+<script>try{temaSet(LS.get('tema','cam'))}catch(e){}</script>
 </body>
 </html>
