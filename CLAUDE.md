@@ -252,3 +252,8 @@ Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ"
   'Pusula diyor ki' nAkil (günlük fren: bugün 2 zararlı işlem → 'Bugün dur'; hava; endeksin bugünkü yönündeki günlerde kazandıran/kaybettiren kaynak; saat; 6 sa içindeki veri; kişisel ders ≥8 işlem);
   açık pozisyonlar, canlı takip (3 kart + 'Tümünü göster'; her kartta 'bu havada %X hedef' notu) ya da 'Yarın ilk bakılacaklar' çipleri; nGuven 'Bugünkü gibi günlerde'; geri kalan her şey katlanır satır (nFold, LS 'nowf', kapalı başlar, içerik yalnız açılınca çizilir).
   Testlerde katlı bölüm gerekiyorsa NOWF.f_<ad>=1 yap. Klasik temada eski düzen aynen.
+- v11.5 (16.10 gece, Fatih: 'büyükler habere önem veriyor, ne kaçırıyoruz?' → hız yarışına girmiyoruz, haberin ANLAMINI ölçüyoruz; yalnız ölçüm + bilgi, sinyal kuralı DEĞİŞMEDİ):
+  sig'e p30 (sinyalden önceki 30 dk'daki hareket %, 10:30 öncesi günün açılışından; sigOutcome) ve hb (önceki iş günü 18:00'den beri son KAP haberine dakika, önem ≥1, devre hariç; −1 = habersiz). SIG_SCHEMA 11.5.
+  sig.js sigNews: karne/tamamlama/ertesi gün işi yokken 10 dk'da bir, her seferinde bir gün (meta hb_day/hb_at; 29.09'dan geriye dönük doldurur). p30 yalnız yeni ölçülenlerde.
+  KAP Telegram'ı: olumlu haber geldiğinde hisse bugün zaten ≥ %3 artıdaysa '⚠️ Haber gelmeden hisse bugün zaten +%X yükselmişti' satırı. Canlı takip kartında son 16 saatin önemli KAP'ı (kapNote).
+  ~1 hafta sonra: haberli/habersiz ve p30 (önceden koşmuş/sakin) kırılımında karne → anlamlıysa 'habersiz sert hareket' uyarısı ya da filtre (Fatih onayıyla). Sıradaki araştırma: KAP 'yeni iş' tutarı ÷ piyasa değeri (kaph metinleri).

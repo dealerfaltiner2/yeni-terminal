@@ -3289,7 +3289,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="11.4";window.APPV=APP_VER;
+  const APP_VER="11.5";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4512,6 +4512,9 @@ function divDays(sym){const o=(S.umap&&S.umap[sym])||{},ts=+o.ex_dividend_date_u
  const day=x=>Math.floor((x+3*3600e3)/864e5),d=day(ts*1000)-day(Date.now());return d>=0&&d<=3?d:null}
 function sigNotes(sym){const a=[];try{const tb=tedbTxt(sym);if(tb)a.push(tb);const dv=divDays(sym);if(dv!=null)a.push(dv===0?'Temettü hak kullanımı bugün (fiyat temettü kadar düşük açılır)':dv===1?'Yarın temettü hak kullanımı (fiyat temettü kadar düşük açılacak)':'Temettü hak kullanımı '+dv+' gün sonra');const d=earnDays(sym);if(d!=null)a.push(d===0?'Bilanço bugün açıklanıyor':d===1?'Bilanço yarın açıklanıyor':'Bilanço '+d+' gün sonra');
  ecNear(30).slice(0,2).forEach(e=>a.push(ecHm(e.t)+' '+(e.c==='TR'?'Türkiye':'ABD')+' verisi: '+ecTitle(e)))}catch(e){}return a}
+// v11.5: hareketin sebebi — hissenin son 16 saatteki önemli KAP haberi (NOWK, önem ≥2)
+function kapNote(sym){try{const n=Date.now(),k=(NOWK.list||[]).filter(k=>n-k.t<16*3600e3&&k.t<=n&&String(k.syms||'').split(',').includes(sym)).sort((a,b)=>b.t-a.t)[0];
+ return k?'📰 KAP '+new Date(k.t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})+' · '+(k.ad||k.tip||'haber'):''}catch(e){return ''}}
 function sigNoteTxt(sym){const a=sigNotes(sym);return a.length?'\n⚠️ '+a.join(' · '):''}
 /* ================= v7.1 ŞİMDİ ================= */
 // mini fiyat çizgisi: önce bugünün 15 dk mumları (derin tarama/izleme önbelleği), yoksa canlı akış örnekleri
@@ -4630,7 +4633,7 @@ function liveCard(x){
  else if(q){const tg=(x.tp/q-1)*100,sl=(q/x.sp-1)*100;st=tg<sl?'hedefe %'+nf(tg,2):'stopa %'+nf(sl,2);stc=tg<sl?'near':'warn'}
  const mins=Math.max(0,Math.round((Date.now()-x.t)/60000)),SN=SRC_N[x.src]||['•',x.src];
  return '<div class="nlv '+stc+'" onclick="selectSym(\''+htmlEsc(x.sym)+'\',\'bist\');showTab(\'chart\')">'+
-  '<div class="nlv-h">'+nAvatar(x.sym)+'<div class="nlv-t"><b>'+htmlEsc(x.sym)+'</b><span>'+SN[0]+' '+SN[1]+' · '+new Date(x.t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})+' · '+(mins<60?mins+' dk':Math.floor(mins/60)+' sa '+(mins%60)+' dk')+' önce'+(typeof pusGuvenSrc==='function'?pusGuvenSrc(x.src):'')+'</span></div>'+
+  '<div class="nlv-h">'+nAvatar(x.sym)+'<div class="nlv-t"><b>'+htmlEsc(x.sym)+'</b><span>'+SN[0]+' '+SN[1]+' · '+new Date(x.t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})+' · '+(mins<60?mins+' dk':Math.floor(mins/60)+' sa '+(mins%60)+' dk')+' önce'+(typeof pusGuvenSrc==='function'?pusGuvenSrc(x.src):'')+(kapNote(x.sym)?'<br><i class="pkn">'+htmlEsc(kapNote(x.sym))+'</i>':'')+'</span></div>'+
   '<div class="nlv-v"><b>'+(q?nf(q):'–')+'</b>'+nPill(ch)+'</div></div>'+
   '<div class="nlv-bar"><i class="z" style="left:'+posf(T.lo)+'%;width:'+Math.max(0,posf(T.hi)-posf(T.lo))+'%"></i><i class="e" style="left:'+posf(x.px)+'%"></i>'+(q?'<i class="p" style="left:'+posf(q)+'%"></i>':'')+'</div>'+
   '<div class="nlv-l"><span>Stop <b>'+nf(x.sp)+'</b></span><span class="st">'+st+'</span><span>Hedef <b>'+nf(x.tp)+'</b></span></div>'+
@@ -5788,7 +5791,7 @@ html.cam .pstrip div{padding:8px 0 4px}html.cam .pstrip b{font-size:16px}html.ca
 .pfb .nsec:first-child{display:none}
 .pmore{display:block;width:100%;margin-top:8px;padding:10px;border-radius:12px;border:1px solid rgba(201,163,91,.25);background:rgba(201,163,91,.06);color:#E6C98A;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer}
 .plv .nlv-sum small{display:none}
-.pgv{font-style:normal;font-weight:600}.pgv.up{color:#5FD39A}.pgv.dn{color:#F07A6A}
+.pkn{font-style:normal;color:#E6C98A}.pgv{font-style:normal;font-weight:600}.pgv.up{color:#5FD39A}.pgv.dn{color:#F07A6A}
 .pfb .yrm{background:none!important;border:0!important;box-shadow:none!important;padding:2px 4px 0!important;margin:0!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 .pfb .yrm>.yrm-h{display:none}
 .pfh{padding:12px 15px}

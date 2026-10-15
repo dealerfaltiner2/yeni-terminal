@@ -9,7 +9,7 @@ const trMin = ms => { const d = new Date(ms + TRMS); return d.getUTCHours() * 60
 let ready = false;
 // 13.10 bakım: şema sürümü meta 'sig_schema'da. Eşitse tablo/indeks/ALTER adımları ATLANIR (her soğuk başlangıçta 14 başarısız ALTER
 // + 3 sorgu işlemci payını yiyordu → 13.10 akşamı karne ölçümü ve KAP adımı her dakika yarıda kesildi). Yeni sütun eklerken SÜRÜMÜ ARTIR.
-const SIG_SCHEMA = '10.6';
+const SIG_SCHEMA = '11.5';
 export async function sigEnsure(env) {
   if (ready) return;
   try { const s = await env.BT.prepare("SELECT v FROM meta WHERE k = 'sig_schema'").first(); if (s && s.v === SIG_SCHEMA) { ready = true; return; } } catch (e) {}
@@ -39,6 +39,9 @@ export async function sigEnsure(env) {
   } catch (e) {}
   // v10.6 (14.10, Fatih onayıyla): o315 = Momentum +%3 hedef / −%1,5 stop yarışı (1 hedef, 2 stop, 0 ikisi de yok → rc). Yalnız ölçüm (bot 'mom315').
   try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN o315 INTEGER').run(); } catch (e) {}
+  // v11.5 (16.10, Fatih onayıyla) HABER ÖLÇÜMÜ: p30 = sinyalden önceki 30 dk'da hisse ne kadar hareket etmişti (% ; 10:30'dan önceyse günün açılışından),
+  // hb = sinyalden önceki son KAP haberine kaç dakika (önem ≥1, devre kesici hariç, önceki iş günü 18:00'den bu yana; −1 = haber yok). Yalnız ölçüm.
+  for (const c of ['p30 REAL', 'hb INTEGER']) { try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN ' + c).run(); } catch (e) {} }
   try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sig_schema', ?)").bind(SIG_SCHEMA).run(); } catch (e) {}
   ready = true;
 }
@@ -133,7 +136,10 @@ export function sigOutcome(bars, r, ib) {
         pb = rr != null ? rr : (B[B.length - 1][4] / pe - 1) * 100;
       } }
   }
-  return { px: r2(px), pre: pc ? r2((px / pc - 1) * 100) : null, o10: race(1), o15: race(1.5), o31: race(3, 1), o41: race(4, 1), o315: race(3, 1.5), h1: r2(h1), r15: r2(at(15)), r60: r2(at(60)), rc: r2(sg * (B[B.length - 1][4] / px - 1) * 100), mfe: r2(mfe), mae: r2(mae), idx: r2(idx), tx: r2(tx), pb: r2(pb), pbn };
+  // v11.5: p30 — sinyalden 30 dk önceki kapanış (aynı gün; yoksa günün ilk açılışı) → giriş fiyatına göre %
+  let b30 = null, o0 = null; for (const b of bars) { if (b[0] < ds) continue; if (b[0] >= de || b[0] > s0) break; if (o0 == null) o0 = b[1]; if (b[0] <= s0 - 1800) b30 = b[4]; }
+  const base30 = b30 != null ? b30 : o0, p30 = base30 > 0 ? (px / base30 - 1) * 100 : null;
+  return { p30: r2(p30), px: r2(px), pre: pc ? r2((px / pc - 1) * 100) : null, o10: race(1), o15: race(1.5), o31: race(3, 1), o41: race(4, 1), o315: race(3, 1.5), h1: r2(h1), r15: r2(at(15)), r60: r2(at(60)), rc: r2(sg * (B[B.length - 1][4] / px - 1) * 100), mfe: r2(mfe), mae: r2(mae), idx: r2(idx), tx: r2(tx), pb: r2(pb), pbn };
 }
 // Seans dışında her dakika: bekleyen sinyallerden 5 hisseyi ölç; hepsi bitince özeti gönder
 import { errAdd } from './err.js';
@@ -150,7 +156,8 @@ export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
     const sm = await sigSummary(env, tgSend, kvGet, esc, nf);
     if (sm) return sm;
     try { const bf = await sigBackfill(env, fetchBarsTV); if (bf) return bf; } catch (e) { return { tamamlama_hata: String(e && e.message || e).slice(0, 120) }; }
-    try { return await sigNextDay(env, fetchBarsTV); } catch (e) { return { ertesi_hata: String(e && e.message || e).slice(0, 120) }; }
+    try { const nd = await sigNextDay(env, fetchBarsTV); if (nd) return nd; } catch (e) { return { ertesi_hata: String(e && e.message || e).slice(0, 120) }; }
+    try { return await sigNews(env); } catch (e) { return { haber_hata: String(e && e.message || e).slice(0, 120) }; }
   }
   const old = ready.filter(r => now - r.t > 4 * 86400e3);
   for (const r of old) await env.BT.prepare("UPDATE sig SET done = 1, err = 'çok eski' WHERE id = ?").bind(r.id).run();
@@ -210,8 +217,8 @@ export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
     FAIL.delete(r.sym);
     const o = bars.length ? sigOutcome(bars, r, ib) : { err: st.err };
     const adr = adrOf(toBars(gd['BIST:' + r.sym]), r.d);
-    await env.BT.prepare('UPDATE sig SET done = 1, px = coalesce(px, ?), pre = ?, o10 = ?, o15 = ?, o31 = ?, o41 = ?, o315 = ?, h1 = ?, r15 = ?, r60 = ?, rc = ?, mfe = ?, mae = ?, idx = ?, adr = ?, tx = ?, pb = ?, pbn = ?, err = ? WHERE id = ?')
-      .bind(o.px ?? null, o.pre ?? null, o.o10 ?? null, o.o15 ?? null, o.o31 ?? null, o.o41 ?? null, o.o315 ?? null, o.h1 ?? null, o.r15 ?? null, o.r60 ?? null, o.rc ?? null, o.mfe ?? null, o.mae ?? null, o.idx ?? null, adr, o.tx ?? null, o.pb ?? null, o.pbn ?? null, o.err || null, r.id).run();
+    await env.BT.prepare('UPDATE sig SET done = 1, p30 = ?, px = coalesce(px, ?), pre = ?, o10 = ?, o15 = ?, o31 = ?, o41 = ?, o315 = ?, h1 = ?, r15 = ?, r60 = ?, rc = ?, mfe = ?, mae = ?, idx = ?, adr = ?, tx = ?, pb = ?, pbn = ?, err = ? WHERE id = ?')
+      .bind(o.p30 ?? null, o.px ?? null, o.pre ?? null, o.o10 ?? null, o.o15 ?? null, o.o31 ?? null, o.o41 ?? null, o.o315 ?? null, o.h1 ?? null, o.r15 ?? null, o.r60 ?? null, o.rc ?? null, o.mfe ?? null, o.mae ?? null, o.idx ?? null, adr, o.tx ?? null, o.pb ?? null, o.pbn ?? null, o.err || null, r.id).run();
     n++;
   }
   if (syms.some(x => KILL[x])) { for (const x of syms) delete KILL[x]; await ms('sig_kill', KILL); }
@@ -503,4 +510,36 @@ export async function weeklySummary(env, tgSend, kvGet, esc, pushSend) {
   const t = await tgSend(cfg, tgQuote(msg));   // v10.6
   try { await pushSend(env, { cat: 'rapor', title: '🗓 Haftalık karne hazır', body: R.map(r => (AD[r.src] || r.src).replace(/^\S+ /, '') + ' %' + pc(r.h, r.h + r.s)).join(' · ').slice(0, 220), url: './', tag: 'hafta' + today }, 3); } catch (e) {}
   return { gonderildi: !!(t && t.ok) };
+}
+
+// v11.5 HABER ÖLÇÜMÜ (hb): sinyal anında hissenin önceki iş günü 18:00'den beri KAP haberi var mıydı? Seans dışında, karne/ertesi gün işi yokken
+// en çok 10 dk'da bir, her seferinde BİR gün (meta 'hb_day' = bitmiş son gün, 'hb_at' = son deneme). Okuma: o günün sinyalleri (sig_d) + pencere KAP'ları (kap_t).
+export function newsGap(sigs, kaps, from) {
+  const M = new Map();
+  for (const k of kaps) { if (!(k.onem >= 1) || k.tip === 'devre' || k.t < from) continue; for (const s of String(k.syms || '').split(',')) { if (!s) continue; const a = M.get(s) || []; a.push(k.t); M.set(s, a); } }
+  return sigs.map(r => { let best = null; for (const t of M.get(r.sym) || []) if (t <= r.t && (best == null || t > best)) best = t; return { id: r.id, hb: best == null ? -1 : Math.round((r.t - best) / 60000) }; });
+}
+const prevBD = d => { let x = Date.parse(d + 'T00:00:00Z'); do { x -= 864e5; } while ([0, 6].includes(new Date(x).getUTCDay())); return new Date(x).toISOString().slice(0, 10); };
+export async function sigNews(env, now = Date.now()) {
+  const at = await env.BT.prepare("SELECT v FROM meta WHERE k = 'hb_at'").first();
+  if (at && now - +at.v < 10 * 60e3 && now >= +at.v) return null;
+  await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('hb_at', ?)").bind(String(now)).run();
+  const today = trDay(now), m = trMin(now), wd = new Date(today + 'T00:00:00Z').getUTCDay();
+  const closed = (wd >= 1 && wd <= 5 && m >= 1095) ? today : trDay(now - 864e5);
+  const hd = await env.BT.prepare("SELECT v FROM meta WHERE k = 'hb_day'").first();
+  let d = hd && hd.v ? hd.v : '2026-09-28';
+  for (let i = 0; i < 20; i++) {
+    d = new Date(Date.parse(d + 'T00:00:00Z') + 864e5).toISOString().slice(0, 10);
+    if (d > closed) return null;
+    if ([0, 6].includes(new Date(d + 'T00:00:00Z').getUTCDay())) continue;
+    const sigs = (await env.BT.prepare("SELECT id, t, sym FROM sig INDEXED BY sig_d WHERE d = ? AND hb IS NULL AND src NOT LIKE 'kap-%' LIMIT 500").bind(d).all()).results || [];
+    if (!sigs.length) { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('hb_day', ?)").bind(d).run(); continue; }
+    const from = Date.parse(prevBD(d) + 'T18:00:00Z') - TRMS, to = Math.max(...sigs.map(r => r.t)) + 1;
+    const kaps = (await env.BT.prepare('SELECT t, syms, onem, tip FROM kap INDEXED BY kap_t WHERE t >= ? AND t < ?').bind(from, to).all()).results || [];
+    const R = newsGap(sigs, kaps, from), st = env.BT.prepare('UPDATE sig SET hb = ? WHERE id = ?');
+    for (let k = 0; k < R.length; k += 100) await env.BT.batch(R.slice(k, k + 100).map(x => st.bind(x.hb, x.id)));
+    if (sigs.length < 500) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('hb_day', ?)").bind(d).run();
+    return { haber_olcumu: d, sinyal: R.length, haberli: R.filter(x => x.hb >= 0).length };
+  }
+  return null;
 }

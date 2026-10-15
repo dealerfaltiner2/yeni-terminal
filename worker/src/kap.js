@@ -90,13 +90,15 @@ function kapMsg(r, esc, q) {
   const subj = String(r.subj || '').slice(0, 120), sm = r.summ && r.summ !== r.subj ? String(r.summ).slice(0, 220) : '';
   const px = q && q.close ? 'Hisse <code>' + Number(q.close).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</code>  bugün ' + tgPct(q.change) + ' · ' : '';
   let ex = '';
+  // v11.5 'geç mi kaldım?': olumlu haber geldiğinde hisse bugün zaten ≥ %3 artıdaysa uyar
+  const late = q && q.change != null && q.change >= 3 && (r.yon > 0 || r.geri) ? '\n⚠️ Haber gelmeden hisse bugün zaten ' + tgPct(q.change) + ' yükselmişti; haberin bir kısmı fiyatlanmış olabilir.' : '';
   if (r.geri) {   // v11.4: seans içi geri alım — işlem planı (canlı mesajlarla aynı: hedef +%3, stop −%1)
     const c = q && q.close ? Number(q.close) : 0, f = v => v.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     ex = '\n<blockquote>' + (c ? 'Hedef   <code>' + f(c * 1.03) + '</code>   +%3\nStop     <code>' + f(c * 0.99) + '</code>   −%1' : 'Hedef +%3 · Stop −%1 (şimdiki fiyattan)') + '</blockquote>' +
       '📌 Şirket seans içinde kendi hissesini topluyor. Canlı karnede bu durumda sinyallerin yarıdan fazlası −%1 gelmeden +%3\'e ulaştı (örnek küçük).';
   }
   return (r.geri ? '🟢 <b>AL · ' + esc(r.syms.split(',')[0]) + '</b>   <i>KAP · seans içi geri alım</i>\n<blockquote>' + esc(subj) + '</blockquote>' + px + 'saat ' + hm :
-    '📰 <b>KAP · ' + esc(r.syms) + '</b>   <i>' + yon + ' · ' + esc(KAP_AD[r.tip] || r.tip) + '</i>\n<blockquote>' + (sm ? '<b>' + esc(subj) + '</b>\n' + esc(sm) : esc(subj)) + '</blockquote>' + px + 'saat ' + hm) + ex;
+    '📰 <b>KAP · ' + esc(r.syms) + '</b>   <i>' + yon + ' · ' + esc(KAP_AD[r.tip] || r.tip) + '</i>\n<blockquote>' + (sm ? '<b>' + esc(subj) + '</b>\n' + esc(sm) : esc(subj)) + '</blockquote>' + px + 'saat ' + hm) + late + ex;
 }
 // Telegram kuralı: önem 3 → her hisse; önem 2 (yönlü ya da bilanço) → XU100 + izleme listesi; izleme listesi → önem ≥ 1
 function wantTg(r, big, watch) {

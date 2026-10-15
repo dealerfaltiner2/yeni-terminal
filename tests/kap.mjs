@@ -84,5 +84,8 @@ at('2026-10-19', '11:00'); sent.length = 0; KAP.push(geri(1040, 'DCTTR')); await
 ok('her gün bildiren hisse (son 7 günde 3 gün) gitmez', sent.length === 0, sent[0]);
 at('2026-10-19', '19:00'); sent.length = 0; KAP.push(geri(1050, 'SISE')); await kapPoll(env, h3);
 ok('seans dışı geri alım AL kartı olarak gitmez', !sent.some(m => /AL · SISE/.test(m)));
+at('2026-10-20', '11:00'); sent.length = 0; QQ.FIYAT = { c: 50, ch: 4.2 }; KAP.push({ disclosureIndex: 1100, publishDate: pub(Date.now() - 20e3), subject: 'Yeni İş İlişkisi', summary: 'sözleşme', relatedStocks: 'FIYAT', kapTitle: 'F' });
+const h4 = Object.assign({}, h3, { kvGet: async () => ({ tgTok: 'x', chat: '1', watch: ['FIYAT'], opt: {} }) }); await kapPoll(env, h4);
+ok('geç mi kaldım: haber öncesi +%4,2 uyarısı', sent.length === 1 && /zaten \+%4,20 yükselmişti/.test(sent[0]), sent[0]);
 console.log('\nKAP: ' + res.filter(Boolean).length + '/' + res.length + ' geçti');
 process.exit(res.every(Boolean) ? 0 : 1);

@@ -109,7 +109,7 @@ ok('takılı kayıt kalmadı', !meta('sig_run') && db.prepare("SELECT count(*) n
   const bf = await sigEval(env, bfx, tgSend, kvGet, esc, nf);
   const row = db.prepare("SELECT tx, pb, pbn FROM sig WHERE sym='BFX'").get();
   ok('eski sinyaller geriye dönük tamamlandı', bf && bf.tamamlama === 1 && row.pbn === 1 && row.pb === 1, JSON.stringify({ bf, row }));
-  ok('tamamlanan sinyal ikinci kez denenmez', (await sigEval(env, bfx, tgSend, kvGet, esc, nf)) == null);
+  { const r2 = await sigEval(env, bfx, tgSend, kvGet, esc, nf); ok('tamamlanan sinyal ikinci kez denenmez', !r2 || r2.tamamlama == null, JSON.stringify(r2)); }
 }
 // v11.4: tavan sakin açılış + karne piyasa yönü ayrımı
 {
@@ -135,6 +135,29 @@ ok('takılı kayıt kalmadı', !meta('sig_run') && db.prepare("SELECT count(*) n
   const { statFold } = await import(path.join(W, 'sig.js'));
   const F = statFold([{ d: 'x', src: 'a', u: 1, n: 2, h: 1, s: 1, r0: 0 }, { d: 'x', src: 'a', u: 0, n: 3, h: 0, s: 2, r0: 0.5 }, { d: 'x', src: 'a', u: null, n: 1, h: 0, s: 0, r0: 0.2 }]);
   ok('statFold: yön ayrımı tek satıra toplanır', F.length === 1 && F[0].n === 6 && F[0].h === 1 && F[0].s === 3 && Math.abs(F[0].r0 - 0.7) < 1e-9);
+}
+// v11.5: haber ölçümü — p30 ve hb
+{
+  const { sigOutcome, newsGap, sigNews } = await import(path.join(W, 'sig.js'));
+  const d0 = Date.parse('2026-10-14T10:00:00+03:00') / 1000, B = [];
+  for (let i = 0; i < 120; i++) { const c = 10 + i * 0.01; B.push([d0 + i * 60, c, c + 0.01, c - 0.01, c, 100]); }
+  const t = (d0 + 60 * 60) * 1000;   // 11:00 sinyali; 10:30 kapanışı 10,30 → px 10,60
+  const o = sigOutcome(B, { t, d: '2026-10-14', px: 10.6, dir: 'AL', src: 'algi' }, null);
+  ok('p30: sinyalden önceki 30 dk hareketi', Math.abs(o.p30 - (10.6 / 10.3 - 1) * 100) < 0.02, String(o.p30));
+  const o2 = sigOutcome(B, { t: (d0 + 600) * 1000, d: '2026-10-14', px: 10.1, dir: 'AL', src: 'algi' }, null);
+  ok('p30: 10:30 öncesi sinyalde günün açılışından', Math.abs(o2.p30 - (10.1 / 10 - 1) * 100) < 0.02, String(o2.p30));
+  const G = newsGap([{ id: 1, sym: 'AAA', t: 1000 * 60e3 }, { id: 2, sym: 'BBB', t: 1000 * 60e3 }, { id: 3, sym: 'CCC', t: 1000 * 60e3 }],
+    [{ t: 900 * 60e3, syms: 'AAA,ZZZ', onem: 2, tip: 'is' }, { t: 990 * 60e3, syms: 'AAA', onem: 1, tip: 'ozel' }, { t: 1010 * 60e3, syms: 'BBB', onem: 3, tip: 'is' }, { t: 995 * 60e3, syms: 'CCC', onem: 2, tip: 'devre' }], 0);
+  ok('newsGap: son haberden dakika, sonraki haber ve devre kesici sayılmaz', G[0].hb === 10 && G[1].hb === -1 && G[2].hb === -1, JSON.stringify(G));
+  db.exec("CREATE TABLE IF NOT EXISTS kap (idx INTEGER PRIMARY KEY, t INTEGER, syms TEXT, title TEXT, subj TEXT, summ TEXT, tip TEXT, yon INTEGER, onem INTEGER, sent INTEGER DEFAULT 0)");
+  try { db.exec('CREATE INDEX kap_t ON kap(t)'); } catch (e) {}
+  db.prepare("INSERT INTO kap (idx,t,syms,tip,onem) VALUES (99001, ?, 'NEWS', 'is', 2)").run(Date.parse('2026-10-13T19:00:00+03:00'));
+  db.prepare("INSERT INTO sig (src,d,t,sym,dir,px,done) VALUES ('algi','2026-10-14',?,'NEWS','AL',10,1)").run(Date.parse('2026-10-14T11:00:00+03:00'));
+  db.prepare("INSERT INTO sig (src,d,t,sym,dir,px,done) VALUES ('algi','2026-10-14',?,'QUIET','AL',10,1)").run(Date.parse('2026-10-14T11:00:00+03:00'));
+  db.prepare("INSERT OR REPLACE INTO meta (k,v) VALUES ('hb_day','2026-10-13')").run();
+  const rn = await sigNews(env, Date.parse('2026-10-14T19:00:00+03:00'));
+  const hb = Object.fromEntries(db.prepare("SELECT sym, hb FROM sig WHERE d='2026-10-14' AND sym IN ('NEWS','QUIET')").all().map(r => [r.sym, r.hb]));
+  ok('sigNews: önceki akşamki KAP haberli, diğeri habersiz; gün bitti işareti', hb.NEWS === 960 && hb.QUIET === -1 && rn && rn.haberli >= 1 && db.prepare("SELECT v FROM meta WHERE k='hb_day'").get().v === '2026-10-14', JSON.stringify({ hb, rn }));
 }
 console.log('\nKARNE: ' + res.filter(Boolean).length + '/' + res.length + ' geçti');
 process.exit(res.every(Boolean) ? 0 : 1);
