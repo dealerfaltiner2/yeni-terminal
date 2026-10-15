@@ -3286,7 +3286,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="10.7";window.APPV=APP_VER;
+  const APP_VER="10.9";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3548,12 +3548,14 @@ function tvReconnectReport(){
  }
 
  /* ---------- Telegram (kisisel sohbet) ---------- */
- function tg(text,kb){try{pushMsg('algi',tgPlain(text))}catch(e){}if(!AL.cfg.tg||!AL.cfg.chat||!S.tgTok)return;if(!BOTMODE&&S.botAlive)return;   // v7.4: motor gönderiyor
+ // v10.9 (15.10): Algı'nın ayrı Chat ID'si boşsa genel Telegram sohbeti kullanılır (motorda Algı Chat ID'si hiç dolmamıştı → güçlü ateşlemeler Telegram'a hiç gitmiyordu)
+ const alChat=()=>AL.cfg.chat||S.tgChat||'';
+ function tg(text,kb){try{pushMsg('algi',tgPlain(text))}catch(e){}if(!AL.cfg.tg||!alChat()||!S.tgTok)return;if(!BOTMODE&&S.botAlive)return;   // v7.4: motor gönderiyor
  AL.q.push({t:text,kb});pump()}
  async function pump(){
   if(AL.qBusy)return;AL.qBusy=true;
   while(AL.q.length){const q=AL.q.shift();
-   try{const j=await tgPost(S.tgTok,AL.cfg.chat,q.t,q.kb);if(!j.ok)AL.err='Telegram: '+(j.description||'hata');else AL.err=''}
+   try{const j=await tgPost(S.tgTok,alChat(),q.t,q.kb);if(!j.ok){AL.err='Telegram: '+(j.description||'hata');errLog('hata',AL.err,'Algı Telegram')}else AL.err=''}
    catch(e){AL.err='Telegram: '+(e.message||e)}
    await sleep(1200)}
   AL.qBusy=false;
@@ -3695,7 +3697,7 @@ function tvReconnectReport(){
   if(!AL.cfg.on)s='<span class="dn">○ Radar kapalı</span> — ⚙ Ayar’dan aç';
   else if(!se.open)s='<span style="color:var(--dim)">○ Piyasa kapalı</span> — radar 10:00–18:00 arası, sayfa açıkken çalışır';
   else s='<span class="up">● Aktif</span> · '+H+' hisse · kaynak '+src+ag+(warm<60?' · <span class="wrn">ısınıyor '+warm+'/60 sn</span>':'');
-  const tgs=!AL.cfg.tg?' · Telegram kapalı':!AL.cfg.chat?' · <span class="wrn">Telegram Chat ID yok</span>':!S.tgTok?' · <span class="wrn">bot token yok (Ayarlar)</span>':' · Telegram ✓';
+  const tgs=!AL.cfg.tg?' · Telegram kapalı':!alChat()?' · <span class="wrn">Telegram Chat ID yok</span>':!S.tgTok?' · <span class="wrn">bot token yok (Ayarlar)</span>':' · Telegram ✓';
   return '<div class="note" style="padding:8px 12px">'+s+tgs+(AL.err?'<br><span class="dn">'+htmlEsc(AL.err)+'</span>':'')+'</div>';
  }
  function vCanli(){
@@ -3815,9 +3817,9 @@ function tvReconnectReport(){
   const msg=document.getElementById('algitgmsg');
   document.getElementById('algitest').onclick=async()=>{
    if(!S.tgTok){msg.innerHTML='<b class="dn">Bot token yok.</b> Ayarlar → Otomatik tarama + Telegram bölümüne gir.';return}
-   if(!AL.cfg.chat){msg.innerHTML='<b class="dn">Chat ID boş.</b>';return}
+   if(!alChat()){msg.innerHTML='<b class="dn">Chat ID boş.</b>';return}
    msg.textContent='gönderiliyor...';
-   try{const r=await fetch('https://api.telegram.org/bot'+S.tgTok+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:AL.cfg.chat,text:'⚡ Algı Radarı bağlantı testi — '+new Date().toLocaleTimeString('tr-TR')})});
+   try{const r=await fetch('https://api.telegram.org/bot'+S.tgTok+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:alChat(),text:'⚡ Algı Radarı bağlantı testi — '+new Date().toLocaleTimeString('tr-TR')})});
     const j=await r.json();msg.innerHTML=j.ok?'<b class="up">Gönderildi.</b> Kişisel sohbetini kontrol et.':'<b class="dn">Başarısız:</b> '+htmlEsc(j.description||'')+(String(j.description||'').indexOf('chat not found')>=0?' — bota özelden /start yazdın mı?':'')}
    catch(e){msg.innerHTML='<b class="dn">Başarısız:</b> '+htmlEsc(e.message||e)}
   };
