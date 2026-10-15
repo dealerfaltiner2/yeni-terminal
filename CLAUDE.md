@@ -232,3 +232,5 @@ Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ"
   v10.9 ek (Fatih onayı: 'sıkılaştır, 30 fazla'): Algı Telegram'ı artık güçlü (fc≥0,8) VE rv≥2 (hacim normalin 2 katı) — karnede 29.09–14.10: güçlü %12,6 (günde ~24) → güçlü+rv≥2 %24,1 (günde ~4, örnek 37, az).
   Takip mesajları (hareket geldi/hedef/stop/sönüyor) yalnız Telegram'a giden ateşlemelerde (e.tg). Karneye yazma DEĞİŞMEDİ (bütün ateşlemeler).
 - 15.10 akşam bakımı: hata yok (yalnız 2 geçici KAP ağ kopması → gürültü). Ek zamanlayıcılar ARTIK ÇALIŞIYOR: meta cron_hb_kap ve cron_hb_sig dakika dakika yazılıyor (18:52/18:53), ana iş '5-tamam'.
+- v11.0 (15.10 gece, Fatih onayıyla) D1 OKUMA TASARRUFU (mantık değişmedi): sigBackfill iş bulamazsa meta 'bf_idle' yazar ve 15 dk atlar (eskiden seans dışında her dakika ~1.200 satır).
+  /paper (paperCalc fresh değilse) meta 'paper_v', /sigstats meta 'stat_v' — 10 dk ORTAK önbellek (tüm çalışma örnekleri); fresh hesap (karne mesajı, paper-set) meta'yı tazeler. Sorun olursa bu meta satırlarını silmek yeter.

@@ -224,6 +224,15 @@ Betikler: tools/ml/prep.py (S.pkl), ideas.py, summ.py, night.py, late.py, mom2.p
   (3) worker fetch'i try/catch ile sar → D1 kapalıyken CORS'lu anlaşılır 503 (şu an 'Load failed'); ownerTok D1 hatasında son bilinen değeri kullansın (taslak: araştırmacı oturumunda git stash 'D1 dayaniklilik').
 - err tablosu (son 7 gün): yalnız kendini toparlama kayıtları (canlı veri 60 sn gelmedi ×10, karne ölçümü yarıda kesildi ×2) — çözülmemiş gerçek hata yok. Motor canlı (bot_seen 11.10 04:57), cron 5-tamam.
 
+## 6m. 15.10 gece GÜNLÜK GÖZDEN GEÇİRME (Fatih onayıyla 3 iş)
+- Canlı Momentum 05–15.10: 42 sinyal, 9 kazandı / 30 kaybetti, +3/−1 toplam −0,84 puan (≈ −840 TL, 100.000 TL/işlem, kayma hariç); hedefsiz −1: −21,3; gün sonu tut: −61. İlk hafta +8,66, 12–15.10 −9,5 (2/17).
+- TEKRAR EDEN HİSSE (aynı hisse son 4 günde yine Momentum): canlı 7 işlem 1 kazandı (−3 puan), tekrarsız 35 işlem +2,2.
+  feat geçmişi (92 büyük hisse, ciro şartı yok; eski <15.03 / yeni): tekrar ±1,5 ort +0,28 / −0,12, tekrarsız +0,48 / +0,48; gün sonu tekrar +1,90 / +0,47, tekrarsız +1,21 / +0,84.
+  → İki dönemde YÖN TUTARSIZ (eski dönemde tekrar iyi, yenide kötü). KURAL ÖNERİLMEDİ; 3 Kasım'da canlı karneyle tekrar bak (sig'den sym+d ile hesaplanır, yeni ölçüm gerekmez).
+- EMİR AKIŞI İLK BAKIŞ (flow, 12–15.10, 19 Momentum sinyalinin hepsinde veri var): 10:01–10:29 alıcılı payı 0,38–0,69. Kazanan 2 sinyal (ONCSM, KAPLM) 0,44'te; gün sonu sonucuyla da düzen yok. ÖRNEK ÇOK AZ — 4–6 hafta sonra.
+  Sorgu kalıbı (az okuma, ~4.300 satır): flow JOIN sig ON d, m BETWEEN 600 AND 625, json_each(json_extract(data,'$.s.'||sym)); dakika satırı [dk, alıcılı, satıcılı, belirsiz, işlem, son, alış, satış].
+- OKUMA TASARRUFU (v11.0, GELİŞTİRİCİ işi): sigBackfill boş bulursa meta 'bf_idle' → 15 dk atlar (önce her dakika ~1.200 satır); /paper → meta 'paper_v', /sigstats → meta 'stat_v' 10 dk ortak önbellek.
+
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
 - v6.6 (29.09 akşamı): karne özetinde "Filtre kontrolü" — endeks artı/eksi ve oynak/sakin ayrımı kendi sinyallerimizde. 1–2 hafta sonra bak; tutarsa sinyal kapısı öner.

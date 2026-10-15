@@ -139,8 +139,18 @@ export function botRace(rows, c, today) {
   }).sort((a, b) => b.pl - a.pl);
 }
 let cache = { at: 0, v: null };
+// v11.0 (15.10, Fatih onayıyla) OKUMA TASARRUFU: hesap tüm sig tablosunu okuyor (~3.600 satır, günde ~300 artıyor) →
+// sonuç D1 meta 'paper_v' içinde 10 dk ORTAK önbellek (her çalışma örneği ayrı hesaplamasın). fresh hesap (karne, ayar) da oraya yazar.
+const PV_TTL = 10 * 60e3;
 export async function paperCalc(env, fresh) {
   if (!fresh && cache.v && Date.now() - cache.at < 120e3) return cache.v;
+  if (!fresh) {
+    try {
+      const p = await env.BT.prepare("SELECT v FROM meta WHERE k = 'paper_v'").first();
+      const pv = p ? JSON.parse(p.v) : null;
+      if (pv && pv.ok && Date.now() - pv.at < PV_TTL) { cache = { at: pv.at, v: pv }; return pv; }
+    } catch (e) {}
+  }
   const m = await env.BT.prepare("SELECT v FROM meta WHERE k = 'paper'").first();
   let raw = null; try { raw = m ? JSON.parse(m.v) : null; } catch (e) {}
   const c = paperCfg(raw);
@@ -149,6 +159,7 @@ export async function paperCalc(env, fresh) {
   try { rows = (await env.BT.prepare("SELECT d, t, src, sym, dir, px, done, o10, o15, o41, o315, h1, rc, tx, pb, pbn, meta FROM sig WHERE d >= ? AND err IS NULL AND src IN ('firsat-A','firsat-B','algi','momentum','radar','sessiz','dunguclu','oglen')").bind(c.start).all()).results || []; } catch (e) { if (!/no such table/i.test(String(e && e.message))) throw e; }
   const v = { ok: true, at: Date.now(), ...paperSim(rows, c, trDay(Date.now())) };
   cache = { at: Date.now(), v };
+  try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('paper_v', ?)").bind(JSON.stringify(v)).run(); } catch (e) {}
   return v;
 }
 export async function paperRoute(route, request, env, json) {

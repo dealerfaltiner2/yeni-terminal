@@ -241,8 +241,12 @@ export async function sigSym(env, sym) {
 // Yalnız ölçülecek sinyal yokken çalışır; her çalışmada en çok 3 hisse. Önce pbn = -1 yazılır (yarıda kesilirse sonsuza dek denenmesin).
 export async function sigBackfill(env, fetchBarsTV) {
   const now = Date.now();
+  // v11.0 (15.10, Fatih onayıyla) OKUMA TASARRUFU: bu seçim ~1.200 satır okuyor ve seans dışında her dakika çalışıyordu (günde ~1M).
+  // Son bakışta iş YOKSA 15 dk atla (meta 'bf_idle' = boş bulunan zaman; 1 satır okuma). İş varken eskisi gibi her çalışmada.
+  const bi = await env.BT.prepare("SELECT v FROM meta WHERE k = 'bf_idle'").first();
+  if (bi && now - (+bi.v || 0) < 15 * 60e3) return null;
   const rows = (await env.BT.prepare("SELECT id, d, t, sym, dir, px, src FROM sig INDEXED BY sig_t WHERE t > ? AND done = 1 AND err IS NULL AND ((pbn IS NULL AND dir = 'AL' AND src IN ('firsat-A','firsat-B','algi','momentum','radar','sessiz','dunguclu')) OR (o31 IS NULL AND mfe >= 3 AND mae <= -1) OR (o41 IS NULL AND dir = 'AL' AND src = 'momentum') OR (o315 IS NULL AND dir = 'AL' AND src = 'momentum')) AND px > 0 LIMIT 80").bind(now - 6 * 86400e3).all()).results || [];
-  if (!rows.length) return null;
+  if (!rows.length) { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('bf_idle', ?)").bind(String(now)).run(); return null; }
   const syms = [...new Set(rows.map(r => r.sym))].slice(0, 3), batch = rows.filter(r => syms.includes(r.sym));
   await env.BT.prepare('UPDATE sig SET pbn = coalesce(pbn, -1), o31 = coalesce(o31, -1), o41 = coalesce(o41, -1), o315 = coalesce(o315, -1) WHERE id IN (' + batch.map(() => '?').join(',') + ')').bind(...batch.map(r => r.id)).run();
   const today = trDay(now), oldest = batch.reduce((a, r) => (r.d < a ? r.d : a), today);
@@ -399,6 +403,12 @@ let statCache = { at: 0, v: null };
 export async function sigStats(env) {
   if (!env.BT) return { ok: false, error: 'D1 yok' };
   if (statCache.v && Date.now() - statCache.at < 5 * 60e3) return statCache.v;
+  // v11.0 (15.10, Fatih onayıyla) OKUMA TASARRUFU: sonuç D1 meta 'stat_v' içinde 10 dk ortak önbellek (her çalışma örneği ayrı okumasın)
+  try {
+    const p = await env.BT.prepare("SELECT v FROM meta WHERE k = 'stat_v'").first();
+    const pv = p ? JSON.parse(p.v) : null;
+    if (pv && pv.ok && Date.now() - pv.at < 10 * 60e3) { statCache = { at: pv.at, v: pv }; return pv; }
+  } catch (e) {}
   await sigEnsure(env);
   const from = trDay(Date.now() - 16 * 86400e3);
   const rows = (await env.BT.prepare("SELECT d, src, count(*) n, sum(o31 = 1) h, sum(o31 = 2) s FROM sig WHERE d >= ? AND done = 1 AND err IS NULL AND src <> 'kap-devre' GROUP BY d, src").bind(from).all()).results || [];
@@ -411,6 +421,7 @@ export async function sigStats(env) {
   const pend = await env.BT.prepare('SELECT count(*) n FROM sig WHERE done = 0 AND t < ?').bind(Date.now()).first();
   const v = { ok: true, at: Date.now(), gun: days.length, days: byDay, src, last, list, bekleyen: pend ? pend.n : 0 };
   statCache = { at: Date.now(), v };
+  try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('stat_v', ?)").bind(JSON.stringify(v)).run(); } catch (e) {}
   return v;
 }
 
