@@ -234,3 +234,8 @@ Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ"
 - 15.10 akşam bakımı: hata yok (yalnız 2 geçici KAP ağ kopması → gürültü). Ek zamanlayıcılar ARTIK ÇALIŞIYOR: meta cron_hb_kap ve cron_hb_sig dakika dakika yazılıyor (18:52/18:53), ana iş '5-tamam'.
 - v11.0 (15.10 gece, Fatih onayıyla) D1 OKUMA TASARRUFU (mantık değişmedi): sigBackfill iş bulamazsa meta 'bf_idle' yazar ve 15 dk atlar (eskiden seans dışında her dakika ~1.200 satır).
   /paper (paperCalc fresh değilse) meta 'paper_v', /sigstats meta 'stat_v' — 10 dk ORTAK önbellek (tüm çalışma örnekleri); fresh hesap (karne mesajı, paper-set) meta'yı tazeler. Sorun olursa bu meta satırlarını silmek yeter.
+- v11.1 (16.10 gece, Fatih onayıyla: 'daha profesyonel, hangi sinyal önde') PUSULA KİMLİĞİ (yalnız görünüm, sinyal kuralı DEĞİŞMEDİ; yalnız cam temada):
+  Renkler gece laciverti #0E1626, pirinç #C9A35B/#E6C98A, yeşil #5FD39A, mercan #F07A6A; yazı Barlow + Barlow Condensed (Google Fonts, engelliyse sistem yazısı).
+  Ana sayfa (renderNow): nDial() = başlık (Canlı/Motor ışıkları) + arama + pusula kadranı (ibre = XU100 günlük %, ±%3'te tam sapma; dış pirinç yay = seans 10:00→18:00) + hüküm cümlesi + yükselen/düşen + VİOP/Banka/Dolar/Altın şeridi;
+  nLig() = 'Hangi sinyal önde?' (KSTAT.src son 10 iş günü, o31 isabeti, en az 10 sonuçlanan; PUS_AD'de olmayan sessiz kaynaklar gösterilmez; pirinç çizgi = başabaş %25). Klasik temada eski nHero.
+  Alt menü: Grafik yerine Karne (data-t lab); Grafik menüde PİYASA grubunda.
