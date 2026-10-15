@@ -3287,7 +3287,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="11.1";window.APPV=APP_VER;
+  const APP_VER="11.2";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4904,6 +4904,33 @@ html.cam #t-now{--ta:var(--pir)}
 .pstrip small{display:block;font-size:12px;color:#8F9BB3}.pstrip b{display:block;font:600 17px "Barlow Condensed",Barlow,var(--sans);color:#E9ECF2;font-variant-numeric:tabular-nums}
 .pstrip em{display:block;font:500 13px "Barlow Condensed",Barlow,var(--sans);font-style:normal}
 .psess{margin-top:10px}.psess .nsess{border-top:0;margin-top:0;padding-top:0}
+.pcard{margin-top:14px;padding:16px 16px 12px;border-radius:20px;background:linear-gradient(160deg,rgba(233,236,242,.05),rgba(233,236,242,.015));border:1px solid rgba(201,163,91,.22)}
+.pgrid{display:grid;grid-template-columns:148px minmax(0,1fr);gap:16px;align-items:center}
+.pcomp{width:148px;height:148px;display:block;font-family:"Barlow Condensed",Barlow,var(--sans)}
+.pcomp .pbz{fill:none;stroke:rgba(201,163,91,.30);stroke-width:5}
+.pcomp .pbu{fill:none;stroke:#5FD39A;stroke-width:5;stroke-linecap:round;opacity:.85}
+.pcomp .pfc{fill:#132036;stroke:#C9A35B;stroke-width:1.2}
+.pcomp .ptk line{stroke:rgba(233,236,242,.30);stroke-width:.8}.pcomp .ptk line.mj{stroke:#E6C98A;stroke-width:1.4}
+.pcomp .rs1{fill:rgba(233,236,242,.07)}.pcomp .rs2{fill:rgba(233,236,242,.04)}
+.pcomp .pcd{fill:#8F9BB3;font-size:8.5px;font-weight:600;text-anchor:middle;letter-spacing:.04em}
+.pcomp .ptl{fill:rgba(233,236,242,.30)}
+.pcomp .phb{fill:#0E1626;stroke:#E6C98A;stroke-width:1.6}
+.pinfo{min-width:0}
+.pinfo small{display:block;font-size:12.5px;color:#8F9BB3}
+.pidx{display:block;font:700 38px/1 "Barlow Condensed",Barlow,var(--sans);color:#E9ECF2;letter-spacing:-.01em;font-variant-numeric:tabular-nums;margin-top:2px}
+.pchg{display:block;font:600 16px "Barlow Condensed",Barlow,var(--sans);font-variant-numeric:tabular-nums;margin-top:3px}
+.pvd{display:block;font-size:15px;font-weight:600;color:#E9ECF2;margin-top:10px;line-height:1.25}
+.pvs{display:block;font-size:12.5px;color:#8F9BB3;line-height:1.35;margin-top:2px}
+.pbrl{display:flex;flex-wrap:wrap;align-items:center;column-gap:16px;row-gap:2px;font-size:12.5px;color:#8F9BB3;margin-top:12px}
+.pbrl b{font:600 15px "Barlow Condensed",Barlow,var(--sans);color:#E9ECF2;margin:0 4px 0 5px}
+.pbrl i{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:0}.pbrl i.u{background:#5FD39A}.pbrl i.d{background:#F07A6A}
+.pbrp{flex-basis:100%;font-size:11.5px}
+.pses{display:flex;align-items:center;gap:8px;margin-top:12px;font:500 12px "Barlow Condensed",Barlow,var(--sans);color:#8F9BB3}
+.psb{position:relative;flex:1;height:4px;border-radius:2px;background:rgba(233,236,242,.08)}
+.psb i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:#C9A35B}
+.psb em{position:absolute;top:-4px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:#E6C98A;border:2px solid #0E1626}
+.psl{text-align:center;font-size:12px;color:#8F9BB3;margin-top:3px}
+.pcard .pstrip{margin-top:12px;border-bottom:0}
 .plig{margin:26px 0 8px}
 .psec{display:flex;justify-content:space-between;align-items:baseline;margin:0 2px 2px}
 .psec h2{margin:0;font-size:19px;font-weight:700;letter-spacing:-.01em;color:#E9ECF2}
@@ -5509,37 +5536,37 @@ function pusCam(){return document.documentElement.classList.contains('cam')}
 function nDial(){
  const mk=S.mkt||{},x=mk.XU100||{},ch=x.ch!=null?x.ch:S.idxCh,s=nowSess(),live=typeof tvAlive==='function'&&tvAlive(),bot=!!S.botAlive;
  const d=new Date(Date.now()+3*3600e3),gun=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'][d.getUTCDay()],
-  ay=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'][d.getUTCMonth()],hm=d.toISOString().slice(11,16);
- const R=132,P=f=>{const a=(-112+224*f)*Math.PI/180;return [+(R*Math.sin(a)).toFixed(1),+(-R*Math.cos(a)).toFixed(1)]};
- const f=Math.max(0,Math.min(1,(s.m-600)/480)),p0=P(0),p1=P(1),pf=P(f),lg=f*224>180?1:0;
- const ang=ch!=null&&isFinite(ch)?Math.max(-1,Math.min(1,ch/3))*80:0,up=(ch||0)>=0,col=up?'#5FD39A':'#F07A6A';
- let tk='';for(let i=0;i<8;i++){const a=i*Math.PI/4,c=Math.cos(a),sn=Math.sin(a),r1=104,r2=i%2?97:93;tk+='<line x1="'+(sn*r1).toFixed(1)+'" y1="'+(-c*r1).toFixed(1)+'" x2="'+(sn*r2).toFixed(1)+'" y2="'+(-c*r2).toFixed(1)+'"/>'}
- const chg=ch!=null&&isFinite(ch)&&x.c?(up?'+':'−')+nf(Math.abs(x.c-x.c/(1+ch/100)),1)+'  ('+(up?'+':'−')+'%'+nf(Math.abs(ch),2)+')':'';
- const daySeen=s.wk&&s.m>600;
- const dial='<svg class="pdial" viewBox="-150 -142 300 252" role="img" aria-label="BIST 100 '+(x.c?nf(x.c,0):'')+' '+chg+'">'+
-  '<path d="M'+p0+' A'+R+' '+R+' 0 1 1 '+p1+'" class="ark"/>'+
-  (daySeen&&f>0?'<path d="M'+p0+' A'+R+' '+R+' 0 '+lg+' 1 '+pf+'" class="arp"/><circle cx="'+pf[0]+'" cy="'+pf[1]+'" r="6.5" class="arn"/>':'')+
-  '<text x="'+(p0[0]-2)+'" y="'+(p0[1]+22)+'" class="art">10:00</text><text x="'+(p1[0]+2)+'" y="'+(p1[1]+22)+'" class="art">18:00</text>'+
-  (s.open?'<text x="'+(pf[0]+(f>.5?10:-10))+'" y="'+(pf[1]-10)+'" class="arh" text-anchor="'+(f>.5?'start':'end')+'">'+hm+'</text>':'')+
-  '<circle r="104" class="dface"/><g class="dtk">'+tk+'</g>'+
-  '<text x="-66" y="-30" class="dl">satıcılı</text><text x="66" y="-30" class="dl">alıcılı</text>'+
-  '<g transform="rotate('+ang.toFixed(1)+')"><polygon points="0,-88 6,-8 -6,-8" fill="'+col+'"/><polygon points="0,30 4,-8 -4,-8" class="dtail"/></g><circle r="7" class="dhub"/>'+
-  '<text y="44" class="dv">'+(x.c?nf(x.c,0):'–')+'</text><text y="66" class="dc" fill="'+col+'">'+chg+'</text></svg>';
- const md=S.reg?S.reg.mode:'';
- const vd=ch==null||!isFinite(ch)?'Piyasa verisi bekleniyor':(s.open?'':'Gün ')+(ch>=0.8?'alıcılı':ch>=0?'hafif alıcılı':ch>-0.8?'hafif satıcılı':'satıcılı')+(s.open?' bir gün':' kapandı');
- const vs=md==='TREND'?'Yükseliş havası; AL sinyalleri daha güvenilir.':md==='ZAYIF'?'Zayıf piyasa; temkinli ol, pozisyonları küçült.':md==='YATAY'?'Yön belirsiz; kırılım ve sıkışma kurulumları öne çıkar.':'';
+  ay=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'][d.getUTCMonth()];
+ const ok=ch!=null&&isFinite(ch),up=(ch||0)>=0,col=up?'#5FD39A':'#F07A6A';
+ const ang=ok?Math.max(-1,Math.min(1,ch/3))*90:0;   // ±%3'te ibre tam doğu/batı
  const U=(S.uni||[]).filter(o=>o&&o.close>0&&o.change!=null),nu=U.filter(o=>o.change>0).length,nd=U.filter(o=>o.change<0).length,tot=Math.max(1,nu+nd);
+ // kadran: dış pirinç bilezik + 72 çentik, ince pusula gülü, iki renkli ibre; bileziğin üstünde yükselen hisse oranı yeşil yay
+ let tk='';for(let i=0;i<72;i++){const a=i*5*Math.PI/180,L=i%18===0?9:i%2===0?5:3,r=58;tk+='<line x1="'+(Math.sin(a)*r).toFixed(2)+'" y1="'+(-Math.cos(a)*r).toFixed(2)+'" x2="'+(Math.sin(a)*(r-L)).toFixed(2)+'" y2="'+(-Math.cos(a)*(r-L)).toFixed(2)+'"'+(i%18===0?' class="mj"':'')+'/>'}
+ const rose=[0,45,90,135,180,225,270,315].map(g=>{const big=g%90===0,l=big?40:26,w=big?6:4;return '<polygon points="0,-'+l+' '+w+',0 0,'+(big?6:4)+' -'+w+',0" transform="rotate('+g+')" class="'+(big?'rs1':'rs2')+'"/>'}).join('');
+ const br=nu+nd?nu/tot:0,R=64,ba=br*2*Math.PI,bx=(Math.sin(ba)*R).toFixed(2),by=(-Math.cos(ba)*R).toFixed(2);
+ const brArc=nu+nd?(br>=0.999?'<circle r="'+R+'" class="pbu"/>':'<path d="M0,-'+R+' A'+R+','+R+' 0 '+(br>0.5?1:0)+' 1 '+bx+','+by+'" class="pbu"/>'):'';
+ const dial='<svg class="pcomp" viewBox="-74 -74 148 148" role="img" aria-label="Piyasa pusulası: BIST 100 '+(ok?pct(ch):'')+'">'+
+  '<circle r="'+R+'" class="pbz"/>'+brArc+'<circle r="58" class="pfc"/><g class="ptk">'+tk+'</g><g class="prs">'+rose+'</g>'+
+  '<text x="44" y="4" class="pcd">AL</text><text x="-44" y="4" class="pcd">SAT</text>'+
+  '<g transform="rotate('+ang.toFixed(1)+')"><polygon points="0,-50 5.5,0 -5.5,0" fill="'+col+'"/><polygon points="0,30 4,0 -4,0" class="ptl"/></g><circle r="5" class="phb"/></svg>';
+ const vd=!ok?'Piyasa verisi bekleniyor':(s.open?'':'Gün ')+(ch>=0.8?'alıcılı':ch>=0?'hafif alıcılı':ch>-0.8?'hafif satıcılı':'satıcılı')+(s.open?' gidiyor':' kapandı');
+ const md=S.reg?S.reg.mode:'',vs=md==='TREND'?'Yükseliş havası; AL sinyalleri daha güvenilir.':md==='ZAYIF'?'Zayıf piyasa; temkinli ol.':md==='YATAY'?'Yön belirsiz; kırılım kurulumları öne çıkar.':'';
+ const chg=ok&&x.c?(up?'+':'−')+nf(Math.abs(x.c-x.c/(1+ch/100)),1)+' · '+(up?'+':'−')+'%'+nf(Math.abs(ch),2):'';
  const V=S.viop,st=[];if(V&&V.c)st.push(['VİOP 30',V.c,V.ch]);[['Banka','BANKA'],['Dolar','USD'],['Altın','ALTIN'],['Euro','EUR']].forEach(([a,k])=>{if(mk[k]&&st.length<4)st.push([a,mk[k].c,mk[k].ch])});
+ const hmm=v=>{v=Math.max(0,v);const h=Math.floor(v/60),m=v%60;return (h?h+' sa ':'')+m+' dk'};
+ const f=Math.max(0,Math.min(1,(s.m-600)/480)),sessT=s.open?'Kapanışa '+hmm(1080-s.m):s.pre?'Açılışa '+hmm(600-s.m):'Piyasa kapalı';
  let h='<header class="phead"><div class="pmark"><svg viewBox="-20 -20 40 40" aria-hidden="true"><circle r="18" fill="none" stroke="#C9A35B" stroke-width="1.6"/><polygon points="0,-14 3.2,0 -3.2,0" fill="#5FD39A"/><polygon points="0,14 3.2,0 -3.2,0" fill="#F07A6A"/><circle r="2.2" fill="#0E1626" stroke="#C9A35B" stroke-width="1.2"/></svg>'+
   '<div><b>Pusula</b><span>'+gun+', '+d.getUTCDate()+' '+ay+'</span></div></div>'+
   '<div class="pst"><span class="'+(live?'on':'')+'" title="Canlı veri">Canlı</span><span class="'+(bot?'on':'')+'" title="İş bilgisayarı motoru">Motor</span></div></header>'+
   '<button class="psearch" onclick="xrayOpen()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>Hisse ara: not, puan, seviye</button>'+
-  '<div class="pdialw">'+dial+'<div class="pverd"><b>'+vd+'</b>'+(vs?'<span>'+vs+'</span>':'')+'</div></div>';
- if(nu+nd)h+='<div class="pbr"><i style="width:'+(nu/tot*100).toFixed(1)+'%" class="u"></i><i style="width:'+(nd/tot*100).toFixed(1)+'%" class="d"></i></div><div class="pbl"><span><b class="up">'+nu+'</b> hisse yükseliyor</span><span><b class="dn">'+nd+'</b> düşüyor</span></div>';
- if(st.length)h+='<div class="pstrip">'+st.map(t=>'<div><small>'+t[0]+'</small><b>'+nf(t[1],t[1]>1000?0:2)+'</b><em class="'+cls(t[2])+'">'+(t[2]!=null?(t[2]>=0?'+':'−')+nf(Math.abs(t[2]),2):'')+'</em></div>').join('')+'</div>';
+  '<div class="pcard"><div class="pgrid">'+dial+'<div class="pinfo"><small>BIST 100</small><b class="pidx">'+(x.c?nf(x.c,0):'–')+'</b><span class="pchg" style="color:'+col+'">'+chg+'</span>'+
+   '<span class="pvd">'+vd+'</span>'+(vs?'<span class="pvs">'+vs+'</span>':'')+'</div></div>'+
+  (nu+nd?'<div class="pbrl"><span><i class="u"></i><b>'+nu+'</b>yükselen</span><span><i class="d"></i><b>'+nd+'</b>düşen</span><span class="pbrp">Kadrandaki yeşil yay: yükselenlerin payı (%'+Math.round(br*100)+')</span></div>':'')+
+  '<div class="pses"><span>10:00</span><div class="psb"><i style="width:'+(f*100).toFixed(1)+'%"></i>'+(s.open?'<em style="left:'+(f*100).toFixed(1)+'%"></em>':'')+'</div><span>18:00</span></div><div class="psess">'+nowSessLine()+'</div>'+
+  (st.length?'<div class="pstrip">'+st.map(t=>'<div><small>'+t[0]+'</small><b>'+nf(t[1],t[1]>1000?0:2)+'</b><em class="'+cls(t[2])+'">'+(t[2]!=null?(t[2]>=0?'+':'−')+nf(Math.abs(t[2]),2):'')+'</em></div>').join('')+'</div>':'')+'</div>';
  if(V&&V.c&&s.wk&&s.m>=570&&s.m<600)h+='<div class="nwarn info">📈 <b>VİOP açıldı:</b> BIST 30 vadeli '+pct(V.ch)+' → endeks '+(V.ch>0.3?'yukarı':V.ch<-0.3?'aşağı':'yatay')+' açılabilir'+(V.dl?' (veri 15 dk gecikmeli)':'')+'.</div>';
  try{const ne=ecNear(45);if(ne.length)h+='<div class="nwarn">⚠️ <b>'+ne.map(e=>ecHm(e.t)+' '+ecFlag(e)+' '+htmlEsc(ecTitle(e))).join(', ')+'</b>: veri saatinde fiyatlar sert oynayabilir.</div>'}catch(e){}
- return '<div class="phero">'+h+'<div class="psess">'+nowSessLine()+'</div></div>'}
+ return '<div class="phero">'+h+'</div>'}
 function nLig(){const K=window.KSTAT;
  if(!K||Date.now()-(K._t||0)>5*60e3){try{kstatLoad().then(k=>{if(k&&S.tab==='now')renderNow()})}catch(e){}}
  if(!K||!K.src)return '';

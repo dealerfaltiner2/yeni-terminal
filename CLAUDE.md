@@ -239,3 +239,5 @@ Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ"
   Ana sayfa (renderNow): nDial() = başlık (Canlı/Motor ışıkları) + arama + pusula kadranı (ibre = XU100 günlük %, ±%3'te tam sapma; dış pirinç yay = seans 10:00→18:00) + hüküm cümlesi + yükselen/düşen + VİOP/Banka/Dolar/Altın şeridi;
   nLig() = 'Hangi sinyal önde?' (KSTAT.src son 10 iş günü, o31 isabeti, en az 10 sonuçlanan; PUS_AD'de olmayan sessiz kaynaklar gösterilmez; pirinç çizgi = başabaş %25). Klasik temada eski nHero.
   Alt menü: Grafik yerine Karne (data-t lab); Grafik menüde PİYASA grubunda.
+  v11.2 (16.10 gece, Fatih: 'pusula çok büyük, küçült ve güzelleştir'): nDial yeniden — 148 px pusula (pirinç bilezik + 72 çentik + silik pusula gülü + iki renkli ibre; bilezik üstündeki yeşil yay = yükselen hisselerin payı) solda,
+  sağında BIST 100 değeri/değişimi + hüküm cümlesi; altında yükselen/düşen, ince seans çubuğu (10:00→18:00), nowSessLine (seans + motor satırı; UI testi bunu arar) ve VİOP/Banka/Dolar/Altın şeridi — hepsi tek kart (.pcard).
