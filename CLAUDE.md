@@ -14,6 +14,7 @@ Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ"
 - ARAŞTIRMACI (en çok bir-iki tane): karne/D1/geçmiş veriyi inceler, sonucu Fatih'e ve docs/DEVIR.md'ye (yalnız kendi bölümüne) yazar. index.html ve worker/ dosyalarına DOKUNMAZ, push yapmaz
   (DEVIR notunu commit'leyebilir ama push'u GELİŞTİRİCİ'ye bırakır ya da seans dışında yalnız docs/ değişikliğiyle yapar). D1'de büyük tarama yapmaz (okuma sınırı ortak): veriyi küçük parçalarla al, yerelde hesapla.
 - ZAMANLANMIŞ GÖREVLER: akşam bakımı (hafta içi 18:53) GELİŞTİRİCİ kurallarıyla çalışır; piyasa yorumu yalnız D1 `yorum` tablosuna yazar, koda dokunmaz.
+  AJAN DENETİMİ (15.10, Fatih: 'her akşam ajanları takip et, yanlış varsa düzelt'): zamanlanmış görev 'Pusula ajan denetimi' hafta içi 21:07 — günün commit'lerini ve görevlerini kurallara göre denetler (seans içi push, onaysız eşik, indekssiz dakikalık sorgu, sır, araştırmacının koda dokunması), D1 sağlığına bakar, gerekiyorsa düzeltir (testli, GELİŞTİRİCİ kuralları), sonucu Fatih'e bildirim olarak verir.
 - HERKES İÇİN: sunucunun DAKİKALIK işine yeni sorgu ekleyen, EXPLAIN QUERY PLAN ile indeks kullandığını gösterir (count/GROUP BY/indekssiz WHERE yasak). Yeni toplayıcı/araştırma işi eklemek GELİŞTİRİCİ'nin işidir ve Fatih onayı ister.
   Sinyal kuralı/eşik değişikliği yalnız Fatih onayıyla. Yaptığın her kalıcı değişikliği bu dosyaya kısa not olarak ekle (sonraki ajan buradan öğrenir).
 
