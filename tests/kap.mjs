@@ -67,5 +67,22 @@ KAP = [{ disclosureIndex: 900, publishDate: pub(Date.now() - 30e3), subject: 'Ye
 const h2 = Object.assign({}, h, { tgSend: async () => { throw new Error('kesildi'); } });
 try { await kapPoll(env, h2); } catch (e) {}
 ok('çalışma sonda kesilse de kap_last ilerledi (her dakika aynı yük yok)', db.prepare("SELECT v FROM meta WHERE k='kap_last'").get().v === '900');
+// v11.4: seans içi geri alım → Telegram (günün ilk bildirimi, her gün bildiren ve tabandaki hariç)
+db.prepare("DELETE FROM meta WHERE k='geri_seen'").run();
+const geri = (idx, sym) => ({ disclosureIndex: idx, publishDate: pub(Date.now() - 20e3), subject: 'Pay Geri Alımına İlişkin Bildirim', summary: 'geri alım', relatedStocks: sym, kapTitle: sym });
+let QQ = {};
+const h3 = Object.assign({}, h, { tgSend: async (c, m) => { sent.push(m); return { ok: true }; }, scanRaw: async (e, b) => ({ json: async () => ({ data: JSON.parse(b).symbols.tickers.map(t => ({ s: t, d: [t.split(':')[1], (QQ[t.split(':')[1]] || {}).c || 10, (QQ[t.split(':')[1]] || {}).ch || 0.5] })) }) }) });
+at('2026-10-13', '11:00'); sent.length = 0; QQ = { KCHOL: { c: 200, ch: 0.4 } };
+KAP = [geri(1001, 'KCHOL')]; await kapPoll(env, h3);
+ok('seans içi geri alım Telegram\'a gitti (AL kartı, hedef/stop)', sent.length === 1 && /AL · KCHOL/.test(sent[0]) && /206,00/.test(sent[0]) && /198,00/.test(sent[0]), sent[0]);
+at('2026-10-13', '13:00'); sent.length = 0; KAP.push(geri(1002, 'KCHOL')); await kapPoll(env, h3);
+ok('aynı gün ikinci geri alım gitmez', sent.length === 0, sent[0]);
+at('2026-10-13', '14:00'); sent.length = 0; QQ.TABAN = { c: 5, ch: -9.9 }; KAP.push(geri(1003, 'TABAN')); await kapPoll(env, h3);
+ok('tabandaki hissenin geri alımı gitmez', sent.length === 0, sent[0]);
+for (const [d, i] of [['2026-10-14', 1010], ['2026-10-15', 1020], ['2026-10-16', 1030]]) { at(d, '11:00'); KAP.push(geri(i, 'DCTTR')); await kapPoll(env, h3); }
+at('2026-10-19', '11:00'); sent.length = 0; KAP.push(geri(1040, 'DCTTR')); await kapPoll(env, h3);
+ok('her gün bildiren hisse (son 7 günde 3 gün) gitmez', sent.length === 0, sent[0]);
+at('2026-10-19', '19:00'); sent.length = 0; KAP.push(geri(1050, 'SISE')); await kapPoll(env, h3);
+ok('seans dışı geri alım AL kartı olarak gitmez', !sent.some(m => /AL · SISE/.test(m)));
 console.log('\nKAP: ' + res.filter(Boolean).length + '/' + res.length + ' geçti');
 process.exit(res.every(Boolean) ? 0 : 1);

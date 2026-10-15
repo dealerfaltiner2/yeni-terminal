@@ -89,10 +89,18 @@ function kapMsg(r, esc, q) {
   const hm = new Date(r.t + TRMS).toISOString().slice(11, 16);
   const subj = String(r.subj || '').slice(0, 120), sm = r.summ && r.summ !== r.subj ? String(r.summ).slice(0, 220) : '';
   const px = q && q.close ? 'Hisse <code>' + Number(q.close).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</code>  bugün ' + tgPct(q.change) + ' · ' : '';
-  return '📰 <b>KAP · ' + esc(r.syms) + '</b>   <i>' + yon + ' · ' + esc(KAP_AD[r.tip] || r.tip) + '</i>\n<blockquote>' + (sm ? '<b>' + esc(subj) + '</b>\n' + esc(sm) : esc(subj)) + '</blockquote>' + px + 'saat ' + hm;
+  let ex = '';
+  if (r.geri) {   // v11.4: seans içi geri alım — işlem planı (canlı mesajlarla aynı: hedef +%3, stop −%1)
+    const c = q && q.close ? Number(q.close) : 0, f = v => v.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    ex = '\n<blockquote>' + (c ? 'Hedef   <code>' + f(c * 1.03) + '</code>   +%3\nStop     <code>' + f(c * 0.99) + '</code>   −%1' : 'Hedef +%3 · Stop −%1 (şimdiki fiyattan)') + '</blockquote>' +
+      '📌 Şirket seans içinde kendi hissesini topluyor. Canlı karnede bu durumda sinyallerin yarıdan fazlası −%1 gelmeden +%3\'e ulaştı (örnek küçük).';
+  }
+  return (r.geri ? '🟢 <b>AL · ' + esc(r.syms.split(',')[0]) + '</b>   <i>KAP · seans içi geri alım</i>\n<blockquote>' + esc(subj) + '</blockquote>' + px + 'saat ' + hm :
+    '📰 <b>KAP · ' + esc(r.syms) + '</b>   <i>' + yon + ' · ' + esc(KAP_AD[r.tip] || r.tip) + '</i>\n<blockquote>' + (sm ? '<b>' + esc(subj) + '</b>\n' + esc(sm) : esc(subj)) + '</blockquote>' + px + 'saat ' + hm) + ex;
 }
 // Telegram kuralı: önem 3 → her hisse; önem 2 (yönlü ya da bilanço) → XU100 + izleme listesi; izleme listesi → önem ≥ 1
 function wantTg(r, big, watch) {
+  if (r.geri) return true;   // v11.4: seans içi geri alım (aday işaretlendi; tekrar/taban elemesi kapPoll'da)
   if (r.tip === 'icerden') return false; // 03.10 (Fatih onayı): içeriden alım-satım haberleri karnede %44 → yalnız karneye yazılır
   const syms = String(r.syms).split(',');
   if (syms.some(s => watch.has(s)) && r.onem >= 2) return true; // v8.8: izleme listesinde de yalnız önemli (≥2)
@@ -140,6 +148,23 @@ export async function kapPoll(env, h) {
   // Telegram penceresi: önem 3 → 07:00–23:00 her gün; diğerleri → hafta içi 08:00–22:00. Pencere dışı önemliler sabah 09:30 özetinde.
   const tgOn = cfg && opt.kap !== 0;
   const toSend = [];
+  // v11.4 (16.10, Fatih onayı, DEVIR 6n): SEANS İÇİNDE (10:00–17:30) yayınlanan şirket geri alımı → Telegram (canlı karnede %57 isabet, +%1,15/işlem).
+  // Her hissenin o günkü İLK geri alım bildirimi; son 7 günün 3 ayrı gününde bildiren ('her gün bildiren', DCTTR/BLCYT gibi) ve tabandaki hisse hariç.
+  // meta 'geri_seen' {SEMBOL: [gün…]} — yalnız geri alım satırı geldiğinde 1 okuma + 1 yazma.
+  const geriRows = rows.filter(r0 => r0.tip === 'geri' && r0.syms && now - r0.t <= 15 * 60e3);
+  if (geriRows.length) {
+    let seen = {}; try { const g = await env.BT.prepare("SELECT v FROM meta WHERE k = 'geri_seen'").first(); if (g) seen = JSON.parse(g.v) || {}; } catch (e) {}
+    const lim = trParts(now - 7 * 86400e3).day;
+    for (const r0 of geriRows) {
+      const s0 = r0.syms.split(',')[0], tp = trParts(r0.t), L = (seen[s0] || []).filter(d => d >= lim);
+      const before = L.filter(d => d < tp.day).length, todayAlready = L.includes(tp.day);
+      if (tp.wd >= 1 && tp.wd <= 5 && tp.m >= 600 && tp.m < 1050 && !todayAlready && before < 3) r0.geri = 1;
+      if (!todayAlready) L.push(tp.day);
+      seen[s0] = L.slice(-10);
+    }
+    for (const k of Object.keys(seen)) if (!(seen[k] || []).some(d => d >= lim)) delete seen[k];
+    try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('geri_seen', ?)").bind(JSON.stringify(seen)).run(); } catch (e) {}
+  }
   for (const r0 of rows) {
     if (now - r0.t > 15 * 60e3) { r0.sent = 2; continue; } // yalnız TAZE haber anında gider (ilk açılışta eski haber seli olmasın)
     const inWin = r0.onem >= 3 ? (p.m >= 420 && p.m < 1380) : (p.wd >= 1 && p.wd <= 5 && p.m >= 480 && p.m < 1320);
@@ -177,7 +202,9 @@ export async function kapPoll(env, h) {
   }
   let sent = 0;
   let pn = 0;
-  for (const r0 of toSend.filter(x => isNew.has(x.idx)).slice(0, 8)) { const q = Q[r0.syms.split(',')[0]]; const t = await h.tgSend(cfg, kapMsg(r0, h.esc, q), tgKb(r0.syms.split(',')[0], r0.idx)); if (t && t.ok) sent++;
+  for (const r0 of toSend.filter(x => isNew.has(x.idx)).slice(0, 8)) { const q = Q[r0.syms.split(',')[0]];
+    if (r0.geri && !watch.has(r0.syms.split(',')[0]) && q && q.change != null && q.change <= -9) continue;   // tabandaki geri alım gönderilmez
+    const t = await h.tgSend(cfg, kapMsg(r0, h.esc, q), tgKb(r0.syms.split(',')[0], r0.idx)); if (t && t.ok) sent++;
     // v8.2: iPhone bildirimi (çalışma başına en çok 2 — işlemci sınırı)
     if (h.pushSend && pn < 2) { pn++; try { const s0 = r0.syms.split(',')[0]; await h.pushSend(env, { cat: 'kap', title: '📰 KAP · ' + s0 + ' · ' + (KAP_AD[r0.tip] || r0.tip), body: String(r0.subj || '') + (r0.summ ? ' — ' + r0.summ : '') + (q && q.close ? ' · ' + q.close + ' (' + (q.change >= 0 ? '+' : '') + (+q.change).toFixed(2) + '%)' : ''), url: './?s=' + s0, tag: 'kap' + r0.idx }, 2); } catch (e) {} } }
   return { yeni: rows.length, telegram: sent };

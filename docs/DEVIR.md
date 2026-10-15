@@ -244,6 +244,7 @@ Betikler: tools/ml/prep.py (S.pkl), ideas.py, summ.py, night.py, late.py, mom2.p
 - KAP içeriden alım ve özel durum: endeks artıyken artı (+0,66 / +0,25), ekside eksi — bağımsız bir üstünlük yok, piyasa yönünü taşıyor.
 - Kredi notu (kap-not) gece yayınlanan +1,36 (23) — örnek az, izlenmeli.
 - ÖNERİ (Fatih onayı gerekir): (1) Geri alım seans içi → Telegram'a anlık mesaj (her hissenin o gün ilk bildirimi, tabandaysa ve her gün bildirenler hariç) + karnede ayrı kaynak; (2) tavan takibi 09:59 listesi yalnız açılış farkı < %6 olanlar, sessiz kayıtla başla; (3) Fırsat B'yi endeks ekside iken Telegram'dan çıkar. 3 Kasım'da birlikte yeniden bak.
+- 16.10 gece UYGULANDI (Fatih: 'hepsini yap'): v11.4 — (1) geri alım seans içi Telegram, (2) tavan sakin açılış listesi 10:01 Telegram + karne 'tavan6' (tavan zaten karnede olduğu için sessiz kayıt yerine doğrudan liste), (3) Fırsat B endeks ekside Telegram'a gitmez. 3 Kasım'da 'kap-geri' (seans içi, pub saatine göre) ve 'tavan6' ayrı değerlendirilecek.
 
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).

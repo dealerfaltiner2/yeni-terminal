@@ -243,3 +243,12 @@ Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ"
   sağında BIST 100 değeri/değişimi + hüküm cümlesi; altında yükselen/düşen, ince seans çubuğu (10:00→18:00), nowSessLine (seans + motor satırı; UI testi bunu arar) ve VİOP/Banka/Dolar/Altın şeridi — hepsi tek kart (.pcard).
   v11.3 (16.10 gece, Fatih: 'altta beyaz kalıyor, arama belirgin olsun, tam pusula hizmeti'): iPhone'da alt menünün altındaki beyaz şerit — html.cam arka planı #0E1626, #app alt boşluğu 0, #tabs alt boşluğu safe-area kadar (background-attachment:scroll).
   Arama kutusu pirinç 1,5 px çerçeveli. nRota() 'Bugünün rotası' kartı (pusula kartının altında): Piyasa (rejim + endeks → temkinli/dikkatli/açık rota), Saat (seans evresine göre ne yapmalı), Sinyal (karnede önde olan + kaybettirenler), Takvim (20 saat içindeki önemli veri), Pozisyon (açık işlem sayısı). Yalnız öneri metni, sinyal kuralı yok.
+- v11.4 (16.10 gece, Fatih: 'hepsini yap, ana sayfa kompakt olsun, ekranı kirletme') AKILLI + SADE PUSULA:
+  SİNYAL DEĞİŞİKLİKLERİ (Fatih onayı, DEVIR 6n): (1) kap.js: SEANS İÇİNDE (10:00–17:30) yayınlanan şirket geri alımı → Telegram AL kartı (hedef +%3/stop −%1); hissenin o günkü ilk bildirimi, son 7 günün 3 gününde bildiren ve tabandaki (≤ −%9) hariç; meta 'geri_seen'.
+  (2) tavan.js tavanOpen: hafta içi 10:01–10:20 bir kez — dün tavan kapananlardan (meta 'tavan_list', tavanScan yazar) açılışı %6 altı olanlar Telegram'a + karneye src 'tavan6' (px = mesaj anı fiyatı); tatil günü (tarama dünkü tavan değerini verir) mesaj yok; meta 'tavan_open'.
+  (3) Fırsat otomatik taraması: endeks ekside iken B notu Telegram'a gitmez (karneye yazılır). Algı kuralı 3 Kasım'a kadar aynı.
+  /sigstats artık up/dn (sinyal anında endeks artı/eksi) ve r0 (sonuçsuzların gün sonu toplamı) verir; işlem başı ort. = (3·h − s + r0)/n.
+  ANA SAYFA (yalnız cam; renderNowCam): kadranın ibresi = YÖN PUANI pusYon (endeks, yükselen/düşen, ortanca hisse, VİOP, banka, trend; −100…+100) + ayrışma uyarısı;
+  'Pusula diyor ki' nAkil (günlük fren: bugün 2 zararlı işlem → 'Bugün dur'; hava; endeksin bugünkü yönündeki günlerde kazandıran/kaybettiren kaynak; saat; 6 sa içindeki veri; kişisel ders ≥8 işlem);
+  açık pozisyonlar, canlı takip (3 kart + 'Tümünü göster'; her kartta 'bu havada %X hedef' notu) ya da 'Yarın ilk bakılacaklar' çipleri; nGuven 'Bugünkü gibi günlerde'; geri kalan her şey katlanır satır (nFold, LS 'nowf', kapalı başlar, içerik yalnız açılınca çizilir).
+  Testlerde katlı bölüm gerekiyorsa NOWF.f_<ad>=1 yap. Klasik temada eski düzen aynen.

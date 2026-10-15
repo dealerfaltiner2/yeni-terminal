@@ -1,7 +1,7 @@
 import { tgPlain } from './tgfmt.js';
 import { flowRoute } from './flow.js';
 import { kaphStep } from './kaph.js';
-import { tavanScan, mktClose } from './tavan.js';
+import { tavanScan, mktClose, tavanOpen } from './tavan.js';
 import { posRoute, posWatch } from './pos.js';
 import { pushRoute, pushSend } from './push.js';
 import { ecalPoll, ecalRoute } from './ecal.js';
@@ -1042,6 +1042,7 @@ export default {
       try { await botWatch(env, tgSend, kvGet); } catch (e) {}
       try { await mktClose(env, { scanRaw }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'kapanış özeti: ' + String(e && e.message || e).slice(0, 150), 'mktClose'); }   // v10.8: karne mesajının piyasa bölümü
       try { await tavanScan(env, { scanRaw, sigAdd, tgSend, kvGet, esc, pushSend }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'tavan takibi: ' + String(e && e.message || e).slice(0, 150), 'tavanScan'); }
+      try { await tavanOpen(env, { scanRaw, sigAdd, tgSend, kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'tavan sakin açılış: ' + String(e && e.message || e).slice(0, 150), 'tavanOpen'); }   // v11.4
       try { await posWatch(env, { scanRaw, kvGet, tgSend, esc, pushSend }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'pozisyon asistanı: ' + String(e && e.message || e).slice(0, 150), 'posWatch'); }
       await hb('3-KAP bitti');
       if (!sigAlive) { await sigJob(); await hb('4-karne bitti'); }

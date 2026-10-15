@@ -111,5 +111,30 @@ ok('takılı kayıt kalmadı', !meta('sig_run') && db.prepare("SELECT count(*) n
   ok('eski sinyaller geriye dönük tamamlandı', bf && bf.tamamlama === 1 && row.pbn === 1 && row.pb === 1, JSON.stringify({ bf, row }));
   ok('tamamlanan sinyal ikinci kez denenmez', (await sigEval(env, bfx, tgSend, kvGet, esc, nf)) == null);
 }
+// v11.4: tavan sakin açılış + karne piyasa yönü ayrımı
+{
+  const { tavanPick, tavanOpen } = await import(path.join(W, 'tavan.js'));
+  const P = tavanPick([{ s: 'A', c: 10 }, { s: 'B', c: 10 }, { s: 'C', c: 10 }, { s: 'D', c: 10 }], { A: { o: 10.3, c: 10.4, ch: 4 }, B: { o: 11, c: 11, ch: 10 }, C: { o: 10.7, c: 10.8, ch: 8 }, D: { o: 0, c: 10, ch: 0 } });
+  ok('tavanPick: yalnız açılışı %6 altı (A), tavan/yüksek açılış ve açılmayan hariç', P.length === 1 && P[0].s === 'A' && Math.abs(P[0].gap - 3) < 1e-9, JSON.stringify(P));
+  db.prepare("INSERT OR REPLACE INTO meta (k,v) VALUES ('tavan_list', ?)").run(JSON.stringify({ d: '2026-10-15', L: [{ s: 'A', c: 10 }, { s: 'B', c: 10 }] }));
+  const T = d => Date.parse(d + ':00+03:00'), add = [];
+  const sc = Q => async () => ({ json: async () => ({ data: Object.entries(Q).map(([k, q]) => ({ s: 'BIST:' + k, d: [k, q.c, q.ch, q.o] })) }) });
+  const hh = { sigAdd: async (e, x) => add.push(x), tgSend, kvGet, esc };
+  T0 = T('2026-10-16T09:58'); sent.length = 0;
+  ok('tavanOpen: 10:01 öncesi çalışmaz', (await tavanOpen(env, Object.assign({ scanRaw: sc({}) }, hh))) == null);
+  T0 = T('2026-10-16T10:02');
+  await tavanOpen(env, Object.assign({ scanRaw: sc({ A: { c: 10.35, ch: 3.5, o: 10.2 }, B: { c: 11, ch: 10, o: 11 } }) }, hh));
+  ok('tavanOpen: Telegram listesi yalnız sakin açanı içerir', sent.length === 1 && /<b>A<\/b>/.test(sent[0]) && !/<b>B<\/b>/.test(sent[0]), sent[0]);
+  ok('tavanOpen: karneye tavan6 (px = şimdiki fiyat)', add.length === 1 && add[0].src === 'tavan6' && add[0].px === 10.35);
+  T0 = T('2026-10-16T10:03'); sent.length = 0;
+  ok('tavanOpen: günde bir kez', (await tavanOpen(env, Object.assign({ scanRaw: sc({ A: { c: 10, ch: 0, o: 10 } }) }, hh))) == null && sent.length === 0);
+  db.prepare("INSERT OR REPLACE INTO meta (k,v) VALUES ('tavan_list', ?)").run(JSON.stringify({ d: '2026-10-28', L: [{ s: 'A', c: 10 }] }));
+  T0 = T('2026-10-29T10:05'); sent.length = 0;
+  const rr = await tavanOpen(env, Object.assign({ scanRaw: sc({ A: { c: 10, ch: 10, o: 9.2 } }) }, hh));
+  ok('tavanOpen: tatil günü (dünkü tavan değerleri) mesaj yok', rr && rr.tatil === 1 && sent.length === 0);
+  const { statFold } = await import(path.join(W, 'sig.js'));
+  const F = statFold([{ d: 'x', src: 'a', u: 1, n: 2, h: 1, s: 1, r0: 0 }, { d: 'x', src: 'a', u: 0, n: 3, h: 0, s: 2, r0: 0.5 }, { d: 'x', src: 'a', u: null, n: 1, h: 0, s: 0, r0: 0.2 }]);
+  ok('statFold: yön ayrımı tek satıra toplanır', F.length === 1 && F[0].n === 6 && F[0].h === 1 && F[0].s === 3 && Math.abs(F[0].r0 - 0.7) < 1e-9);
+}
 console.log('\nKARNE: ' + res.filter(Boolean).length + '/' + res.length + ' geçti');
 process.exit(res.every(Boolean) ? 0 : 1);
