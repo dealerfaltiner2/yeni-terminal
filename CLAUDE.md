@@ -228,3 +228,5 @@ Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ"
   → meta 'mkt_close' {d, idx, up, dn, nu, nd}. sigSummary en üstte tgfmt.js mktBlock (🧭 Piyasa, alıntı kutusunda). Yalnız bilinen tarama alanları (name, close, change, high, low, volume). Endeks verisi gelmezse dakikada bir yeniden dener.
 - v10.9 (15.10, Fatih: 'ateşleme sinyali hiç Telegram'a gelmiyor'): Algı Telegram'ı kendi Chat ID'sine (AL.cfg.chat, Algı → Ayar) bakıyordu; motora eşleştirmede telefonun algiCfg'si kopyalandığı için boş geldi → güçlü ateşlemeler (15.10'da 34 tane) hiç gitmedi, hata da yazılmadı.
   Artık alChat() = AL.cfg.chat || S.tgChat (genel Telegram sohbeti). Algı Telegram reddi errLog('Algı Telegram') ile deftere yazılır.
+  v10.9 ek (Fatih onayı: 'sıkılaştır, 30 fazla'): Algı Telegram'ı artık güçlü (fc≥0,8) VE rv≥2 (hacim normalin 2 katı) — karnede 29.09–14.10: güçlü %12,6 (günde ~24) → güçlü+rv≥2 %24,1 (günde ~4, örnek 37, az).
+  Takip mesajları (hareket geldi/hedef/stop/sönüyor) yalnız Telegram'a giden ateşlemelerde (e.tg). Karneye yazma DEĞİŞMEDİ (bütün ateşlemeler).

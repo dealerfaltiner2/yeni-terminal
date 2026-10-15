@@ -3627,7 +3627,7 @@ function tvReconnectReport(){
      e.mute=muted(sc);
      AL.log.push(e);AL.dirty=true;saveLog(true);
      st.cnt=0;st.cool=now+30*60000;stage='ates';
-     if(!e.mute&&f.fc>=.8)tg(msgFire(e,f,o),tgKb(sym));   // v8.8: Telegram'a yalnız 💪 GÜÇLÜ (karnede %60'a karşı %43); hepsi karneye yazılmaya devam eder
+     if(!e.mute&&f.fc>=.8&&f.rv!=null&&f.rv>=2){e.tg=1;tg(msgFire(e,f,o),tgKb(sym))}   // v10.9 (15.10, Fatih: 'sıkılaştır, 30 fazla'): güçlü + hacim normalin ≥2 katı (karnede 10 gün: %12,6 → %24, günde ~24 → ~4)   // v8.8: Telegram'a yalnız 💪 GÜÇLÜ (karnede %60'a karşı %43); hepsi karneye yazılmaya devam eder
      sigPost({src:'algi',sym:sym,t:now,px:p0,sc:sc,dir:'AL',meta:{fa:f.fa!=null?+(+f.fa).toFixed(1):null,rv:f.rv!=null?+(+f.rv).toFixed(1):null,fc:f.fc!=null?+(+f.fc).toFixed(2):null,ch:f.ch!=null?+(+f.ch).toFixed(2):null,brk:!!f.brk,abv:!!f.abv,bid:!!f.fd,tema:!!gOk,endeks:!!hOk,sig:!(o.voltl>=1e7),sessiz:!!e.mute}});
      try{notify('⚡ Algı: '+sym,'Skor '+sc+' · '+nf(f.p))}catch(x){}
      try{if(window.sigToast){const w=[];if(f.fa>=2.5)w.push('Hacim normalin '+nf(f.fa,1)+' katı');else if(f.rv!=null&&f.rv>=2)w.push('Günlük hacim '+nf(f.rv,1)+' kat');if(f.fc!=null)w.push('Alıcı oranı %'+nf(f.fc*100,0));if(f.fe)w.push('30 dk zirvesini VWAP üstünde kırdı');else if(f.fd)w.push('Alış kademesi yükseliyor');if(gOk)w.push('Sektörde hareket var');
@@ -3664,13 +3664,13 @@ function tvReconnectReport(){
    ['5','15','30','60'].forEach(m=>{if(e['r'+m]==null&&el>=+m)e['r'+m]=ret});
    // teyit: 5 dk icinde +1R ve akis suruyor (hedefe ayni anda degdiyse yalnizca hedef mesaji gider)
    if(!e.conf&&el<=5&&ret>=e.stp&&f.fa>=2){e.conf=true;AL.dirty=true;
-    if(AL.cfg.sOk&&!e.mute&&p<e.tp&&e.res==null)tg('✅ <b>'+e.s+'</b> · hareket geldi\n<blockquote>Sinyalden beri <b>'+sp(ret)+'</b> · '+nf(el,0)+' dakikada</blockquote>',tgKb(e.s))}
+    if(AL.cfg.sOk&&e.tg&&p<e.tp&&e.res==null)tg('✅ <b>'+e.s+'</b> · hareket geldi\n<blockquote>Sinyalden beri <b>'+sp(ret)+'</b> · '+nf(el,0)+' dakikada</blockquote>',tgKb(e.s))}
    if(e.res==null){
     if(e.gap){if(el>=15){e.res='eksik';AL.dirty=true}}
     else if(p<=e.sp){e.res='fail';e.resT=el;AL.dirty=true;
-     if(AL.cfg.sFail&&!e.mute)tg('❌ <b>'+e.s+'</b> · stop oldu\n<blockquote>Fiyat <code>'+P(p)+'</code> · <b>'+sp(ret)+'</b> · '+nf(el,0)+' dakikada</blockquote>')}
+     if(AL.cfg.sFail&&e.tg)tg('❌ <b>'+e.s+'</b> · stop oldu\n<blockquote>Fiyat <code>'+P(p)+'</code> · <b>'+sp(ret)+'</b> · '+nf(el,0)+' dakikada</blockquote>')}
     else if(p>=e.tp){e.res='hit';e.resT=el;AL.dirty=true;
-     if(AL.cfg.sOk&&!e.mute)tg('🎯 <b>'+e.s+'</b> · hedefe ulaştı\n<blockquote>Fiyat <code>'+P(p)+'</code> · <b>'+sp(ret)+'</b> · '+nf(el,0)+' dakikada</blockquote>')}
+     if(AL.cfg.sOk&&e.tg)tg('🎯 <b>'+e.s+'</b> · hedefe ulaştı\n<blockquote>Fiyat <code>'+P(p)+'</code> · <b>'+sp(ret)+'</b> · '+nf(el,0)+' dakikada</blockquote>')}
     else if(el>=15){e.res='flat';if(e.r15==null)e.r15=ret;AL.dirty=true}
    }
    const fromCeil=e.ceil&&f.lim>0&&p<f.lim;
@@ -3678,7 +3678,7 @@ function tvReconnectReport(){
    if(!e.fade&&e.hi>e.p0*1.008&&f.fa!=null&&f.fa<1.5&&(!f.abv||giveBack||fromCeil)){
     e.fade=true;AL.dirty=true;
     const why=fromCeil?'tavandan koptu':!f.abv?'VWAP altı':'zirveden geri veriyor';
-    if(AL.cfg.sFade&&!e.mute)tg('🟠 <b>'+e.s+'</b> · hareket sönüyor\n<blockquote>'+why+'\nZirvede '+sp((e.hi/e.p0-1)*100)+' · şimdi <b>'+sp(ret)+'</b></blockquote>',tgKb(e.s))}
+    if(AL.cfg.sFade&&e.tg)tg('🟠 <b>'+e.s+'</b> · hareket sönüyor\n<blockquote>'+why+'\nZirvede '+sp((e.hi/e.p0-1)*100)+' · şimdi <b>'+sp(ret)+'</b></blockquote>',tgKb(e.s))}
   });
  }
 
@@ -3939,7 +3939,7 @@ const IC={
   ['NEDİR?','Seans boyunca en çok işlem gören hisseleri birkaç saniyede bir tarar. Bir hisseye birden para girmeye başladığında, fiyat henüz fazla kıpırdamadan uyarır. Yalnız <b>AL</b> yönlü, 10:00–18:00 arası ve <b>terminal açıkken</b> çalışır.'],
   ['NE ZAMAN SİNYAL VERİR?',['Son 1 dakikanın işlem hacmi günün normalinin <b>en az 2,5 katı</b> (ya da günlük göreli hacim 2 kat)','İşlemlerin <b>en az %65\'i alıcıdan</b> (satış kademesinden alınıyor)','Alış kademesi yükseliyor <b>ya da</b> fiyat son 30 dakikanın zirvesini VWAP üstünde kırıyor','Skor <b>eşiğin üstünde</b> (varsayılan 70, Ayar\'dan değişir) ve şartlar <b>3 tur üst üste</b> (~10–15 sn) tutuyor'],'ol'],
   ['SKOR NASIL HESAPLANIR?','100 üzerinden: anlık hacim 25, alıcı baskısı 20, günlük hacim 15, kırılım+VWAP 15, kademe yükselişi 10, sektörde 2+ hareketli hisse 10, endeks son 15 dk\'da düşmüyor 5. Sığ hisse (−20), geniş spread (−10), açılışın ilk 10 dk\'sı ve 17:50 sonrası (−15), geç kalınmış hareket (−25) puan kırar.'],
-  ['NASIL KULLANIRIM?','Durumlar: 👀 <b>İzlemede</b> → ⏳ <b>Hazırlanıyor</b> → ⚡ <b>AL sinyali</b>. Sinyalde giriş, stop (en az %0,5) ve hedef (stopun 2 katı) Telegram\'a gelir. 5 dakika içinde hedefin yarısı gelirse ✅ teyit mesajı düşer. Aynı hisse günde yalnız bir kez sinyal verir. Alıcı oranı %80 üstüyse mesajda 💪 GÜÇLÜ yazar (deneme etiketi; karnede ayrı ölçülüyor).'],
+  ['NASIL KULLANIRIM?','Durumlar: 👀 <b>İzlemede</b> → ⏳ <b>Hazırlanıyor</b> → ⚡ <b>AL sinyali</b>. Telegram\'a yalnız sıkı olanlar gider: alıcı oranı %80 üstü (💪 güçlü) VE hacim normalin en az 2 katı — giriş, hedef +%3, stop −%1; ardından hareket geldi / hedef / stop / sönüyor takip mesajları. Diğer sinyaller yalnız ekranda ve karnede. Aynı hisse günde yalnız bir kez sinyal verir.'],
   ['DİKKAT','Günde %5\'ten fazla yükselmiş ya da tavana %4\'ten yakın hissede sinyal vermez. Telefon kilitlenirse radar durur; sayfa kapalıyken <b>Sunucu radarı</b> çalışır.',1]]},
  radar:{ic:'📡',c:'#38bdf8',t:'Sunucu radarı',s:'Terminal kapalıyken de çalışır',k:['radar'],rel:['algi'],sec:[
   ['NEDİR?','Sunucuda dakikada bir çalışan tarama. Terminal kapalı olsa bile 10:10–17:55 arası bütün BIST\'e bakar, bulduklarını Sinyal Karnesi\'ne yazar. <b>3 Ekim\'den beri Telegram mesajı kapalı</b>: ilk 4 günde %35 tuttu, gün sonu ortalaması −%3 (zaten çok yükselmiş hisseyi yakalıyor). Karnede düzelirse yeniden açılır.'],
