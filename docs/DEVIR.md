@@ -232,6 +232,18 @@ Betikler: tools/ml/prep.py (S.pkl), ideas.py, summ.py, night.py, late.py, mom2.p
 - EMİR AKIŞI İLK BAKIŞ (flow, 12–15.10, 19 Momentum sinyalinin hepsinde veri var): 10:01–10:29 alıcılı payı 0,38–0,69. Kazanan 2 sinyal (ONCSM, KAPLM) 0,44'te; gün sonu sonucuyla da düzen yok. ÖRNEK ÇOK AZ — 4–6 hafta sonra.
   Sorgu kalıbı (az okuma, ~4.300 satır): flow JOIN sig ON d, m BETWEEN 600 AND 625, json_each(json_extract(data,'$.s.'||sym)); dakika satırı [dk, alıcılı, satıcılı, belirsiz, işlem, son, alış, satış].
 - OKUMA TASARRUFU (v11.0, GELİŞTİRİCİ işi): sigBackfill boş bulursa meta 'bf_idle' → 15 dk atlar (önce her dakika ~1.200 satır); /paper → meta 'paper_v', /sigstats → meta 'stat_v' 10 dk ortak önbellek.
+## 6n. 15.10 gece CANLI KARNE DERİN BAKIŞ (sig, 29.09–15.10, 13 iş günü, 2.634 AL sinyali; +%3/−%1, ikisi de yoksa gün sonu; işlem başı %0,15 maliyet; aynı gün aynı hisse tek)
+- Dönem çoğunlukla düşüş (endeks ekside 7–9 gün). Gün-t = günlük ortalamaların t değeri (gün kümelenmesi), "en iyi 3 hisse hariç" = tek hisse etkisi kontrolü.
+- KAYBETTİREN (tutarlı): Algı −0,35/işlem (549, 0/11 gün artı), Fırsat B −0,33 (267, gün-t −2,9; endeks ekside −0,55, gün-t −5,9), Fırsat A −0,30 (26), Radar −0,60 (gün-t −3,3), KAP temettü −1,03 (hak kullanımı düşüşü), bedelsiz −0,95, sessiz/dunguclu az ve eksi.
+  Algı güçlü+rv≥2 (v10.9 Telegram kuralı) −0,15 (38) — diğerlerinden iyi ama hâlâ eksi. Algı'da hiçbir kırılım (endeks, saat, oynaklık) artıya geçmedi.
+- ADAY 1 — KAP ŞİRKETİN GERİ ALIMI, SEANS İÇİNDE YAYINLANAN (giriş = yayından sonraki 1 dk mumun açılışı): 42 sinyal/20 hisse %52 isabet +0,77 (9/12 gün artı, gün-t +2,7).
+  Her gün bildiren DCTTR/BLCYT ve tabandaki girişler (pre ≤ −9) hariç: 23 sinyal/16 hisse %57, +1,15/işlem, 6/10 gün, en iyi 3 hisse hariç +0,76. Her hissenin ilk sinyali: 20/20 hisse %71 +1,78.
+  Gece/sabah yayınlanan geri alım (09:59 giriş) ≈ 0 (+0,13). Risk: örnek küçük, gerçek gecikme 1–3 dk (ölçüm yayın dakikasından), şu an Telegram'a gitmiyor (önem düşük).
+- ADAY 2 — TAVAN TAKİBİ, AÇILIŞ FARKI < %6 (dün tavan kapanan, 09:59 giriş): 92 sinyal/70 hisse %42 isabet +0,55 (6/7 gün artı; en iyi 3 hisse hariç +0,36). Açılış farkı ≥ %9,4 (tavan açılış) 23'te 0 isabet −0,76, %6–9,4 −0,33.
+  Risk: yalnız 7 gün, 5'i 06–12.10 küçük hisse coşkusu; endeks artı günlerde +0,63 (4/4), eksi günlerde zayıf. Ertesi gün takibi ajanının "girişin üstünde kapanan ertesi gün +%4" bulgusuyla uyumlu.
+- KAP içeriden alım ve özel durum: endeks artıyken artı (+0,66 / +0,25), ekside eksi — bağımsız bir üstünlük yok, piyasa yönünü taşıyor.
+- Kredi notu (kap-not) gece yayınlanan +1,36 (23) — örnek az, izlenmeli.
+- ÖNERİ (Fatih onayı gerekir): (1) Geri alım seans içi → Telegram'a anlık mesaj (her hissenin o gün ilk bildirimi, tabandaysa ve her gün bildirenler hariç) + karnede ayrı kaynak; (2) tavan takibi 09:59 listesi yalnız açılış farkı < %6 olanlar, sessiz kayıtla başla; (3) Fırsat B'yi endeks ekside iken Telegram'dan çıkar. 3 Kasım'da birlikte yeniden bak.
 
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
