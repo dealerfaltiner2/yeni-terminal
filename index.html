@@ -2162,6 +2162,9 @@ async function refreshTick(){
   const j=await tvScan('global',{symbols:{tickers:['BIST:XU100','BIST:XU030','BIST:XBANK','BIST:XUSIN','FX_IDC:USDTRY','FX_IDC:EURTRY','TVC:GOLD','TVC:SILVER','BINANCE:BTCUSDT','BINANCE:ETHUSDT','CME_MINI:ES1!','TVC:DXY','TVC:US10Y']},columns:['name','close','change']});
   const nm={XU100:'XU100',XU030:'XU030',XBANK:'BANKA',XUSIN:'SINAİ',USDTRY:'USD',EURTRY:'EUR',GOLD:'ALTIN',SILVER:'GÜMÜŞ',BTCUSDT:'BTC',ETHUSDT:'ETH','ES1!':'S&P VADELİ',DXY:'DOLAR END.',US10Y:'ABD 10Y'};
   try{const v=await tvScan('futures',{symbols:{tickers:['BIST:XU030D1!']},columns:['name','close','change','update_mode']});const d=v&&v.data&&v.data[0];if(d)S.viop={c:d.d[1],ch:d.d[2],dl:/delayed/.test(String(d.d[3]||'')),at:Date.now()}}catch(e){}
+  // v12.3: genel tarama BIST endekslerini bazen döndürmüyor (17.10 Telegram'da BIST 100 '–') → eksik endeksler Türkiye taramasından
+  try{const have=new Set((j.data||[]).filter(r=>r&&r.d&&r.d[1]!=null).map(r=>r.d[0])),miss=['XU100','XU030','XBANK','XUSIN'].filter(t=>!have.has(t));
+   if(miss.length){const t=await tvScan('turkey',{symbols:{tickers:miss.map(x=>'BIST:'+x)},columns:['name','close','change']});j.data=(j.data||[]).filter(r=>!miss.includes(r.d[0])).concat((t&&t.data)||[])}}catch(e){}
   j.data.forEach(r=>{if(r.d[0]==='XU100')S.idxCh=r.d[2]});S.mkt=S.mkt||{};j.data.forEach(r=>{S.mkt[nm[r.d[0]]||r.d[0]]={c:r.d[1],ch:r.d[2]}});
   const h=j.data.map(r=>'<span><b>'+(nm[r.d[0]]||r.d[0])+'</b>'+nf(r.d[1],r.d[1]>1000?0:2)+' <i class="'+cls(r.d[2])+'">'+pct(r.d[2])+'</i></span>').join('');
   $('#tickrun').innerHTML=h+h;
@@ -3303,7 +3306,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="12.2";window.APPV=APP_VER;
+  const APP_VER="12.3";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -5653,7 +5656,7 @@ function renderNowCam(){
  const uy=isUye();
  if(liveT&&!uy)h+='<section class="pblk plv">'+nLive(NOWF.lvall?50:3)+'</section>';
  else{const wl=watchTomorrow();
-  h+='<section class="pblk"><div class="psec"><h2>'+(uy&&s.open?'Bugün güçlü gidenler':s.pre?'Bugün ilk bakılacaklar':'Yarın ilk bakılacaklar')+'</h2></div><p class="plede">'+(uy&&s.open?'Günün zirvesine yakın, yüksek hacimle %1,5–7 artıda işlem görenler (15 dk gecikmeli). Sinyal değil, bilgi amaçlı liste.':'Günü zirvesine yakın, yüksek hacimle %1,5–7 artıda kapatanlar. Sinyal değil, açılışta ilk bakılacak liste.')+'</p>'+
+  h+='<section class="pblk"><div class="psec"><h2>'+(uy&&s.open?'Bugün güçlü gidenler':(s.pre?'Bugün':(s.wd===5||s.wd===6||s.wd===0)?'Pazartesi':'Yarın')+' ilk bakılacaklar')+'</h2></div><p class="plede">'+(uy&&s.open?'Günün zirvesine yakın, yüksek hacimle %1,5–7 artıda işlem görenler (15 dk gecikmeli). Sinyal değil, bilgi amaçlı liste.':'Günü zirvesine yakın, yüksek hacimle %1,5–7 artıda kapatanlar. Sinyal değil, açılışta ilk bakılacak liste.')+'</p>'+
    (wl.length?'<div class="pchips">'+wl.map(o=>'<button onclick="xrayOpen(\''+o.name+'\')"><b>'+htmlEsc(o.name)+'</b><i class="'+cls(o.change)+'">'+pct(o.change)+'</i></button>').join('')+'</div>':'<p class="pempty">Bugün bu şartlara uyan hisse çıkmadı.</p>')+'</section>'}
  h+=nGuven();
  // katlanır bölümler
@@ -5789,6 +5792,8 @@ async function tgaAuth(){
 </script>
 <style>
 html.tgfs #top{padding-top:calc(10px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
+html.tgfs #app{padding-top:0}   /* v12.3: tam ekranda üst boşluk iki kez sayılıyordu (cihazın güvenli alanı + Telegram'ınki) */
+html.tgfs #sigtoast{top:calc(8px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
 #tgabox{position:fixed;inset:0;z-index:9999;background:#0E1626;display:flex;align-items:center;justify-content:center;padding:24px}
 #tgabox .tgac{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;color:#E9ECF2;font-family:Barlow,system-ui,sans-serif;max-width:320px}
 #tgabox b{font-size:20px}#tgabox span{font-size:14px;color:#8F9BB3;line-height:1.45}

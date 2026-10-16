@@ -202,6 +202,12 @@ async function page(b, opt) {
       const v = await p.evaluate(() => { showTab('op'); const a = S.tab; showTab('algi'); const b2 = S.tab; showTab('lab'); const c = S.tab;
         const vis = q => { const e = document.querySelector('#tabs [data-t="' + q + '"]'); return !!e && getComputedStyle(e).display !== 'none'; };
         return { a, b2, c, cls: document.documentElement.classList.contains('uye'), op: vis('op'), algi: vis('algi'), lab: vis('lab') }; });
+      const ix = await p.evaluate(async () => { const asked = []; window.tvScan = async (m, b) => { asked.push(m);
+          if (m === 'global') return { data: [{ d: ['USDTRY', 41.9, 0.1] }] };
+          if (m === 'turkey') return { data: b.symbols.tickers.map(t => ({ d: [t.split(':')[1], t.endsWith('XU100') ? 10850 : 100, -1.2] })) };
+          return { data: [] }; };
+        document.hidden || await refreshTick(); return { asked, c: S.mkt.XU100 && S.mkt.XU100.c, usd: S.mkt.USD && S.mkt.USD.c }; });
+      ok('BIST 100 genel taramada yoksa Türkiye taramasından alınıyor', ix.c === 10850 && ix.usd === 41.9 && ix.asked.includes('turkey'), JSON.stringify(ix));
       ok('Üye görünümü (B): Fırsat/Algı sekmeleri gizli ve açılmıyor, Karne açık', v.cls && v.a === 'now' && v.b2 === 'now' && v.c === 'lab' && !v.op && !v.algi && v.lab, JSON.stringify(v));
       ok('üye sayfasında hata yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }
     // v11.9 misafirde Ayarlar gizli
