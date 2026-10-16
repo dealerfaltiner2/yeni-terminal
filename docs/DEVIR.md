@@ -246,6 +246,15 @@ Betikler: tools/ml/prep.py (S.pkl), ideas.py, summ.py, night.py, late.py, mom2.p
 - ÖNERİ (Fatih onayı gerekir): (1) Geri alım seans içi → Telegram'a anlık mesaj (her hissenin o gün ilk bildirimi, tabandaysa ve her gün bildirenler hariç) + karnede ayrı kaynak; (2) tavan takibi 09:59 listesi yalnız açılış farkı < %6 olanlar, sessiz kayıtla başla; (3) Fırsat B'yi endeks ekside iken Telegram'dan çıkar. 3 Kasım'da birlikte yeniden bak.
 - 16.10 gece UYGULANDI (Fatih: 'hepsini yap'): v11.4 — (1) geri alım seans içi Telegram, (2) tavan sakin açılış listesi 10:01 Telegram + karne 'tavan6' (tavan zaten karnede olduğu için sessiz kayıt yerine doğrudan liste), (3) Fırsat B endeks ekside Telegram'a gitmez. 3 Kasım'da 'kap-geri' (seans içi, pub saatine göre) ve 'tavan6' ayrı değerlendirilecek.
 
+## 6o. 16.10 akşam GÜNLÜK GÖZDEN GEÇİRME (endeks −%2,9)
+- Momentum 5 sinyal 0 kazandı/4 kaybetti, −4,82 puan (100.000 TL/işlem ≈ −4.820 TL). Canlı 05–16.10: 47 sinyal −5,66 puan; endeks ekside günler 39 işlem −5,66, artı 2 gün 8 işlem 0.
+  TEKRAR EDEN HİSSE (son 6 takvim gününde yine Momentum): 12 işlem 1 kazandı, −8,8 puan; tekrarsız 35 işlem +3,2. Bugünkü 5'in 4'ü tekrar (FRIGO, HRKET, MARTI, YKSLN).
+- Telegram'a gidenler (yaklaşık): Algı güçlü+rv≥2 10 işlem +4,9 (ALCAR ve DOCO iki kez — motor geçişinde AL.log sıfırlandı), geri alım seans içi 5 işlem +7,35 (DOFRB, SAHOL, TABGD, KGYO, ATAKP), tavan6 10 işlem −2,0 (ilk gün), Fırsat A AL 2 −0,54. Maliyet hariç.
+- tavan6 açığı: TMPOL açılış +%3,1 (gap<6) ama 10:01 mesaj anında zaten tavandaydı (pre +9,96) → liste yalnız açılışa bakıyor.
+- OMD (KAP üye kodu, OSMEN ile aynı bildirim) sig'e işlem görmeyen sembol olarak yazıldı (px boş).
+- Motor: yeni Ana sunucu canlı (20:10). flow 15:35–16:28 boşluk (geçiş). Engelli eski iş PC motoru hâlâ her dakika bağlanmayı deniyor (dev.last 20:14, 1006). Duyuru sabitleme: botun yetkisi yok.
+- flow × Momentum (12–16.10, 24 sinyal, 2 kazanan): 10:01–10:29 alıcılı payıyla düzen yok, örnek az.
+
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
 - v6.6 (29.09 akşamı): karne özetinde "Filtre kontrolü" — endeks artı/eksi ve oynak/sakin ayrımı kendi sinyallerimizde. 1–2 hafta sonra bak; tutarsa sinyal kapısı öner.
