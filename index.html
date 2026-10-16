@@ -3306,7 +3306,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="12.3";window.APPV=APP_VER;
+  const APP_VER="12.4";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -5677,7 +5677,12 @@ function renderNowCam(){
  try{const L=W();if(L.length){const q=L.map(x=>({x,o:S.quotes[x]||S.umap[x]||{}})).filter(z=>z.o.change!=null).sort((a,b)=>b.o.change-a.o.change);F.push(nFold('wl','İzleme listem',L.length+' hisse'+(q.length?' · önde '+htmlEsc(q[0].x)+' '+pct(q[0].o.change):''),()=>nWatch()))}}catch(e){}
  try{const td=todayStr(),cl=(S.jr||[]).filter(j=>j.closeD===td&&j.pct!=null),sm=cl.reduce((a,j)=>a+(j.pct||0),0);F.push(nFold('me','Benim günüm',cl.length?'Bugün '+cl.length+' işlem kapandı · '+pct(sm):'Bugün kapanan işlem yok',()=>nMe()))}catch(e){}
  h+='<section class="pfold">'+F.join('')+'</section>';
+ try{if(tgUid())h+='<section class="pinv"><div><b>Arkadaşını davet et</b><span>Pusula\'yı bir arkadaşına gönder; kendi bağlantınla gelenler sayılır.</span></div><button onclick="tgInvite()">👥 Davet et</button></section>'}catch(e){}
  return h}
+/* v12.4 DAVET: Telegram içinde her kişiye kendi bağlantısı (startapp=r_<Telegram no>) → sunucu üye kaydına 'ref' yazar */
+function tgUid(){try{const W=window.Telegram&&window.Telegram.WebApp,u=W&&W.initDataUnsafe&&W.initDataUnsafe.user;return u&&u.id?String(u.id):''}catch(e){return ''}}
+function tgInvite(){try{const id=tgUid();if(!id)return;const W=window.Telegram.WebApp,link=TG_APP+'?startapp=r_'+id,txt='BIST Pusula: endeksin yönü, önemli KAP haberleri ve hisse röntgeni — Telegram içinde, ücretsiz.';
+ const u='https://t.me/share/url?url='+encodeURIComponent(link)+'&text='+encodeURIComponent(txt);if(W.openTelegramLink)W.openTelegramLink(u);else window.open(u,'_blank')}catch(e){}}
 </script>
 
 <style>
@@ -5792,7 +5797,10 @@ async function tgaAuth(){
 </script>
 <style>
 html.tgfs #top{padding-top:calc(10px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
-html.tgfs #app{padding-top:0}   /* v12.3: tam ekranda üst boşluk iki kez sayılıyordu (cihazın güvenli alanı + Telegram'ınki) */
+html.tgfs #app{padding-top:0}
+.pinv{display:flex;align-items:center;gap:12px;margin:14px 0 6px;padding:14px;border-radius:16px;border:1px solid rgba(201,163,91,.35);background:rgba(201,163,91,.07)}
+.pinv div{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}.pinv b{font-size:15px;color:#E6C98A}.pinv span{font-size:12.5px;color:#8F9BB3;line-height:1.35}
+.pinv button{flex:none;padding:10px 14px;border-radius:12px;border:1px solid rgba(201,163,91,.55);background:rgba(201,163,91,.14);color:#E6C98A;font:600 14px Barlow,system-ui,sans-serif}   /* v12.3: tam ekranda üst boşluk iki kez sayılıyordu (cihazın güvenli alanı + Telegram'ınki) */
 html.tgfs #sigtoast{top:calc(8px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
 #tgabox{position:fixed;inset:0;z-index:9999;background:#0E1626;display:flex;align-items:center;justify-content:center;padding:24px}
 #tgabox .tgac{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;color:#E9ECF2;font-family:Barlow,system-ui,sans-serif;max-width:320px}

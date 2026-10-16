@@ -23,6 +23,6 @@ ok('grup mesajına yanıt yok', sent.length === 1);
 // webhook kurulumu: meta yoksa bir kez setWebhook, sonra atlanır
 const meta = {}; const D1 = { prepare: q => ({ bind: (...a) => ({ run: async () => { if (/INSERT/.test(q)) meta[/'(\w+)'/.exec(q)[1]] = a[0]; }, first: async () => null }), first: async () => (meta.tghook ? { v: meta.tghook } : null) }) };
 sent.length = 0; await tgHookEnsure({ BT: D1 }, h); await tgHookEnsure({ BT: D1 }, h);
-ok('webhook bir kez kuruldu (gizli başlıkla, yalnız mesajlar)', sent.length === 1 && /setWebhook$/.test(sent[0].url) && sent[0].body.secret_token === sec && sent[0].body.allowed_updates[0] === 'message' && meta.tghook === '1', JSON.stringify(sent.map(x => x.url)));
+ok('webhook bir kez kuruldu (gizli başlıkla, mesajlar + kanal üyeliği)', sent.length === 1 && /setWebhook$/.test(sent[0].url) && sent[0].body.secret_token === sec && sent[0].body.allowed_updates.join() === 'message,my_chat_member' && meta.tghook === '2', JSON.stringify(sent.map(x => x.url)));
 console.log('\nBOT KARŞILAMA: ' + res.filter(Boolean).length + '/' + res.length + ' geçti');
 process.exit(res.every(Boolean) ? 0 : 1);

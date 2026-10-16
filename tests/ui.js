@@ -207,6 +207,9 @@ async function page(b, opt) {
           if (m === 'turkey') return { data: b.symbols.tickers.map(t => ({ d: [t.split(':')[1], t.endsWith('XU100') ? 10850 : 100, -1.2] })) };
           return { data: [] }; };
         document.hidden || await refreshTick(); return { asked, c: S.mkt.XU100 && S.mkt.XU100.c, usd: S.mkt.USD && S.mkt.USD.c }; });
+      const inv = await p.evaluate(() => { window.Telegram = { WebApp: { initDataUnsafe: { user: { id: 99887766 } }, openTelegramLink: u => { window.__inv = u; } } };
+        renderNow(); const b = document.querySelector('#nowbody .pinv button'); if (b) b.click(); return { card: !!b, link: decodeURIComponent(window.__inv || '') }; });
+      ok('Davet kartı: Telegram içinde görünüyor, kişiye özel bağlantıyla paylaşım açılıyor', inv.card && /t\.me\/share\/url\?url=https:\/\/t\.me\/FatihBistSinyal2026Bot\/pusula\?startapp=r_99887766/.test(inv.link), JSON.stringify(inv));
       ok('BIST 100 genel taramada yoksa Türkiye taramasından alınıyor', ix.c === 10850 && ix.usd === 41.9 && ix.asked.includes('turkey'), JSON.stringify(ix));
       ok('Üye görünümü (B): Fırsat/Algı sekmeleri gizli ve açılmıyor, Karne açık', v.cls && v.a === 'now' && v.b2 === 'now' && v.c === 'lab' && !v.op && !v.algi && v.lab, JSON.stringify(v));
       ok('üye sayfasında hata yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }

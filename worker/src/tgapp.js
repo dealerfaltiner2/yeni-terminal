@@ -43,7 +43,9 @@ export async function tgAuth(request, env, h) {
   // cihazı 'üye' (dev.ok = 2) olur: tüm ekranlar açık ama fiyatlar 15 dk gecikmeli (sahibin TradingView oturumu KULLANILMAZ).
   // Sahip, Ayarlar → bağlı cihazlar'dan bir üyeyi canlı veriye yükseltebilir (dev.ok = 1).
   const grup = st === 'administrator' || st === 'member' || st === 'restricted';
-  try { if (h.uyeAdd) await h.uyeAdd(env, user, grup); } catch (e) {}
+  // v12.4: nereden geldi? startapp=r_<davet eden no> (davet bağlantısı) ya da k_<etiket> (kanal mesajı) — yalnız ilk kayıtta yazılır
+  let ref = ''; try { const sp = new URLSearchParams(String(b.d)).get('start_param') || ''; if (/^(r_\d{3,15}|k_[a-z0-9]{1,16})$/.test(sp) && sp !== 'r_' + user.id) ref = sp; } catch (e) {}
+  try { if (h.uyeAdd) await h.uyeAdd(env, user, grup, ref); } catch (e) {}
   const dev = String(b.dev || '').toLowerCase();
   if (/^[a-z0-9]{8,32}$/.test(dev) && h.devMember) { try { await h.devMember(env, dev); } catch (e) {} }
   return h.json({ ok: true, owner: false, uye: true, setup: 'PUSULA|' + base + '|' });

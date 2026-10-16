@@ -23,6 +23,7 @@ import { errAdd, errLogRoute } from './err.js';
 import { botAlive, botBeat, botWatch, pairCreate, pairUse } from './bot.js';
 import { kapPoll, kapMorning, kapList } from './kap.js';
 import { tgBotUpdate, tgHookEnsure } from './tgbot.js';
+import { kanalAm, kanalPm } from './kanal.js';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -759,10 +760,12 @@ async function devMember(env, id) {
   devCache.delete(id);
 }
 const UYE_SQL = 'CREATE TABLE IF NOT EXISTS uye (id INTEGER PRIMARY KEY, ad TEXT, kadi TEXT, grup INTEGER, first INTEGER, last INTEGER, n INTEGER)';
-async function uyeAdd(env, u, grup) {
+let uyeRef = false;
+async function uyeAdd(env, u, grup, ref) {
   await env.BT.prepare(UYE_SQL).run();
+  if (!uyeRef) { try { await env.BT.prepare('ALTER TABLE uye ADD COLUMN ref TEXT').run(); } catch (e) {} uyeRef = true; }   // v12.4: nereden geldi (davet / kanal)
   const now = Date.now(), ad = [u.first_name, u.last_name].filter(Boolean).join(' ').slice(0, 40), k = String(u.username || '').slice(0, 32);
-  await env.BT.prepare('INSERT INTO uye (id,ad,kadi,grup,first,last,n) VALUES (?,?,?,?,?,?,1) ON CONFLICT(id) DO UPDATE SET ad = excluded.ad, kadi = excluded.kadi, grup = excluded.grup, last = excluded.last, n = uye.n + 1').bind(u.id, ad, k, grup ? 1 : 0, now, now).run();
+  await env.BT.prepare('INSERT INTO uye (id,ad,kadi,grup,first,last,n,ref) VALUES (?,?,?,?,?,?,1,?) ON CONFLICT(id) DO UPDATE SET ad = excluded.ad, kadi = excluded.kadi, grup = excluded.grup, last = excluded.last, n = uye.n + 1').bind(u.id, ad, k, grup ? 1 : 0, now, now, ref || null).run();
 }
 async function uyeList(env) {
   try {
@@ -1063,6 +1066,9 @@ export default {
       catch (e) { await errAdd(env, 'sunucu', 'hata', 'cron: ' + String(e && e.message || e), 'alarm/radar'); try { const st = await kvGet(env, 'st', {}); st.err = 'cron: ' + (e && e.message || e); st.lastRun = Date.now(); await kvPut(env, 'st', st); } catch {} }
       await hb('2-alarm/radar bitti');
       try { await tgHookEnsure(env, { kvGet }); } catch (e) {}   // v12.2: bot karşılama webhook'u (bir kez; sonra bellekte atlanır)
+      // v12.4: herkese açık kanal — sabah 09:35 / akşam 18:30 bilgi mesajı (pencere dışında okuma yok)
+      try { await kanalAm(env, { kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'kanal sabah: ' + String(e && e.message || e).slice(0, 200), 'kanalAm'); }
+      try { await kanalPm(env, { kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'kanal akşam: ' + String(e && e.message || e).slice(0, 200), 'kanalPm'); }
       // v6.8: TEK SEFERLİK DUYURU — D1 meta k='announce' varsa Telegram'a gönderilir; başarıda satır silinir.
       // Gönderilemezse (token geçersiz vb.) ayarlar sunucuya yeniden kaydedilince (cfg.at değişince) tekrar denenir; en çok 20 deneme.
       try {
