@@ -92,6 +92,17 @@ export async function kanalSet(env, h, u) {
   if ((nm.status === 'left' || nm.status === 'kicked' || nm.status === 'member') && old && old.id === c.id) await env.BT.prepare("DELETE FROM meta WHERE k = 'pubch'").run();
   return null;
 }
+// v12.4b: TEK SEFERLİK KANAL PAYLAŞIMI — meta 'pub_once' = {"t": HTML metin, "tag": düğme etiketi} → kanala düğmeli gönderilir, başarıda silinir (sonuç 'pub_once_res').
+export async function kanalOnce(env, h) {
+  const v = await meta(env, 'pub_once'); if (!v) return null;
+  const ch = await pubCh(env); if (!ch) return null;
+  let o = null; try { o = JSON.parse(v); } catch (e) { o = { t: v }; }
+  const tag = /^[a-z0-9]{1,16}$/.test(o.tag || '') ? o.tag : 'ozel';
+  const r = await pubSend(env, h, ch, String(o.t || ''), tag);
+  await metaSet(env, 'pub_once_res', new Date().toISOString() + ' ' + JSON.stringify(r).slice(0, 160));
+  if (r && r.ok) await env.BT.prepare("DELETE FROM meta WHERE k = 'pub_once'").run();
+  return { ok: !!(r && r.ok) };
+}
 export async function kanalAm(env, h, now = Date.now()) {
   const p = trp(now); if (p.wd < 1 || p.wd > 5 || p.m < 575 || p.m >= 600) return null;
   if (await meta(env, 'pub_am') === p.day) return null;

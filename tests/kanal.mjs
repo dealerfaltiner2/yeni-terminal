@@ -51,6 +51,9 @@ meta.sigsum = '2026-10-19';
 const p1 = await K.kanalPm(env, h, tr('2026-10-19T18:41:00'));
 ok('akşam: karne bitince gönderildi, abone sayısı kaydedildi', p1 && p1.ok && /Fırsat A: 1 sinyal · 1 hedef/.test(sent.find(x => x.m === 'sendMessage').b.text) && JSON.parse(meta.pub_hist)[0].n === 42, JSON.stringify(p1));
 ok('akşam ikinci kez gitmez', (await K.kanalPm(env, h, tr('2026-10-19T18:50:00'))) === null);
+sent.length = 0; meta.pub_once = JSON.stringify({ t: '🧭 <b>Haftaya bakış</b>', tag: 'hafta' });
+const o1 = await K.kanalOnce(env, h), o2 = await K.kanalOnce(env, h);
+ok('tek seferlik paylaşım kanala düğmeli gitti, sonra silindi', o1 && o1.ok && o2 === null && meta.pub_once == null && /k_hafta/.test(JSON.stringify(sent[0].b.reply_markup)) && sent[0].b.chat_id === -1009, JSON.stringify(o1));
 await tgBotUpdate(upd('left'), env, h);
 ok('bot kanaldan çıkarılınca kanal kaydı silindi', meta.pubch == null);
 // --- davet kaydı (tgauth start_param)
