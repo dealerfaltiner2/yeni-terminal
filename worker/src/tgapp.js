@@ -1,7 +1,10 @@
 // v11.7 (16.10, Fatih: 'Pusula Telegram mini uygulaması') — t.me/FatihBistSinyal2026Bot/pusula
 // /tgauth (anahtarsız, POST {d: initData}): Telegram'ın imzaladığı kimlik bilgisini bot anahtarıyla doğrular (HMAC-SHA256, 24 saat geçerli).
 // Sinyal grubunun KURUCUSU → sahip kurulum metni (sunucu adresi + ana cihaz kodu); v12.0: diğer HERKES → üye (gecikmeli veri, üye listesine kayıt).
-export const TG_APP = 'https://t.me/FatihBistSinyal2026Bot/pusula';
+// v12.6 (17.10): uygulama yeni, aranabilir bota taşındı — @BistPusulaBot (ana mini uygulama: t.me/BistPusulaBot?startapp=…).
+// Eski @FatihBistSinyal2026Bot sinyal grubunda kalır; eski bağlantılarla açılan uygulama da çalışır (iki anahtar denenir).
+export const TG_APP = 'https://t.me/BistPusulaBot';
+export const tgAppLink = p => TG_APP + '?startapp' + (p ? '=' + p : '');
 const enc = new TextEncoder();
 const hmac = async (key, data) => new Uint8Array(await crypto.subtle.sign('HMAC', await crypto.subtle.importKey('raw', typeof key === 'string' ? enc.encode(key) : key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']), enc.encode(data)));
 export async function tgInitCheck(initData, botToken, now = Date.now(), maxAge = 86400) {
@@ -23,7 +26,8 @@ export async function tgAuth(request, env, h) {
   let b = {}; try { b = JSON.parse((await request.text()) || '{}'); } catch (e) { return h.json({ ok: false, error: 'geçersiz istek' }, 400); }
   const cfg = await h.kvGet(env, 'cfg', null);
   if (!cfg || !cfg.tgTok || !cfg.chat) return h.json({ ok: false, error: 'Sunucuda Telegram ayarı yok' }, 500);
-  const user = await tgInitCheck(b.d, cfg.tgTok);
+  let user = null;
+  for (const tok of [env.TG_APP_TOKEN, cfg.tgTok].filter(Boolean)) { user = await tgInitCheck(b.d, tok); if (user) break; }
   if (!user) return h.json({ ok: false, error: 'Telegram kimliği doğrulanamadı. Pusula\'yı kapatıp yeniden aç.' }, 401);
   let st = '';
   try {

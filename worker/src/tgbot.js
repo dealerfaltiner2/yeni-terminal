@@ -16,16 +16,21 @@ export const WELCOME = '🧭 <b>BIST Pusula\'ya hoş geldin</b>\n\n' +
   'Aşağıdaki düğmeye bas, Pusula Telegram\'ın içinde açılır. Fiyatlar 15 dakika gecikmelidir.\n\n<i>Bilgi amaçlıdır, yatırım tavsiyesi değildir.</i>';
 export const welcomeKb = () => ({ inline_keyboard: [[{ text: '🧭 Pusula\'yı aç', web_app: { url: APP_URL } }]] });
 let lastAns = new Map();   // aynı kişiye 20 sn içinde ikinci yanıt yok (seri mesaja karşı)
+// v12.6: iki bot aynı adrese bağlı — yeni @BistPusulaBot (env.TG_APP_TOKEN, via 'app') ve eski sinyal botu (cfg.tgTok, via 'old'); imza başlığı hangisininse yanıt onunla
+async function botOf(request, env, h) {
+  const cfg = await h.kvGet(env, 'cfg', null), sec = request.headers.get('X-Telegram-Bot-Api-Secret-Token') || '';
+  for (const [via, tok] of [['app', env.TG_APP_TOKEN], ['old', cfg && cfg.tgTok]]) if (tok && sec === await hookSecret(tok)) return { via, tok };
+  return null;
+}
 export async function tgBotUpdate(request, env, h) {
-  const cfg = await h.kvGet(env, 'cfg', null);
-  if (!cfg || !cfg.tgTok) return new Response('yok', { status: 503 });
-  if (request.headers.get('X-Telegram-Bot-Api-Secret-Token') !== await hookSecret(cfg.tgTok)) return new Response('yetkisiz', { status: 401 });
+  const bot = await botOf(request, env, h);
+  if (!bot) return new Response('yetkisiz', { status: 401 });
   let u = null; try { u = await request.json(); } catch (e) { return new Response('ok'); }
   if (u && u.my_chat_member) {
     const m = u.my_chat_member;
     // v12.4a: iz — son kanal/grup üyelik bildirimi (teşhis için) ve hata
     try { if (env.BT) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('tg_mcm', ?)").bind(new Date().toISOString() + ' ' + JSON.stringify({ t: m.chat && m.chat.type, id: m.chat && m.chat.id, ti: m.chat && m.chat.title, st: m.new_chat_member && m.new_chat_member.status, post: m.new_chat_member && m.new_chat_member.can_post_messages })).run(); } catch (e) {}
-    try { if (env.BT) await kanalSet(env, h, m); }
+    try { if (env.BT) await kanalSet(env, h, m, bot.via); }
     catch (e) { try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('pubch_res', ?)").bind(new Date().toISOString() + ' HATA ' + String(e && e.message || e).slice(0, 200)).run(); } catch (e2) {} }
     return new Response('ok');
   }
@@ -36,13 +41,28 @@ export async function tgBotUpdate(request, env, h) {
   if (lastAns.size > 500) lastAns = new Map();
   lastAns.set(id, now);
   try {
-    await fetch('https://api.telegram.org/bot' + cfg.tgTok + '/sendMessage', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    await fetch('https://api.telegram.org/bot' + bot.tok + '/sendMessage', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: id, text: WELCOME, parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: welcomeKb() }), signal: AbortSignal.timeout(8000) });
   } catch (e) {}
   return new Response('ok');
 }
-let hookOk = false;
+let hookOk = false, hookApp = false;
+// v12.6: yeni botun webhook'u (meta 'tghook_app' = '1', sonuç 'tghook_app_res')
+async function hookAppEnsure(env) {
+  if (hookApp || !env.BT || !env.TG_APP_TOKEN) return null;
+  const r = await env.BT.prepare("SELECT v FROM meta WHERE k = 'tghook_app'").first();
+  if (r && r.v === '1') { hookApp = true; return null; }
+  let j = null;
+  try {
+    j = await (await fetch('https://api.telegram.org/bot' + env.TG_APP_TOKEN + '/setWebhook', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: HOOK_URL, secret_token: await hookSecret(env.TG_APP_TOKEN), allowed_updates: ['message', 'my_chat_member'], drop_pending_updates: true }), signal: AbortSignal.timeout(8000) })).json();
+  } catch (e) { j = { ok: false, description: String(e.message || e) }; }
+  await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('tghook_app_res', ?)").bind(new Date().toISOString() + ' ' + JSON.stringify(j).slice(0, 200)).run();
+  if (j && j.ok) { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('tghook_app', '1')").run(); hookApp = true; }
+  return j;
+}
 export async function tgHookEnsure(env, h) {
+  try { await hookAppEnsure(env); } catch (e) {}
   if (hookOk || !env.BT) return null;
   const r = await env.BT.prepare("SELECT v FROM meta WHERE k = 'tghook'").first();
   if (r && r.v === TGHOOK_V) { hookOk = true; return null; }

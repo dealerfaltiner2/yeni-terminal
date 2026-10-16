@@ -5,13 +5,13 @@
 //   akşam 18:30–21:00 (kanalPm, meta 'pub_pm' = gün): piyasa özeti (meta 'mkt_close') + günün sinyal karnesi toplamı (meta 'sigsum' bugünse; 20:30'dan sonra karnesiz)
 // Her mesajda '🧭 Pusula'yı aç' düğmesi (startapp=k_am / k_pm → üye kaydında 'nereden geldi'). Abone sayısı akşam meta 'pub_hist'e (60 gün).
 // Dakikalık işe ek yük: pencere dışında SIFIR okuma; pencerede dakikada 1 meta okuması (PK).
-import { TG_APP } from './tgapp.js';
+import { tgAppLink } from './tgapp.js';
 import { KAP_AD } from './kap.js';
 import { mktBlock, tgQuote } from './tgfmt.js';
 import { trDay } from './sig.js';
 const TRMS = 3 * 3600e3;
 const trp = ms => { const d = new Date(ms + TRMS); return { wd: d.getUTCDay(), m: d.getUTCHours() * 60 + d.getUTCMinutes(), day: d.toISOString().slice(0, 10) }; };
-export const kanalKb = tag => ({ inline_keyboard: [[{ text: '🧭 Pusula\'yı aç', url: TG_APP + '?startapp=k_' + tag }]] });
+export const kanalKb = tag => ({ inline_keyboard: [[{ text: '🧭 Pusula\'yı aç', url: tgAppLink('k_' + tag) }]] });
 const NOTE = '\n\n<i>Bilgi amaçlıdır, yatırım tavsiyesi değildir.</i>';
 const GUN = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
 const AY = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
@@ -67,29 +67,32 @@ async function tgApi(tok, method, body) {
   catch (e) { return { ok: false, description: String(e.message || e) }; }
 }
 export async function pubCh(env) { try { const v = await meta(env, 'pubch'); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+// v12.6: kanal hangi botla yönetiliyorsa (ch.via: 'app' = yeni @BistPusulaBot, env.TG_APP_TOKEN; yoksa eski sinyal botu cfg.tgTok) onunla gönderilir
+async function pubTok(env, h, ch) { if (ch && ch.via === 'app') return env.TG_APP_TOKEN || ''; const cfg = await h.kvGet(env, 'cfg', null); return (cfg && cfg.tgTok) || ''; }
 async function pubSend(env, h, ch, text, tag) {
-  const cfg = await h.kvGet(env, 'cfg', null); if (!cfg || !cfg.tgTok) return { ok: false, description: 'token yok' };
-  return tgApi(cfg.tgTok, 'sendMessage', { chat_id: ch.id, text, parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: kanalKb(tag) });
+  const tok = await pubTok(env, h, ch); if (!tok) return { ok: false, description: 'token yok' };
+  return tgApi(tok, 'sendMessage', { chat_id: ch.id, text, parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: kanalKb(tag) });
 }
 // Telegram güncellemesi: bot bir kanalda yönetici oldu / çıkarıldı (tgbot.js çağırır)
-export async function kanalSet(env, h, u) {
+export async function kanalSet(env, h, u, via = 'old') {
   const c = u && u.chat, nm = u && u.new_chat_member;
   if (!c || c.type !== 'channel' || !nm) return null;
   const old = await pubCh(env);
   if (nm.status === 'administrator' && nm.can_post_messages !== false) {
-    const ch = { id: c.id, title: String(c.title || '').slice(0, 60), user: c.username || '', at: Date.now() };
+    const ch = { id: c.id, title: String(c.title || '').slice(0, 60), user: c.username || '', at: Date.now(), via };
     await metaSet(env, 'pubch', JSON.stringify(ch));
     if (!old || old.id !== ch.id) {
       const intro = '🧭 <b>BIST Pusula kanalına hoş geldin</b>\n\nHafta içi her gün:\n<blockquote>🌅 09:35 · Akşamdan beri gelen önemli KAP haberleri ve günün önemli verileri\n🌆 18:30 · Piyasa özeti ve Pusula\'nın günlük sinyal karnesi</blockquote>' +
         'Endeksin yönü, KAP haberleri ve hisse röntgeni için aşağıdaki düğmeyle Pusula\'yı aç. Ücretsizdir; fiyatlar 15 dakika gecikmelidir.' + NOTE;
       const r = await pubSend(env, h, ch, intro, 'giris');
-      const cfg = await h.kvGet(env, 'cfg', null);
-      if (r && r.ok && r.result && cfg && cfg.tgTok) await tgApi(cfg.tgTok, 'pinChatMessage', { chat_id: ch.id, message_id: r.result.message_id, disable_notification: true });
+      const tok = await pubTok(env, h, ch);
+      if (r && r.ok && r.result && tok) await tgApi(tok, 'pinChatMessage', { chat_id: ch.id, message_id: r.result.message_id, disable_notification: true });
       await metaSet(env, 'pubch_res', new Date().toISOString() + ' ' + JSON.stringify(r).slice(0, 160));
     }
     return ch;
   }
-  if ((nm.status === 'left' || nm.status === 'kicked' || nm.status === 'member') && old && old.id === c.id) await env.BT.prepare("DELETE FROM meta WHERE k = 'pubch'").run();
+  // v12.6: yalnız kanalı YÖNETEN bot çıkarılınca kayıt silinir (eski botu çıkarmak yeni botun kaydını bozmaz)
+  if ((nm.status === 'left' || nm.status === 'kicked' || nm.status === 'member') && old && old.id === c.id && (old.via || 'old') === via) await env.BT.prepare("DELETE FROM meta WHERE k = 'pubch'").run();
   return null;
 }
 // v12.4b: TEK SEFERLİK KANAL PAYLAŞIMI — meta 'pub_once' = {"t": HTML metin, "tag": düğme etiketi} → kanala düğmeli gönderilir, başarıda silinir (sonuç 'pub_once_res').
@@ -185,7 +188,7 @@ export async function kanalPm(env, h, now = Date.now()) {
   const r = await pubSend(env, h, ch, pmText(now, mkt, rows, h.esc), 'pm');
   // abone sayısı (haftalık büyüme raporu için)
   try {
-    const cfg = await h.kvGet(env, 'cfg', null), c = cfg && cfg.tgTok ? await tgApi(cfg.tgTok, 'getChatMemberCount', { chat_id: ch.id }) : null;
+    const tok = await pubTok(env, h, ch), c = tok ? await tgApi(tok, 'getChatMemberCount', { chat_id: ch.id }) : null;
     if (c && c.ok) { let H = []; try { H = JSON.parse(await meta(env, 'pub_hist') || '[]'); } catch (e) {} H = H.filter(x => x.d !== p.day).concat([{ d: p.day, n: c.result }]).slice(-60); await metaSet(env, 'pub_hist', JSON.stringify(H)); }
   } catch (e) {}
   return { ok: !!(r && r.ok), err: r && !r.ok ? r.description : undefined };

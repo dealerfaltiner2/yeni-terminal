@@ -743,8 +743,8 @@ async function tgPost(tok,chat,text,kb){
 function tgPlain(t){return String(t).replace(/<\/blockquote>/g,'\n').replace(/<[^>]+>/g,'').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&')}
 function tgPct(x){return x==null||!isFinite(x)?'-':(x>=0?'+':'−')+'%'+nf(Math.abs(x),2)}
 // v11.7: ilk satır '🧭 Pusula'da aç' (Telegram mini uygulaması, o hissenin röntgeni)
-const TG_APP='https://t.me/FatihBistSinyal2026Bot/pusula';
-function tgKb(sym,kapIdx){const ok=sym&&/^[A-Z0-9]{2,8}$/.test(sym),top=[{text:"🧭 Pusula'da aç",url:TG_APP+(ok?'?startapp='+sym:'')}],r=[];if(kapIdx)r.push({text:"📄 KAP'ta oku",url:'https://www.kap.org.tr/tr/Bildirim/'+kapIdx});
+const TG_APP='https://t.me/BistPusulaBot';   /* v12.6: yeni aranabilir bot (ana mini uygulama) */
+function tgKb(sym,kapIdx){const ok=sym&&/^[A-Z0-9]{2,8}$/.test(sym),top=[{text:"🧭 Pusula'da aç",url:TG_APP+'?startapp'+(ok?'='+sym:'')}],r=[];if(kapIdx)r.push({text:"📄 KAP'ta oku",url:'https://www.kap.org.tr/tr/Bildirim/'+kapIdx});
  if(ok)r.push({text:'📈 Grafik',url:'https://www.tradingview.com/chart/?symbol=BIST%3A'+sym});return {inline_keyboard:r.length?[top,r]:[top]}}
 // o = {ic, dir, sym, src, name, px, ch, tp, sl, why:[satır…], note, more}
 function tgCard(o){
@@ -3306,7 +3306,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="12.4";window.APPV=APP_VER;
+  const APP_VER="12.6";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');

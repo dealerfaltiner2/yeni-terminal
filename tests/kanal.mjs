@@ -19,7 +19,7 @@ ok('sabah mesajında AL/hedef/stop yok', !/hedef|stop|\bAL\b/i.test(am));
 const pm = K.pmText(tr('2026-10-19T18:40:00'), { d: '2026-10-19', idx: [{ s: 'XU100', c: 10850, ch: -1.2, hi: 11000, lo: 10800 }], up: [], dn: [], nu: 70, nd: 500 },
   [{ src: 'algi', o31: 1 }, { src: 'algi', o31: 2 }, { src: 'momentum', o31: 0 }, { src: 'sessiz', o31: 1 }, { src: 'radar', o31: 1 }], esc);
 ok('akşam mesajı: piyasa + yalnız açık kaynakların karnesi (sessiz/radar yok)', /BIST 100/.test(pm) && /⚡ Algı: 2 sinyal · 1 hedef · 1 stop/.test(pm) && /Toplam: 3 sinyalin 1'i hedefe, 1'i stopa gitti, 1'i/.test(pm) && !/Sessiz|radar/i.test(pm), pm);
-ok('düğme kanal etiketiyle Pusula\'yı açıyor', /pusula\?startapp=k_am$/.test(K.kanalKb('am').inline_keyboard[0][0].url));
+ok('düğme kanal etiketiyle Pusula\'yı açıyor', /t\.me\/BistPusulaBot\?startapp=k_am$/.test(K.kanalKb('am').inline_keyboard[0][0].url));
 // --- D1 + Telegram taklidi
 const meta = {}, sent = [];
 const D1 = { prepare: q => { const mk = a => ({
@@ -28,7 +28,7 @@ const D1 = { prepare: q => { const mk = a => ({
   run: async () => { if (/INSERT OR REPLACE INTO meta/.test(q)) { if (a.length === 2) meta[a[0]] = a[1]; else meta[/'(\w+)'/.exec(q)[1]] = a[0]; } if (/DELETE FROM meta/.test(q)) delete meta[/'(\w+)'/.exec(q)[1]]; return {}; } });
   return Object.assign(mk([]), { bind: (...a) => mk(a) }); } };
 const env = { BT: D1 }, h = { kvGet: async () => ({ tgTok: TOK, chat: '-100' }), esc };
-globalThis.fetch = async (url, o) => { const m = String(url).split('/').pop(), b = o && o.body ? JSON.parse(o.body) : {}; sent.push({ m, b });
+globalThis.fetch = async (url, o) => { const m = String(url).split('/').pop(), b = o && o.body ? JSON.parse(o.body) : {}; sent.push({ m, b, url: String(url) });
   if (m === 'getChatMember') return new Response(JSON.stringify({ ok: true, result: { status: 'left' } }));
   if (m === 'getChatMemberCount') return new Response(JSON.stringify({ ok: true, result: 42 }));
   return new Response(JSON.stringify({ ok: true, result: { message_id: 7 } })); };
@@ -80,5 +80,25 @@ const got = []; const ha = { json: (o, s) => new Response(JSON.stringify(o), { s
 const au = async (sp, uid) => tgAuth(new Request('https://api.x/tgauth', { method: 'POST', body: JSON.stringify({ d: make(sp, uid), dev: 'abcdef12' }) }), { ACCESS_KEY: 'k' }, ha);
 await au('r_555666777', 111222333); await au('k_am', 111222334); await au('THYAO', 111222335); await au('r_111222336', 111222336);
 ok('davet/kanal kaynağı kaydedildi; hisse bağlantısı ve kendini davet sayılmadı', JSON.stringify(got) === JSON.stringify([[111222333, 'r_555666777'], [111222334, 'k_am'], [111222335, ''], [111222336, '']]), JSON.stringify(got));
+// v12.6 yeni bot (@BistPusulaBot, env.TG_APP_TOKEN) — eski botla birlikte
+const NEW = '999:NEW-token', envN = { BT: D1, TG_APP_TOKEN: NEW }, secN = await hookSecret(NEW);
+const updN = (st, s) => new Request('https://x/tgbot', { method: 'POST', headers: { 'X-Telegram-Bot-Api-Secret-Token': s }, body: JSON.stringify({ update_id: 3, my_chat_member: { chat: { id: -1009, type: 'channel', title: 'BIST Pusula', username: 'bistpusulatr' }, from: { id: 5 }, new_chat_member: { status: st, can_post_messages: true } } }) });
+sent.length = 0; await tgBotUpdate(updN('administrator', secN), envN, h);
+ok('yeni bot kanala yönetici olunca kanal yeni bota geçti', JSON.parse(meta.pubch || '{}').via === 'app', meta.pubch);
+await tgBotUpdate(updN('left', sec), envN, h);
+ok('eski botu kanaldan çıkarmak yeni botun kaydını silmedi', meta.pubch && JSON.parse(meta.pubch).via === 'app');
+sent.length = 0; meta.pub_once = JSON.stringify({ t: 'x', tag: 'a' }); await K.kanalOnce(envN, h);
+ok('kanal mesajı yeni botun anahtarıyla gidiyor', sent.length === 1 && /bot999:NEW-token\/sendMessage$/.test(sent[0].url || ''), JSON.stringify(sent.map(x => x.url)));
+sent.length = 0;
+const pmN = new Request('https://x/tgbot', { method: 'POST', headers: { 'X-Telegram-Bot-Api-Secret-Token': secN }, body: JSON.stringify({ update_id: 4, message: { message_id: 1, chat: { id: 77, type: 'private' }, from: { id: 77, is_bot: false }, text: '/start' } }) });
+await tgBotUpdate(pmN, envN, h);
+ok('yeni bota yazana hoş geldin yeni botun anahtarıyla gidiyor', sent.length === 1 && /bot999:NEW-token\/sendMessage$/.test(sent[0].url || ''));
+const mk2 = (tok, uid) => { const f = { auth_date: String(Math.floor(Date.now() / 1000)), query_id: 'AAE1', user: JSON.stringify({ id: uid, first_name: 'Ayşe' }) };
+  const dcs = Object.keys(f).sort().map(k => k + '=' + f[k]).join('\n'); const s2 = createHmac('sha256', 'WebAppData').update(tok).digest();
+  return new URLSearchParams({ ...f, hash: createHmac('sha256', s2).update(dcs).digest('hex') }).toString(); };
+got.length = 0;
+const rN = await tgAuth(new Request('https://api.x/tgauth', { method: 'POST', body: JSON.stringify({ d: mk2(NEW, 4242), dev: 'abcdef12' }) }), { ACCESS_KEY: 'k', TG_APP_TOKEN: NEW }, ha);
+const rO = await tgAuth(new Request('https://api.x/tgauth', { method: 'POST', body: JSON.stringify({ d: mk2(TOK, 4343), dev: 'abcdef12' }) }), { ACCESS_KEY: 'k', TG_APP_TOKEN: NEW }, ha);
+ok('uygulama girişi: yeni botun ve eski botun imzası ikisi de kabul', rN.status === 200 && rO.status === 200 && got.length === 2, rN.status + ' ' + rO.status);
 console.log('\nKANAL + DAVET: ' + res.filter(Boolean).length + '/' + res.length + ' geçti');
 process.exit(res.every(Boolean) ? 0 : 1);

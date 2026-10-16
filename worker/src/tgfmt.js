@@ -1,8 +1,8 @@
 // v10.6 (14.10) Telegram mesaj düzeni — mesajın altındaki düğmeler (Grafik = TradingView, KAP'ta oku = bildirimin aslı).
-import { TG_APP } from './tgapp.js';
+import { tgAppLink } from './tgapp.js';
 // v11.7: ilk satır '🧭 Pusula'da aç' (Telegram içinde o hissenin röntgeni), altında KAP / Grafik
 export function tgKb(sym, kapIdx) {
-  const ok = sym && /^[A-Z0-9]{2,8}$/.test(sym), top = [{ text: "🧭 Pusula'da aç", url: TG_APP + (ok ? '?startapp=' + sym : '') }];
+  const ok = sym && /^[A-Z0-9]{2,8}$/.test(sym), top = [{ text: "🧭 Pusula'da aç", url: tgAppLink(ok ? sym : '') }];
   const r = [];
   if (kapIdx) r.push({ text: "📄 KAP'ta oku", url: 'https://www.kap.org.tr/tr/Bildirim/' + kapIdx });
   if (sym && /^[A-Z0-9]{2,8}$/.test(sym)) r.push({ text: '📈 Grafik', url: 'https://www.tradingview.com/chart/?symbol=BIST%3A' + sym });

@@ -18,7 +18,7 @@ ok('başka botun imzası reddedildi', (await tgInitCheck(make('999:other', now -
 ok('bozulmuş veri reddedildi', (await tgInitCheck(make(TOK, now - 60e3).replace('THYAO', 'ASELS'), TOK, now)) === null);
 ok('24 saatten eski giriş reddedildi', (await tgInitCheck(make(TOK, now - 2 * 86400e3), TOK, now)) === null);
 const k = tgKb('THYAO', 77);
-ok('sunucu düğmeleri: önce Pusula\'da aç (startapp), altında KAP ve Grafik', /pusula\?startapp=THYAO$/.test(k.inline_keyboard[0][0].url) && k.inline_keyboard[1].length === 2);
-ok('hissesiz mesajda yalnız Pusula düğmesi', tgKb(null).inline_keyboard.length === 1 && /pusula$/.test(tgKb(null).inline_keyboard[0][0].url));
+ok('sunucu düğmeleri: önce Pusula\'da aç (startapp), altında KAP ve Grafik', /t\.me\/BistPusulaBot\?startapp=THYAO$/.test(k.inline_keyboard[0][0].url) && k.inline_keyboard[1].length === 2);
+ok('hissesiz mesajda yalnız Pusula düğmesi', tgKb(null).inline_keyboard.length === 1 && /BistPusulaBot\?startapp$/.test(tgKb(null).inline_keyboard[0][0].url));
 console.log('\nTELEGRAM UYGULAMASI: ' + res.filter(Boolean).length + '/' + res.length + ' geçti');
 process.exit(res.every(Boolean) ? 0 : 1);
