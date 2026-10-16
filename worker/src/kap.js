@@ -139,9 +139,11 @@ export async function kapPoll(env, h) {
   const watch = new Set((cfg && cfg.watch) || []);
   const bigRow = await env.BT.prepare("SELECT v FROM meta WHERE k = 'xu100'").first();
   const big = new Set(bigRow ? JSON.parse(bigRow.v) : []);
+  // v12.1: borsada işlem görmeyen kodlar (meta 'sym_bad', karne ölçümü 'resolve error' görünce yazar) hisse listesinden çıkarılır
+  let bad = {}; try { const b = await env.BT.prepare("SELECT v FROM meta WHERE k = 'sym_bad'").first(); if (b) bad = JSON.parse(b.v) || {}; } catch (e) {}
   const rows = [];
   for (const x of fresh) {
-    const syms = kapSyms(x);
+    const syms = kapSyms(x).filter(s => !bad[s]);
     const c = kapClassify(x);
     const t = kapTime(x.publishDate) || now;
     rows.push({ idx: +x.disclosureIndex, t, syms: syms.join(','), title: String(x.kapTitle || '').slice(0, 120), subj: String(x.subject || '').slice(0, 200), summ: String(x.summary || '').slice(0, 400), ...c });

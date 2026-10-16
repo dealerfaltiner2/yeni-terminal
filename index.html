@@ -3299,7 +3299,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="12.0";window.APPV=APP_VER;
+  const APP_VER="12.1";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -5077,6 +5077,13 @@ function momCalc(D,px){ // D: bugünden ÖNCEKİ günlük mumlar (eskiden yeniye
  let adr=0,to=0;for(let j=n-20;j<n;j++){adr+=(D[j].high-D[j].low)/D[j].close;to+=D[j].close*(D[j].volume||0)}
  adr=adr/20*100;to/=20;const r30=(px/pc-1)*100,y=D[n-1],yc=y.high>y.low?(y.close-y.low)/(y.high-y.low):null;
  return {d1,d5,adr,to,r30,pc,yc,ok:d1>=3&&d5>=5&&adr>=6&&r30<1&&to>=5e7}}
+// v12.1 (16.10, Fatih onayı, DEVIR 6o): hisse son 6 takvim gününde de Momentum verdi mi? Sunucu /sigsym (hissenin karnesi) → o günün tarihi ya da ''.
+async function momRepOf(sym,day){try{const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b))return '';
+ const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),6000);
+ const j=await (await fetch(dq(b+'/sigsym?s='+encodeURIComponent(sym)),{signal:ac.signal})).json();clearTimeout(tm);
+ return momRepPick(j,day)}catch(e){return ''}}
+function momRepPick(j,day){const r=j&&j.ok&&(j.src||[]).find(x=>x.src==='momentum');const lim=new Date(Date.parse(day)-6*86400e3).toISOString().slice(0,10);
+ return r&&r.son&&r.son<day&&r.son>=lim?r.son:''}
 async function momScan(force){
  const d=momDay();if(MOM.busy||(!force&&MOM.day===d))return null;
  const t=new Date(Date.now()+3*3600e3),m=t.getUTCHours()*60+t.getUTCMinutes(),wd=t.getUTCDay();
@@ -5097,10 +5104,11 @@ async function momScan(force){
   out.sort((a,b)=>b.d5-a.d5);
   for(const x of out.slice(0,6)){
    const tp=x.px*1.03,sp=x.px*0.99;   // v9.0: hedef +%3, stop −%1 (Fatih'in başarı tanımı)
-   sigPost({src:'momentum',sym:x.s,t:Date.now(),px:x.px,sc:Math.round(x.d5),dir:'AL',meta:{d1:+x.d1.toFixed(1),d5:+x.d5.toFixed(1),adr:+x.adr.toFixed(1),r30:+x.r30.toFixed(2),yc:x.yc!=null?+x.yc.toFixed(2):null}});
+   const rep=await momRepOf(x.s,d);   // v12.1: son 6 günde de Momentum verdiyse uyarı (kural değil)
+   sigPost({src:'momentum',sym:x.s,t:Date.now(),px:x.px,sc:Math.round(x.d5),dir:'AL',meta:{d1:+x.d1.toFixed(1),d5:+x.d5.toFixed(1),adr:+x.adr.toFixed(1),r30:+x.r30.toFixed(2),yc:x.yc!=null?+x.yc.toFixed(2):null,tk:rep?1:0}});
    if(S.tgTok&&S.tgChat&&(BOTMODE||!S.botAlive)){try{await tgSend(tgCard({ic:'🧪',dir:'AL',sym:x.s,src:'Momentum (deneme)',px:x.px,ch:x.r30,tp,sl:sp,
     why:['Dün '+tgPct(x.d1)+' · 5 günde '+tgPct(x.d5)+(x.sec?' · '+htmlEsc(secTr(x.sec)):''),'Günlük ortalama oynaklık %'+nf(x.adr,1),"İkisi de gelmezse 17:55'te sat"],
-    note:sigNoteTxt(x.s)+'\n<i>Geçmişte %33 hedefe ulaştı (kâr için %25 yeter). Yatırım tavsiyesi değildir.</i>'}),tgKb(x.s))}catch(e){}}
+    note:(rep?'\n⚠️ <b>Tekrar:</b> bu hisse '+rep.slice(8)+'.'+rep.slice(5,7)+' günü de Momentum verdi. Canlı karnede tekrar eden hisselerde 12 işlemden yalnız 1\'i hedefe ulaştı (örnek küçük).':'')+sigNoteTxt(x.s)+'\n<i>Geçmişte %33 hedefe ulaştı (kâr için %25 yeter). Yatırım tavsiyesi değildir.</i>'}),tgKb(x.s))}catch(e){}}
    try{pushMsg('momentum','🧪 MOMENTUM (deneme) · '+x.s+'\nFiyat '+nf(x.px)+' · hedef '+nf(tp)+' · stop '+nf(sp),x.s)}catch(e){}
    try{sigToast({src:'momentum',sym:x.s,dir:'AL',label:'🧪 MOMENTUM',why:['Dün '+pct(x.d1),'5 günde '+pct(x.d5),'Oynaklık %'+nf(x.adr,1)],entry:x.px,stop:sp,tgt:tp,jr:false})}catch(e){}
   }

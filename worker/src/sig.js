@@ -145,6 +145,17 @@ export function sigOutcome(bars, r, ib) {
 import { errAdd } from './err.js';
 import { paperLine, paperCalc, QUIET_BOTS } from './paper.js';
 const FAIL = new Map();
+// v12.1 (16.10, Fatih onayı): TradingView'da 'resolve error' veren kodlar (KAP'ta geçen ama borsada işlem görmeyen: OMD, BNPPI, IYM…)
+// meta 'sym_bad' {KOD: 'YYYY-AA-GG'} — 30 gün tutulur; kap.js bu kodları haberin hisse listesinden çıkarır (karne/Telegram'a gitmez).
+export async function symBadAdd(env, list) {
+  const row = await env.BT.prepare("SELECT v FROM meta WHERE k = 'sym_bad'").first();
+  let B = {}; try { B = row ? JSON.parse(row.v) || {} : {}; } catch (e) {}
+  const day = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10), lim = new Date(Date.now() + 3 * 3600e3 - 30 * 86400e3).toISOString().slice(0, 10);
+  for (const s of list) B[s] = day;
+  for (const k of Object.keys(B)) if (!(B[k] >= lim)) delete B[k];
+  await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sym_bad', ?)").bind(JSON.stringify(B)).run();
+  return B;
+}
 const IDXC = { at: 0, n: 0, bars: null };   // BIST 100 dakikalık mum önbelleği (bu çalışma örneğinde, 10 dk)   // hisse → art arda veri gelmeme sayısı (bu çalışma örneğinde)
 export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
   if (!env.BT) return null;
@@ -209,18 +220,20 @@ export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
   const dsyms = [...new Set(batch.filter(r => !String(r.src || '').startsWith('kap-')).map(r => r.sym))];
   if (dsyms.length) { try { gd = await fetchBarsTV(env, dsyms.map(s => 'BIST:' + s), '1D', 30, 6000); } catch (e) { gd = {}; } }
   if (FAIL.size > 300) FAIL.clear();
-  const failed = new Set();
+  const failed = new Set(), badSym = new Set();
   for (const r of batch) {
     const st = got['BIST:' + r.sym], bars = toBars(st);
     // bağlantı sorunu → işaretleme, sonraki dakikada yeniden dene (4 gün sonra 'çok eski' olarak kapanır). Sayaç hisse başına çalışmada bir kez artar.
     if (!bars.length && !(st && /^(symbol_error|series_error)/.test(st.err || ''))) { if (!failed.has(r.sym)) { failed.add(r.sym); FAIL.set(r.sym, (FAIL.get(r.sym) || 0) + 1); if (FAIL.get(r.sym) === 3) await errAdd(env, 'sunucu', 'toparlama', 'veri gelmeyen hisse sıranın sonuna alındı: ' + r.sym, 'karne ölçümü'); } bos++; continue; }
     FAIL.delete(r.sym);
+    if (!bars.length && /resolve error/.test(st.err || '')) badSym.add(r.sym);   // v12.1: işlem görmeyen kod (fon, aracı kurum, banka) → KAP karneye yazmasın
     const o = bars.length ? sigOutcome(bars, r, ib) : { err: st.err };
     const adr = adrOf(toBars(gd['BIST:' + r.sym]), r.d);
     await env.BT.prepare('UPDATE sig SET done = 1, p30 = ?, px = coalesce(px, ?), pre = ?, o10 = ?, o15 = ?, o31 = ?, o41 = ?, o315 = ?, h1 = ?, r15 = ?, r60 = ?, rc = ?, mfe = ?, mae = ?, idx = ?, adr = ?, tx = ?, pb = ?, pbn = ?, err = ? WHERE id = ?')
       .bind(o.p30 ?? null, o.px ?? null, o.pre ?? null, o.o10 ?? null, o.o15 ?? null, o.o31 ?? null, o.o41 ?? null, o.o315 ?? null, o.h1 ?? null, o.r15 ?? null, o.r60 ?? null, o.rc ?? null, o.mfe ?? null, o.mae ?? null, o.idx ?? null, adr, o.tx ?? null, o.pb ?? null, o.pbn ?? null, o.err || null, r.id).run();
     n++;
   }
+  if (badSym.size) { try { await symBadAdd(env, [...badSym]); } catch (e) {} }
   if (syms.some(x => KILL[x])) { for (const x of syms) delete KILL[x]; await ms('sig_kill', KILL); }
   } finally { try { await env.BT.prepare("DELETE FROM meta WHERE k = 'sig_run'").run(); } catch (e) {} }
   // 21:00'den sonra ölçülemeyen sinyal kalsa da rapor çıksın (sigSummary kendisi 'bugün gönderildi mi' bakar)
@@ -326,6 +339,20 @@ export async function filterBlock(env, pc) {
       ln('Oynak hisselerde (günde %5 ve üstü)', v('oyh'), v('oys')) + ln('Sakin hisselerde (günde %5 altı)', v('sah'), v('sas'));
   } catch (e) { return ''; }
 }
+// v12.1 (16.10, Fatih onayı, DEVIR 6o): Momentum'da TEKRAR EDEN hisse (son 6 takvim gününde de Momentum vermiş) ayrı satır.
+// Canlı 05–16.10: tekrar 12 işlem 1 kazandı, tekrarsız 35 işlem +3,2 puan. Kural değil, ölçüm (sig_d indeksi, ~5 satır/gün).
+export function momRep(rows) {
+  const by = {}; for (const r of rows) (by[r.sym] = by[r.sym] || []).push(r.d);
+  return rows.map(r => Object.assign({}, r, { rep: by[r.sym].some(d => d < r.d && Date.parse(d) >= Date.parse(r.d) - 6 * 86400e3) }));
+}
+async function momRepLine(env, today, pc) {
+  const R = (await env.BT.prepare("SELECT sym, d, o31 FROM sig INDEXED BY sig_d WHERE d >= ? AND src = 'momentum' AND dir = 'AL' AND err IS NULL").bind(trDay(Date.now() - 70 * 86400e3)).all()).results || [];
+  const X = momRep(R).filter(r => Date.parse(r.d) >= Date.parse(today) - 60 * 86400e3), T = X.filter(r => r.d === today && r.rep);
+  const st = a => { const h = a.filter(r => r.o31 === 1).length, s = a.filter(r => r.o31 === 2).length; return a.length + ' → ' + (h + s ? '%' + pc(h, h + s) : '-'); };
+  const rp = X.filter(r => r.rep), nr = X.filter(r => !r.rep);
+  if (!rp.length) return '';
+  return '\n   ⚠️ tekrar eden hisse' + (T.length ? ' (bugün ' + T.map(r => r.sym).join(', ') + ')' : '') + ': ' + st(rp) + ' · tekrarsız: ' + st(nr);
+}
 export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
   let pend = 0, tryN = 0;
   const now = Date.now(), today = trDay(now), m = trMin(now), wd = new Date(now + TRMS).getUTCDay();
@@ -364,6 +391,7 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
     msg += '\n\n<b>' + esc(SRC_AD[r.src] || r.src) + '</b> — ' + r.n + ' sinyal\n   ' + line(r.h, r.s);
     const a = A.find(x => x.src === r.src);
     if (a && a.g > 1) msg += '\n   <i>tüm günler: ' + a.n + ' sinyal → %' + pc(a.h, a.h + a.s) + '</i>';
+    if (r.src === 'momentum') { try { msg += await momRepLine(env, today, pc); } catch (e) {} }
     if (r.src === 'algi') for (const g of AG) if (g.n) msg += '\n   ' + (g.g ? '💪 güçlü (alıcı %80+)' : '· diğerleri') + ': ' + g.n + ' → ' + (g.h + g.s ? '%' + pc(g.h, g.h + g.s) : '-') + (g.tn > g.n ? ' <i>(tüm günler ' + g.tn + ' → %' + pc(g.th, g.th + g.ts) + ')</i>' : '');
   }
   const K = R.filter(r => String(r.src).startsWith('kap-'));

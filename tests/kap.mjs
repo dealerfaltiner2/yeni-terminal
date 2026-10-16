@@ -87,5 +87,10 @@ ok('seans dışı geri alım AL kartı olarak gitmez', !sent.some(m => /AL · SI
 at('2026-10-20', '11:00'); sent.length = 0; QQ.FIYAT = { c: 50, ch: 4.2 }; KAP.push({ disclosureIndex: 1100, publishDate: pub(Date.now() - 20e3), subject: 'Yeni İş İlişkisi', summary: 'sözleşme', relatedStocks: 'FIYAT', kapTitle: 'F' });
 const h4 = Object.assign({}, h3, { kvGet: async () => ({ tgTok: 'x', chat: '1', watch: ['FIYAT'], opt: {} }) }); await kapPoll(env, h4);
 ok('geç mi kaldım: haber öncesi +%4,2 uyarısı', sent.length === 1 && /zaten \+%4,20 yükselmişti/.test(sent[0]), sent[0]);
+// v12.1: borsada işlem görmeyen kod (sym_bad) haberin hisse listesinden çıkar → karne ve geri alım kartı gerçek hisseye
+db.prepare("INSERT OR REPLACE INTO meta (k,v) VALUES ('sym_bad', ?)").run(JSON.stringify({ OMD: '2026-10-16' }));
+at('2026-10-21', '11:00'); sent.length = 0; QQ.OSMEN = { c: 5.2, ch: 0.3 }; KAP.push(geri(1200, 'OMD, OSMEN')); await kapPoll(env, h3);
+ok('sym_bad: OMD karneye yazılmadı, OSMEN yazıldı', db.prepare("SELECT count(*) n FROM sig WHERE sym='OMD'").get().n === 0 && db.prepare("SELECT count(*) n FROM sig WHERE sym='OSMEN'").get().n === 1);
+ok('sym_bad: geri alım kartı OSMEN için', sent.length === 1 && /AL · OSMEN/.test(sent[0]), sent[0]);
 console.log('\nKAP: ' + res.filter(Boolean).length + '/' + res.length + ' geçti');
 process.exit(res.every(Boolean) ? 0 : 1);

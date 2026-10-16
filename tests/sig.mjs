@@ -116,6 +116,11 @@ ok('takılı kayıt kalmadı', !meta('sig_run') && db.prepare("SELECT count(*) n
   const { tavanPick, tavanOpen } = await import(path.join(W, 'tavan.js'));
   const P = tavanPick([{ s: 'A', c: 10 }, { s: 'B', c: 10 }, { s: 'C', c: 10 }, { s: 'D', c: 10 }], { A: { o: 10.3, c: 10.4, ch: 4 }, B: { o: 11, c: 11, ch: 10 }, C: { o: 10.7, c: 10.8, ch: 8 }, D: { o: 0, c: 10, ch: 0 } });
   ok('tavanPick: yalnız açılışı %6 altı (A), tavan/yüksek açılış ve açılmayan hariç', P.length === 1 && P[0].s === 'A' && Math.abs(P[0].gap - 3) < 1e-9, JSON.stringify(P));
+  const P2 = tavanPick([{ s: 'T', c: 141.6 }, { s: 'U', c: 10 }], { T: { o: 146, c: 155.7, ch: 9.96 }, U: { o: 10.2, c: 10.5, ch: 5 } });
+  ok('tavanPick v12.1: açılışı sakin ama mesaj anında +%6 üstü (T) alınmaz', P2.length === 1 && P2[0].s === 'U', JSON.stringify(P2));
+  { const { momRep } = await import(path.join(W, 'sig.js'));
+    const R = momRep([{ sym: 'M', d: '2026-10-13' }, { sym: 'M', d: '2026-10-16' }, { sym: 'N', d: '2026-10-01' }, { sym: 'N', d: '2026-10-16' }, { sym: 'K', d: '2026-10-16' }]);
+    ok('momRep v12.1: 6 gün içinde tekrar (M) işaretli, eski (N) ve ilk (K) değil', R.map(r => r.rep ? 1 : 0).join('') === '01000', JSON.stringify(R)); }
   db.prepare("INSERT OR REPLACE INTO meta (k,v) VALUES ('tavan_list', ?)").run(JSON.stringify({ d: '2026-10-15', L: [{ s: 'A', c: 10 }, { s: 'B', c: 10 }] }));
   const T = d => Date.parse(d + ':00+03:00'), add = [];
   const sc = Q => async () => ({ json: async () => ({ data: Object.entries(Q).map(([k, q]) => ({ s: 'BIST:' + k, d: [k, q.c, q.ch, q.o] })) }) });

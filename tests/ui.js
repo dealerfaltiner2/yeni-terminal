@@ -169,6 +169,8 @@ async function page(b, opt) {
       const mm = await T(() => { const D = []; let c = 100; for (let i = 0; i < 25; i++) { c = i === 24 ? c * 1.04 : i >= 20 ? c * 1.01 : c; D.push({ open: c, high: c * 1.035, low: c * 0.965, close: c, volume: 2e6 }); }
         const r = momCalc(D, D[24].close * 1.005), r2 = momCalc(D, D[24].close * 1.02); return { ok: r.ok, d1: r.d1, d5: r.d5, adr: r.adr, late: r2.ok }; });
       ok('momentum kuralı: dün +%3, 5 gün +%5, oynak, sabah koşmamış → aday; koşmuşsa değil', mm.ok && !mm.late, JSON.stringify(mm));
+      { const mr = await T(() => [momRepPick({ ok: true, src: [{ src: 'momentum', son: '2026-10-14' }] }, '2026-10-16'), momRepPick({ ok: true, src: [{ src: 'momentum', son: '2026-10-05' }] }, '2026-10-16'), momRepPick({ ok: true, src: [{ src: 'algi', son: '2026-10-15' }] }, '2026-10-16'), momRepPick(null, '2026-10-16')]);
+        ok('momentum tekrar uyarısı: son 6 gün içindeyse tarih, değilse boş', mr[0] === '2026-10-14' && mr[1] === '' && mr[2] === '' && mr[3] === '', JSON.stringify(mr)); }
       ok('yaklaşan veri için uyarı çıkıyor', ec.warn);
       ok('sinyal notu: bilanço yarın + veri saati', /Bilanço yarın/.test(ec.notes) && /ABD verisi/.test(ec.notes) && ec.msg, ec.notes);
       await T(() => { const d = document.createElement('div'); d.id = 'pairbox'; document.body.appendChild(d); });

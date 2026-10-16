@@ -58,8 +58,9 @@ export function tavanPick(L, Q) {
   const out = [];
   for (const x of L || []) {
     const q = Q[x.s]; if (!q || !(q.o > 0) || !(q.c > 0) || !(x.c > 0)) continue;
-    const gap = (q.o / x.c - 1) * 100;
-    if (gap < 6 && gap > -9.5) out.push({ s: x.s, gap: Math.round(gap * 100) / 100, c: q.c, ch: q.ch });
+    const gap = (q.o / x.c - 1) * 100, now = (q.c / x.c - 1) * 100;
+    // v12.1 (16.10, Fatih onayı): mesaj anındaki fiyat da dünkü kapanışın %6'dan fazla üstündeyse alma (TMPOL: açılış +3,1, 10:01'de tavandaydı)
+    if (gap < 6 && gap > -9.5 && now < 6) out.push({ s: x.s, gap: Math.round(gap * 100) / 100, c: q.c, ch: q.ch });
   }
   return out.sort((a, b) => a.gap - b.gap);
 }

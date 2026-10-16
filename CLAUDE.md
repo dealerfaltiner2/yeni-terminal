@@ -279,3 +279,7 @@ Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ"
   Sahip: Ayarlar → bağlı cihazlar'da üye sayısı (/uyeler, OWN) ve üye cihazı 'Canlı veriye yükselt' (dev-ok → ok=1). Terminal: S.uye/TVL.uye → ana sayfada 'Üye sürümü · fiyatlar 15 dk gecikmeli', sigToast üyede kapalı.
   Telegram'da: onay bekleyen eski cihaz açılınca bir kez yeniden tgauth (sessionStorage tga_re) → üye. Telefonda tam ekran (requestFullscreen, html.tgfs → #top üst boşluk = Telegram güvenli alanı).
   YASAL UYARI Fatih'e söylendi: herkese açık AL/hedef/stop + reklam/ücret → SPK yatırım danışmanlığı riski; avukata danışması önerildi. Sıradaki (2. aşama, Fatih onayıyla): herkese açık kanal + günlük özet.
+- v12.1 (16.10 gece, Fatih onayıyla, DEVIR 6o): (1) MOMENTUM TEKRAR UYARISI — momScan her aday için /sigsym'e bakar (momRepOf/momRepPick); son 6 takvim gününde de Momentum verdiyse Telegram kartına '⚠️ Tekrar' satırı, sig meta.tk=1. Kural DEĞİŞMEDİ.
+  Karne mesajında Momentum altında 'tekrar eden hisse / tekrarsız' satırı (sig.js momRep/momRepLine, sig_d ile günde bir ~4k satır). (2) tavanPick: mesaj anındaki fiyat da dünkü kapanışın %6'dan fazla üstündeyse listeye alınmaz (TMPOL vakası).
+  (3) İŞLEM GÖRMEYEN KODLAR: karne ölçümü TradingView 'resolve error' görünce kodu meta 'sym_bad' {KOD: gün}'e yazar (30 gün, symBadAdd); kap.js haberin hisse listesinden bunları çıkarır (OMD, BNPPI, IYM… karneye/geri alım kartına gitmez). Yanlış işaretlenen olursa meta 'sym_bad'dan o kodu sil.
+
