@@ -22,6 +22,7 @@ import { sigAdd, sigLog, sigEval, sigSummary, sigStats, sigToday, weeklySummary,
 import { errAdd, errLogRoute } from './err.js';
 import { botAlive, botBeat, botWatch, pairCreate, pairUse } from './bot.js';
 import { kapPoll, kapMorning, kapList } from './kap.js';
+import { tgBotUpdate, tgHookEnsure } from './tgbot.js';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -914,6 +915,8 @@ export default {
     // v7.4: iş bilgisayarı kurulumu — anahtarsız, tek kullanımlık eşleştirme kodu ile ayarları bir kez alır
     if (parts[0] === 'pair' && parts.length === 1 && request.method === 'POST' && env.BT) return pairUse(request, env, json);
     // v11.7: Telegram mini uygulaması girişi — anahtarsız, Telegram imzasıyla
+    // v12.2: bota gelen özel mesajlar (Telegram webhook, imza başlığıyla) → hoş geldin + Pusula'yı aç düğmesi
+    if (parts[0] === 'tgbot' && parts.length === 1 && request.method === 'POST') return tgBotUpdate(request, env, { kvGet });
     if (parts[0] === 'tgauth' && parts.length === 1 && request.method === 'POST' && env.BT) return tgAuth(request, env, { json, kvGet, ownerTok, errAdd, devApprove, devMember, uyeAdd });
 
     let route;
@@ -954,7 +957,7 @@ export default {
       }
       case 'kap': return kapList(env, url, json);
       case 'sigstats': return json(await sigStats(env));
-      case 'sigtoday': return json(await sigToday(env));
+      case 'sigtoday': return json(anon ? { ok: true, at: Date.now(), list: [], uye: 1 } : await sigToday(env));   // v12.2: üyeye canlı sinyal listesi yok
       case 'sigsym': return json(await sigSym(env, url.searchParams.get('s')));
       // v8.7 CLAUDE PİYASA YORUMU — yorumları zamanlanmış Claude görevi doğrudan D1 'yorum' tablosuna yazar (anahtar gerekmez); terminal buradan okur.
       case 'yorum': { try { await env.BT.prepare('CREATE TABLE IF NOT EXISTS yorum (id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER, slot TEXT, txt TEXT)').run(); const r = await env.BT.prepare('SELECT t, slot, txt FROM yorum ORDER BY t DESC LIMIT 8').all(); return json({ ok: true, list: r.results || [] }); } catch (e) { return json({ ok: false, error: String(e.message || e).slice(0, 100) }); } }
@@ -1059,6 +1062,7 @@ export default {
       try { await cron(env); }
       catch (e) { await errAdd(env, 'sunucu', 'hata', 'cron: ' + String(e && e.message || e), 'alarm/radar'); try { const st = await kvGet(env, 'st', {}); st.err = 'cron: ' + (e && e.message || e); st.lastRun = Date.now(); await kvPut(env, 'st', st); } catch {} }
       await hb('2-alarm/radar bitti');
+      try { await tgHookEnsure(env, { kvGet }); } catch (e) {}   // v12.2: bot karşılama webhook'u (bir kez; sonra bellekte atlanır)
       // v6.8: TEK SEFERLİK DUYURU — D1 meta k='announce' varsa Telegram'a gönderilir; başarıda satır silinir.
       // Gönderilemezse (token geçersiz vb.) ayarlar sunucuya yeniden kaydedilince (cfg.at değişince) tekrar denenir; en çok 20 deneme.
       try {

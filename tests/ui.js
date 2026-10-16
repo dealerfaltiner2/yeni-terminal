@@ -199,6 +199,10 @@ async function page(b, opt) {
       const u = await p.evaluate(async () => { TVL.tok = null; TVL.tokAt = 0; const t = await tvToken(); renderNow(); sigToast({ sym: 'THYAO', src: 'algi' });
         return { t, uye: TVL.uye, err: TVL.err, home: /Üye sürümü/.test(document.getElementById('nowbody').innerText), toast: document.getElementById('sigtoast').classList.contains('on') }; });
       ok('Üye sürümü: gecikmeli akış, hata yok, ana sayfada not, anlık sinyal kartı yok', u.t === '' && u.uye === 1 && !u.err && u.home && !u.toast, JSON.stringify(u));
+      const v = await p.evaluate(() => { showTab('op'); const a = S.tab; showTab('algi'); const b2 = S.tab; showTab('lab'); const c = S.tab;
+        const vis = q => { const e = document.querySelector('#tabs [data-t="' + q + '"]'); return !!e && getComputedStyle(e).display !== 'none'; };
+        return { a, b2, c, cls: document.documentElement.classList.contains('uye'), op: vis('op'), algi: vis('algi'), lab: vis('lab') }; });
+      ok('Üye görünümü (B): Fırsat/Algı sekmeleri gizli ve açılmıyor, Karne açık', v.cls && v.a === 'now' && v.b2 === 'now' && v.c === 'lab' && !v.op && !v.algi && v.lab, JSON.stringify(v));
       ok('üye sayfasında hata yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }
     // v11.9 misafirde Ayarlar gizli
     { const p = await b.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));

@@ -1031,7 +1031,10 @@ const OWN={claimed:null,list:null,err:''};
 function ownBase(){return srvBase(S.tvproxy)}
 function devNameSave(v){LS.set('devName',String(v||'').replace(/[<>"'&]/g,'').trim().slice(0,24));devHello()}
 const WAIT_MSG='bu cihaz ana cihazın onayını bekliyor';
-async function devHello(){const b=ownBase();if(!/^https:\/\//.test(b))return;OWN.helloAt=Date.now();try{const j=await (await fetch(qAdd(b+'/hello?'+devQ()+(BOTMODE?'&bot=1':''),ownQ()))).json();OWN.wait=!!(j&&j.wait);S.uye=!!(j&&j.uye);S.botAlive=!!(j&&j.bot);S.botKnown=1;if(j&&j.blocked)TVL.err='bu cihaz engellendi';else if(j&&j.wait)TVL.err=WAIT_MSG}catch(e){}}
+/* v12.2 ÜYE GÖRÜNÜMÜ (Fatih 'B'): üyede canlı AL/hedef/stop yok — Fırsat, Algı, Özet sekmeleri, canlı takip ve röntgen giriş/stop/hedef gizli; piyasa, KAP, röntgen, karne açık */
+function isUye(){try{return !!(S.uye||TVL.uye)}catch(e){return false}}
+function uyeMark(){try{document.documentElement.classList.toggle('uye',isUye());if(isUye()&&/^(op|algi|brief)$/.test(S.tab||''))showTab('now')}catch(e){}}
+async function devHello(){const b=ownBase();if(!/^https:\/\//.test(b))return;OWN.helloAt=Date.now();try{const j=await (await fetch(qAdd(b+'/hello?'+devQ()+(BOTMODE?'&bot=1':''),ownQ()))).json();OWN.wait=!!(j&&j.wait);S.uye=!!(j&&j.uye);uyeMark();S.botAlive=!!(j&&j.bot);S.botKnown=1;if(j&&j.blocked)TVL.err='bu cihaz engellendi';else if(j&&j.wait)TVL.err=WAIT_MSG}catch(e){}}
 // v6.8: sunucu veri yollarına cihaz kimliği (yeni cihaz onayı)
 function dq(u){return qAdd(u,'dev='+devId())}
 setTimeout(devHello,3000);
@@ -2751,7 +2754,7 @@ async function tvToken(){
   const r=await fetch(base+'/tv-token?'+devQ(),{signal:ac.signal});clearTimeout(t);
   const d=await r.json();
   if(d&&d.ok&&d.token){TVL.tok=d.token;TVL.tokAt=Date.now();return d.token}
-  if(d&&d.uye){TVL.uye=1;S.uye=true;TVL.err='';return ''}   // v12.0 üye: oturumsuz (15 dk gecikmeli) akış
+  if(d&&d.uye){TVL.uye=1;S.uye=true;TVL.err='';uyeMark();return ''}   // v12.0 üye: oturumsuz (15 dk gecikmeli) akış
   TVL.err='yetki alınamadı'+(d&&d.err?(': '+String(d.err).slice(0,60)):'');
  }catch(e){TVL.err='yetki alınamadı ('+(e.name==='AbortError'?'zaman aşımı':(e.message||'hata'))+')'}
  return TVL.tok||'';
@@ -3210,6 +3213,7 @@ $('#palin').onkeydown=e=>{if(e.key==='Enter'&&pit[0])selectSym(pit[0].s,pit[0].m
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openPal()}else if(e.key==='Escape')closePal()});
 function showTab(t){
  if(t==='set'&&typeof guestHideSet==='function'&&guestHideSet())t='now';
+ if(/^(op|algi|brief)$/.test(t)&&typeof isUye==='function'&&isUye())t='now';
  S.tab=t;
  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.id==='t-'+t));
  document.querySelectorAll('#tabs button').forEach(b=>{const on=b.dataset.t===t;b.classList.toggle('on',on);if(on)b.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'})});
@@ -3299,7 +3303,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="12.1";window.APPV=APP_VER;
+  const APP_VER="12.2";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -5386,7 +5390,7 @@ function xrayRender(){const body=document.getElementById('xr_body');if(!body)ret
   h+='<div class="dsub">Ön şartlar (üçü de gerekli)</div><div class="xwhy">'+li(W.G)+'</div><div class="dsub">Puan: 6\'da '+a.pts+' (5 ve üstü A, 3–4 B)</div><div class="xwhy">'+li(W.P)+'</div>';
   const ex=[];if(a.vcp)ex.push('⚡ Daralan sıkışma (VCP)'+(a.vcp.brk?' — kırdı':''));if(a.pull)ex.push('⚡ Ortalamaya geri çekilip döndü');if(a.kvw&&a.kvw.side==='AL')ex.push('⚡ VWAP\'tan sekti, 3 mum teyit');if(a.sq)ex.push('Fiyat sıkıştı (patlama öncesi olabilir)');
   if(ex.length)h+='<div class="xchips">'+ex.map(x=>'<span>'+x+'</span>').join('')+'</div>';
-  const p=o?planOf(o,'AL',tf):null;
+  const p=(o&&!isUye())?planOf(o,'AL',tf):null;
   h+='<div class="dsub">Seviyeler</div><div class="xlv">'+
    (p?'<div><small>Giriş</small><b>'+nf(p.entry)+'</b></div><div><small>Stop</small><b class="dn">'+nf(p.stop)+'</b><i>−%'+nf(p.riskPct,1)+'</i></div><div><small>Hedef</small><b class="up">'+nf(p.tgt)+'</b><i>'+nf(p.rr,1)+' kat ödül</i></div>':'')+
    (a.ref?'<div><small>Destek (hacim)</small><b>'+nf(a.ref.val)+'</b></div><div><small>Yoğun bölge</small><b>'+nf(a.ref.poc)+'</b></div><div><small>Direnç (hacim)</small><b>'+nf(a.ref.vah)+'</b></div>':'')+'</div>'}
@@ -5646,9 +5650,10 @@ function renderNowCam(){
  let h=nDial()+nAkil(Y);
  const pz=nowPositions();if(pz)h+='<section class="pblk"><div class="psec"><h2>Açık pozisyonların</h2><a onclick="showTab(\'jr\')">Günlük ›</a></div>'+pz+'</section>';
  const liveT=s.open||(s.wk&&s.m>=1080&&s.m<1095);
- if(liveT)h+='<section class="pblk plv">'+nLive(NOWF.lvall?50:3)+'</section>';
+ const uy=isUye();
+ if(liveT&&!uy)h+='<section class="pblk plv">'+nLive(NOWF.lvall?50:3)+'</section>';
  else{const wl=watchTomorrow();
-  h+='<section class="pblk"><div class="psec"><h2>'+(s.pre?'Bugün ilk bakılacaklar':'Yarın ilk bakılacaklar')+'</h2></div><p class="plede">Günü zirvesine yakın, yüksek hacimle %1,5–7 artıda kapatanlar. Sinyal değil, açılışta ilk bakılacak liste.</p>'+
+  h+='<section class="pblk"><div class="psec"><h2>'+(uy&&s.open?'Bugün güçlü gidenler':s.pre?'Bugün ilk bakılacaklar':'Yarın ilk bakılacaklar')+'</h2></div><p class="plede">'+(uy&&s.open?'Günün zirvesine yakın, yüksek hacimle %1,5–7 artıda işlem görenler (15 dk gecikmeli). Sinyal değil, bilgi amaçlı liste.':'Günü zirvesine yakın, yüksek hacimle %1,5–7 artıda kapatanlar. Sinyal değil, açılışta ilk bakılacak liste.')+'</p>'+
    (wl.length?'<div class="pchips">'+wl.map(o=>'<button onclick="xrayOpen(\''+o.name+'\')"><b>'+htmlEsc(o.name)+'</b><i class="'+cls(o.change)+'">'+pct(o.change)+'</i></button>').join('')+'</div>':'<p class="pempty">Bugün bu şartlara uyan hisse çıkmadı.</p>')+'</section>'}
  h+=nGuven();
  // katlanır bölümler
@@ -5656,7 +5661,7 @@ function renderNowCam(){
  try{const L=YRM.list;if(L&&L.length){const y=L[0];F.push(nFold('yrm','Pusula\'nın piyasa yorumu',String(YSLOT[y.slot]||'Yorum').replace(/^\S+\s/,'')+' · '+yorumAge(y.t),()=>yorumCard()))}}catch(e){}
  const prepTime=s.wk&&((s.m>=480&&s.m<600)||s.m>=1095);
  if(prepTime)try{const kn=(NOWK.list||[]).filter(k=>n-k.t<16*3600e3&&k.onem>=2).length,es=earnSoon(s.pre?2:3).length;F.push(nFold('prep',s.pre?'Güne hazırlık':'Yarına hazırlık',kn+' önemli KAP'+(es?' · '+es+' bilanço yaklaşıyor':'')+(S.viop&&S.viop.c&&s.pre&&s.m>=570?' · VİOP '+pct(S.viop.ch):''),()=>nPrep(s)))}catch(e){}
- if(!liveT&&SIGT.list&&SIGT.list.length)F.push(nFold('live','Bugünün sinyalleri',SIGT.list.filter(r=>r.px>0&&r.src!=='radar').length+' sinyal · hedef ve stop yolculuğu',()=>nLive()));
+ if(!liveT&&!uy&&SIGT.list&&SIGT.list.length)F.push(nFold('live','Bugünün sinyalleri',SIGT.list.filter(r=>r.px>0&&r.src!=='radar').length+' sinyal · hedef ve stop yolculuğu',()=>nLive()));
  try{const kl=(NOWK.list||[]).filter(k=>n-k.t<(s.open?3:16)*3600e3&&k.onem>=2).slice(0,6),k0=kl[0];
   F.push(nFold('kap',s.open?'Son 3 saatin önemli KAP\'ları':'Önemli KAP\'lar',kl.length?kl.length+' haber · '+htmlEsc(String(k0.syms||'').split(',')[0]+' — '+String(k0.subj||'').slice(0,46)):'Önemli bildirim yok',()=>kl.length?kl.map(k=>{const sy=String(k.syms||'').split(',')[0]||'KAP',o=S.umap[sy]||{};return nowRow({sym:sy,src:k.ad||k.tip,cls:'kap',sub:(k.subj||'')+(k.summ?' — '+k.summ:''),val:s.open&&o.close?nf(o.close):new Date(k.t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}),chg:s.open?o.change:null,dn:k.yon<0,onclick:"showTab('kap')"})}).join('')+'<button class="pmore" onclick="showTab(\'kap\')">KAP Haber ekranı ›</button>':'<div class="nempty">Önemli bildirim yok.</div>'))}catch(e){}
  try{const L=(ECAL.list||[]).filter(e=>e.t>n-2*3600e3&&e.t<n+40*3600e3).slice(0,6),nx=L.filter(e=>e.t>n).slice(0,2);
@@ -5789,6 +5794,7 @@ html.tgfs #top{padding-top:calc(10px + var(--tg-safe-area-inset-top,0px) + var(-
 #tgabox b{font-size:20px}#tgabox span{font-size:14px;color:#8F9BB3;line-height:1.45}
 #tgabox button{margin-top:8px;padding:11px 22px;border-radius:12px;border:1px solid rgba(201,163,91,.5);background:rgba(201,163,91,.12);color:#E6C98A;font:600 15px Barlow,system-ui,sans-serif}
 </style>
-<style>html.noset [data-t="set"],html.noset #t-set{display:none!important}</style>
+<style>html.noset [data-t="set"],html.noset #t-set{display:none!important}
+html.uye [data-t="op"],html.uye [data-t="algi"],html.uye [data-t="brief"],html.uye #t-op,html.uye #t-algi,html.uye #t-brief{display:none!important}</style>
 </body>
 </html>
