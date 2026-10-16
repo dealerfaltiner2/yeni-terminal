@@ -17,7 +17,7 @@
 - Terminal: `index.html` (GitHub Pages, PWA). Sürüm `APP_VER` (şu an 6.5). Fatih'in cihazı "Fatih Ana Cihaz" = ana cihaz.
 - Sunucu: Cloudflare Worker `bist-tv` (`worker/src/index.js` + `sig.js` + `kap.js` + `rise.js`). GitHub main'e push → otomatik yayın (~2–4 dk).
 - Veritabanı: D1 `bist_bt` (id f45bd262-2d5b-4f62-94b5-36c30651b709) — Cloudflare MCP `d1_database_query` ile doğrudan sorgulanır.
-  Tablolar: `meta` (k,v), `dev` (cihazlar + diag), `sig` (sinyal karnesi), `kap` (KAP bildirimleri), `feat` (araştırma verisi), `bars` (mum önbelleği — DOKUNMA, çok büyük), `bt` (eski, kullanılmıyor).
+  Tablolar: `meta` (k,v), `dev` (cihazlar + diag), `sig` (sinyal karnesi), `kap` (KAP bildirimleri), `feat` (araştırma verisi), `bars` (mum önbelleği — DOKUNMA, çok büyük; araştırma verisi). `bt` ve `mlpack` 16.10'da silindi (kullanılmıyordu).
 - KV `DB`: cfg (alarm, Telegram, izleme listesi), st (sunucu durumu), prefs (yedek). MCP ile KV okunamıyor.
 - Sandbox'tan Worker'a ve kap.org.tr'ye curl ile ulaşılamıyor. Sunucuda bir şey denemek için: kodu cron'a geçici "prob" olarak koy, sonucu D1 meta'ya yazdır, D1'den oku (29.09'da KAP API böyle doğrulandı).
 - Yerel test: `npx wrangler@3 dev --local` + sahte veri; terminal için Playwright (Chromium kurulu). LightweightCharts CDN'i sandbox'ta yüklenmez — o hata normal.
@@ -129,7 +129,7 @@ Her işlemde %0,1 kayma düşüldü. Eski <15.03.2026 / yeni ≥. İşlem başı
   Yeni kenar için YENİ BİLGİ gerekir: dakikalık mum arşivi (10:30'a kadar seyir şekli, hacim dağılımı), derinlik/emir defteri, takas/aracı kurum dağılımı.
 - Öneri (3 Kasım'dan SONRA, Fatih onayıyla): (1) Worker'a günlük dakikalık mum arşivi (seans sonrası, R2/D1; CPU sınırı için motor/iş PC'si de yazabilir),
   (2) 2–3 ay arşiv birikince model yeniden denenir, (3) derinlik (İdeal) en büyük potansiyel yeni bilgi.
-  Momentum ±1,5 → ±2 önerisi geçerli (6d). Betikler: tools/ml/ (pack.py SQL üretir, check.py doğrular, decode.py çözer, model.py + m2.py test); yeniden gerekirse mlpack tablosundan aynı biçimle çözülür.
+  Momentum ±1,5 → ±2 önerisi geçerli (6d). Betikler: tools/ml/ (pack.py SQL üretir, check.py doğrular, decode.py çözer, model.py + m2.py test); mlpack tablosu 16.10'da silindi; yeniden gerekirse pack.py ile feat'ten yeniden üretilir.
 
 ## 6f. 09.10 gece ZENGİN VERİ (15 dk mumlar) — İLK GERÇEK İLERLEME
 - VERİ YOLU (önemli): D1 MCP sorgusunun BÜYÜK sonucu Claude Code'da otomatik dosyaya kaydediliyor (~/.claude/projects/.../tool-results/*.txt, belirteç harcamadan).
