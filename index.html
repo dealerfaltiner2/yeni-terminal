@@ -1031,7 +1031,7 @@ const OWN={claimed:null,list:null,err:''};
 function ownBase(){return srvBase(S.tvproxy)}
 function devNameSave(v){LS.set('devName',String(v||'').replace(/[<>"'&]/g,'').trim().slice(0,24));devHello()}
 const WAIT_MSG='bu cihaz ana cihazın onayını bekliyor';
-async function devHello(){const b=ownBase();if(!/^https:\/\//.test(b))return;OWN.helloAt=Date.now();try{const j=await (await fetch(qAdd(b+'/hello?'+devQ()+(BOTMODE?'&bot=1':''),ownQ()))).json();OWN.wait=!!(j&&j.wait);S.botAlive=!!(j&&j.bot);S.botKnown=1;if(j&&j.blocked)TVL.err='bu cihaz engellendi';else if(j&&j.wait)TVL.err=WAIT_MSG}catch(e){}}
+async function devHello(){const b=ownBase();if(!/^https:\/\//.test(b))return;OWN.helloAt=Date.now();try{const j=await (await fetch(qAdd(b+'/hello?'+devQ()+(BOTMODE?'&bot=1':''),ownQ()))).json();OWN.wait=!!(j&&j.wait);S.uye=!!(j&&j.uye);S.botAlive=!!(j&&j.bot);S.botKnown=1;if(j&&j.blocked)TVL.err='bu cihaz engellendi';else if(j&&j.wait)TVL.err=WAIT_MSG}catch(e){}}
 // v6.8: sunucu veri yollarına cihaz kimliği (yeni cihaz onayı)
 function dq(u){return qAdd(u,'dev='+devId())}
 setTimeout(devHello,3000);
@@ -1080,11 +1080,11 @@ async function devList(){
   const open=L.filter(x=>now-x.last<20*60000).length,today=L.filter(x=>x.last>=d0.getTime()).length;
   const ago=t=>{const m=Math.round((now-t)/60000);return m<1?'şimdi':m<60?m+' dk önce':m<1440?Math.round(m/60)+' sa önce':Math.round(m/1440)+' gün önce'};
   const dt=t=>new Date(t).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit'});
-  const wn=L.filter(x=>!x.ok&&!x.blocked).length;
-  dl.innerHTML=(wn?'<div class="note dn" style="padding-top:0"><b>'+wn+' yeni cihaz onayını bekliyor.</b> Tanıdığın biriyse "Onayla"ya bas; tanımıyorsan "Engelle".</div>':'')+'<div class="note" style="padding-top:0"><b>Şu an açık: '+open+'</b> · Bugün giren: '+today+' · Toplam cihaz: '+L.length+'</div>'+
+  const wn=L.filter(x=>!x.ok&&!x.blocked).length;let uy='';try{const u=await (await fetch(qAdd(ownBase()+'/uyeler',ownQ()))).json();if(u&&u.ok)uy='<div class="note" style="padding-top:0">👥 <b>Pusula üyeleri: '+u.toplam+'</b> · bu hafta yeni: '+u.hafta+'<br><small>Telegram\'dan giren herkes üye olur; fiyatları 15 dk gecikmeli görür. Canlı veri yalnız senin ve yükselttiğin cihazlarda.</small></div>'}catch(e){}
+  dl.innerHTML=uy+(wn?'<div class="note dn" style="padding-top:0"><b>'+wn+' yeni cihaz onayını bekliyor.</b> Tanıdığın biriyse "Onayla"ya bas; tanımıyorsan "Engelle".</div>':'')+'<div class="note" style="padding-top:0"><b>Şu an açık: '+open+'</b> · Bugün giren: '+today+' · Toplam cihaz: '+L.length+'</div>'+
    L.map(x=>{const on=now-x.last<20*60000,it=x.id===me;
-    return '<div class="devrow'+(x.blocked?' blk':'')+'"><div><b>'+(on?'🟢 ':'⚪ ')+htmlEsc(x.name||(x.id[0]==='x'?'eski sürüm':'isimsiz'))+(it?' <span class="up">(bu cihaz)</span>':'')+'</b><br><small>'+htmlEsc(x.ua||'')+(x.app?' · uygulama':'')+(x.city?' · '+htmlEsc(x.city):'')+(x.ver&&x.ver!=='eski'?' · v'+htmlEsc(x.ver):'')+'<br>son: '+ago(x.last)+' · ilk: '+dt(x.first)+' · '+x.hits+' giriş'+(x.blocked?' · <span class="dn">ENGELLİ</span>':(!x.ok?' · <span class="dn">ONAY BEKLİYOR</span>':''))+'</small></div><div class="devbtns">'+
-     (!x.ok&&!x.blocked?'<button class="g pri" onclick="devOk(\''+x.id+'\',1)">Onayla</button>':'')+
+    return '<div class="devrow'+(x.blocked?' blk':'')+'"><div><b>'+(on?'🟢 ':'⚪ ')+htmlEsc(x.name||(x.id[0]==='x'?'eski sürüm':'isimsiz'))+(it?' <span class="up">(bu cihaz)</span>':'')+'</b><br><small>'+htmlEsc(x.ua||'')+(x.app?' · uygulama':'')+(x.city?' · '+htmlEsc(x.city):'')+(x.ver&&x.ver!=='eski'?' · v'+htmlEsc(x.ver):'')+'<br>son: '+ago(x.last)+' · ilk: '+dt(x.first)+' · '+x.hits+' giriş'+(x.blocked?' · <span class="dn">ENGELLİ</span>':x.ok===2?' · <span style="color:#E6C98A">ÜYE · 15 dk gecikmeli</span>':(!x.ok?' · <span class="dn">ONAY BEKLİYOR</span>':''))+'</small></div><div class="devbtns">'+
+     (!x.ok&&!x.blocked?'<button class="g pri" onclick="devOk(\''+x.id+'\',1)">Onayla</button>':'')+(x.ok===2&&!x.blocked?'<button class="g pri" onclick="devOk(\''+x.id+'\',1)">Canlı veriye yükselt</button>':'')+
      (it?'':'<button class="g" onclick="devBlock(\''+x.id+'\','+(x.blocked?0:1)+')">'+(x.blocked?'Engeli kaldır':'Engelle')+'</button>')+'</div></div>'}).join('');
  }catch(e){dl.innerHTML='<div class="note dn">Liste alınamadı: '+htmlEsc(e.message||e)+'</div>'}
 }
@@ -2751,6 +2751,7 @@ async function tvToken(){
   const r=await fetch(base+'/tv-token?'+devQ(),{signal:ac.signal});clearTimeout(t);
   const d=await r.json();
   if(d&&d.ok&&d.token){TVL.tok=d.token;TVL.tokAt=Date.now();return d.token}
+  if(d&&d.uye){TVL.uye=1;S.uye=true;TVL.err='';return ''}   // v12.0 üye: oturumsuz (15 dk gecikmeli) akış
   TVL.err='yetki alınamadı'+(d&&d.err?(': '+String(d.err).slice(0,60)):'');
  }catch(e){TVL.err='yetki alınamadı ('+(e.name==='AbortError'?'zaman aşımı':(e.message||'hata'))+')'}
  return TVL.tok||'';
@@ -3298,7 +3299,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="11.9";window.APPV=APP_VER;
+  const APP_VER="12.0";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4739,7 +4740,7 @@ function renderNow(){
   ['BÖLÜMLER',['<b>Üst kart</b>: BIST 100, gün içi çizgisi (kesikli çizgi önceki kapanış), piyasanın havası, artıda/eksi hisse oranı, VİOP ve dünya piyasaları','<b>Güne hazırlık</b> (09:00–10:00) ve <b>Yarına hazırlık</b> (18:15 sonrası): gece gelen KAP\'lar, günün verileri, VİOP yönü, bilançosu yaklaşanlar, ilk bakılacak hisseler','<b>Canlı takip</b>: bugün gelen her sinyal (motorun gönderdikleri dahil) — çubuğun sol ucu stop, sağ ucu hedef, beyaz çizgi giriş, parlak nokta şimdiki fiyat, gölge gün içi gidilen aralık','<b>Piyasa nabzı</b>: en çok yükselen, düşen, hacmi patlayan, tavana/tabana yaklaşan','<b>Para nereye akıyor?</b>: sektörlerin piyasa değeriyle ağırlıklı ortalama değişimi','<b>Kâğıt üzerinde bot</b>: gerçek para olmadan, sinyallere bot girseydi bugün ve başından beri kaç TL kazanırdı','<b>İzleme listem</b> ve <b>Benim günüm</b>: bugünkü işlemlerinin kâr/zararı ve sistemin son 10 günlük kazanma oranı']],
   ['SEANS AÇIKKEN',['<b>Canlı sinyaller</b>: Algı\'nın ateşlediği ya da hazırlanan hisseler, bugün verilen Algı sinyallerinin şu anki durumu, son 8 saatteki Fırsat A notları ve son 3 saatin önemli KAP haberleri','<b>Karne</b>: son 10 iş gününde her sinyal kaynağının başarısı','<b>Açık pozisyonlar</b>: günlükteki açık işlemler (kaç R\'de olduğu), portföy ve yaklaşan alarmlar']],
   ['PİYASA KAPALIYKEN',['Son günün karnesi','Seans sonrası gelen önemli KAP\'lar','<b>Yarın izlenecekler</b>: günü zirvesine %1\'den yakın, göreli hacmi 1,3 kat üstü, %1,5–7 artıda ve günlük hacmi 20 Mn ₺ üstü kapatan hisseler. Sinyal değil, açılışta ilk bakılacak liste.']],
-  ['İŞ BİLGİSAYARI MOTORU','Kuruluysa Algı ve Fırsat iş bilgisayarında sürekli çalışır; telefon kapalıyken de sinyal gelir. Durumu seans satırının altında görünür. Kurulum: Ayarlar → Ana cihaz → <b>İş bilgisayarını bağla</b>.'],
+  ['ANA SUNUCU','Kuruluysa Algı ve Fırsat ana sunucuda (evdeki bilgisayar, hafta içi 09:15–19:00) sürekli çalışır; telefon kapalıyken de sinyal gelir. Durumu seans satırının altında görünür. Kurulum: Ayarlar → Ana cihaz → <b>Ana sunucuyu bağla</b>.'],
   ['EKONOMİK TAKVİM VE UYARILAR',['<b>Ekonomik takvim</b>: Türkiye\'nin önemli ve orta önemdeki verileri (enflasyon, faiz kararı, cari denge…) ile ABD\'nin önemli verileri (enflasyon, istihdam, FED). Saat, beklenti, önceki ve açıklanan değer.','Önemli bir veriye <b>45 dakikadan az</b> kaldıysa üst kartta sarı uyarı çıkar; veri saatinde fiyatlar sert oynayabilir.','<b>Bilanço notu</b>: bilançosu 7 gün içinde açıklanacak hisselerin yanında 📅 rozeti; Algı ve Fırsat bildirimlerinde de yazar.','<b>VİOP 30</b>: BIST 30 vadeli kontratı. 09:30–10:00 arası açılışın yönü için erken fikir verir. Aboneliğin VİOP\'u kapsamıyorsa 15 dakika gecikmelidir (⏱ işareti).','Bu notlar sinyal kurallarını değiştirmez; yalnız bilgi verir.']],
   ['MİNİ ÇİZGİ','Her satırın solundaki küçük grafik: hisse derin taranmışsa bugünün 15 dakikalık kapanışları, değilse son birkaç dakikanın canlı fiyatı. Yeşil = yükseliyor, kırmızı = düşüyor.']]};
  try{SNAME.algi=SNAME.algi||'Algı'}catch(e){}
@@ -4752,7 +4753,7 @@ function renderNow(){
 })();
 /* ================= v7.1 SİNYAL BİLDİRİM KARTI ================= */
 const STQ=[];let stTimer=null,stCur=null;
-function sigToast(o){try{if(!o||!o.sym)return;if(STQ.some(x=>x.sym===o.sym&&x.src===o.src)||(stCur&&stCur.sym===o.sym&&stCur.src===o.src))return;STQ.push(o);if(!stCur)stNext()}catch(e){}}
+function sigToast(o){try{if(!o||!o.sym)return;if(S.uye||TVL.uye)return;   /* v12.0: üyede veri gecikmeli → anlık sinyal kartı yok */if(STQ.some(x=>x.sym===o.sym&&x.src===o.src)||(stCur&&stCur.sym===o.sym&&stCur.src===o.src))return;STQ.push(o);if(!stCur)stNext()}catch(e){}}
 function stNext(){const el=document.getElementById('sigtoast');stCur=STQ.shift()||null;if(!stCur){el.classList.remove('on');return}const o=stCur,sat=o.dir==='SAT';
  el.innerHTML='<div class="stc'+(sat?' sat':'')+'"><div class="st1"><span class="lb">'+htmlEsc(o.label||('YENİ SİNYAL · '+(o.dir||'AL')))+'</span><b>'+htmlEsc(o.sym)+'</b>'+sparkFor(o.sym,64,22)+'<button class="x" onclick="stClose()" aria-label="Kapat">✕</button></div>'+
   (o.why&&o.why.length?'<div class="chips">'+o.why.map(t=>'<span class="chip ok">'+t+'</span>').join('')+'</div>':'')+
@@ -5046,21 +5047,21 @@ async function pairStart(){
  if(!S.tgTok||!S.tgChat){if(!confirm('Telegram ayarın boş görünüyor. Motor sinyalleri karneye yazar ama Telegram\'a gönderemez. Yine de devam edilsin mi?'))return}
  box.innerHTML='<div class="note">Kod hazırlanıyor…</div>';
  const rid=(crypto&&crypto.randomUUID?crypto.randomUUID():String(Math.random())+Date.now()).replace(/[^a-z0-9]/gi,'').toLowerCase().slice(0,16);
- const cfg={ls:{tvproxy:String(S.tvproxy||'').replace('bist-tv.c8jmvhdm8c.workers.dev','api.altinerpano.com'),ownTok:LS.get('ownTok',''),ownClaimed:1,devName:'İş bilgisayarı (motor)',devId:'motor'+rid,
+ const cfg={ls:{tvproxy:String(S.tvproxy||'').replace('bist-tv.c8jmvhdm8c.workers.dev','api.altinerpano.com'),ownTok:LS.get('ownTok',''),ownClaimed:1,devName:'Ana sunucu',devId:'motor'+rid,
   tgTok:S.tgTok||'',tgChat:S.tgChat||'',tgMin:S.tgMin||55,autoOn:1,algiCfg:Object.assign({},LS.get('algiCfg',{}),{on:1}),stf:LS.get('stf','15'),guestWiped:1,guestWiped2:1}};
  try{const r=await fetch(qAdd(ownBase()+'/pair-create',ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({cfg})});const j=await r.json();
   if(!j.ok)throw new Error(j.error||('HTTP '+r.status));
   const cmd='iex (irm https://raw.githubusercontent.com/dealerfaltiner2/yeni-terminal/main/pc/kur.ps1)';
   box.innerHTML='<div class="isec" style="margin:8px 0"><h3>EŞLEŞTİRME KODU · 15 DK GEÇERLİ</h3><div style="font:800 26px var(--sans);letter-spacing:3px;color:#fff;margin:4px 0 10px">'+htmlEsc(j.code)+'</div>'+
-   '<ol><li>İş bilgisayarında <b>Başlat</b>\'a sağ tıkla → <b>Terminal</b> ya da <b>Windows PowerShell</b>\'i aç.</li><li>Aşağıdaki komutu yapıştır, Enter\'a bas.</li><li>Kod sorulunca yukarıdaki kodu yaz.</li></ol>'+
+   '<ol><li>Bilgisayarda <b>Başlat</b>\'a sağ tıkla → <b>Terminal</b> ya da <b>Windows PowerShell</b>\'i aç.</li><li>Aşağıdaki komutu yapıştır, Enter\'a bas.</li><li>Kod sorulunca yukarıdaki kodu yaz.</li></ol>'+
    '<div style="font:12px monospace;background:rgba(0,0,0,.35);border:1px solid var(--line2);border-radius:10px;padding:8px;margin:8px 0;word-break:break-all;color:#e2e8f0">'+htmlEsc(cmd)+'</div>'+
    '<button class="g" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+cmd.replace(/'/g,"\\'")+'\').then(()=>alert(\'Komut kopyalandı\'))">📋 Komutu kopyala</button></div>';
  }catch(e){box.innerHTML='<div class="note dn">Kod alınamadı: '+htmlEsc(e.message||e)+'</div>'}
 }
 (function(){ // ana cihaz bölümüne düğme + kutu
  const _or=ownRender;window.ownRender=ownRender=async function(){await _or.apply(this,arguments);try{const bt=document.getElementById('ownbtns');
-  if(bt&&LS.get('ownTok','')&&!bt.querySelector('.pairbtn')){bt.insertAdjacentHTML('beforeend','<button class="g pairbtn" onclick="pairStart()">💻 İş bilgisayarını bağla (sinyal motoru)</button><div id="pairbox"></div>')}
-  const st=document.getElementById('ownmsg');if(st&&S.botKnown)st.insertAdjacentHTML('beforeend','<br><small>'+(S.botAlive?'<span class="up">💻 İş bilgisayarı motoru çalışıyor</span> — Algı ve Fırsat sinyallerini o gönderiyor.':'💻 İş bilgisayarı motoru şu an çalışmıyor.')+'</small>');
+  if(bt&&LS.get('ownTok','')&&!bt.querySelector('.pairbtn')){bt.insertAdjacentHTML('beforeend','<button class="g pairbtn" onclick="pairStart()">💻 Ana sunucuyu bağla (sinyal motoru)</button><div id="pairbox"></div>')}
+  const st=document.getElementById('ownmsg');if(st&&S.botKnown)st.insertAdjacentHTML('beforeend','<br><small>'+(S.botAlive?'<span class="up">💻 Ana sunucu çalışıyor</span> — Algı ve Fırsat sinyallerini o gönderiyor.':'💻 Ana sunucu şu an çalışmıyor (hafta içi 09:15–19:00 açık).')+'</small>');
  }catch(e){}};
 })();
 // Şimdi ekranı: motor durumu (seans satırının altına)
@@ -5237,7 +5238,7 @@ function labHtml(){const D={canli:['🟢','Canlıda deneniyor'],bulgu:['🔵','G
   LAB.map(x=>'<div class="labr '+x.durum+'"><div class="labt"><span>'+D[x.durum][0]+'</span><b>'+htmlEsc(x.ad)+'</b></div><div class="labm"><span>'+htmlEsc(x.kural)+'</span>'+
    (x.eski!=null?'<span>ilk dönem <b>%'+x.eski+'</b></span>':'')+(x.yeni!=null?'<span>son dönem <b class="'+((x.be?x.yeni>=x.be+8:x.yeni>=55)?'up':(x.be?x.yeni<x.be:x.yeni<47)?'dn':'')+'">%'+x.yeni+'</b></span>':'')+(x.n?'<span>'+x.n+' işlem</span>':'')+'<em>'+D[x.durum][1]+'</em></div><div class="labn">'+htmlEsc(x.not)+'</div></div>').join('')+'</div>'}
 (function(){const _rl=renderLab;window.renderLab=renderLab=function(){_rl.apply(this,arguments);try{const el=document.getElementById('labbody');if(el)el.insertAdjacentHTML('beforeend',labHtml())}catch(e){}}})();
-(function(){const _sl=nowSessLine;window.nowSessLine=nowSessLine=function(){let h=_sl.apply(this,arguments);try{if(S.botKnown)h+='<div class="nsess" style="border-top:0;padding-top:4px;margin-top:2px"><span class="dot '+(S.botAlive?'on':'')+'"></span><span>💻 İş bilgisayarı motoru: <b>'+(S.botAlive?'çalışıyor':'kapalı')+'</b></span><span class="fr">'+(S.botAlive?'sinyaller oradan':'sinyaller telefondan')+'</span></div>'}catch(e){}return h}})();
+(function(){const _sl=nowSessLine;window.nowSessLine=nowSessLine=function(){let h=_sl.apply(this,arguments);try{if(S.botKnown)h+='<div class="nsess" style="border-top:0;padding-top:4px;margin-top:2px"><span class="dot '+(S.botAlive?'on':'')+'"></span><span>💻 Ana sunucu: <b>'+(S.botAlive?'çalışıyor':'kapalı')+'</b></span><span class="fr">'+(S.botAlive?'sinyaller oradan':'sinyaller telefondan')+'</span></div>'}catch(e){}return h}})();
 /* ================= v8.3 KÂĞIT ÜZERİNDE BOT =================
    Gerçek para yok, emir yok. Sunucu (/paper) karnedeki sinyalleri "bot alsaydı ne olurdu?" diye hesaplar:
    seçili kaynaklar, işlem başına sabit tutar, Momentum ±%1,5 / diğerleri ±%1, gelmezse gün sonu kapanışı, %0,1 kayma payı, günde en çok N işlem. */
@@ -5544,7 +5545,7 @@ function nDial(){
  const hmm=v=>{v=Math.max(0,v);const h=Math.floor(v/60),m=v%60;return (h?h+' sa ':'')+m+' dk'};
  const f=Math.max(0,Math.min(1,(s.m-600)/480));
  const sessT=s.open?'Seans açık · kapanışa '+hmm(1080-s.m):s.pre?'Seans 10:00\'da · '+hmm(600-s.m)+' kaldı':'Piyasa kapalı · sonraki seans '+(s.wd===5&&s.m>=1080||s.wd===6||s.wd===0?'Pazartesi':'yarın')+' 10:00';
- const bot=S.botKnown?'<span><i class="'+(S.botAlive?'on':'')+'"></i>İş bilgisayarı motoru: <b>'+(S.botAlive?'çalışıyor':'kapalı')+'</b></span>':'';
+ const bot=S.botKnown?'<span><i class="'+(S.botAlive?'on':'')+'"></i>Ana sunucu: <b>'+(S.botAlive?'çalışıyor':'kapalı')+'</b></span>':'';
  let h='<header class="phead"><div class="pmark"><svg viewBox="-20 -20 40 40" aria-hidden="true"><circle r="18" fill="none" stroke="#C9A35B" stroke-width="1.6"/><polygon points="0,-14 3.2,0 -3.2,0" fill="#5FD39A"/><polygon points="0,14 3.2,0 -3.2,0" fill="#F07A6A"/><circle r="2.2" fill="#0E1626" stroke="#C9A35B" stroke-width="1.2"/></svg>'+
   '<div><b>Pusula</b><span>'+gun+', '+d.getUTCDate()+' '+ay+'</span></div></div>'+
   '<div class="pst"><span class="'+(live?'on':'')+'" title="Canlı veri">Canlı</span></div></header>'+
@@ -5553,7 +5554,7 @@ function nDial(){
    (Y?'<span class="pyon" style="--yc:'+ycol+'"><b>'+Y.lab+'</b><em>yön puanı '+(sc>0?'+':sc<0?'−':'')+Math.abs(sc)+'</em></span>':'<span class="pyon"><b>Veri bekleniyor</b></span>')+
    (nu+nd?'<span class="pbr2"><i class="u"></i>'+nu+' yükselen<i class="d"></i>'+nd+' düşen</span>':'')+'</div></div>'+
   '<div class="pses"><span>10:00</span><div class="psb"><i style="width:'+(f*100).toFixed(1)+'%"></i>'+(s.open?'<em style="left:'+(f*100).toFixed(1)+'%"></em>':'')+'</div><span>18:00</span></div>'+
-  '<div class="pline"><span><i class="'+(s.open?(live?'on':'warn'):'')+'"></i>'+sessT+'</span>'+bot+'</div>'+
+  '<div class="pline"><span><i class="'+(s.open?(live?'on':'warn'):'')+'"></i>'+sessT+'</span>'+bot+((S.uye||TVL.uye)?'<span>Üye sürümü · fiyatlar 15 dk gecikmeli</span>':'')+'</div>'+
   (st.length?'<div class="pstrip">'+st.map(t=>'<div><small>'+t[0]+'</small><b>'+nf(t[1],t[1]>1000?0:2)+'</b><em class="'+cls(t[2])+'">'+(t[2]!=null?(t[2]>=0?'+':'−')+nf(Math.abs(t[2]),2):'')+'</em></div>').join('')+'</div>':'')+'</div>';
  if(V&&V.c&&s.wk&&s.m>=570&&s.m<600)h+='<div class="nwarn info">📈 <b>VİOP açıldı:</b> BIST 30 vadeli '+pct(V.ch)+' → endeks '+(V.ch>0.3?'yukarı':V.ch<-0.3?'aşağı':'yatay')+' açılabilir'+(V.dl?' (15 dk gecikmeli)':'')+'.</div>';
  try{const ne=ecNear(45);if(ne.length)h+='<div class="nwarn">⚠️ <b>'+ne.map(e=>ecHm(e.t)+' '+ecFlag(e)+' '+htmlEsc(ecTitle(e))).join(', ')+'</b>: veri saatinde fiyatlar sert oynayabilir.</div>'}catch(e){}
@@ -5762,6 +5763,10 @@ async function tgaAuth(){
  try{W.setHeaderColor('#0E1626');W.setBackgroundColor('#0E1626');if(W.setBottomBarColor)W.setBottomBarColor('#0E1626')}catch(e){}
  if(!S.tvproxy){if(!sessionStorage.getItem('tga_try')){sessionStorage.setItem('tga_try','1');tgaAuth()}
   else tgaBox('Giriş tamamlanamadı','Bir kez daha dene.','<button onclick="sessionStorage.removeItem(\'tga_try\');location.reload()">Tekrar dene</button>');return}
+ // v12.0: onay bekleyen eski Telegram cihazı (üye sürümünden önce girmiş) → bir kez yeniden giriş = üye
+ if(!LS.get('ownTok',''))setTimeout(()=>{try{if(OWN.wait&&!sessionStorage.getItem('tga_re')){sessionStorage.setItem('tga_re','1');tgaAuth()}}catch(e){}},4000);
+ // v12.0: telefonda TAM EKRAN (Telegram'ın başlığı kalkar; üst boşluk Telegram'ın güvenli alanı kadar)
+ try{if(W.requestFullscreen&&/ios|android/i.test(W.platform||'')){W.requestFullscreen();document.documentElement.classList.add('tgfs')}}catch(e){}
  const sp=String((W.initDataUnsafe&&W.initDataUnsafe.start_param)||'').toUpperCase();
  if(/^[A-Z0-9]{2,8}$/.test(sp))setTimeout(()=>{try{xrayOpen(sp)}catch(e){}},900);
  const xo=()=>{const x=document.getElementById('xray');return !!(x&&x.classList.contains('on'))};
@@ -5770,6 +5775,7 @@ async function tgaAuth(){
 }catch(e){}})();
 </script>
 <style>
+html.tgfs #top{padding-top:calc(10px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
 #tgabox{position:fixed;inset:0;z-index:9999;background:#0E1626;display:flex;align-items:center;justify-content:center;padding:24px}
 #tgabox .tgac{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;color:#E9ECF2;font-family:Barlow,system-ui,sans-serif;max-width:320px}
 #tgabox b{font-size:20px}#tgabox span{font-size:14px;color:#8F9BB3;line-height:1.45}

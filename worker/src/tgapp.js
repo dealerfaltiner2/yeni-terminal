@@ -1,6 +1,6 @@
 // v11.7 (16.10, Fatih: 'Pusula Telegram mini uygulaması') — t.me/FatihBistSinyal2026Bot/pusula
 // /tgauth (anahtarsız, POST {d: initData}): Telegram'ın imzaladığı kimlik bilgisini bot anahtarıyla doğrular (HMAC-SHA256, 24 saat geçerli).
-// Sinyal grubunun KURUCUSU → sahip kurulum metni (sunucu adresi + ana cihaz kodu); grubun diğer üyeleri → yalnız sunucu adresi (cihaz onayı yine gerekir); diğerleri → ret.
+// Sinyal grubunun KURUCUSU → sahip kurulum metni (sunucu adresi + ana cihaz kodu); v12.0: diğer HERKES → üye (gecikmeli veri, üye listesine kayıt).
 export const TG_APP = 'https://t.me/FatihBistSinyal2026Bot/pusula';
 const enc = new TextEncoder();
 const hmac = async (key, data) => new Uint8Array(await crypto.subtle.sign('HMAC', await crypto.subtle.importKey('raw', typeof key === 'string' ? enc.encode(key) : key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']), enc.encode(data)));
@@ -39,9 +39,12 @@ export async function tgAuth(request, env, h) {
     try { await h.errAdd(env, 'sunucu', 'toparlama', 'Telegram mini uygulaması: sahip girişi', 'tgauth'); } catch (e) {}
     return h.json({ ok: true, owner: true, setup: 'PUSULA|' + base + '|' + (own || '') });
   }
-  if (st === 'administrator' || st === 'member' || st === 'restricted') {
-    try { await h.errAdd(env, 'sunucu', 'toparlama', 'Telegram mini uygulaması: üye girişi (' + String(user.first_name || '').slice(0, 20) + ')', 'tgauth'); } catch (e) {}
-    return h.json({ ok: true, owner: false, setup: 'PUSULA|' + base + '|' });
-  }
-  return h.json({ ok: false, error: 'Pusula\'yı yalnız sinyal grubunun üyeleri açabilir.' }, 403);
+  // v12.0 (16.10, Fatih: 'giren herkes üye olsun, amaç üye toplamak'): sahip dışındaki HERKES üye — üye listesine yazılır,
+  // cihazı 'üye' (dev.ok = 2) olur: tüm ekranlar açık ama fiyatlar 15 dk gecikmeli (sahibin TradingView oturumu KULLANILMAZ).
+  // Sahip, Ayarlar → bağlı cihazlar'dan bir üyeyi canlı veriye yükseltebilir (dev.ok = 1).
+  const grup = st === 'administrator' || st === 'member' || st === 'restricted';
+  try { if (h.uyeAdd) await h.uyeAdd(env, user, grup); } catch (e) {}
+  const dev = String(b.dev || '').toLowerCase();
+  if (/^[a-z0-9]{8,32}$/.test(dev) && h.devMember) { try { await h.devMember(env, dev); } catch (e) {} }
+  return h.json({ ok: true, owner: false, uye: true, setup: 'PUSULA|' + base + '|' });
 }

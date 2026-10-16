@@ -39,7 +39,13 @@ function lock() {
 }
 async function session(cfg) {
   const { chromium } = require('playwright');
-  const browser = await chromium.launch({ headless: true, executablePath: process.env.BIST_CHROME || undefined, args: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'] });
+  // 16.10: Playwright'ın kendi tarayıcısı indirilemediyse (ev ağında SSL engeli görüldü) bilgisayardaki Chrome, o da yoksa Edge kullanılır
+  const LA = { headless: true, args: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'] };
+  let browser = null, lerr = null;
+  for (const o of [process.env.BIST_CHROME ? { executablePath: process.env.BIST_CHROME } : {}, { channel: 'chrome' }, { channel: 'msedge' }]) {
+    try { browser = await chromium.launch(Object.assign({}, LA, o)); break; } catch (e) { lerr = e; }
+  }
+  if (!browser) throw lerr;
   let dead = false;
   browser.on('disconnected', () => { dead = true; });
   try {

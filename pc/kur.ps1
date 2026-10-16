@@ -3,7 +3,7 @@
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 function Yaz($t, $c = 'Gray') { Write-Host $t -ForegroundColor $c }
-Yaz "`n=== BIST Terminal sinyal motoru kurulumu ===`n" 'Cyan'
+Yaz "`n=== BIST Pusula · Ana sunucu kurulumu ===`n" 'Cyan'
 $D = Join-Path $env:LOCALAPPDATA 'BistMotor'
 New-Item -ItemType Directory -Force -Path $D | Out-Null
 
@@ -29,8 +29,12 @@ Yaz '3/5 Tarayıcı bileşeni kuruluyor (ilk seferde ~150 MB)...'
 Push-Location $D
 try {
   & npm.cmd install --no-audit --no-fund --loglevel=error | Out-Null
+  $env:PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT = '600000'
   & npx.cmd playwright install chromium | Out-Null
 } finally { Pop-Location }
+# 16.10: tarayıcı inmediyse (ağ/SSL engeli) motor bilgisayardaki Chrome ya da Edge'i kullanır
+$yol = @("$env:ProgramFiles\Google\Chrome\Application\chrome.exe", "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe", "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe", "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
+if ($yol -and -not (Get-ChildItem "$env:LOCALAPPDATA\ms-playwright" -Filter 'chromium*' -ErrorAction SilentlyContinue)) { [Environment]::SetEnvironmentVariable('BIST_CHROME', $yol, 'User'); $env:BIST_CHROME = $yol; Yaz "   Tarayıcı bileşeni inmedi; bilgisayardaki tarayıcı kullanılacak: $yol" 'Yellow' }
 
 # 4) Eşleştirme
 if (Test-Path (Join-Path $D 'ayar.json')) {
@@ -38,7 +42,7 @@ if (Test-Path (Join-Path $D 'ayar.json')) {
 } else { $yeni = 'E' }
 if ($yeni -match '^[Ee]') {
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-  $kod = Read-Host '4/5 Telefondaki eşleştirme kodunu yaz (Ayarlar > Ana cihaz > İş bilgisayarını bağla)'
+  $kod = Read-Host '4/5 Telefondaki eşleştirme kodunu yaz (Ayarlar > Ana cihaz > Ana sunucuyu bağla)'
   $body = @{ c = $kod.Trim() } | ConvertTo-Json
   try { $r = Invoke-RestMethod -Method Post -Uri 'https://api.altinerpano.com/pair' -Body $body -ContentType 'application/json' }
   catch { $m = $_.ErrorDetails.Message; if (-not $m) { $m = $_.Exception.Message }; Yaz ('Eşleştirme olmadı: ' + $m + "`nTelefondan yeni kod alıp komutu tekrar çalıştır.") 'Red'; return }

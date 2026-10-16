@@ -86,7 +86,7 @@ async function getAuth(env, force = false) {
   }
 }
 
-async function openTV(env) {
+async function openTV(env, anon = false) {
   let last = '';
   for (const h of ['prodata', 'data']) {
     try {
@@ -95,7 +95,7 @@ async function openTV(env) {
           Upgrade: 'websocket',
           Origin: 'https://www.tradingview.com',
           'User-Agent': UA,
-          Cookie: cookieStr(env)
+          Cookie: anon ? '' : cookieStr(env)
         }
       });
       if (r.webSocket) { r.webSocket.accept(); return { ws: r.webSocket, host: h }; }
@@ -173,7 +173,7 @@ function normSym(s) {
   return /^[A-Z_]{2,12}:[A-Z0-9._!]{1,20}$/.test(s) ? s : null;
 }
 
-function fetchBarsTV(env, list, tf, n, ms) {
+function fetchBarsTV(env, list, tf, n, ms, anon = false) {
   return new Promise(async resolve => {
     const out = {};
     list.forEach(s => { out[s] = { m: new Map(), done: false, err: null, more: 0, last: 0 }; });
@@ -186,7 +186,7 @@ function fetchBarsTV(env, list, tf, n, ms) {
     };
     const timer = setTimeout(bitir, ms);
     try {
-      const [conn, token] = await Promise.all([openTV(env), getAuth(env)]);
+      const [conn, token] = anon ? [await openTV(env, true), 'unauthorized_user_token'] : await Promise.all([openTV(env), getAuth(env)]);
       tv = conn;
       if (finished) { try { tv.ws.close(); } catch {} return; }
       const cs = {};
@@ -231,7 +231,7 @@ function fetchBarsTV(env, list, tf, n, ms) {
   });
 }
 
-async function bars(env, url) {
+async function bars(env, url, anon = false) {
   const tf = (url.searchParams.get('tf') || '15').toUpperCase().replace(/^D$/, '1D').replace(/^W$/, '1W');
   if (!TFS.includes(tf)) return json({ ok: false, error: 'geçersiz tf', izinli: TFS }, 400);
   const n = Math.max(10, Math.min(10000, parseInt(url.searchParams.get('n') || '300', 10) || 300));
@@ -240,23 +240,23 @@ async function bars(env, url) {
   const ttl = /^\d+$/.test(tf) ? 20000 : 120000;
   const now = Date.now(), data = {}, need = [];
   for (const s of syms) {
-    const c = barCache.get(s + '|' + tf + '|' + n);
+    const c = barCache.get(s + '|' + tf + '|' + n + (anon ? '|a' : ''));
     if (c && now - c.t < ttl) data[s] = { bars: c.bars, cache: true }; else need.push(s);
   }
   if (need.length) {
-    const got = await fetchBarsTV(env, need, tf, n, 12000);
+    const got = await fetchBarsTV(env, need, tf, n, 12000, anon);
     for (const s of need) {
       const st = got[s];
       const arr = [...st.m.values()].filter(v => v && v.length >= 5).sort((a, b) => a[0] - b[0]).slice(-n)
         .map(v => [v[0], v[1], v[2], v[3], v[4], v[5] || 0]);
       if (arr.length) {
-        barCache.set(s + '|' + tf + '|' + n, { t: Date.now(), bars: arr });
+        barCache.set(s + '|' + tf + '|' + n + (anon ? '|a' : ''), { t: Date.now(), bars: arr });
         data[s] = { bars: arr };
       } else data[s] = { bars: [], err: st.err || 'veri gelmedi (zaman aşımı)' };
     }
     if (barCache.size > 400) { const k = [...barCache.keys()].slice(0, barCache.size - 300); k.forEach(x => barCache.delete(x)); }
   }
-  return json({ ok: true, tf, n, data });
+  return json({ ok: true, tf, n, data, gecikmeli: anon || undefined });
 }
 
 
@@ -504,7 +504,7 @@ async function midasProxy() {
   } catch (e) { return json({ ok: false, error: 'Midas: ' + e.message }, 502); }
 }
 
-function scanRaw(env, body, market = 'turkey') {
+function scanRaw(env, body, market = 'turkey', anon = false) {
   return fetch(`https://scanner.tradingview.com/${market}/scan`, {
     method: 'POST',
     headers: {
@@ -512,26 +512,26 @@ function scanRaw(env, body, market = 'turkey') {
       Origin: 'https://www.tradingview.com',
       Referer: 'https://www.tradingview.com/',
       'User-Agent': UA,
-      Cookie: cookieStr(env)
+      Cookie: anon ? '' : cookieStr(env)
     },
     body
   });
 }
 
-async function scan(request, env, url) {
+async function scan(request, env, url, anon = false) {
   const market = (url.searchParams.get('market') || 'turkey').toLowerCase();
   if (!/^[a-z]+$/.test(market)) return json({ error: 'geçersiz market' }, 400);
   const body = await request.text();
   try { JSON.parse(body); }
   catch { return json({ error: 'gövde geçerli JSON değil', gelen: body.slice(0, 150) }, 400); }
-  const r = await scanRaw(env, body, market);
+  const r = await scanRaw(env, body, market, anon);
   return new Response(await r.text(), {
     status: r.status,
     headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }
   });
 }
 
-async function tvScan(request, env) {
+async function tvScan(request, env, anon = false) {
   let inp = {};
   try { inp = JSON.parse((await request.text()) || '{}'); } catch {}
   const syms = (Array.isArray(inp.symbols) ? inp.symbols : [])
@@ -540,7 +540,7 @@ async function tvScan(request, env) {
   if (!syms.length) return json({ ok: false, http: 0, error: 'sembol yok' });
   const body = JSON.stringify({ symbols: { tickers: syms, query: { types: [] } }, columns: SCAN_COLS });
   try {
-    const r = await scanRaw(env, body);
+    const r = await scanRaw(env, body, 'turkey', anon);
     const t = await r.text();
     if (!r.ok) return json({ ok: false, http: r.status, body: t.slice(0, 200) });
     const d = JSON.parse(t);
@@ -570,12 +570,12 @@ function echoWS() {
 // v5.2: DOĞRUDAN BORU — TradingView WebSocket'i telefona olduğu gibi bağlanır.
 // Mesajlar Worker kodundan hiç geçmez (Cloudflare altyapısı taşır) → ücretsiz plandaki
 // 10 ms işlemci limiti dolmaz, bağlantı kopmaz. Yetki anahtarını terminal /tv-token ile alır.
-async function pipeTV(env) {
+async function pipeTV(env, anon = false) {
   let last = '';
   for (const h of ['prodata', 'data']) {
     try {
       const r = await fetch(`https://${h}.tradingview.com/socket.io/websocket?from=chart%2F&type=chart`, {
-        headers: { Upgrade: 'websocket', Origin: 'https://www.tradingview.com', 'User-Agent': UA, Cookie: cookieStr(env) }
+        headers: { Upgrade: 'websocket', Origin: 'https://www.tradingview.com', 'User-Agent': UA, Cookie: anon ? '' : cookieStr(env) }
       });
       if (r.webSocket) return new Response(null, { status: 101, webSocket: r.webSocket });
       last += `${h}: HTTP ${r.status}; `;
@@ -710,7 +710,7 @@ async function btStep(env) {
 }
 /* ---------- v5.6: ana cihaz (sahip) kilidi + bağlı cihazlar (D1: meta 'owner', tablo dev) ---------- */
 // Sahip kodu D1'de durur → gerekirse Claude D1'den sıfırlayabilir. Kod yokken (ilk kurulum) eski davranış sürer.
-const OWN_ROUTES = new Set(['sync', 'prefs', 'cron-test', 'pine-sync', 'pine-test', 'devices', 'dev-block', 'dev-ok', 'siglog', 'sig-eval', 'pair-create', 'push-sub', 'push-off', 'push-send', 'pos', 'paper-set', 'flow']);
+const OWN_ROUTES = new Set(['uyeler', 'sync', 'prefs', 'cron-test', 'pine-sync', 'pine-test', 'devices', 'dev-block', 'dev-ok', 'siglog', 'sig-eval', 'pair-create', 'push-sub', 'push-off', 'push-send', 'pos', 'paper-set', 'flow']);
 // v6.8 YENİ CİHAZ ONAYI: ana cihaz belirlenmişse, onaylanmamış (ok=0) cihaz canlı veri / tarama / mum alamaz.
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
@@ -750,6 +750,27 @@ function uaShort(ua) {
 }
 // Cihaz ziyaretini kaydet; '' (serbest) | 'blocked' (engelli) | 'wait' (onay bekliyor) döner.
 // Hata olursa sessizce geçer (canlı veri asla sunucu hatası yüzünden kesilmez).
+// v12.0: Telegram'dan giren sahip-dışı kullanıcı → ÜYE (dev.ok = 2; zaten onaylıysa/engelliyse dokunulmaz) + D1 'uye' listesi
+async function devMember(env, id) {
+  await devEnsure(env);
+  const now = Date.now();
+  await env.BT.prepare("INSERT INTO dev (id,name,ua,city,ver,app,first,last,hits,ok) VALUES (?,'','Telegram','','',0,?,?,0,2) ON CONFLICT(id) DO UPDATE SET ok = CASE WHEN dev.ok = 0 THEN 2 ELSE dev.ok END").bind(id, now, now).run();
+  devCache.delete(id);
+}
+const UYE_SQL = 'CREATE TABLE IF NOT EXISTS uye (id INTEGER PRIMARY KEY, ad TEXT, kadi TEXT, grup INTEGER, first INTEGER, last INTEGER, n INTEGER)';
+async function uyeAdd(env, u, grup) {
+  await env.BT.prepare(UYE_SQL).run();
+  const now = Date.now(), ad = [u.first_name, u.last_name].filter(Boolean).join(' ').slice(0, 40), k = String(u.username || '').slice(0, 32);
+  await env.BT.prepare('INSERT INTO uye (id,ad,kadi,grup,first,last,n) VALUES (?,?,?,?,?,?,1) ON CONFLICT(id) DO UPDATE SET ad = excluded.ad, kadi = excluded.kadi, grup = excluded.grup, last = excluded.last, n = uye.n + 1').bind(u.id, ad, k, grup ? 1 : 0, now, now).run();
+}
+async function uyeList(env) {
+  try {
+    await env.BT.prepare(UYE_SQL).run();
+    const c = await env.BT.prepare('SELECT count(*) n, sum(first > ?) yeni FROM uye').bind(Date.now() - 7 * 864e5).first();
+    const L = (await env.BT.prepare('SELECT ad, kadi, grup, first, last FROM uye ORDER BY first DESC LIMIT 30').all()).results || [];
+    return json({ ok: true, toplam: c ? c.n : 0, hafta: c ? c.yeni || 0 : 0, list: L });
+  } catch (e) { return json({ ok: false, error: String(e.message || e).slice(0, 100) }); }
+}
 // v11.7: Telegram'dan sahip girişi yapan cihazı onaylı kaydet
 async function devApprove(env, id) {
   await devEnsure(env);
@@ -770,7 +791,9 @@ async function devTouch(request, env, url) {
       const h = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(ip + '|' + ua));
       id = 'x' + [...new Uint8Array(h)].slice(0, 6).map(b => b.toString(16).padStart(2, '0')).join('');
     }
-    const name = String(url.searchParams.get('name') || '').replace(/[<>"'&]/g, '').trim().slice(0, 24);
+    let name = String(url.searchParams.get('name') || '').replace(/[<>"'&]/g, '').trim().slice(0, 24);
+    // 16.10: eski eşleştirmeden kalan motor adı → 'Ana sunucu' (motor her bağlandığında adı yeniden yazıyordu)
+    if (name === 'İş bilgisayarı (motor)') name = 'Ana sunucu';
     const ver = String(url.searchParams.get('v') || (id[0] === 'x' ? 'eski' : '')).replace(/[^0-9a-z.]/gi, '').slice(0, 8);
     const cf = request.cf || {};
     const city = String(cf.city || cf.country || '').slice(0, 30);
@@ -778,7 +801,7 @@ async function devTouch(request, env, url) {
     const dg = String(url.searchParams.get('dg') || '').replace(/[^0-9a-z:.\-]/gi, '').slice(0, 200);
     const r = await env.BT.prepare('INSERT INTO dev (id,name,ua,city,ver,app,first,last,hits,diag,ok) VALUES (?,?,?,?,?,?,?,?,1,?,?) ON CONFLICT(id) DO UPDATE SET name = CASE WHEN excluded.name <> \'\' THEN excluded.name ELSE dev.name END, ua = excluded.ua, city = excluded.city, ver = excluded.ver, app = excluded.app, last = excluded.last, hits = dev.hits + 1, diag = CASE WHEN excluded.diag <> \'\' THEN excluded.diag ELSE dev.diag END, ok = CASE WHEN excluded.ok = 1 THEN 1 ELSE dev.ok END RETURNING blocked, ok')
       .bind(id, name, uaShort(ua), city, ver, url.searchParams.get('app') === '1' ? 1 : 0, now, now, dg, isOwn ? 1 : 0).first();
-    const st = !r ? '' : r.blocked ? 'blocked' : (own && !r.ok) ? 'wait' : '';
+    const st = !r ? '' : r.blocked ? 'blocked' : (own && !r.ok) ? 'wait' : (r.ok === 2 ? 'uye' : '');
     devCache.set(id, { st, at: Date.now() });
     return st;
   } catch (e) { return ''; }
@@ -795,7 +818,7 @@ async function devGate(env, url) {
     if (c && Date.now() - c.at < 60000) return c.st;
     await devEnsure(env);
     const r = await env.BT.prepare('SELECT blocked, ok FROM dev WHERE id = ?').bind(id).first();
-    const st = !r ? 'wait' : r.blocked ? 'blocked' : r.ok ? '' : 'wait';
+    const st = !r ? 'wait' : r.blocked ? 'blocked' : r.ok === 2 ? 'uye' : r.ok ? '' : 'wait';
     if (devCache.size > 500) devCache.clear();
     devCache.set(id, { st, at: Date.now() });
     return st;
@@ -891,7 +914,7 @@ export default {
     // v7.4: iş bilgisayarı kurulumu — anahtarsız, tek kullanımlık eşleştirme kodu ile ayarları bir kez alır
     if (parts[0] === 'pair' && parts.length === 1 && request.method === 'POST' && env.BT) return pairUse(request, env, json);
     // v11.7: Telegram mini uygulaması girişi — anahtarsız, Telegram imzasıyla
-    if (parts[0] === 'tgauth' && parts.length === 1 && request.method === 'POST' && env.BT) return tgAuth(request, env, { json, kvGet, ownerTok, errAdd, devApprove });
+    if (parts[0] === 'tgauth' && parts.length === 1 && request.method === 'POST' && env.BT) return tgAuth(request, env, { json, kvGet, ownerTok, errAdd, devApprove, devMember, uyeAdd });
 
     let route;
     if (env.ACCESS_KEY && parts[0] === env.ACCESS_KEY) route = parts.slice(1).join('/');
@@ -902,6 +925,8 @@ export default {
       if (route === 'ws-echo') return echoWS();
       // v6.8: iki yol da cihaz kontrolünden geçer (eski 'relay' yolu arka kapı olmasın)
       const dst = await devTouch(request, env, url);
+      // v12.0 ÜYE (dev.ok = 2, Telegram'dan giren herkes): canlı akış SAHİBİN TradingView oturumu OLMADAN açılır → TradingView 15 dk gecikmeli verir
+      if (dst === 'uye') return url.searchParams.get('direct') === '1' ? pipeTV(env, true) : json({ error: 'üye sürümü yalnız doğrudan akışla çalışır' }, 403);
       if (dst) return json({ error: DEV_MSG[dst] }, 403);
       if (url.searchParams.get('direct') === '1') return pipeTV(env);
       return relay(env, ctx);
@@ -911,9 +936,11 @@ export default {
       const o = await ownerTok(env);
       if (o && url.searchParams.get('own') !== o) return json({ ok: false, error: 'Bu işlem yalnız ana cihazdan yapılabilir' }, 403);
     }
+    let anon = false;
     if (DATA_ROUTES.has(route)) {
       const g = await devGate(env, url);
-      if (g) return json({ ok: false, error: DEV_MSG[g], err: DEV_MSG[g], wait: g === 'wait' }, 403);
+      if (g === 'uye') anon = true;   // v12.0: üye → veri yolları oturumsuz (gecikmeli)
+      else if (g) return json({ ok: false, error: DEV_MSG[g], err: DEV_MSG[g], wait: g === 'wait' }, 403);
     }
 
     switch (route) {
@@ -923,7 +950,7 @@ export default {
       case 'hello': {
         const st = await devTouch(request, env, url);
         if (!st && url.searchParams.get('bot') === '1') { const o = await ownerTok(env); if (o && url.searchParams.get('own') === o) await botBeat(env); }
-        return json({ ok: true, blocked: st === 'blocked', wait: st === 'wait', bot: env.BT ? await botAlive(env) : false });
+        return json({ ok: true, blocked: st === 'blocked', wait: st === 'wait', uye: st === 'uye', bot: env.BT ? await botAlive(env) : false });
       }
       case 'kap': return kapList(env, url, json);
       case 'sigstats': return json(await sigStats(env));
@@ -936,6 +963,7 @@ export default {
       case 'push-key': case 'push-sub': case 'push-off': case 'push-send': return pushRoute(route, request, env, url, json);
       case 'errlog': if (request.method === 'POST') return errLogRoute(request, env, url, json); break;
       case 'devices': return devices(env);
+      case 'uyeler': return uyeList(env);
       case 'dev-block': return devBlock(env, url);
       case 'dev-ok': return devOk(env, url);
       case 'pair-create': if (request.method === 'POST') return pairCreate(request, env, json); break;
@@ -943,7 +971,7 @@ export default {
       case 'flow': return flowRoute(request, env, url, json);
       case 'sig-eval': return json(url.searchParams.get('sum') === '1' ? await sigSummary(env, tgSend, kvGet, esc, nf, true) : await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf));
       case 'test': return test(env, url);
-      case 'bars': return bars(env, url);
+      case 'bars': return bars(env, url, anon);
       case 'news': return news(url);
       case 'status': return status(env);
       case 'sync': if (request.method === 'POST') return sync(request, env); break;
@@ -956,19 +984,20 @@ export default {
       case 'tv-login': return json({ ok: true, session: 'worker' });
       case 'tv-token': {
         const st = await devTouch(request, env, url);
+        if (st === 'uye') return json({ ok: false, token: '', uye: 1, err: 'üye sürümü: fiyatlar 15 dakika gecikmeli' });
         if (st) return json({ ok: false, token: '', err: DEV_MSG[st], wait: st === 'wait' });
         return tvToken(env);
       }
       case 'prefs': return prefs(request, env);
       case 'pine-test': return pineTest(env);
       case 'pine-sync': return json(await pineSync(env, url.searchParams.get('force') === '1'));
-      case 'tv-scan': return tvScan(request, env);
+      case 'tv-scan': return tvScan(request, env, anon);
       case 'midas': return midasProxy();
       case 'ecal': return ecalRoute(env, json);
       case 'tedbir': return tedbirRoute(env, json);
       case 'set-syms': return json({ ok: true });
       case 'pull': return json({});
-      case 'scan': if (request.method === 'POST') return scan(request, env, url); break;
+      case 'scan': if (request.method === 'POST') return scan(request, env, url, anon); break;
     }
     return json({ error: 'bilinmeyen yol: /' + route }, 404);
   },

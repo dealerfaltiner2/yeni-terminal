@@ -44,7 +44,7 @@ export async function pairUse(request, env, json) {
   await env.BT.prepare('DELETE FROM meta WHERE k = ?').bind('pair:' + code).run();
   let v = {}; try { v = JSON.parse(r.v); } catch (e) {}
   if (!v.exp || Date.now() > v.exp) return json({ ok: false, error: 'kodun süresi doldu, telefondan yeni kod al' }, 410);
-  await errAdd(env, 'sunucu', 'toparlama', 'iş bilgisayarı motoru eşleştirildi', 'pair');
+  await errAdd(env, 'sunucu', 'toparlama', 'ana sunucu (motor) eşleştirildi', 'pair');
   return json({ ok: true, cfg: v.cfg });
 }
 // cron: seans içinde motor sustuysa bir kez uyar, dönünce haber ver
@@ -58,14 +58,14 @@ export async function botWatch(env, tgSend, kvGet) {
   if (sess && quiet && !a) {
     const cfg = await kvGet(env, 'cfg', null);
     const mins = Math.round((Date.now() - seen) / 60e3);
-    const r = await tgSend(cfg, '⚠️ <b>İş bilgisayarındaki sinyal motoru ' + mins + ' dakikadır ses vermiyor.</b>\nAlgı ve Fırsat sinyalleri şu an yalnız telefonda terminal açıkken gelir. Bilgisayar kapanmış, oturum kapanmış ya da internet kesilmiş olabilir. (Sunucu radarı ve KAP etkilenmez.)');
+    const r = await tgSend(cfg, '⚠️ <b>Ana sunucu (sinyal motoru) ' + mins + ' dakikadır ses vermiyor.</b>\nAlgı ve Fırsat sinyalleri şu an yalnız telefonda terminal açıkken gelir. Bilgisayar kapanmış, oturum kapanmış ya da internet kesilmiş olabilir. (Sunucu radarı ve KAP etkilenmez.)');
     if (r && r.ok) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('bot_alert', ?)").bind(String(Date.now())).run();
-    await errAdd(env, 'sunucu', 'hata', 'iş bilgisayarı motoru sessiz', 'botWatch');
+    await errAdd(env, 'sunucu', 'hata', 'ana sunucu (motor) sessiz', 'botWatch');
     return { uyari: true };
   }
   if (a && !quiet) {
     await env.BT.prepare("DELETE FROM meta WHERE k = 'bot_alert'").run();
-    if (sess) { const cfg = await kvGet(env, 'cfg', null); await tgSend(cfg, '✅ İş bilgisayarındaki sinyal motoru yeniden çalışıyor.'); }
+    if (sess) { const cfg = await kvGet(env, 'cfg', null); await tgSend(cfg, '✅ Ana sunucu (sinyal motoru) yeniden çalışıyor.'); }
     return { geri: true };
   }
   return null;

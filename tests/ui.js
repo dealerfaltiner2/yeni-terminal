@@ -90,7 +90,7 @@ async function page(b, opt) {
       const n = await T(async () => { let c = 0; const o = window.loadUniverse; window.loadUniverse = loadUniverse = async () => { c++; }; S.autoOn = 1; await autoRun(false); window.loadUniverse = loadUniverse = o; return c; });
       ok('motor canlıyken telefon otomatik tarama yapmıyor', n === 0, 'tarama=' + n);
       await T(() => { showTab('now'); renderNow(); });
-      ok('Şimdi ekranında motor durumu görünüyor', /İş bilgisayarı motoru: çalışıyor/.test(await T(() => document.getElementById('nowbody').innerText)));
+      ok('Şimdi ekranında motor durumu görünüyor', /Ana sunucu: çalışıyor/.test(await T(() => document.getElementById('nowbody').innerText)));
       const ec = await T(() => { const n = Date.now(); ECAL.list = [{ t: n + 20 * 60e3, c: 'US', ti: 'Non Farm Payrolls', im: 1, f: 120, p: 142, u: 'K' }, { t: n + 3 * 3600e3, c: 'TR', ti: 'Interest Rate Decision', im: 1, f: 39.5, p: 40.5, u: '%' }]; ECAL.t = n;
         const k = Object.keys(S.umap)[0]; S.umap[k].earnings_release_next_date = Math.floor(n / 1000) + 86400; renderNow(); const tx = document.getElementById('nowbody').innerText;
         return { cal: /Tarım dışı istihdam/.test(tx) && /Faiz kararı/.test(tx), warn: !!document.querySelector('#nowbody .nwarn'), notes: sigNotes(k).join('|'), msg: /⚠️/.test(sigNoteTxt(k)) }; });
@@ -189,6 +189,15 @@ async function page(b, opt) {
       await T(() => window.__bb()); await p.waitForTimeout(300);
       ok('Telegram geri tuşu röntgeni kapatıyor', await T(() => !document.getElementById('xray').classList.contains('on')));
       ok('Telegram mini uygulamasında sayfa hatası yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }
+    // v12.0 üye sürümü: sunucu 'uye' derse oturumsuz akış, hata yazısı yok, ana sayfada 'Üye sürümü', sinyal kartı yok
+    { const p = await b.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
+      await install(p, { proxy: true }); await p.addInitScript(() => { localStorage.setItem('tvproxy', JSON.stringify('wss://x.test/k')); localStorage.setItem('ownClaimed', '1'); });
+      await p.route('**/tv-token**', r => r.fulfill({ contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ ok: false, token: '', uye: 1, err: 'üye sürümü' }) }));
+      await p.goto(FILE, { waitUntil: 'domcontentloaded', timeout: 20000 }); await p.waitForTimeout(3000);
+      const u = await p.evaluate(async () => { TVL.tok = null; TVL.tokAt = 0; const t = await tvToken(); renderNow(); sigToast({ sym: 'THYAO', src: 'algi' });
+        return { t, uye: TVL.uye, err: TVL.err, home: /Üye sürümü/.test(document.getElementById('nowbody').innerText), toast: document.getElementById('sigtoast').classList.contains('on') }; });
+      ok('Üye sürümü: gecikmeli akış, hata yok, ana sayfada not, anlık sinyal kartı yok', u.t === '' && u.uye === 1 && !u.err && u.home && !u.toast, JSON.stringify(u));
+      ok('üye sayfasında hata yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }
     // v11.9 misafirde Ayarlar gizli
     { const p = await b.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
       await install(p, { proxy: true }); await p.addInitScript(() => { localStorage.setItem('tvproxy', JSON.stringify('wss://x.test/k')); localStorage.setItem('ownClaimed', '1'); });
