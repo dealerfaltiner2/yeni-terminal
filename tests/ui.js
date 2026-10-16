@@ -39,7 +39,7 @@ async function page(b, opt) {
       ok('piyasa verisi yüklendi', (await T(() => (S.uni || []).length)) > 10);
       for (const t of TABS) {
         const e0 = errs.length; const r = await T(t => { showTab(t); return 1; }, t); await p.waitForTimeout(600);
-        const on = await T(t => { const e = document.getElementById('t-' + t); return !!(e && e.classList.contains('on')); }, t);
+        const on = await T(t => { if (t === 'set' && guestHideSet()) return S.tab === 'now'; const e = document.getElementById('t-' + t); return !!(e && e.classList.contains('on')); }, t);
         ok('sekme ' + t, r === 1 && on === true && errs.length === e0, errs.slice(e0).join(' | '));
         await p.screenshot({ path: path.join(OUT, 'sekme_' + t + '.png') });
       }
@@ -189,6 +189,13 @@ async function page(b, opt) {
       await T(() => window.__bb()); await p.waitForTimeout(300);
       ok('Telegram geri tuşu röntgeni kapatıyor', await T(() => !document.getElementById('xray').classList.contains('on')));
       ok('Telegram mini uygulamasında sayfa hatası yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }
+    // v11.9 misafirde Ayarlar gizli
+    { const p = await b.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
+      await install(p, { proxy: true }); await p.addInitScript(() => { localStorage.setItem('tvproxy', JSON.stringify('wss://x.test/k')); localStorage.setItem('ownClaimed', '1'); });
+      await p.goto(FILE, { waitUntil: 'domcontentloaded', timeout: 20000 }); await p.waitForTimeout(3000);
+      const g = await p.evaluate(() => { showTab('set'); const mt = document.querySelector('#more [data-t="set"]'); return { tab: S.tab, cls: document.documentElement.classList.contains('noset'), menu: mt ? getComputedStyle(mt).display : 'yok' }; });
+      ok('Misafirde Ayarlar gizli ve açılmıyor', g.tab === 'now' && g.cls && g.menu === 'none', JSON.stringify(g));
+      ok('misafir sayfasında hata yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }
   } catch (e) { ok('test çalıştırma', false, e.message); }
   await b.close();
   const f = results.filter(r => !r.ok);

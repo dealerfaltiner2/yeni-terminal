@@ -910,8 +910,12 @@ function sigPost(o){try{if(!LS.get('ownTok',''))return;const b=srvBase(S.tvproxy
  fetch(qAdd(b+'/siglog?'+devQ(),ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(o)}).catch(()=>{})}catch(e){}}
 // v6.6: MİSAFİR MODU — ana cihaz belirlenmişse ve bu cihazda kod yoksa: Telegram + yedek gizli, eski kopyalanmış Telegram bilgisi bir kez silinir
 function isGuest(){return !!LS.get('ownClaimed',0)&&!LS.get('ownTok','')}
+// v11.9 (16.10, Fatih: 'insanlar ayarları görmesin'): misafirde Ayarlar tamamen gizli (sunucu adresi/anahtar görünmesin).
+// Sahip yeni bir cihazda kod girecekse adrese ?ayar=1 eklenir.
+function guestHideSet(){try{return isGuest()&&!/[?&]ayar=1/.test(location.search)}catch(e){return false}}
 function guestApply(){
  const g=isGuest();
+ try{document.documentElement.classList.toggle('noset',guestHideSet());if(guestHideSet()&&S.tab==='set')showTab('now')}catch(e){}
  [['tgsec','tgguest'],['yedeksec','yedekguest']].forEach(([a,b])=>{const x=document.getElementById(a),y=document.getElementById(b);if(x)x.style.display=g?'none':'';if(y)y.style.display=g?'':'none'});
  if(g&&!LS.get('guestWiped',0)){
   try{S.tgTok='';S.tgChat='';LS.set('tgTok','');LS.set('tgChat','');const ac=LS.get('algiCfg',{});ac.chat='';ac.tg=0;LS.set('algiCfg',ac);
@@ -3204,6 +3208,7 @@ $('#palin').oninput=e=>palFilter(e.target.value);
 $('#palin').onkeydown=e=>{if(e.key==='Enter'&&pit[0])selectSym(pit[0].s,pit[0].m);if(e.key==='Escape')closePal()};
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openPal()}else if(e.key==='Escape')closePal()});
 function showTab(t){
+ if(t==='set'&&typeof guestHideSet==='function'&&guestHideSet())t='now';
  S.tab=t;
  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.id==='t-'+t));
  document.querySelectorAll('#tabs button').forEach(b=>{const on=b.dataset.t===t;b.classList.toggle('on',on);if(on)b.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'})});
@@ -3293,7 +3298,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="11.8";window.APPV=APP_VER;
+  const APP_VER="11.9";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -5770,5 +5775,6 @@ async function tgaAuth(){
 #tgabox b{font-size:20px}#tgabox span{font-size:14px;color:#8F9BB3;line-height:1.45}
 #tgabox button{margin-top:8px;padding:11px 22px;border-radius:12px;border:1px solid rgba(201,163,91,.5);background:rgba(201,163,91,.12);color:#E6C98A;font:600 15px Barlow,system-ui,sans-serif}
 </style>
+<style>html.noset [data-t="set"],html.noset #t-set{display:none!important}</style>
 </body>
 </html>
