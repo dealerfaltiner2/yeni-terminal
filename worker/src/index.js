@@ -23,7 +23,7 @@ import { errAdd, errLogRoute } from './err.js';
 import { botAlive, botBeat, botWatch, pairCreate, pairUse } from './bot.js';
 import { kapPoll, kapMorning, kapList } from './kap.js';
 import { tgBotUpdate, tgHookEnsure } from './tgbot.js';
-import { kanalAm, kanalPm, kanalOnce } from './kanal.js';
+import { kanalAm, kanalPm, kanalOnce, kanalKap, kanalWeek } from './kanal.js';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -1035,7 +1035,8 @@ export default {
         try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_kill', ?)").bind(String(kk + 1)).run(); } catch (e) {}
         kr = await kapPoll(env, { UA, tgSend, kvGet, esc, scanRaw, pushSend });
         try { await env.BT.prepare("DELETE FROM meta WHERE k = 'kap_kill'").run(); } catch (e) {}
-        if (kr && kr.yeni) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_st', ?)").bind(JSON.stringify({ at: Date.now(), ...kr })).run();
+        if (kr && kr.yeni) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_st', ?)").bind(JSON.stringify({ at: Date.now(), yeni: kr.yeni, telegram: kr.telegram })).run();
+        if (kr && kr.pub && kr.pub.length) try { await kanalKap(env, { kvGet, esc }, kr.pub); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'kanal KAP: ' + String(e && e.message || e).slice(0, 200), 'kanalKap'); }   // v12.5
       } catch (e) { try { await env.BT.prepare("DELETE FROM meta WHERE k = 'kap_kill'").run(); } catch (e2) {} await errAdd(env, 'sunucu', 'hata', 'KAP: ' + String(e && e.message || e).slice(0, 200), 'kapPoll'); try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_err', ?)").bind(new Date().toISOString() + ' ' + String(e && e.message || e).slice(0, 300)).run(); } catch {} }
       try { mr = await kapMorning(env, { tgSend, kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'KAP sabah özeti: ' + String(e && e.message || e).slice(0, 200), 'kapMorning'); }
       try { const n = (kr && kr.telegram || 0) + (mr && mr.ozet ? 1 : 0); if (n) { const st = await kvGet(env, 'st', {}); if (st.cnt) { st.cnt.kap = (st.cnt.kap || 0) + n; await kvPut(env, 'st', st); } } } catch (e) {}
@@ -1068,6 +1069,7 @@ export default {
       try { await tgHookEnsure(env, { kvGet }); } catch (e) {}   // v12.2: bot karşılama webhook'u (bir kez; sonra bellekte atlanır)
       // v12.4: herkese açık kanal — sabah 09:35 / akşam 18:30 bilgi mesajı (pencere dışında okuma yok)
       try { await kanalOnce(env, { kvGet, esc }); } catch (e) {}
+      try { await kanalWeek(env, { kvGet, esc, fetchBarsTV }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'kanal hafta: ' + String(e && e.message || e).slice(0, 200), 'kanalWeek'); }
       try { await kanalAm(env, { kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'kanal sabah: ' + String(e && e.message || e).slice(0, 200), 'kanalAm'); }
       try { await kanalPm(env, { kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'kanal akşam: ' + String(e && e.message || e).slice(0, 200), 'kanalPm'); }
       // v6.8: TEK SEFERLİK DUYURU — D1 meta k='announce' varsa Telegram'a gönderilir; başarıda satır silinir.

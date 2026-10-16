@@ -23,6 +23,7 @@ let r = await kapPoll(env, h);
 ok('yeni bildirim işlendi', r.yeni === 1);
 ok('karneye yazıldı', db.prepare("SELECT count(*) n FROM sig WHERE src LIKE 'kap-%'").get().n === 1);
 ok('önem 3 taze haber Telegram\'a gitti', sent.length === 1);
+ok('kanal adayı: seans içi, taze, önem 3, BIST 100 şirketi (ASELS)', r.pub && r.pub.length === 1 && r.pub[0].syms === 'ASELS', JSON.stringify(r.pub));
 ok('KAP mesajı yeni düzende (alıntı kutusu, uzun bağlantı yok)', /^📰 <b>KAP · /.test(sent[0]) && /<blockquote>/.test(sent[0]) && !/https?:/.test(sent[0]), sent[0]);
 r = await kapPoll(env, h);
 ok('aynı yanıt: yeni yok', r.yeni === 0);
@@ -36,6 +37,7 @@ KAP.push({ disclosureIndex: 102, publishDate: pub(Date.now()), subject: 'Yeni İ
 r = await kapPoll(env, h);
 ok('yeniden denemede çift karne kaydı yok', db.prepare("SELECT count(*) n FROM sig WHERE sym='THYAO'").get().n === 1, 'THYAO=' + db.prepare("SELECT count(*) n FROM sig WHERE sym='THYAO'").get().n);
 ok('yeniden denemede çift Telegram yok', sent.filter(m => /THYAO/.test(m)).length <= 1);
+ok('kanal adayı değil: geri alım ve BIST 100 dışı (SASA)', !(r.pub || []).some(x => x.syms === 'SASA' || x.tip === 'geri'), JSON.stringify(r.pub));
 ok('yeni gelen yine işlendi', db.prepare("SELECT count(*) n FROM sig WHERE sym='SASA'").get().n === 1);
 // gece yarısı: ilk 15 dk dünü de iste
 at('2026-10-02', '00:05'); KAP = KAP.slice(); await kapPoll(env, h);

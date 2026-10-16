@@ -54,6 +54,22 @@ ok('akşam ikinci kez gitmez', (await K.kanalPm(env, h, tr('2026-10-19T18:50:00'
 sent.length = 0; meta.pub_once = JSON.stringify({ t: '🧭 <b>Haftaya bakış</b>', tag: 'hafta' });
 const o1 = await K.kanalOnce(env, h), o2 = await K.kanalOnce(env, h);
 ok('tek seferlik paylaşım kanala düğmeli gitti, sonra silindi', o1 && o1.ok && o2 === null && meta.pub_once == null && /k_hafta/.test(JSON.stringify(sent[0].b.reply_markup)) && sent[0].b.chat_id === -1009, JSON.stringify(o1));
+// v12.5 seans içi KAP + Pazar haftaya bakış
+const kp = K.kapPubText({ t: tr('2026-10-19T11:05:00'), syms: 'THYAO,PGSUS', tip: 'is', yon: 1, subj: 'Yeni sözleşme <x>', summ: 'Tutar 100 milyon', q: { close: 312.5, change: 1.24 } }, esc);
+ok('anlık KAP mesajı: sembol, saat, olumlu, fiyat; AL/hedef/stop yok', /Son dakika KAP · THYAO/.test(kp) && /11:05/.test(kp) && /🟢 Olumlu/.test(kp) && /312,50 TL, bugün \+%1,24/.test(kp) && /&lt;x&gt;/.test(kp) && !/hedef|stop|\bAL\b/i.test(kp), kp);
+sent.length = 0; delete meta.pub_kap;
+const P = [{ idx: 1, t: 1, syms: 'AAA', tip: 'is', yon: 0, subj: 'a' }, { idx: 2, t: 2, syms: 'BBB', tip: 'is', yon: 1, subj: 'b' }];
+for (let i = 0; i < 5; i++) await K.kanalKap(env, h, P, tr('2026-10-19T11:00:00'));
+ok('anlık KAP: çalışma başına 1, günde en çok 3; yönlü haber önce', sent.length === 3 && /BBB/.test(sent[0].b.text) && /k_kap/.test(JSON.stringify(sent[0].b.reply_markup)), sent.length + ' ' + (sent[0] && sent[0].b.text.slice(0, 40)));
+const wk = K.weekText(tr('2026-10-18T20:00:00'), { c: 11721.7, p: 12266, fri: -2.89, nu: 70, nd: 549 }, [{ syms: 'CGCAM', subj: 'Cam siparişi', yon: 1 }],
+  [{ t: tr('2026-10-22T14:00:00'), c: 'TR', ti: 'TCMB Interest Rate Decision', im: 0, p: 37, u: '%' }, { t: tr('2026-10-25T10:00:00'), c: 'TR', ti: 'Inflation Rate YoY', im: 1 }], esc);
+ok('haftaya bakış: tarih aralığı, haftalık düşüş, Cuma, KAP, takvim (hafta dışı yok)', /19 Ekim – 23 Ekim/.test(wk) && /%4,4 düşüşle/.test(wk) && /Cuma günü %2,9 düştü; 70 hisse/.test(wk) && /CGCAM/.test(wk) && /Perşembe 14:00 · 🇹🇷 Faiz kararı \(önceki 37%\)/.test(wk) && !/Enflasyon/.test(wk), wk);
+sent.length = 0;
+const fakeBars = { fetchBarsTV: async () => ({ 'BIST:XU100': { m: new Map([[1, [Date.parse('2026-10-09T07:00:00Z') / 1000, 0, 0, 0, 12266, 1]], [2, [Date.parse('2026-10-16T07:00:00Z') / 1000, 0, 0, 0, 11721.7, 1]]]) } }) };
+ok('haftaya bakış: Cumartesi yok', (await K.kanalWeek(env, { ...h, ...fakeBars }, tr('2026-10-17T20:00:00'))) === null);
+meta.mkt_close = JSON.stringify({ d: '2026-10-16', idx: [{ s: 'XU100', c: 11721.7, ch: -2.89 }], nu: 70, nd: 549 });
+const w1 = await K.kanalWeek(env, { ...h, ...fakeBars }, tr('2026-10-18T19:56:00')), w2 = await K.kanalWeek(env, { ...h, ...fakeBars }, tr('2026-10-18T20:10:00'));
+ok('haftaya bakış: Pazar 19:56 bir kez, mumlardan haftalık değişim', w1 && w1.ok && w2 === null && sent.length === 1 && /%4,4 düşüşle/.test(sent[0].b.text) && /k_hafta/.test(JSON.stringify(sent[0].b.reply_markup)), JSON.stringify(w1) + ' ' + (sent[0] && sent[0].b.text.slice(0, 160)));
 await tgBotUpdate(upd('left'), env, h);
 ok('bot kanaldan çıkarılınca kanal kaydı silindi', meta.pubch == null);
 // --- davet kaydı (tgauth start_param)

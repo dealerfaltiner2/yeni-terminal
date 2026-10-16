@@ -211,7 +211,10 @@ export async function kapPoll(env, h) {
     const t = await h.tgSend(cfg, kapMsg(r0, h.esc, q), tgKb(r0.syms.split(',')[0], r0.idx)); if (t && t.ok) sent++;
     // v8.2: iPhone bildirimi (çalışma başına en çok 2 — işlemci sınırı)
     if (h.pushSend && pn < 2) { pn++; try { const s0 = r0.syms.split(',')[0]; await h.pushSend(env, { cat: 'kap', title: '📰 KAP · ' + s0 + ' · ' + (KAP_AD[r0.tip] || r0.tip), body: String(r0.subj || '') + (r0.summ ? ' — ' + r0.summ : '') + (q && q.close ? ' · ' + q.close + ' (' + (q.change >= 0 ? '+' : '') + (+q.change).toFixed(2) + '%)' : ''), url: './?s=' + s0, tag: 'kap' + r0.idx }, 2); } catch (e) {} } }
-  return { yeni: rows.length, telegram: sent };
+  // v12.5: herkese açık kanal adayı — seans içi (10:00–18:00), TAZE, önem 3, BIST 100 şirketi; geri alım/içeriden/devre hariç (kanal.js kanalKap süzer ve günde en çok 3 gönderir)
+  const pub = inSess || (p.wd >= 1 && p.wd <= 5 && p.m >= 600 && p.m < 1080) ? rows.filter(x => isNew.has(x.idx) && now - x.t <= 15 * 60e3 && x.onem >= 3 && x.syms && big.has(x.syms.split(',')[0]) && !['geri', 'icerden', 'devre'].includes(x.tip))
+    .map(x => ({ idx: x.idx, t: x.t, syms: x.syms, subj: x.subj, summ: x.summ, tip: x.tip, yon: x.yon, q: Q[x.syms.split(',')[0]] || null })) : [];
+  return { yeni: rows.length, telegram: sent, pub };
 }
 // Sabah 09:30 (hafta içi): gece biriken önemli KAP'lar tek mesajda
 export async function kapMorning(env, h) {

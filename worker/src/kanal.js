@@ -103,6 +103,64 @@ export async function kanalOnce(env, h) {
   if (r && r.ok) await env.BT.prepare("DELETE FROM meta WHERE k = 'pub_once'").run();
   return { ok: !!(r && r.ok) };
 }
+// v12.5 (17.10, Fatih onayıyla) SEANS İÇİ ÖNEMLİ KAP — BIST 100 şirketinden önem 3 haber anında kanala; günde en çok 3 (meta 'pub_kap' {d, n}), çalışma başına 1.
+// Yalnız haber (AL/hedef/stop YOK). Aday listesini kap.js kapPoll döndürür (pub).
+export function kapPubText(r, esc) {
+  const yon = r.yon > 0 ? '🟢 Olumlu' : r.yon < 0 ? '🔴 Olumsuz' : '⚪ Yönü belirsiz';
+  const s0 = String(r.syms || '').split(',')[0], q = r.q;
+  const sm = r.summ && r.summ !== r.subj ? String(r.summ).slice(0, 240) : '';
+  const px = q && q.close ? '\nHisse şu an ' + Number(q.close).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TL, bugün ' + (q.change >= 0 ? '+' : '−') + '%' + Math.abs(q.change).toLocaleString('tr-TR', { maximumFractionDigits: 2 }) + '.' : '';
+  return '📰 <b>Son dakika KAP · ' + esc(s0) + '</b>   <i>' + hm(r.t) + '</i>\n' + yon + ' · ' + esc(KAP_AD[r.tip] || r.tip || 'bildirim') +
+    '\n<blockquote>' + esc(String(r.subj || '').slice(0, 140)) + (sm ? '\n' + esc(sm) : '') + '</blockquote>' + px + NOTE;
+}
+export async function kanalKap(env, h, pub, now = Date.now()) {
+  if (!pub || !pub.length) return null;
+  const ch = await pubCh(env); if (!ch) return null;
+  const day = trp(now).day;
+  let c = { d: day, n: 0 }; try { const v = JSON.parse(await meta(env, 'pub_kap') || 'null'); if (v && v.d === day) c = v; } catch (e) {}
+  if (c.n >= 3) return { n: 0, sinir: 1 };
+  const r0 = pub.slice().sort((a, b) => (b.yon !== 0) - (a.yon !== 0) || a.t - b.t)[0];   // yönlü haber önce
+  c.n++; await metaSet(env, 'pub_kap', JSON.stringify(c));
+  const r = await pubSend(env, h, ch, kapPubText(r0, h.esc), 'kap');
+  return { n: r && r.ok ? 1 : 0 };
+}
+// v12.5 PAZAR AKŞAMI 'HAFTAYA BAKIŞ' (19:55–21:00, meta 'pub_wk' = gün): BIST 100 haftalık (günlük mumlar), haftanın önem 3 KAP'ları (en çok 6), gelecek haftanın önemli verileri.
+export function weekText(now, ix, kaps, ecal, esc) {
+  const f2 = v => Math.abs(v).toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const d0 = trp(now + 864e5).day, d4 = trp(now + 5 * 864e5).day;   // Pazartesi … Cuma
+  const tr = ms => { const d = new Date(ms + TRMS); return d.getUTCDate() + ' ' + AY[d.getUTCMonth()]; };
+  let t = '🧭 <b>Haftaya bakış · ' + tr(now + 864e5) + ' – ' + tr(now + 5 * 864e5) + '</b>';
+  if (ix && ix.c > 0 && ix.p > 0) {
+    const w = (ix.c / ix.p - 1) * 100;
+    t += '\n\n' + (w >= 0 ? '📈' : '📉') + ' <b>Geçen hafta</b>\n<blockquote>BIST 100 haftayı ' + Math.round(ix.c).toLocaleString('tr-TR') + ' puanda, <b>%' + f2(w) + (w >= 0 ? ' yükselişle' : ' düşüşle') + '</b> kapattı.' +
+      (ix.fri != null ? ' Cuma günü ' + (ix.fri >= 0 ? '%' + f2(ix.fri) + ' yükseldi' : '%' + f2(ix.fri) + ' düştü') + (ix.nu + ix.nd ? '; ' + ix.nu + ' hisse yükselirken ' + ix.nd + ' hisse düştü' : '') + '.' : '') + '</blockquote>';
+  }
+  if (kaps.length) t += '\n\n📰 <b>Haftanın öne çıkan KAP haberleri</b>\n<blockquote>' + kaps.map(r => (r.yon > 0 ? '🟢 ' : r.yon < 0 ? '🔴 ' : '⚪ ') + '<b>' + esc(String(r.syms || '').split(',')[0]) + '</b> · ' + esc(String(r.subj || '').slice(0, 80))).join('\n') + '</blockquote>';
+  const ev = (ecal || []).filter(e => ecImp(e) && trp(e.t).day >= d0 && trp(e.t).day <= d4).slice(0, 8);
+  if (ev.length) t += '\n\n🗓 <b>Bu hafta takvimde</b>\n<blockquote>' + ev.map(e => GUN[new Date(e.t + TRMS).getUTCDay()] + ' ' + hm(e.t) + ' · ' + (e.c === 'TR' ? '🇹🇷' : e.c === 'US' ? '🇺🇸' : esc(e.c)) + ' ' + esc(ecTitle(e)) +
+    (e.p != null ? ' (önceki ' + e.p + (e.u === '%' ? '%' : '') + ')' : '')).join('\n') + '</blockquote>';
+  return t + '\n\nHafta içi her sabah 09:35\'te önemli KAP haberleri, her akşam 18:30\'da piyasa özeti bu kanalda.' + NOTE;
+}
+export async function kanalWeek(env, h, now = Date.now()) {
+  const p = trp(now); if (p.wd !== 0 || p.m < 1195 || p.m >= 1260) return null;
+  if (await meta(env, 'pub_wk') === p.day) return null;
+  const ch = await pubCh(env); if (!ch) return null;
+  await metaSet(env, 'pub_wk', p.day);
+  let ix = null;
+  try {   // günlük mumlar: son kapanış ve bir önceki haftanın son kapanışı
+    const got = await h.fetchBarsTV(env, ['BIST:XU100'], '1D', 12, 8000), st = got && got['BIST:XU100'];
+    const B = st ? [...st.m.values()].filter(v => v && v.length >= 5).sort((a, b) => a[0] - b[0]) : [];
+    const days = B.map(b => ({ d: trp(b[0] * 1000).day, c: b[4] })).filter(b => b.c > 0);
+    const lastWeekStart = trp(now - 6 * 864e5).day;   // geçen Pazartesi
+    const cur = days.filter(b => b.d >= lastWeekStart), prev = days.filter(b => b.d < lastWeekStart);
+    if (cur.length && prev.length) ix = { c: cur[cur.length - 1].c, p: prev[prev.length - 1].c };
+  } catch (e) {}
+  try { const m = JSON.parse(await meta(env, 'mkt_close') || 'null'), x = m && (m.idx || []).find(i => i.s === 'XU100'); if (ix && x && trp(now - 2 * 864e5).day === m.d) Object.assign(ix, { fri: x.ch, nu: m.nu || 0, nd: m.nd || 0 }); } catch (e) {}
+  const kaps = (await env.BT.prepare("SELECT t, syms, subj, tip, yon FROM kap INDEXED BY kap_t WHERE t >= ? AND onem >= 3 AND tip IN ('is', 'ihale', 'bedelsiz', 'temettu', 'birlesme', 'teklif', 'risk', 'ceza') ORDER BY t DESC LIMIT 6").bind(now - 6 * 864e5).all()).results || [];
+  let ecal = []; try { ecal = JSON.parse(await meta(env, 'ecal') || '[]'); } catch (e) {}
+  const r = await pubSend(env, h, ch, weekText(now, ix, kaps, ecal, h.esc), 'hafta');
+  return { ok: !!(r && r.ok), err: r && !r.ok ? r.description : undefined };
+}
 export async function kanalAm(env, h, now = Date.now()) {
   const p = trp(now); if (p.wd < 1 || p.wd > 5 || p.m < 575 || p.m >= 600) return null;
   if (await meta(env, 'pub_am') === p.day) return null;
