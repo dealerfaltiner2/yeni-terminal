@@ -2,6 +2,7 @@
 // giriş = ertesi işlem gününün açılışı, 'pre' = açılışın tavan kapanışına göre farkı (araştırma: %76 yukarı açılış, ort. +%1,8–2,1).
 // Sinyal değil; karne bu bulgu canlıda tutuyor mu diye ölçer. Telegram + iPhone bildirimi (kategori 'tavan').
 import { kapEntry } from './kap.js';
+import { tgKb } from './tgfmt.js';
 const TRMS = 3 * 3600e3;
 export async function tavanScan(env, h) {
   const d = new Date(Date.now() + TRMS), wd = d.getUTCDay(), m = d.getUTCHours() * 60 + d.getUTCMinutes(), day = d.toISOString().slice(0, 10);
@@ -84,6 +85,6 @@ export async function tavanOpen(env, h) {
   const msg = '🚀 <b>Dün tavan, bugün sakin açanlar</b>   <i>' + P.length + ' hisse</i>\n<blockquote>' +
     P.slice(0, 10).map(x => '<b>' + h.esc(x.s) + '</b>   <code>' + f(x.c) + '</code>   açılış ' + (x.gap >= 0 ? '+' : '−') + '%' + f(Math.abs(x.gap))).join('\n') + '</blockquote>' +
     'Hedef +%3 · Stop −%1 (şimdiki fiyattan)\n📌 %6 ve üstünde açanlar listede yok: canlı karnede tavandan açanlar hiç hedefe gitmedi, %6–9 arası açanlar da kaybettirdi. Bu liste deneme; karnede ayrı ölçülüyor.';
-  const t = await h.tgSend(cfg, msg);
+  const t = await h.tgSend(cfg, msg, tgKb(P.length === 1 ? P[0].s : null));
   return { n: P.length, tg: !!(t && t.ok) };
 }

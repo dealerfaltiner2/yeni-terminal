@@ -2,6 +2,7 @@ import { tgPlain } from './tgfmt.js';
 import { flowRoute } from './flow.js';
 import { kaphStep } from './kaph.js';
 import { tavanScan, mktClose, tavanOpen } from './tavan.js';
+import { tgAuth } from './tgapp.js';
 import { posRoute, posWatch } from './pos.js';
 import { pushRoute, pushSend } from './push.js';
 import { ecalPoll, ecalRoute } from './ecal.js';
@@ -882,6 +883,8 @@ export default {
     if (parts[0] === 'echo' && !isWS) return new Response('OK', { headers: CORS });
     // v7.4: iş bilgisayarı kurulumu — anahtarsız, tek kullanımlık eşleştirme kodu ile ayarları bir kez alır
     if (parts[0] === 'pair' && parts.length === 1 && request.method === 'POST' && env.BT) return pairUse(request, env, json);
+    // v11.7: Telegram mini uygulaması girişi — anahtarsız, Telegram imzasıyla
+    if (parts[0] === 'tgauth' && parts.length === 1 && request.method === 'POST' && env.BT) return tgAuth(request, env, { json, kvGet, ownerTok, errAdd });
 
     let route;
     if (env.ACCESS_KEY && parts[0] === env.ACCESS_KEY) route = parts.slice(1).join('/');

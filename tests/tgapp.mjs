@@ -1,0 +1,24 @@
+// Telegram mini uygulaması girişi: imza doğrulama (Telegram'ın belgelediği yöntemle üretilmiş örnek veriyle)
+import { createHmac } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+const W = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'worker', 'src');
+const { tgInitCheck } = await import(path.join(W, 'tgapp.js'));
+const { tgKb } = await import(path.join(W, 'tgfmt.js'));
+const res = []; const ok = (n, c, i) => { res.push(!!c); console.log((c ? '✓ ' : '✗ ') + n + (i ? ' — ' + i : '')); };
+const TOK = '123456:TEST-token', now = Date.now();
+const make = (tok, ad) => { const f = { auth_date: String(Math.floor(ad / 1000)), query_id: 'AAE1', user: JSON.stringify({ id: 42, first_name: 'Fatih' }), start_param: 'THYAO' };
+  const dcs = Object.keys(f).sort().map(k => k + '=' + f[k]).join('\n');
+  const secret = createHmac('sha256', 'WebAppData').update(tok).digest();
+  const hash = createHmac('sha256', secret).update(dcs).digest('hex');
+  return new URLSearchParams({ ...f, hash }).toString(); };
+const u = await tgInitCheck(make(TOK, now - 60e3), TOK, now);
+ok('doğru imza kabul edildi (kullanıcı 42)', u && u.id === 42, JSON.stringify(u));
+ok('başka botun imzası reddedildi', (await tgInitCheck(make('999:other', now - 60e3), TOK, now)) === null);
+ok('bozulmuş veri reddedildi', (await tgInitCheck(make(TOK, now - 60e3).replace('THYAO', 'ASELS'), TOK, now)) === null);
+ok('24 saatten eski giriş reddedildi', (await tgInitCheck(make(TOK, now - 2 * 86400e3), TOK, now)) === null);
+const k = tgKb('THYAO', 77);
+ok('sunucu düğmeleri: önce Pusula\'da aç (startapp), altında KAP ve Grafik', /pusula\?startapp=THYAO$/.test(k.inline_keyboard[0][0].url) && k.inline_keyboard[1].length === 2);
+ok('hissesiz mesajda yalnız Pusula düğmesi', tgKb(null).inline_keyboard.length === 1 && /pusula$/.test(tgKb(null).inline_keyboard[0][0].url));
+console.log('\nTELEGRAM UYGULAMASI: ' + res.filter(Boolean).length + '/' + res.length + ' geçti');
+process.exit(res.every(Boolean) ? 0 : 1);

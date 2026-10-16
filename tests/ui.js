@@ -109,7 +109,7 @@ async function page(b, opt) {
       const dfx = await T(() => { delete S.deep.ZZQ; return { al: deepFlags('ZZQ', 'AL', { pull: { bars: 2 }, kvw: { side: 'AL' }, ref: {}, pocD: 0.3, valD: 2, vahD: 2 }), sat: deepFlags('ZZQ', 'SAT', { pull: { bars: 2 }, kvw: { side: 'AL' } }) }; });
       ok('Otomatik taramada derin kurulumlar (geri çekilme, Keskin VWAP, POC) karneye yazılır', dfx.al.join() === 'pull,kvw,poc' && dfx.sat.length === 0, JSON.stringify(dfx));
       const tgx = await T(() => ({ c: tgCard({ ic: '🟢', dir: 'AL', sym: 'THYAO', src: 'Fırsat · A notu', name: 'Türk <Hava>', px: 312.5, ch: 1.41, tp: 312.5 * 1.03, sl: 312.5 * 0.99, why: ['VWAP dönüşü'], more: 'Hacim profili' }), k: tgKb('THYAO', 123), p: tgPlain('<b>A</b>\n<blockquote>x &amp; y</blockquote>z') }));
-      ok('Telegram kart düzeni: fiyat kutusu, kopyalanır rakam, katlanır ayrıntı, düğmeler, düz metin yedeği', /<blockquote>Giriş   <code>312,50<\/code>/.test(tgx.c) && /Hedef   <code>321,88<\/code>   \+%3\n/.test(tgx.c) && /−%1<\/blockquote>/.test(tgx.c) && /Türk &lt;Hava&gt;/.test(tgx.c) && /<blockquote expandable>/.test(tgx.c) && tgx.k.inline_keyboard[0].length === 2 && /BIST%3ATHYAO/.test(tgx.k.inline_keyboard[0][1].url) && tgx.p === 'A\nx & y\nz', JSON.stringify(tgx));
+      ok('Telegram kart düzeni: fiyat kutusu, kopyalanır rakam, katlanır ayrıntı, düğmeler, düz metin yedeği', /<blockquote>Giriş   <code>312,50<\/code>/.test(tgx.c) && /Hedef   <code>321,88<\/code>   \+%3\n/.test(tgx.c) && /−%1<\/blockquote>/.test(tgx.c) && /Türk &lt;Hava&gt;/.test(tgx.c) && /<blockquote expandable>/.test(tgx.c) && tgx.k.inline_keyboard[1].length === 2 && /BIST%3ATHYAO/.test(tgx.k.inline_keyboard[1][1].url) && /t\.me\/FatihBistSinyal2026Bot\/pusula\?startapp=THYAO$/.test(tgx.k.inline_keyboard[0][0].url) && tgx.p === 'A\nx & y\nz', JSON.stringify(tgx));
       const pus = await T(() => { renderNow(); return { d: nDial(), now: document.getElementById('nowbody').innerHTML.slice(0, 4000), tab: !!document.querySelector('#tabs button[data-t="lab"]'), chart: !!document.querySelector('#more [data-t="chart"]') }; });
       ok('Pusula ana sayfa: kadran, alt menüde Karne, Grafik menüde', /class="pcomp"/.test(pus.d) && /class="phero"/.test(pus.now) && pus.tab && pus.chart, JSON.stringify({ tab: pus.tab, chart: pus.chart }));
       const ak = await T(() => { const oK = window.KSTAT, oJ = S.jr, oM = S.mkt; const td = todayStr();
@@ -175,6 +175,20 @@ async function page(b, opt) {
       await T(() => pairStart()); await p.waitForTimeout(800);
       ok('eşleştirme kodu ve kurulum komutu gösteriliyor', /ABCDE-FGH23/.test(await T(() => document.getElementById('pairbox').innerText)) && /kur\.ps1/.test(await T(() => document.getElementById('pairbox').innerText)));
       ok('telefon modunda sayfa hatası yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }
+    // v11.7 Telegram mini uygulaması: ilk açılışta Telegram kimliğiyle giriş, sonra startapp hissesinin röntgeni + geri tuşu
+    { const tgMock = () => { window.Telegram = { WebApp: { initData: 'user=%7B%22id%22%3A1%7D&auth_date=1&hash=x', initDataUnsafe: { start_param: 'THYAO' }, ready() {}, expand() {}, disableVerticalSwipes() {}, setHeaderColor() {}, setBackgroundColor() {},
+        BackButton: { onClick(f) { window.__bb = f; }, show() { window.__bbs = 1; }, hide() { window.__bbs = 0; } } } }; };
+      const p = await b.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
+      await install(p, { proxy: true }); let auth = 0;
+      await p.route('https://api.altinerpano.com/tgauth', r => { auth++; r.fulfill({ contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ ok: true, owner: true, setup: 'PUSULA|wss://x.test/k|sahipkodu' }) }); });
+      await p.addInitScript(tgMock);
+      await p.goto(FILE, { waitUntil: 'domcontentloaded', timeout: 20000 }); await p.waitForTimeout(5000);
+      const T = f => p.evaluate(f);
+      const st = await T(() => ({ px: LS.get('tvproxy', ''), own: LS.get('ownTok', ''), tga: document.documentElement.classList.contains('tga'), x: !!(document.getElementById('xray') && document.getElementById('xray').classList.contains('on')), bbs: window.__bbs }));
+      ok('Telegram mini uygulaması: Telegram kimliğiyle giriş (sunucu adresi + sahip kodu), sonra hisse röntgeni açıldı', auth === 1 && st.px === 'wss://x.test/k' && st.own === 'sahipkodu' && st.tga && st.x && st.bbs === 1, JSON.stringify({ auth, st }));
+      await T(() => window.__bb()); await p.waitForTimeout(300);
+      ok('Telegram geri tuşu röntgeni kapatıyor', await T(() => !document.getElementById('xray').classList.contains('on')));
+      ok('Telegram mini uygulamasında sayfa hatası yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }
   } catch (e) { ok('test çalıştırma', false, e.message); }
   await b.close();
   const f = results.filter(r => !r.ok);
