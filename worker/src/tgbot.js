@@ -21,7 +21,14 @@ export async function tgBotUpdate(request, env, h) {
   if (!cfg || !cfg.tgTok) return new Response('yok', { status: 503 });
   if (request.headers.get('X-Telegram-Bot-Api-Secret-Token') !== await hookSecret(cfg.tgTok)) return new Response('yetkisiz', { status: 401 });
   let u = null; try { u = await request.json(); } catch (e) { return new Response('ok'); }
-  if (u && u.my_chat_member) { try { if (env.BT) await kanalSet(env, h, u.my_chat_member); } catch (e) {} return new Response('ok'); }
+  if (u && u.my_chat_member) {
+    const m = u.my_chat_member;
+    // v12.4a: iz — son kanal/grup üyelik bildirimi (teşhis için) ve hata
+    try { if (env.BT) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('tg_mcm', ?)").bind(new Date().toISOString() + ' ' + JSON.stringify({ t: m.chat && m.chat.type, id: m.chat && m.chat.id, ti: m.chat && m.chat.title, st: m.new_chat_member && m.new_chat_member.status, post: m.new_chat_member && m.new_chat_member.can_post_messages })).run(); } catch (e) {}
+    try { if (env.BT) await kanalSet(env, h, m); }
+    catch (e) { try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('pubch_res', ?)").bind(new Date().toISOString() + ' HATA ' + String(e && e.message || e).slice(0, 200)).run(); } catch (e2) {} }
+    return new Response('ok');
+  }
   const m = u && u.message;
   if (!m || !m.chat || m.chat.type !== 'private' || !m.from || m.from.is_bot) return new Response('ok');
   const now = Date.now(), id = m.chat.id;
