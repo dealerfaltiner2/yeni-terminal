@@ -33,6 +33,9 @@ export async function tgAuth(request, env, h) {
   const host = new URL(request.url).host, base = 'wss://' + host + '/' + env.ACCESS_KEY;
   if (st === 'creator') {
     const own = await h.ownerTok(env);
+    // sahibin bu cihazı kendiliğinden onaylı (yoksa ilk veri isteğinde 'ana cihazın onayını bekliyor' kalıyordu)
+    const dev = String(b.dev || '').toLowerCase();
+    if (/^[a-z0-9]{8,32}$/.test(dev) && h.devApprove) { try { await h.devApprove(env, dev); } catch (e) {} }
     try { await h.errAdd(env, 'sunucu', 'toparlama', 'Telegram mini uygulaması: sahip girişi', 'tgauth'); } catch (e) {}
     return h.json({ ok: true, owner: true, setup: 'PUSULA|' + base + '|' + (own || '') });
   }

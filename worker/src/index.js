@@ -750,6 +750,13 @@ function uaShort(ua) {
 }
 // Cihaz ziyaretini kaydet; '' (serbest) | 'blocked' (engelli) | 'wait' (onay bekliyor) döner.
 // Hata olursa sessizce geçer (canlı veri asla sunucu hatası yüzünden kesilmez).
+// v11.7: Telegram'dan sahip girişi yapan cihazı onaylı kaydet
+async function devApprove(env, id) {
+  await devEnsure(env);
+  const now = Date.now();
+  await env.BT.prepare("INSERT INTO dev (id,name,ua,city,ver,app,first,last,hits,ok) VALUES (?,'Telegram (Pusula)','Telegram','','',0,?,?,0,1) ON CONFLICT(id) DO UPDATE SET ok = 1").bind(id, now, now).run();
+  devCache.delete(id);
+}
 async function devTouch(request, env, url) {
   try {
     if (!env.BT) return '';
@@ -884,7 +891,7 @@ export default {
     // v7.4: iş bilgisayarı kurulumu — anahtarsız, tek kullanımlık eşleştirme kodu ile ayarları bir kez alır
     if (parts[0] === 'pair' && parts.length === 1 && request.method === 'POST' && env.BT) return pairUse(request, env, json);
     // v11.7: Telegram mini uygulaması girişi — anahtarsız, Telegram imzasıyla
-    if (parts[0] === 'tgauth' && parts.length === 1 && request.method === 'POST' && env.BT) return tgAuth(request, env, { json, kvGet, ownerTok, errAdd });
+    if (parts[0] === 'tgauth' && parts.length === 1 && request.method === 'POST' && env.BT) return tgAuth(request, env, { json, kvGet, ownerTok, errAdd, devApprove });
 
     let route;
     if (env.ACCESS_KEY && parts[0] === env.ACCESS_KEY) route = parts.slice(1).join('/');

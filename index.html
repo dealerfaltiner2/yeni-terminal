@@ -3293,7 +3293,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="11.7";window.APPV=APP_VER;
+  const APP_VER="11.8";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -5737,7 +5737,7 @@ function tgaBox(t,sub,btn){let b=document.getElementById('tgabox');if(!b){b=docu
  b.innerHTML='<div class="tgac"><svg viewBox="-20 -20 40 40" width="54" height="54"><circle r="18" fill="none" stroke="#C9A35B" stroke-width="1.6"/><polygon points="0,-14 3.2,0 -3.2,0" fill="#5FD39A"/><polygon points="0,14 3.2,0 -3.2,0" fill="#F07A6A"/><circle r="2.2" fill="#0E1626" stroke="#C9A35B" stroke-width="1.2"/></svg><b>'+t+'</b>'+(sub?'<span>'+sub+'</span>':'')+(btn||'')+'</div>'}
 async function tgaAuth(){
  tgaBox('Pusula hazırlanıyor','Telegram hesabınla giriş yapılıyor…');
- try{const r=await fetch(TGA.srv+'/tgauth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({d:TGA.wa.initData})});
+ try{const r=await fetch(TGA.srv+'/tgauth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({d:TGA.wa.initData,dev:devId()})});
   const j=await r.json().catch(()=>({}));
   if(!j.ok){tgaBox('Giriş yapılamadı',htmlEsc(j.error||('Sunucu yanıtı: '+r.status)),'<button onclick="sessionStorage.removeItem(\'tga_try\');location.reload()">Tekrar dene</button>');return}
   const m=String(j.setup||'').match(/^PUSULA\|(wss?:\/\/[^|\s]+)\|([^|\s]*)$/);if(!m){tgaBox('Giriş yapılamadı','Kurulum bilgisi okunamadı.');return}

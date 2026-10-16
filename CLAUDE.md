@@ -266,3 +266,4 @@ Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ"
   Terminal: <head>'de telegram-web-app.js YALNIZ adres '#tgWebAppData=' içerirse yüklenir. TGA bloğu: expand, disableVerticalSwipes, lacivert üst/alt renk, BackButton (röntgen kapat / ana sayfa), start_param → xrayOpen(SEMBOL).
   İlk açılışta tvproxy yoksa tgaAuth (api.altinerpano.com/tgauth) → sahipse /prefs sessiz geri yükleme (restore(true)) → yeniden yükleme. Telegram'ın hafızası ayrı (LS boş başlar).
   Telegram düğmeleri (terminal tgKb + worker tgfmt.js tgKb): ilk satır '🧭 Pusula'da aç' (…/pusula?startapp=SEMBOL), altında KAP / Grafik; tavan sakin açılış listesinde de var. Grupta direkt bağlantı (web_app düğmesi yalnız özel sohbette çalışır). tests/tgapp.mjs.
+  v11.8 (16.10 08:30): ilk denemede sahip girişi oldu ama cihaz 'onay bekliyor' kaldı (onay yalnız ?own= taşıyan istekte veriliyor) → tgaAuth devId gönderir, /tgauth kurucuda devApprove (dev.ok=1). İlk cihaz D1'de elle onaylandı.
