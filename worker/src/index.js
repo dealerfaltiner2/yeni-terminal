@@ -286,7 +286,7 @@ async function tgSend(cfg, text, kb) {
   try {
     let j = await send(text, true, kb);
     if (!j.ok && /parse|entit|tag|button|markup/i.test(j.description || '')) j = await send(tgPlain(text), false, null);
-    return j.ok ? { ok: true } : { ok: false, error: j.description || 'hata' };
+    return j.ok ? { ok: true, id: j.result && j.result.message_id } : { ok: false, error: j.description || 'hata' };
   } catch (e) { return { ok: false, error: e.message }; }
 }
 
@@ -1040,7 +1040,10 @@ export default {
           const s = sr ? JSON.parse(sr.v) : { n: 0, at: -1 };
           const cat = cfg ? cfg.at || 0 : 0;
           if (!sr || cat !== s.at) {
-            const r = await tgSend(cfg, an.v);
+            // v11.10: duyuru JSON olabilir {t: metin, kb: düğmeler, pin: 1} — düğmeli mesaj + (bot yetkiliyse) gruba sabitleme
+            let A = null; try { if (an.v.trim().startsWith('{')) A = JSON.parse(an.v); } catch (e) {}
+            const r = A ? await tgSend(cfg, A.t, A.kb || null) : await tgSend(cfg, an.v);
+            if (A && A.pin && r.ok && r.id) { try { const pr = await fetch('https://api.telegram.org/bot' + cfg.tgTok + '/pinChatMessage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: cfg.chat, message_id: r.id, disable_notification: true }) }).then(x => x.json()); r.pin = pr.ok ? 'sabitlendi' : (pr.description || 'sabitlenemedi'); } catch (e) { r.pin = 'sabitlenemedi'; } }
             s.n++; s.at = cat;
             if (r.ok || s.n >= 20) await env.BT.prepare("DELETE FROM meta WHERE k IN ('announce', 'announce_n')").run();
             else await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('announce_n', ?)").bind(JSON.stringify(s)).run();
