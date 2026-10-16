@@ -257,3 +257,5 @@ Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ"
   sig.js sigNews: karne/tamamlama/ertesi gün işi yokken 10 dk'da bir, her seferinde bir gün (meta hb_day/hb_at; 29.09'dan geriye dönük doldurur). p30 yalnız yeni ölçülenlerde.
   KAP Telegram'ı: olumlu haber geldiğinde hisse bugün zaten ≥ %3 artıdaysa '⚠️ Haber gelmeden hisse bugün zaten +%X yükselmişti' satırı. Canlı takip kartında son 16 saatin önemli KAP'ı (kapNote).
   ~1 hafta sonra: haberli/habersiz ve p30 (önceden koşmuş/sakin) kırılımında karne → anlamlıysa 'habersiz sert hareket' uyarısı ya da filtre (Fatih onayıyla). Sıradaki araştırma: KAP 'yeni iş' tutarı ÷ piyasa değeri (kaph metinleri).
+- 16.10 02:47 GÖZLEM: D1 günlük okuma sınırı DOLUYDU (UTC 15.10 günü; 03:00'te sıfırlandı, sonra her şey normal). err defterine yazılamadığı için iz yok. v11.4/11.5'in yeni sorguları küçük (sigNews günde ~14 × ~1.000 satır, tavanOpen/geri_seen yalnız meta).
+  Şüpheli büyük okuyucu: /sigstats yeniden hesabı ~6.300 satır (10 dk önbellek → en kötü günde ~0,9M) ve gün içi araştırma/ajan sorguları. Ajan denetimi: Cloudflare panelinde D1 → Metrics'ten saat saat okuma grafiğine bakılmalı.
