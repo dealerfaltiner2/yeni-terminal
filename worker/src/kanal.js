@@ -11,7 +11,14 @@ import { mktBlock, tgQuote } from './tgfmt.js';
 import { trDay } from './sig.js';
 const TRMS = 3 * 3600e3;
 const trp = ms => { const d = new Date(ms + TRMS); return { wd: d.getUTCDay(), m: d.getUTCHours() * 60 + d.getUTCMinutes(), day: d.toISOString().slice(0, 10) }; };
-export const kanalKb = tag => ({ inline_keyboard: [[{ text: '🧭 Pusula\'yı aç', url: tgAppLink('k_' + tag) }]] });
+// v12.9 (17.10, Fatih: 'botu sen tanıtacaksın'): kanal kullanıcı adı varsa ikinci satır '📣 Arkadaşına gönder' = t.me/share ile kanal bağlantısı (okuyan kişi kanalı yayar)
+export const shareLink = (url, text) => 'https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text);
+export const SHARE_TXT = 'BIST Pusula: önemli KAP haberleri, günlük piyasa özeti ve hisse röntgeni tek yerde. Tamamen ücretsiz.';
+export const kanalKb = (tag, user) => {
+  const kb = [[{ text: '🧭 Pusula\'yı aç', url: tgAppLink('k_' + tag) }]];
+  if (/^[A-Za-z0-9_]{4,32}$/.test(user || '')) kb.push([{ text: '📣 Arkadaşına gönder', url: shareLink('https://t.me/' + user, SHARE_TXT) }]);
+  return { inline_keyboard: kb };
+};
 const NOTE = '\n\n<i>Bilgi amaçlıdır, yatırım tavsiyesi değildir.</i>';
 const GUN = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
 const AY = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
@@ -71,7 +78,7 @@ export async function pubCh(env) { try { const v = await meta(env, 'pubch'); ret
 async function pubTok(env, h, ch) { if (ch && ch.via === 'app') return env.TG_APP_TOKEN || ''; const cfg = await h.kvGet(env, 'cfg', null); return (cfg && cfg.tgTok) || ''; }
 async function pubSend(env, h, ch, text, tag) {
   const tok = await pubTok(env, h, ch); if (!tok) return { ok: false, description: 'token yok' };
-  return tgApi(tok, 'sendMessage', { chat_id: ch.id, text, parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: kanalKb(tag) });
+  return tgApi(tok, 'sendMessage', { chat_id: ch.id, text, parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: kanalKb(tag, ch.user) });
 }
 // Telegram güncellemesi: bot bir kanalda yönetici oldu / çıkarıldı (tgbot.js çağırır)
 export async function kanalSet(env, h, u, via = 'old') {

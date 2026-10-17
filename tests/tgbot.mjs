@@ -18,6 +18,12 @@ ok('özel sohbette /start → hoş geldin + Pusula\'yı aç (web_app) düğmesi'
 ok('mesajda AL/hedef/stop yok, yatırım tavsiyesi notu var', !/hedef|stop|\bAL\b/i.test(m.text) && /yatırım tavsiyesi değildir/.test(m.text));
 await tgBotUpdate(req(msg('private', 5, 'merhaba'), sec), env, h);
 ok('aynı kişiye 20 sn içinde ikinci yanıt yok', sent.length === 1);
+// v12.9 davet + kanal düğmeleri
+{ const mD = {}; const envK = { BT: { prepare: q => { const mk = a => ({ first: async () => /FROM meta/.test(q) && a[0] === 'pubch' ? { v: JSON.stringify({ id: -1009, user: 'bistpusulatr', via: 'app' }) } : null, all: async () => ({ results: [] }), run: async () => ({}) }); return Object.assign(mk([]), { bind: (...a) => mk(a) }); } } };
+  const n0 = sent.length; await tgBotUpdate(req(msg('private', 123456789, '/start'), sec), envK, h);
+  const kb = sent[n0] && sent[n0].body.reply_markup.inline_keyboard, inv = kb && kb[1] && kb[1][0].url, ch = kb && kb[2] && kb[2][0].url;
+  ok('karşılama: kişinin davet bağlantısı (r_<no>) paylaşım düğmesinde, kanala katıl düğmesi', kb && kb[0][0].web_app && /^https:\/\/t\.me\/share\/url\?url=/.test(inv) && decodeURIComponent(inv).includes('t.me/BistPusulaBot?startapp=r_123456789') && /ücretsiz/i.test(decodeURIComponent(inv)) && ch === 'https://t.me/bistpusulatr', JSON.stringify(kb));
+  sent.length = n0; }
 await tgBotUpdate(req(msg('supergroup', -100, '/start'), sec), env, h);
 ok('grup mesajına yanıt yok', sent.length === 1);
 // webhook kurulumu: meta yoksa bir kez setWebhook, sonra atlanır

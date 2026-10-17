@@ -20,6 +20,9 @@ const pm = K.pmText(tr('2026-10-19T18:40:00'), { d: '2026-10-19', idx: [{ s: 'XU
   [{ src: 'algi', o31: 1 }, { src: 'algi', o31: 2 }, { src: 'momentum', o31: 0 }, { src: 'sessiz', o31: 1 }, { src: 'radar', o31: 1 }], esc);
 ok('akşam mesajı: piyasa + yalnız açık kaynakların karnesi (sessiz/radar yok)', /BIST 100/.test(pm) && /⚡ Algı: 2 sinyal · 1 hedef · 1 stop/.test(pm) && /Toplam: 3 sinyalin 1'i hedefe, 1'i stopa gitti, 1'i/.test(pm) && !/Sessiz|radar/i.test(pm), pm);
 ok('düğme kanal etiketiyle Pusula\'yı açıyor', /t\.me\/BistPusulaBot\?startapp=k_am$/.test(K.kanalKb('am').inline_keyboard[0][0].url));
+{ const kb = K.kanalKb('am', 'bistpusulatr').inline_keyboard, u = kb[1] && kb[1][0].url;
+  ok('kanal mesajı: ikinci satır Arkadaşına gönder = kanal bağlantısını paylaşır', kb.length === 2 && /^https:\/\/t\.me\/share\/url\?url=https%3A%2F%2Ft\.me%2Fbistpusulatr&text=/.test(u) && /Arkadaşına gönder/.test(kb[1][0].text), u);
+  ok('kanal adı yoksa paylaşım satırı yok', K.kanalKb('am', '').inline_keyboard.length === 1 && K.kanalKb('am', 'a b"<').inline_keyboard.length === 1); }
 // --- D1 + Telegram taklidi
 const meta = {}, sent = [];
 const D1 = { prepare: q => { const mk = a => ({

@@ -3,7 +3,8 @@
 // v12.4: 'my_chat_member' (bot bir kanalda yönetici oldu) → kanal.js kanalSet.
 // Yalnız ÖZEL sohbet: '/start' ya da herhangi bir mesaj → kısa hoş geldin + '🧭 Pusula'yı aç' (web_app) düğmesi. Grup mesajlarına dokunulmaz.
 // Webhook'u ana iş kendisi kurar (tgHookEnsure, meta 'tghook' = TGHOOK_V; sonuç meta 'tghook_res'). Yeniden kurmak için meta 'tghook'u sil.
-import { kanalSet } from './kanal.js';
+import { kanalSet, pubCh, shareLink, SHARE_TXT } from './kanal.js';
+import { tgAppLink } from './tgapp.js';
 export const APP_URL = 'https://dealerfaltiner2.github.io/yeni-terminal/';
 export const HOOK_URL = 'https://api.altinerpano.com/tgbot';
 export const TGHOOK_V = '2';   // v12.4: kanala eklenme bildirimi (my_chat_member) de gelsin
@@ -14,7 +15,13 @@ export async function hookSecret(tok) {
 export const WELCOME = '🧭 <b>BIST Pusula\'ya hoş geldin</b>   <i>tamamen ücretsiz</i>\n\n' +
   'Borsa İstanbul için ücretsiz piyasa pusulası: endeksin yönü, önemli KAP haberleri, hisse röntgeni ve geçmiş sinyallerin karnesi tek ekranda.\n\n' +
   'Ücret yok, kayıt yok. Aşağıdaki düğmeye bas, Pusula Telegram\'ın içinde açılır. Fiyatlar 15 dakika gecikmelidir.\n\n<i>Bilgi amaçlıdır, yatırım tavsiyesi değildir.</i>';
-export const welcomeKb = () => ({ inline_keyboard: [[{ text: '🧭 Pusula\'yı aç', web_app: { url: APP_URL } }]] });
+// v12.9: karşılamada kişinin kendi davet bağlantısı (startapp=r_<no> → üye kaydında 'kim getirdi') ve kanal varsa '📢 Kanala katıl'
+export const welcomeKb = (uid, chUser) => {
+  const kb = [[{ text: '🧭 Pusula\'yı aç', web_app: { url: APP_URL } }]];
+  if (/^\d{3,15}$/.test(String(uid || ''))) kb.push([{ text: '👥 Arkadaşını davet et', url: shareLink(tgAppLink('r_' + uid), SHARE_TXT) }]);
+  if (/^[A-Za-z0-9_]{4,32}$/.test(chUser || '')) kb.push([{ text: '📢 Kanala katıl', url: 'https://t.me/' + chUser }]);
+  return { inline_keyboard: kb };
+};
 let lastAns = new Map();   // aynı kişiye 20 sn içinde ikinci yanıt yok (seri mesaja karşı)
 // v12.6: iki bot aynı adrese bağlı — yeni @BistPusulaBot (env.TG_APP_TOKEN, via 'app') ve eski sinyal botu (cfg.tgTok, via 'old'); imza başlığı hangisininse yanıt onunla
 async function botOf(request, env, h) {
@@ -40,9 +47,10 @@ export async function tgBotUpdate(request, env, h) {
   if (now - (lastAns.get(id) || 0) < 20e3) return new Response('ok');
   if (lastAns.size > 500) lastAns = new Map();
   lastAns.set(id, now);
+  let chUser = ''; try { if (env.BT) { const ch = await pubCh(env); chUser = (ch && ch.user) || ''; } } catch (e) {}
   try {
     await fetch('https://api.telegram.org/bot' + bot.tok + '/sendMessage', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: id, text: WELCOME, parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: welcomeKb() }), signal: AbortSignal.timeout(8000) });
+      body: JSON.stringify({ chat_id: id, text: WELCOME, parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: welcomeKb(m.from.id, chUser) }), signal: AbortSignal.timeout(8000) });
   } catch (e) {}
   return new Response('ok');
 }
