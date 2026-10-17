@@ -23,7 +23,7 @@ import { errAdd, errLogRoute } from './err.js';
 import { botAlive, botBeat, botWatch, pairCreate, pairUse } from './bot.js';
 import { kapPoll, kapMorning, kapList } from './kap.js';
 import { tgBotUpdate, tgHookEnsure } from './tgbot.js';
-import { kanalAm, kanalPm, kanalOnce, kanalKap, kanalWeek } from './kanal.js';
+import { kanalAm, kanalPm, kanalOnce, kanalKap, kanalWeek, kanalLinks } from './kanal.js';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -1069,6 +1069,7 @@ export default {
       try { await tgHookEnsure(env, { kvGet }); } catch (e) {}   // v12.2: bot karşılama webhook'u (bir kez; sonra bellekte atlanır)
       // v12.4: herkese açık kanal — sabah 09:35 / akşam 18:30 bilgi mesajı (pencere dışında okuma yok)
       try { await kanalOnce(env, { kvGet, esc }); } catch (e) {}
+      try { await kanalLinks(env, { kvGet }); } catch (e) {}   // v12.10 adlı davet bağlantıları (yalnız istek varsa)
       try { await kanalWeek(env, { kvGet, esc, fetchBarsTV }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'kanal hafta: ' + String(e && e.message || e).slice(0, 200), 'kanalWeek'); }
       try { await kanalAm(env, { kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'kanal sabah: ' + String(e && e.message || e).slice(0, 200), 'kanalAm'); }
       try { await kanalPm(env, { kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'kanal akşam: ' + String(e && e.message || e).slice(0, 200), 'kanalPm'); }

@@ -103,5 +103,23 @@ got.length = 0;
 const rN = await tgAuth(new Request('https://api.x/tgauth', { method: 'POST', body: JSON.stringify({ d: mk2(NEW, 4242), dev: 'abcdef12' }) }), { ACCESS_KEY: 'k', TG_APP_TOKEN: NEW }, ha);
 const rO = await tgAuth(new Request('https://api.x/tgauth', { method: 'POST', body: JSON.stringify({ d: mk2(TOK, 4343), dev: 'abcdef12' }) }), { ACCESS_KEY: 'k', TG_APP_TOKEN: NEW }, ha);
 ok('uygulama girişi: yeni botun ve eski botun imzası ikisi de kabul', rN.status === 200 && rO.status === 200 && got.length === 2, rN.status + ' ' + rO.status);
+// v12.10 adlı davet bağlantıları + katılım sayımı (kanal yeni botta: pubch via 'app', id -1009)
+{ const of = globalThis.fetch; let n = 0;
+  globalThis.fetch = async (url, o) => { if (/createChatInviteLink$/.test(String(url))) { const b = JSON.parse(o.body); sent.push({ m: 'link', b, url: String(url) });
+      return new Response(JSON.stringify(b.name === 'Bozuk' ? { ok: false, description: 'Bad Request: not enough rights' } : { ok: true, result: { invite_link: 'https://t.me/+abc' + (++n), name: b.name } })); } return of(url, o); };
+  sent.length = 0;
+  ok('istek yokken bağlantı işi bir şey yapmıyor', (await K.kanalLinks(envN, h)) === null && sent.length === 0);
+  meta.pub_links_req = JSON.stringify(['Borsacılar Cemiyeti', 'Instagram', 'Bozuk']);
+  const l1 = await K.kanalLinks(envN, h), L = JSON.parse(meta.pub_links || '{}');
+  ok('adlı bağlantılar yeni botla açıldı, kaydedildi, istek silindi, hata sonuçta yazılı', l1 && l1.ok && L['Borsacılar Cemiyeti'] === 'https://t.me/+abc1' && L.Instagram === 'https://t.me/+abc2' && !L.Bozuk && meta.pub_links_req == null && /Bozuk: Bad Request/.test(meta.pub_links_res) && sent.every(x => /bot999:NEW-token/.test(x.url)) && sent[0].b.chat_id === -1009, meta.pub_links_res);
+  sent.length = 0; meta.pub_links_req = JSON.stringify(['Instagram', 'WhatsApp']); await K.kanalLinks(envN, h);
+  ok('var olan bağlantı yeniden açılmıyor, yenisi ekleniyor', sent.length === 1 && sent[0].b.name === 'WhatsApp' && Object.keys(JSON.parse(meta.pub_links)).length === 3, meta.pub_links_res);
+  globalThis.fetch = of;
+  const cm = (st, old, link, chat = -1009) => new Request('https://x/tgbot', { method: 'POST', headers: { 'X-Telegram-Bot-Api-Secret-Token': secN }, body: JSON.stringify({ update_id: 9, chat_member: { chat: { id: chat, type: 'channel' }, from: { id: 1 }, old_chat_member: { status: old }, new_chat_member: { status: st }, ...(link ? { invite_link: { invite_link: 'https://t.me/+x', name: link } } : {}) } }) });
+  sent.length = 0;
+  await tgBotUpdate(cm('member', 'left', 'Instagram'), envN, h); await tgBotUpdate(cm('member', 'left', 'Instagram'), envN, h); await tgBotUpdate(cm('member', 'left', null), envN, h);
+  await tgBotUpdate(cm('left', 'member', 'Instagram'), envN, h); await tgBotUpdate(cm('member', 'left', 'Instagram', -555), envN, h);
+  const J = JSON.parse(meta.pub_join || '{}');
+  ok('katılım: bağlantı adına göre sayıldı, doğrudan ayrı; ayrılan ve başka sohbet sayılmadı, mesaj gitmedi', J.Instagram === 2 && J['Doğrudan / kanal adı'] === 1 && Object.keys(J).length === 2 && sent.length === 0, meta.pub_join); }
 console.log('\nKANAL + DAVET: ' + res.filter(Boolean).length + '/' + res.length + ' geçti');
 process.exit(res.every(Boolean) ? 0 : 1);

@@ -200,3 +200,36 @@ export async function kanalPm(env, h, now = Date.now()) {
   } catch (e) {}
   return { ok: !!(r && r.ok), err: r && !r.ok ? r.description : undefined };
 }
+// v12.10 (18.10, Fatih: 'bağlantıları sen ekle') ADLI DAVET BAĞLANTILARI — her paylaşım yeri için ayrı kanal bağlantısı, kim nereden katıldı sayılır.
+// İstek: meta 'pub_links_req' = JSON ["Borsacılar Cemiyeti", "Instagram", …] → kanalı yöneten bot createChatInviteLink (ad ≤32) → meta 'pub_links' {ad: url}; istek silinir, sonuç 'pub_links_res'.
+// Katılım sayımı: webhook 'chat_member' (yalnız kayıtlı kanal) → meta 'pub_join' {ad: sayı}; davet bağlantısı yoksa 'Doğrudan / kanal adı'.
+export async function kanalLinks(env, h) {
+  const v = await meta(env, 'pub_links_req'); if (!v) return null;
+  const ch = await pubCh(env); if (!ch) return null;
+  await env.BT.prepare("DELETE FROM meta WHERE k = 'pub_links_req'").run();   // önce sil: hata olsa da her dakika denemesin
+  let names = []; try { names = JSON.parse(v); } catch (e) {}
+  names = (Array.isArray(names) ? names : []).map(x => String(x || '').trim().slice(0, 32)).filter(Boolean).slice(0, 10);
+  const tok = await pubTok(env, h, ch); if (!tok || !names.length) { await metaSet(env, 'pub_links_res', new Date().toISOString() + ' ' + (tok ? 'ad yok' : 'token yok')); return { ok: false }; }
+  let L = {}; try { L = JSON.parse(await meta(env, 'pub_links') || '{}') || {}; } catch (e) {}
+  const res = [];
+  for (const n of names) {
+    if (L[n]) { res.push(n + ': zaten var'); continue; }
+    const r = await tgApi(tok, 'createChatInviteLink', { chat_id: ch.id, name: n });
+    if (r && r.ok && r.result && r.result.invite_link) { L[n] = r.result.invite_link; res.push(n + ': tamam'); }
+    else res.push(n + ': ' + String(r && r.description || 'hata').slice(0, 80));
+  }
+  await metaSet(env, 'pub_links', JSON.stringify(L));
+  await metaSet(env, 'pub_links_res', new Date().toISOString() + ' ' + res.join(' | '));
+  return { ok: true, res };
+}
+export async function kanalJoin(env, cm) {
+  if (!cm || !cm.chat || !cm.new_chat_member) return null;
+  const ch = await pubCh(env); if (!ch || ch.id !== cm.chat.id) return null;
+  const was = cm.old_chat_member && cm.old_chat_member.status, now = cm.new_chat_member.status;
+  if (now !== 'member' || (was && was !== 'left' && was !== 'kicked')) return null;
+  const n = String((cm.invite_link && (cm.invite_link.name || 'Adsız bağlantı')) || 'Doğrudan / kanal adı').slice(0, 32);
+  let J = {}; try { J = JSON.parse(await meta(env, 'pub_join') || '{}') || {}; } catch (e) {}
+  J[n] = (J[n] || 0) + 1;
+  await metaSet(env, 'pub_join', JSON.stringify(J));
+  return n;
+}
