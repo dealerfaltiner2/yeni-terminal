@@ -255,6 +255,12 @@ Betikler: tools/ml/prep.py (S.pkl), ideas.py, summ.py, night.py, late.py, mom2.p
 - Motor: yeni Ana sunucu canlı (20:10). flow 15:35–16:28 boşluk (geçiş). Engelli eski iş PC motoru hâlâ her dakika bağlanmayı deniyor (dev.last 20:14, 1006). Duyuru sabitleme: botun yetkisi yok.
 - flow × Momentum (12–16.10, 24 sinyal, 2 kazanan): 10:01–10:29 alıcılı payıyla düzen yok, örnek az.
 
+## 6p. 17.10 (Cumartesi) GÜNLÜK GÖZDEN GEÇİRME
+- Hafta 12–16.10 (+3/−1, ikisi yoksa gün sonu, 100.000 TL/işlem, kayma hariç): Momentum 24 sinyal 2 kazandı/20 kaybetti −14,3 puan (≈ −14.300 TL; h1 −15,4). tavan6 10 işlem −2,0; dunguclu 4 −3,8; sessiz 5 −2,1.
+- Sağlık: err'de gerçek hata yok; üç zamanlayıcı canlı (20:13), sig_kill boş, kaph BİTTİ (geri 2421, içeriden 2808, yeni iş 908 metin). Motor son görülme Cuma ~20:10 (hafta sonu uyku; Pazartesi 09:15 uyanışını doğrula).
+- Kanal kaydı tamam (pubch via app, sabitlenmiş tanıtım 17.10 03:00). uye tablosunda yalnız 1 kayıt (Fatih, ref k_giris) — dışarıdan üye henüz yok.
+- Öneri (onay bekliyor): KAP yeni iş tutarı ÷ piyasa değeri araştırması, içeriden ALIŞ/SATIŞ ayrımı araştırması, Momentum tekrar eden hisseyi Telegram'dan çıkarma.
+
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
 - v6.6 (29.09 akşamı): karne özetinde "Filtre kontrolü" — endeks artı/eksi ve oynak/sakin ayrımı kendi sinyallerimizde. 1–2 hafta sonra bak; tutarsa sinyal kapısı öner.
