@@ -261,6 +261,16 @@ Betikler: tools/ml/prep.py (S.pkl), ideas.py, summ.py, night.py, late.py, mom2.p
 - Kanal kaydı tamam (pubch via app, sabitlenmiş tanıtım 17.10 03:00). uye tablosunda yalnız 1 kayıt (Fatih, ref k_giris) — dışarıdan üye henüz yok.
 - Öneri (onay bekliyor): KAP yeni iş tutarı ÷ piyasa değeri araştırması, içeriden ALIŞ/SATIŞ ayrımı araştırması, Momentum tekrar eden hisseyi Telegram'dan çıkarma.
 
+## 6q. 17.10 gece TELEGRAM BÜYÜME — DEVİR NOTU (GELİŞTİRİCİ, sohbet taşındı)
+Yapılanlar (ayrıntı CLAUDE.md v12.2–v12.8): üye görünümü B (üyede canlı AL/hedef/stop yok), yeni aranabilir bot @BistPusulaBot (uygulama + hoş geldin + kanal; anahtar Cloudflare secret TG_APP_TOKEN),
+eski @FatihBistSinyal2026Bot yalnız sinyal grubunda ('Pusula Trading'), kanal t.me/bistpusulatr (pubch via 'app'), davet bağlantısı (r_), kanal düğmeleri (k_), seans içi önemli KAP (günde ≤3), Pazar 'Haftaya bakış', ilk haftalık paylaşım elle gönderildi.
+Zamanlanmış görevler: 'Pusula büyüme raporu' Pazar 19:55 (trig_01Gsu8uNSd98niHK3oggLowe), Pazartesi 09:22 ana sunucu uyanış kontrolü (trig_01REJzEwfubcsCM9rwvScd4m).
+Fatih'in yapacakları: kanal açıklaması → 'Ücretsiz Borsa İstanbul pusulası · Önemli KAP haberleri · Günlük piyasa özeti · Uygulama: @BistPusulaBot · Yatırım tavsiyesi değildir.'; kanaldaki fazla tanıtım mesajını silmek; tepkiler açık, yorumlar kapalı.
+Onay BEKLEYEN (onaysız yapma): Algı'yı Telegram'dan çıkarmak; tavan6'yı sessize almak; Momentum tekrar eden hisseyi Telegram'dan çıkarmak.
+İlk kontrol noktaları: Pazar 19:55 ilk otomatik 'Haftaya bakış' + büyüme raporu; Pazartesi 09:35 / 18:30 ilk otomatik kanal mesajları (meta pub_am / pub_pm / pub_wk / pub_kap, hata pubch_res).
+Büyüme fikirleri (sırada): Fatih'in başka gruplara paylaşacağı tanıtım metni (ilk denemede 😢 tepki aldı → daha az 'reklam', daha çok somut fayda: 'KAP önemli haberleri tek yerde, ücretsiz'), davet sayısını (uye.ref) büyüme raporunda göstermek.
+v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
+
 ## 7. Bekleyen / fikir
 - Sinyal Karnesi 2–3 hafta birikince: kaynak, puan aralığı, saat, KAP türüne göre ayıkla. İlk gün (29.09): Fırsat B 4/5, A 0/1, radar 0/1, Algı 0 sinyal (kayıt yolu sağlam, sinyal çıkmamış).
 - v6.6 (29.09 akşamı): karne özetinde "Filtre kontrolü" — endeks artı/eksi ve oynak/sakin ayrımı kendi sinyallerimizde. 1–2 hafta sonra bak; tutarsa sinyal kapısı öner.
