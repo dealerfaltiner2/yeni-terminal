@@ -3306,7 +3306,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="12.6";window.APPV=APP_VER;
+  const APP_VER="12.8";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -5253,6 +5253,68 @@ function labHtml(){const D={canli:['🟢','Canlıda deneniyor'],bulgu:['🔵','G
   LAB.map(x=>'<div class="labr '+x.durum+'"><div class="labt"><span>'+D[x.durum][0]+'</span><b>'+htmlEsc(x.ad)+'</b></div><div class="labm"><span>'+htmlEsc(x.kural)+'</span>'+
    (x.eski!=null?'<span>ilk dönem <b>%'+x.eski+'</b></span>':'')+(x.yeni!=null?'<span>son dönem <b class="'+((x.be?x.yeni>=x.be+8:x.yeni>=55)?'up':(x.be?x.yeni<x.be:x.yeni<47)?'dn':'')+'">%'+x.yeni+'</b></span>':'')+(x.n?'<span>'+x.n+' işlem</span>':'')+'<em>'+D[x.durum][1]+'</em></div><div class="labn">'+htmlEsc(x.not)+'</div></div>').join('')+'</div>'}
 (function(){const _rl=renderLab;window.renderLab=renderLab=function(){_rl.apply(this,arguments);try{const el=document.getElementById('labbody');if(el)el.insertAdjacentHTML('beforeend',labHtml())}catch(e){}}})();
+/* ================= v12.8 ARAŞTIRMA VERİ PAKETİ (Nihat'ın önerisi, Fatih onayıyla) =================
+   Yalnız SAHİP: seçilen hisselerin güncel mumlarını Worker /bars'tan (sahibin canlı TradingView bağlantısı) 2'şer 2'şer toplar,
+   XU100/XU030/XBANK/XUSIN ekler, tek JSON dosyası olarak indirir → Claude'a yüklenir, yeni fikir güncel veriyle test edilir. Üyeye/misafire yok (veri lisansı). */
+const VP={grp:'b30',tf:'60',n:5000,el:'',busy:false,msg:'',stop:false};
+const VP_TF={'15':'15 dakika','60':'1 saat','240':'4 saat','1D':'Günlük'};
+function vpSyms(){
+ if(VP.grp==='el')return [...new Set(String(VP.el||'').toUpperCase().split(/[^A-Z0-9]+/).filter(x=>x.length>=3&&x.length<=8))].slice(0,150);
+ if(VP.grp==='wl')return W().slice(0,150);
+ const U=(S.uni||[]).filter(o=>o&&o.name&&o.market_cap_basic>0&&!/^X[A-Z0-9]{3,5}$/.test(o.name)).sort((a,b)=>b.market_cap_basic-a.market_cap_basic);
+ return U.slice(0,VP.grp==='b30'?30:100).map(o=>o.name);
+}
+function vpOwner(){try{return !isUye()&&!isGuest()}catch(e){return false}}
+function vpHtml(){if(!vpOwner())return '';
+ const sel=(id,cur,opts)=>'<select id="'+id+'" onchange="vpSet()">'+opts.map(o=>'<option value="'+o[0]+'"'+(String(cur)===String(o[0])?' selected':'')+'>'+o[1]+'</option>').join('')+'</select>';
+ const k=vpSyms().length,mb=Math.round(k*VP.n*48/1e6*10)/10;
+ return '<div class="vpk"><b>📦 Araştırma veri paketi</b><small>Seçtiğin hisselerin <b>güncel</b> mumlarını toplar ve tek dosya (JSON) olarak indirir. Dosyayı Claude\'a yükle; yeni fikir bugünkü veriyle test edilir. BIST 100, BIST 30, Banka ve Sınai endeksleri her pakete eklenir. Yalnız kişisel araştırma içindir, paylaşma.</small>'+
+  '<label>Hisse grubu</label>'+sel('vp_grp',VP.grp,[['b30','Piyasa değeri en büyük 30 (BIST 30 gibi)'],['b100','Piyasa değeri en büyük 100 (BIST 100 gibi)'],['wl','İzleme listem'],['el','Elle yaz']])+
+  (VP.grp==='el'?'<label>Hisseler (boşluk ya da virgülle)</label><input id="vp_el" value="'+htmlEsc(VP.el)+'" placeholder="THYAO ASELS SASA" oninput="VP.el=this.value">':'')+
+  '<label>Zaman dilimi</label>'+sel('vp_tf',VP.tf,Object.entries(VP_TF))+
+  '<label>Mum sayısı (hisse başına)</label>'+sel('vp_n',VP.n,[[1000,'1.000'],[2500,'2.500'],[5000,'5.000'],[10000,'10.000']])+
+  '<div class="vpi">'+(VP.grp==='el'?'':k+' hisse · ')+'yaklaşık '+mb+' MB dosya'+(mb>40?' · <b class="dn">çok büyük, mum sayısını ya da grubu küçült</b>':'')+'</div>'+
+  '<button class="vpb" onclick="'+(VP.busy?'VP.stop=true':'vpRun()')+'">'+(VP.busy?'Durdur':'Topla ve indir')+'</button><div id="vp_msg" class="vpm">'+(VP.msg||'')+'</div></div>'}
+function vpSet(){try{VP.grp=document.getElementById('vp_grp').value;VP.tf=document.getElementById('vp_tf').value;VP.n=+document.getElementById('vp_n').value;const e=document.getElementById('vp_el');if(e)VP.el=e.value}catch(e){}vpRedraw()}
+function vpRedraw(){const el=document.querySelector('.vpk');if(el)el.outerHTML=vpHtml()}
+function vpMsg(t){VP.msg=t;const el=document.getElementById('vp_msg');if(el)el.innerHTML=t}
+async function vpRun(){
+ if(VP.busy||!vpOwner())return;const base=tvBarsBase();if(!base){vpMsg('<span class="dn">Sunucu bağlantısı yok.</span>');return}
+ const syms=vpSyms();if(!syms.length){vpMsg('<span class="dn">Hisse yok. '+(VP.grp==='wl'?'İzleme listen boş.':VP.grp==='el'?'Hisse kodlarını yaz.':'Piyasa listesi henüz yüklenmedi, biraz bekle.')+'</span>');return}
+ if(syms.length*VP.n*48>40e6){vpMsg('<span class="dn">Dosya çok büyük olur (40 MB üstü). Mum sayısını ya da grubu küçült.</span>');return}
+ VP.busy=true;VP.stop=false;vpRedraw();
+ const all=['XU100','XU030','XBANK','XUSIN'].concat(syms),out={},bad=[];const per=VP.n>5000?1:2;let done=0;
+ try{
+  for(let i=0;i<all.length&&!VP.stop;i+=per){
+   const part=all.slice(i,i+per);vpMsg('Toplanıyor… '+done+'/'+all.length+' · '+part.join(', '));
+   let j=null;for(let t=0;t<2&&!j;t++){try{const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),25000);const r=await fetch(dq(base+'/bars?s='+encodeURIComponent(part.join(','))+'&tf='+VP.tf+'&n='+VP.n),{signal:ctl.signal});clearTimeout(to);if(r.ok)j=await r.json()}catch(e){}}
+   part.forEach(sy=>{const d=j&&j.data&&j.data['BIST:'+sy];if(d&&d.bars&&d.bars.length)out[sy]=d.bars;else bad.push(sy)});
+   done+=part.length;await sleep(350);
+  }
+  const ok=Object.keys(out).length;if(!ok)throw new Error('hiç veri gelmedi');
+  const ilk=Math.min(...Object.values(out).map(b=>b[0][0])),son=Math.max(...Object.values(out).map(b=>b[b.length-1][0]));
+  const pack={paket:'BIST Pusula araştırma veri paketi',olusturma:new Date().toISOString(),kaynak:'TradingView (sahibin canlı bağlantısı)',zaman_dilimi:VP_TF[VP.tf],tf:VP.tf,mum_istenen:VP.n,
+   aralik:{ilk:new Date(ilk*1000).toISOString(),son:new Date(son*1000).toISOString()},bicim:'her hisse: [[zaman (unix saniye, UTC), açılış, yüksek, düşük, kapanış, hacim], …] eskiden yeniye',
+   endeksler:['XU100','XU030','XBANK','XUSIN'],gelmeyen:bad,not:'Yalnız kişisel araştırma içindir, paylaşılmaz.',hisseler:out};
+  const name='pusula-veri-'+VP.tf+'-'+new Date(Date.now()+3*3600e3).toISOString().slice(0,16).replace(/[-:T]/g,'')+'.json';
+  const blob=new Blob([JSON.stringify(pack)],{type:'application/json'});
+  let shared=false;
+  try{const f=new File([blob],name,{type:'application/json'});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});shared=true}}catch(e){if(e&&e.name==='AbortError')shared=true}
+  if(!shared){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000)}
+  vpMsg('<b class="up">Hazır:</b> '+ok+' hisse/endeks, '+(blob.size<1e5?Math.max(1,Math.round(blob.size/1e3))+' KB':Math.round(blob.size/1e5)/10+' MB')+' · '+name+(bad.length?'<br><span class="dn">Gelmeyen: '+htmlEsc(bad.join(', '))+'</span>':'')+(VP.stop?'<br>Yarıda durduruldu; toplananlar indirildi.':'')+'<br><small>Telegram içinden indirme çalışmazsa Pusula\'yı Safari\'de ya da ana ekran uygulamasında aç.</small>');
+ }catch(e){vpMsg('<span class="dn">Olmadı: '+htmlEsc(e.message||'hata')+'</span>')}
+ VP.busy=false;const m=VP.msg;vpRedraw();vpMsg(m);
+}
+(function(){const _rl=renderLab;window.renderLab=renderLab=function(){_rl.apply(this,arguments);try{const el=document.getElementById('labbody');if(el&&!el.querySelector('.vpk'))el.insertAdjacentHTML('beforeend',vpHtml())}catch(e){}}})();
+</script>
+<style>
+.vpk{margin:14px 0;padding:14px;border-radius:16px;border:1px solid rgba(201,163,91,.35);background:rgba(201,163,91,.06);display:flex;flex-direction:column;gap:6px}
+.vpk b{font-size:15px}.vpk small{color:var(--mut,#8F9BB3);line-height:1.4}.vpk label{font-size:12px;color:var(--mut,#8F9BB3);margin-top:4px}
+.vpk select,.vpk input{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.25);color:inherit;font-size:14px}
+.vpk .vpi{font-size:12.5px;color:var(--mut,#8F9BB3);margin-top:4px}.vpk .vpb{margin-top:6px;padding:12px;border-radius:12px;border:0;background:#C9A35B;color:#0E1626;font-weight:700;font-size:15px}
+.vpk .vpm{font-size:13px;line-height:1.45}
+</style>
+<script>
 (function(){const _sl=nowSessLine;window.nowSessLine=nowSessLine=function(){let h=_sl.apply(this,arguments);try{if(S.botKnown)h+='<div class="nsess" style="border-top:0;padding-top:4px;margin-top:2px"><span class="dot '+(S.botAlive?'on':'')+'"></span><span>💻 Ana sunucu: <b>'+(S.botAlive?'çalışıyor':'kapalı')+'</b></span><span class="fr">'+(S.botAlive?'sinyaller oradan':'sinyaller telefondan')+'</span></div>'}catch(e){}return h}})();
 /* ================= v8.3 KÂĞIT ÜZERİNDE BOT =================
    Gerçek para yok, emir yok. Sunucu (/paper) karnedeki sinyalleri "bot alsaydı ne olurdu?" diye hesaplar:

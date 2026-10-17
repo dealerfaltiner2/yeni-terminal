@@ -191,6 +191,25 @@ async function page(b, opt) {
       await T(() => window.__bb()); await p.waitForTimeout(300);
       ok('Telegram geri tuşu röntgeni kapatıyor', await T(() => !document.getElementById('xray').classList.contains('on')));
       ok('Telegram mini uygulamasında sayfa hatası yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }
+    // v12.8 araştırma veri paketi: yalnız sahipte görünür; güncel mumlar toplanıp tek JSON dosyası olur
+    { const p = await b.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
+      await install(p, { proxy: true }); await p.addInitScript(() => { localStorage.setItem('tvproxy', JSON.stringify('wss://x.test/k')); localStorage.setItem('ownClaimed', '1'); localStorage.setItem('ownTok', JSON.stringify('sahipkodu')); });
+      await p.goto(FILE, { waitUntil: 'domcontentloaded', timeout: 20000 }); await p.waitForTimeout(2500);
+      const vp = await p.evaluate(async () => {
+        const asked = []; const of = window.fetch;
+        window.fetch = async (u, o) => { u = String(u); if (/\/bars\?/.test(u)) { asked.push(u); const s = decodeURIComponent(/s=([^&]+)/.exec(u)[1]).split(','); const data = {};
+            s.forEach(x => { data['BIST:' + x] = x === 'YOKK' ? { bars: [], err: 'yok' } : { bars: [[1790000000, 1, 2, 0.5, 1.5, 100], [1790003600, 1.5, 2, 1, 1.8, 120]] }; });
+            return new Response(JSON.stringify({ ok: true, data })); } return of(u, o); };
+        let blob = null; URL.createObjectURL = b2 => { blob = b2; return 'blob:x'; };
+        showTab('lab'); renderLab(); const card = !!document.querySelector('#labbody .vpk');
+        VP.grp = 'el'; VP.el = 'THYAO asels, YOKK'; VP.tf = '60'; VP.n = 1000; await vpRun();
+        const j = blob ? JSON.parse(await blob.text()) : null;
+        return { card, n: asked.length, keys: j && Object.keys(j.hisseler), bad: j && j.gelmeyen, tf: j && j.tf, msg: VP.msg.slice(0, 80) };
+      });
+      ok('Araştırma veri paketi: sahipte görünüyor, endeksler + seçilen hisseler tek dosyada, gelmeyen ayrıca yazılı', vp.card && vp.keys && vp.keys.join() === 'XU100,XU030,XBANK,XUSIN,THYAO,ASELS' && vp.bad.join() === 'YOKK' && vp.tf === '60' && /Hazır/.test(vp.msg), JSON.stringify(vp));
+      const vpU = await p.evaluate(() => { S.uye = true; return vpHtml() === ''; });
+      ok('Araştırma veri paketi üyede görünmüyor', vpU);
+      ok('veri paketi sayfasında hata yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }
     // v12.0 üye sürümü: sunucu 'uye' derse oturumsuz akış, hata yazısı yok, ana sayfada 'Üye sürümü', sinyal kartı yok
     { const p = await b.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
       await install(p, { proxy: true }); await p.addInitScript(() => { localStorage.setItem('tvproxy', JSON.stringify('wss://x.test/k')); localStorage.setItem('ownClaimed', '1'); });
