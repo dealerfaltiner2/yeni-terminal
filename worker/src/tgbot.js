@@ -11,9 +11,9 @@ export async function hookSecret(tok) {
   const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('pusula-hook|' + tok));
   return [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 48);
 }
-export const WELCOME = '🧭 <b>BIST Pusula\'ya hoş geldin</b>\n\n' +
-  'Borsa İstanbul için piyasa pusulası: endeksin yönü, önemli KAP haberleri, hisse röntgeni ve geçmiş sinyallerin karnesi tek ekranda.\n\n' +
-  'Aşağıdaki düğmeye bas, Pusula Telegram\'ın içinde açılır. Fiyatlar 15 dakika gecikmelidir.\n\n<i>Bilgi amaçlıdır, yatırım tavsiyesi değildir.</i>';
+export const WELCOME = '🧭 <b>BIST Pusula\'ya hoş geldin</b>   <i>tamamen ücretsiz</i>\n\n' +
+  'Borsa İstanbul için ücretsiz piyasa pusulası: endeksin yönü, önemli KAP haberleri, hisse röntgeni ve geçmiş sinyallerin karnesi tek ekranda.\n\n' +
+  'Ücret yok, kayıt yok. Aşağıdaki düğmeye bas, Pusula Telegram\'ın içinde açılır. Fiyatlar 15 dakika gecikmelidir.\n\n<i>Bilgi amaçlıdır, yatırım tavsiyesi değildir.</i>';
 export const welcomeKb = () => ({ inline_keyboard: [[{ text: '🧭 Pusula\'yı aç', web_app: { url: APP_URL } }]] });
 let lastAns = new Map();   // aynı kişiye 20 sn içinde ikinci yanıt yok (seri mesaja karşı)
 // v12.6: iki bot aynı adrese bağlı — yeni @BistPusulaBot (env.TG_APP_TOKEN, via 'app') ve eski sinyal botu (cfg.tgTok, via 'old'); imza başlığı hangisininse yanıt onunla
