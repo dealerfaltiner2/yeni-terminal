@@ -280,3 +280,10 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
   Önce sorulacaklar: hisse için kaç kademe (5 mi 25 mi), robottan HTTP isteği atılabiliyor mu, fiyat.
 - Sosyal medya: şimdilik yok (BIST'te manipülasyon riski). İleride "anormal ilgi uyarısı".
 - GitHub'da artık dal `v64-seans-sonrasi` kaldı (silme izni yoktu) — zararsız, main ile aynı.
+
+## 6r. 19.10 (Pazartesi) GÜNLÜK GÖZDEN GEÇİRME (endeks −%2,5)
+- Momentum BUGÜN 0 sinyal (Cuma −%2,9 sonrası dün ≥+%3 şartını geçen yok; dunguclu aynı pencerede çalıştı → motor 10:31'de canlıydı). sessiz/oglen yok.
+- Telegram'a gidenler (yaklaşık, +3/−1, 100.000 TL/işlem, kayma hariç): Algı güçlü+rv≥2 2 işlem 0/2 (−2), Fırsat A 4 işlem 1/3 (0), tavan6 7 işlem 2/5 (+1), seans içi geri alım 5 işlem 3 kazandı (+7,6; KGYO/GENIL/NETCD/MARBL/TABGD — tekrar filtresi bazılarını elemiş olabilir). Toplam ≈ +6,6 puan.
+- Tüm Algı 75 sinyal 4 kazandı, −51 puan. Piyasa değeri kırılımı (sig meta mc, 12–19.10, Algı 469): <5 Mr −0,18, 5–25 −0,24, 25–100 −0,25, 100+ −0,35/işlem → büyüklük filtresi Algı'yı kurtarmıyor. Fırsat B her dilimde −0,4…−0,65.
+- KAP kaynaklı sinyallerde (sunucu sigAdd) pe/pb/mc YOK → temel oran kırılımı KAP için yapılamıyor.
+- Sağlık: err yalnız 1 geçici KAP zaman aşımı (bakımda gürültü işaretli); cron 5-tamam, kap/sig yardımcıları canlı, sig_kill boş; motor bot_seen 18:59 (19:00 uyku); flow 96 satır 10:00–17:55; kaph bitti; uye 3; kanal pub_am/pub_pm gönderildi, pub_join 1.
