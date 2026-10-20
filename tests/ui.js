@@ -263,6 +263,11 @@ async function page(b, opt) {
       ok('Keşfet: hisseye dokununca röntgen açılıyor', kx);
       const km = await p.evaluate(() => { document.documentElement.classList.add('uye'); return getComputedStyle(document.querySelector('#tabs [data-t="kesif"]')).display; });
       ok('Keşfet: üyede alt çubukta görünüyor', km !== 'none', km);
+      const th = await p.evaluate(() => { const h = document.documentElement, a = h.className, bg = getComputedStyle(document.body).backgroundColor; temaSet('cam'); const b = h.classList.contains('mx'); temaSet('matrix'); return { a, bg, b, c: h.classList.contains('mx') && h.classList.contains('cam'), inf: (xrayOpen('THYAO'), true) }; });
+      await p.waitForTimeout(1500);
+      const xi = await p.evaluate(() => { const t = document.getElementById('xr_body').textContent; xrayClose(); return /Piyasa ve işlem bilgileri/.test(t) && /Önceki gün kapanış/.test(t) && /İşlem hacmi/.test(t); });
+      ok('Matrix görünümü varsayılan (siyah zemin), Cam/Matrix arası geçiş çalışıyor', /mx/.test(th.a) && th.bg === 'rgb(0, 0, 0)' && !th.b && th.c, JSON.stringify(th));
+      ok('Röntgen: piyasa ve işlem bilgileri tablosu', xi);
       await p.screenshot({ path: require('path').join(OUT, 'kesif.png') });
       ok('Keşfet/aralık sayfasında hata yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }
     // v11.9 misafirde Ayarlar gizli
