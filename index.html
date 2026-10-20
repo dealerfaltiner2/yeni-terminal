@@ -3317,7 +3317,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="13.2";window.APPV=APP_VER;
+  const APP_VER="13.3";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -6328,8 +6328,9 @@ html.mx .xpat div{background:var(--mxc)}
 html.mx .ktr select,html.mx .ktr input,html.mx .kts input,html.mx .ktp button,html.mx .ktb button,html.mx .kts button,html.mx .ktr .kx{background:var(--mxc)}
 html.mx .ktb button.go{background:var(--pir)}
 </style>
+<style>/* v13.3 alt çubuk: görünen düğme sayısı kadar eşit sütun (sahipte 7, üyede 5) */
+#tabs{grid-template-columns:none!important;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}#tabs button{width:auto!important;min-width:0}#tabs button .lbl{white-space:nowrap}</style>
 <style>html.noset [data-t="set"],html.noset #t-set{display:none!important}
-html.uye [data-t="op"],html.uye [data-t="algi"],html.uye [data-t="brief"],html.uye #t-op,html.uye #t-algi,html.uye #t-brief{display:none!important}
-html:not(.uye) #tabs [data-t="kesif"]{display:none!important}</style>
+html.uye [data-t="op"],html.uye [data-t="algi"],html.uye [data-t="brief"],html.uye #t-op,html.uye #t-algi,html.uye #t-brief{display:none!important}</style>
 </body>
 </html>

@@ -326,3 +326,4 @@ Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ"
   (3) KENDİ TARAYICIN Keşfet 'tar' (TAR_F alanları tarama verisinden, TAR_P 4 hazır şablon, LS 'ktar' kayıtlı taramalar en çok 12, 'ktarc' son koşullar).
   (4) Bilanço takvimi 30 gün, gün başlıklı (kesItems satırında grp). (5) Sermaye artırımı listesi: /kesif 'sa' (bedelsiz/bedelli/tahsisli, 30 gün, ayrı 6 saatlik önbellek meta 'kesif_sa', kap_t indeksi).
   Yapılamayanlar (Fatih'e söylendi): emir/hızlı al-sat, derinlik/kademe/aracı kurum dağılımı/takas (veri yok), sesli komut, sosyal medya.
+- v13.3 (20.10, Fatih: 'Keşfet alt menüde olmalı'): Keşfet alt çubukta HERKESTE (Şimdi|Fırsat|Algı|Karne|Keşfet|İzleme|Menü; üyede Fırsat/Algı gizli → 5). #tabs artık görünen düğme sayısı kadar eşit sütun (grid-auto-flow:column).

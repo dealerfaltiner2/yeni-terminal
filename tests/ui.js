@@ -249,7 +249,7 @@ async function page(b, opt) {
       ok('Ana sayfa: BIST 100 kartında gün/yıl aralığı ve 6 dönem getirisi', hm && hm.rows === 2 && hm.tiles === 6, JSON.stringify(hm));
       const kh = await p.evaluate(async () => { showTab('kesif'); await new Promise(r => setTimeout(r, 800)); renderKesif(); const el = document.getElementById('kesifbody');
         return { items: el.querySelectorAll('.kesi').length, quick: el.querySelectorAll('.kesq button').length, menu: !!document.querySelector('#more [data-t="kesif"]'), bar: getComputedStyle(document.querySelector('#tabs [data-t="kesif"]')).display }; });
-      ok('Keşfet: 3 hızlı liste + 16 hazır liste, menüde var, alt çubukta yalnız üyede', kh.items === 16 && kh.quick === 3 && kh.menu && kh.bar === 'none', JSON.stringify(kh));
+      ok('Keşfet: 3 hızlı liste + 16 hazır liste, menüde ve alt çubukta var', kh.items === 16 && kh.quick === 3 && kh.menu && kh.bar !== 'none', JSON.stringify(kh));
       const ku = await p.evaluate(() => { kesOpen('up'); const el = document.getElementById('kesifbody'), r = [...el.querySelectorAll('.krow')].map(x => parseFloat(x.querySelector('.ksv i').innerText.replace(/[^0-9,−-]/g, '').replace(',', '.').replace('−', '-')));
         return { n: r.length, sorted: r.every((v, i) => !i || r[i - 1] >= v) }; });
       ok('Keşfet: Yükselenler listesi dolu ve büyükten küçüğe', ku.n > 5 && ku.sorted, JSON.stringify(ku));
