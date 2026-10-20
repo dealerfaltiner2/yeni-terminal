@@ -9,7 +9,7 @@ const trMin = ms => { const d = new Date(ms + TRMS); return d.getUTCHours() * 60
 let ready = false;
 // 13.10 bakım: şema sürümü meta 'sig_schema'da. Eşitse tablo/indeks/ALTER adımları ATLANIR (her soğuk başlangıçta 14 başarısız ALTER
 // + 3 sorgu işlemci payını yiyordu → 13.10 akşamı karne ölçümü ve KAP adımı her dakika yarıda kesildi). Yeni sütun eklerken SÜRÜMÜ ARTIR.
-const SIG_SCHEMA = '11.5';
+const SIG_SCHEMA = '13.5';
 export async function sigEnsure(env) {
   if (ready) return;
   try { const s = await env.BT.prepare("SELECT v FROM meta WHERE k = 'sig_schema'").first(); if (s && s.v === SIG_SCHEMA) { ready = true; return; } } catch (e) {}
@@ -42,6 +42,9 @@ export async function sigEnsure(env) {
   // v11.5 (16.10, Fatih onayıyla) HABER ÖLÇÜMÜ: p30 = sinyalden önceki 30 dk'da hisse ne kadar hareket etmişti (% ; 10:30'dan önceyse günün açılışından),
   // hb = sinyalden önceki son KAP haberine kaç dakika (önem ≥1, devre kesici hariç, önceki iş günü 18:00'den bu yana; −1 = haber yok). Yalnız ölçüm.
   for (const c of ['p30 REAL', 'hb INTEGER']) { try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN ' + c).run(); } catch (e) {} }
+  // v13.5 (20.10, Fatih onayıyla, 3 Kasım Algı kararı için): o21 = +%2 hedef / −%1 stop yarışı (1 hedef, 2 stop, 0 ikisi de yok, −1 denendi/ölçülemedi);
+  // b2 = '+%2 görülünce stopu girişe çek': önce −%1 gelirse −1; +%2 sonra fiyat girişe dönerse 0; dönmezse gün sonu % (hiç +%2 görmezse −1 ya da gün sonu). Yalnız ölçüm.
+  for (const c of ['o21 INTEGER', 'b2 REAL']) { try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN ' + c).run(); } catch (e) {} }
   try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sig_schema', ?)").bind(SIG_SCHEMA).run(); } catch (e) {}
   ready = true;
 }
@@ -116,8 +119,15 @@ export function sigOutcome(bars, r, ib) {
   }
   const r2 = v => v == null || !isFinite(v) ? null : Math.round(v * 100) / 100;
   // v8.4 bot yarışı (yalnız AL): K = Momentum %1,5, diğerleri %1. Aynı mumda hedef ve stop → stop (temkinli).
-  let tx = null, pb = null, pbn = null, h1 = null;
+  let tx = null, pb = null, pbn = null, h1 = null, b2 = null;
   if (up) {
+    // v13.5 '+%2'de stopu girişe çek' (aynı mumda +%2 ve −%1 → stop; +%2'nin geldiği mumdan SONRAKİ mumlarda giriş fiyatı aranır)
+    { const t2 = px * 1.02, sl = px * 0.99; let hit = -1;
+      for (let i = 0; i < B.length; i++) { const b = B[i]; if (b[3] <= sl) { b2 = -1; break; } if (b[2] >= t2) { hit = i; break; } }
+      if (b2 == null) {
+        if (hit < 0) b2 = (B[B.length - 1][4] / px - 1) * 100;
+        else { for (let i = hit + 1; i < B.length; i++) { if (B[i][3] <= px) { b2 = 0; break; } } if (b2 == null) b2 = (B[B.length - 1][4] / px - 1) * 100; }
+      } }
     // v9.3 (09.10, Fatih: 'stop %1'i geçmesin'): hedefsiz çıkış — −%1 stop, gelmezse gün sonu kapanışı (bot yarışı 'momh')
     { const sl = px * 0.99; h1 = null; for (const b of B) { if (b[3] <= sl) { h1 = -1; break; } } if (h1 == null) h1 = (B[B.length - 1][4] / px - 1) * 100; }
     const K = (r.src === 'momentum' || r.src === 'sessiz' || r.src === 'dunguclu') ? 1.5 : 1;
@@ -139,7 +149,7 @@ export function sigOutcome(bars, r, ib) {
   // v11.5: p30 — sinyalden 30 dk önceki kapanış (aynı gün; yoksa günün ilk açılışı) → giriş fiyatına göre %
   let b30 = null, o0 = null; for (const b of bars) { if (b[0] < ds) continue; if (b[0] >= de || b[0] > s0) break; if (o0 == null) o0 = b[1]; if (b[0] <= s0 - 1800) b30 = b[4]; }
   const base30 = b30 != null ? b30 : o0, p30 = base30 > 0 ? (px / base30 - 1) * 100 : null;
-  return { p30: r2(p30), px: r2(px), pre: pc ? r2((px / pc - 1) * 100) : null, o10: race(1), o15: race(1.5), o31: race(3, 1), o41: race(4, 1), o315: race(3, 1.5), h1: r2(h1), r15: r2(at(15)), r60: r2(at(60)), rc: r2(sg * (B[B.length - 1][4] / px - 1) * 100), mfe: r2(mfe), mae: r2(mae), idx: r2(idx), tx: r2(tx), pb: r2(pb), pbn };
+  return { p30: r2(p30), px: r2(px), pre: pc ? r2((px / pc - 1) * 100) : null, o10: race(1), o15: race(1.5), o31: race(3, 1), o41: race(4, 1), o315: race(3, 1.5), o21: up ? race(2, 1) : null, b2: r2(b2), h1: r2(h1), r15: r2(at(15)), r60: r2(at(60)), rc: r2(sg * (B[B.length - 1][4] / px - 1) * 100), mfe: r2(mfe), mae: r2(mae), idx: r2(idx), tx: r2(tx), pb: r2(pb), pbn };
 }
 // Seans dışında her dakika: bekleyen sinyallerden 5 hisseyi ölç; hepsi bitince özeti gönder
 import { errAdd } from './err.js';
@@ -229,8 +239,8 @@ export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
     if (!bars.length && /resolve error/.test(st.err || '')) badSym.add(r.sym);   // v12.1: işlem görmeyen kod (fon, aracı kurum, banka) → KAP karneye yazmasın
     const o = bars.length ? sigOutcome(bars, r, ib) : { err: st.err };
     const adr = adrOf(toBars(gd['BIST:' + r.sym]), r.d);
-    await env.BT.prepare('UPDATE sig SET done = 1, p30 = ?, px = coalesce(px, ?), pre = ?, o10 = ?, o15 = ?, o31 = ?, o41 = ?, o315 = ?, h1 = ?, r15 = ?, r60 = ?, rc = ?, mfe = ?, mae = ?, idx = ?, adr = ?, tx = ?, pb = ?, pbn = ?, err = ? WHERE id = ?')
-      .bind(o.p30 ?? null, o.px ?? null, o.pre ?? null, o.o10 ?? null, o.o15 ?? null, o.o31 ?? null, o.o41 ?? null, o.o315 ?? null, o.h1 ?? null, o.r15 ?? null, o.r60 ?? null, o.rc ?? null, o.mfe ?? null, o.mae ?? null, o.idx ?? null, adr, o.tx ?? null, o.pb ?? null, o.pbn ?? null, o.err || null, r.id).run();
+    await env.BT.prepare('UPDATE sig SET done = 1, p30 = ?, px = coalesce(px, ?), pre = ?, o10 = ?, o15 = ?, o31 = ?, o41 = ?, o315 = ?, o21 = ?, b2 = ?, h1 = ?, r15 = ?, r60 = ?, rc = ?, mfe = ?, mae = ?, idx = ?, adr = ?, tx = ?, pb = ?, pbn = ?, err = ? WHERE id = ?')
+      .bind(o.p30 ?? null, o.px ?? null, o.pre ?? null, o.o10 ?? null, o.o15 ?? null, o.o31 ?? null, o.o41 ?? null, o.o315 ?? null, o.o21 ?? null, o.b2 ?? null, o.h1 ?? null, o.r15 ?? null, o.r60 ?? null, o.rc ?? null, o.mfe ?? null, o.mae ?? null, o.idx ?? null, adr, o.tx ?? null, o.pb ?? null, o.pbn ?? null, o.err || null, r.id).run();
     n++;
   }
   if (badSym.size) { try { await symBadAdd(env, [...badSym]); } catch (e) {} }
@@ -266,7 +276,12 @@ export async function sigBackfill(env, fetchBarsTV) {
   const bi = await env.BT.prepare("SELECT v FROM meta WHERE k = 'bf_idle'").first();
   if (bi && now - (+bi.v || 0) < 15 * 60e3) return null;
   const rows = (await env.BT.prepare("SELECT id, d, t, sym, dir, px, src FROM sig INDEXED BY sig_t WHERE t > ? AND done = 1 AND err IS NULL AND ((pbn IS NULL AND dir = 'AL' AND src IN ('firsat-A','firsat-B','algi','momentum','radar','sessiz','dunguclu')) OR (o31 IS NULL AND mfe >= 3 AND mae <= -1) OR (o41 IS NULL AND dir = 'AL' AND src = 'momentum') OR (o315 IS NULL AND dir = 'AL' AND src = 'momentum')) AND px > 0 LIMIT 80").bind(now - 6 * 86400e3).all()).results || [];
-  if (!rows.length) { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('bf_idle', ?)").bind(String(now)).run(); return null; }
+  if (!rows.length) {
+    // v13.5 (20.10, Fatih: 'ilk günden bu yana hesaplasın'): Algı'da +%2 çıkışları (o21/b2) — 29.09'dan bu yana; 4 günden eskiler 5 dakikalık mumla (1 dk geçmişi yetmez)
+    const ar = (await env.BT.prepare("SELECT id, d, t, sym, dir, px, src FROM sig INDEXED BY sig_t WHERE t > ? AND done = 1 AND err IS NULL AND src = 'algi' AND dir = 'AL' AND o21 IS NULL AND px > 0 ORDER BY t DESC LIMIT 60").bind(Date.parse('2026-09-29T00:00:00+03:00')).all()).results || [];
+    if (ar.length) return await algiB2Fill(env, fetchBarsTV, ar, now);
+    await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('bf_idle', ?)").bind(String(now)).run(); return null;
+  }
   const syms = [...new Set(rows.map(r => r.sym))].slice(0, 3), batch = rows.filter(r => syms.includes(r.sym));
   await env.BT.prepare('UPDATE sig SET pbn = coalesce(pbn, -1), o31 = coalesce(o31, -1), o41 = coalesce(o41, -1), o315 = coalesce(o315, -1) WHERE id IN (' + batch.map(() => '?').join(',') + ')').bind(...batch.map(r => r.id)).run();
   const today = trDay(now), oldest = batch.reduce((a, r) => (r.d < a ? r.d : a), today);
@@ -282,6 +297,22 @@ export async function sigBackfill(env, fetchBarsTV) {
     n++;
   }
   return { tamamlama: n, hisse: syms, kalan: rows.length - batch.length };
+}
+async function algiB2Fill(env, fetchBarsTV, ar, now) {
+  const syms = [...new Set(ar.map(r => r.sym))].slice(0, 3), batch = ar.filter(r => syms.includes(r.sym));
+  await env.BT.prepare('UPDATE sig SET o21 = coalesce(o21, -1) WHERE id IN (' + batch.map(() => '?').join(',') + ')').bind(...batch.map(r => r.id)).run();
+  const today = trDay(now), oldest = batch.reduce((a, r) => (r.d < a ? r.d : a), today);
+  const cd = Math.max(0, Math.round((Date.parse(today) - Date.parse(oldest)) / 86400e3));
+  const tf = cd <= 4 ? '1' : '5', cnt = tf === '1' ? Math.min(2500, 650 + 520 * cd) : Math.min(2500, 130 + 110 * cd);
+  const got = await fetchBarsTV(env, syms.map(s => 'BIST:' + s), tf, cnt, 15000);
+  let n = 0;
+  for (const r of batch) {
+    const st = got['BIST:' + r.sym], bars = st ? [...st.m.values()].filter(v => v && v.length >= 5).sort((a, b) => a[0] - b[0]) : [];
+    if (!bars.length) continue;
+    const o = sigOutcome(bars, r, null); if (o.err || o.o21 == null) continue;
+    await env.BT.prepare('UPDATE sig SET o21 = ?, b2 = ? WHERE id = ?').bind(o.o21, o.b2 ?? null, r.id).run(); n++;
+  }
+  return { algi_b2: n, hisse: syms, mum: tf + ' dk' };
 }
 // v10.2 (13.10, Fatih onayıyla) ERTESİ GÜN ÖLÇÜMÜ — "bugün çıkan sinyal yarın ne yaptı?" (araştırma ajanı ve 3 Kasım değerlendirmesi için; sinyal kuralı değişmez).
 // Yalnız ölçülecek sinyal ve tamamlama yokken, en çok 10 dakikada bir (meta 'nx_at'); bir çalışmada en çok 6 hisse, günlük mum (15 adet). Okuma: sig_d indeksiyle son 6 iş günü.

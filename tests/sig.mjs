@@ -92,6 +92,11 @@ ok('takılı kayıt kalmadı', !meta('sig_run') && db.prepare("SELECT count(*) n
   { const q = sigOutcome(mkb(i => i < 10 ? 100 : i < 50 ? 103.2 : 98.8), r, []); ok('+%4/−%1: +%3 sonra düşüş → +%4 kaybetti, hedefsiz −%1', q.o31 === 1 && q.o41 === 2 && q.h1 === -1, JSON.stringify([q.o31, q.o41, q.h1])); }
   { const q = sigOutcome(mkb(i => i < 10 ? 100 : i < 50 ? 98.8 : 103.1), r, []); ok('+%3/−%1,5: −%1,2 sonra +%3 → −%1 kaybetti ama −%1,5 kazandı', q.o31 === 2 && q.o315 === 1, JSON.stringify([q.o31, q.o315])); }
   { const q = sigOutcome(mkb(i => i < 10 ? 100 : 98.4), r, []); ok('+%3/−%1,5: −%1,6 → stop', q.o315 === 2, 'o315=' + q.o315); }
+  // v13.5 Algı +%2 çıkışları
+  { const q = sigOutcome(mkb(i => i < 10 ? 100 : i < 50 ? 102.3 : 101.5), r, []); ok('+%2 kâr al: +%2 önce → kazandı; stop girişe: geri dönmedi → gün sonu +1,5', q.o21 === 1 && q.b2 === 1.5, JSON.stringify([q.o21, q.b2])); }
+  { const q = sigOutcome(mkb(i => i < 10 ? 100 : i < 50 ? 102.3 : 99.5), r, []); ok('+%2 sonra girişin altına → stop girişe çekilmişti → 0', q.o21 === 1 && q.b2 === 0, JSON.stringify([q.o21, q.b2])); }
+  { const q = sigOutcome(mkb(i => i < 10 ? 100 : i < 50 ? 98.9 : 103), r, []); ok('önce −%1 → ikisi de stop (−1)', q.o21 === 2 && q.b2 === -1, JSON.stringify([q.o21, q.b2])); }
+  { const q = sigOutcome(mkb(i => i < 10 ? 100 : 101.2), r, []); ok('+%2 hiç gelmedi → sonuçsuz, gün sonu +1,2', q.o21 === 0 && q.b2 === 1.2, JSON.stringify([q.o21, q.b2])); }
   { const { momExits } = await import(path.join(W, 'sig.js'));
     const E = momExits([{ o31: 2, o315: 1, o15: 1, h1: -1, rc: 4 }, { o31: 0, o315: 0, o15: 0, h1: 0.5, rc: 0.5 }, { o31: -1, o315: null, o15: 2, h1: null, rc: null }]), g = k => E.find(x => x.k === k);
     ok('Momentum çıkış tablosu (100.000 TL): −1 / −1,5 / ±1,5 / hedefsiz', g('o31').tl === -500 && g('o31').n === 2 && g('o315').tl === 3500 && g('o15').tl === 500 && g('o15').n === 3 && g('h1').tl === -500 && g('h1').l === 1, JSON.stringify(E)); }

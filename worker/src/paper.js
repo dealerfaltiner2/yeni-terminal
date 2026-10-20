@@ -11,7 +11,7 @@ const trDay = ms => new Date(ms + TRMS).toISOString().slice(0, 10);
 export const PAPER_SRCS = ['firsat-A', 'firsat-B', 'algi', 'momentum', 'radar', 'sessiz', 'dunguclu', 'oglen'];
 const K15 = new Set(['momentum', 'sessiz', 'dunguclu']);
 // Sessiz kayıt botları: Telegram'daki yarış satırlarında gösterilmez (yalnız Karne ekranı)
-export const QUIET_BOTS = new Set(['sessiz', 'dunguclu', 'momgk', 'mom4', 'momh', 'mom315', 'oglen']);
+export const QUIET_BOTS = new Set(['sessiz', 'dunguclu', 'momgk', 'mom4', 'momh', 'mom315', 'oglen', 'alg31', 'alg21', 'alg2b']);
 const metaOf = r => { try { return (typeof r.meta === 'string' ? JSON.parse(r.meta) : r.meta) || {}; } catch (e) { return {}; } };   // ±%1,5 ile ölçülen kaynaklar
 export const PAPER_DEF = { amt: 20000, cap: 100000, max: 5, srcs: ['firsat-A', 'firsat-B', 'algi', 'momentum'], algiG: false, slip: 0.1, start: '2026-09-29' };
 const r2 = v => Math.round(v * 100) / 100;
@@ -91,6 +91,9 @@ export const BOTS = [
   { k: 'oglen', ad: '🕛 Öğle trend günü (deneme)', not: 'Sessiz kayıt: 12:00\'de BIST 100 ≥ +%0,8 iken açılıştan ≥ +%2 yükselmiş büyük hisseler (en çok 3). Stop −%1, hedef yok, gün sonu çık.' },
   { k: 'mom4', ad: '🧪 Momentum · +%4 hedef / −%1 stop', not: 'Yalnız Momentum. Hedef +%4, stop −%1; ikisi de gelmezse gün sonunda satar. (Geçmiş testte işlem başı +%0,60.)' },
   { k: 'mom315', ad: '🧪 Momentum · +%3 hedef / −%1,5 stop', not: 'Yalnız Momentum. Hedef +%3, stop −%1,5 (oynak hisseye biraz nefes); ikisi de gelmezse gün sonunda satar.' },
+  { k: 'alg31', ad: '⚡ Algı (Telegram\'a gidenler) · +%3 / −%1', not: 'Telegram\'a giden Algı sinyalleri (güçlü, hacim 2 katı). Bugünkü kural: hedef +%3, stop −%1; ikisi de gelmezse gün sonu.' },
+  { k: 'alg21', ad: '⚡ Algı · +%2\'de kâr al', not: 'Aynı Algı sinyalleri. Hedef +%2, stop −%1; ikisi de gelmezse gün sonu. 3 Kasım kararı için ölçülüyor.' },
+  { k: 'alg2b', ad: '⚡ Algı · +%2\'de stopu girişe çek', not: 'Aynı Algı sinyalleri. Stop −%1; +%2 görülünce stop girişe çekilir (geri gelirse sıfırla çık), gelmezse gün sonu. 3 Kasım kararı için ölçülüyor.' },
   { k: 'momh', ad: '🧪 Momentum · hedefsiz, −%1 stop', not: 'Yalnız Momentum. Hedef yok, stop −%1; stop gelmezse gün sonunda satar — kazananı koşturur. (Geçmiş testte işlem başı +%0,69.)' }
 ];
 export function botRace(rows, c, today) {
@@ -103,6 +106,7 @@ export function botRace(rows, c, today) {
       else if (b.k === 'momgk') { if (r.src !== 'momentum' || !(+metaOf(r).yc >= 0.7)) continue; }
       else if (b.k === 'mom4' || b.k === 'momh' || b.k === 'mom315') { if (r.src !== 'momentum') continue; }
       else if (b.k === 'oglen') { if (r.src !== 'oglen') continue; }
+      else if (b.k === 'alg31' || b.k === 'alg21' || b.k === 'alg2b') { const m = metaOf(r); if (r.src !== 'algi' || !(fcOf(r) >= 0.8) || !(+m.rv >= 2)) continue; }
       else if (!c.srcs.includes(r.src)) continue;
       if (r.src === 'algi' && (c.algiG || b.k === 'guclu') && !(fcOf(r) >= 0.8)) continue;
       if (b.k === 'saat') { const m = trM(r.t); if (m >= 660 && m < 780) continue; }
@@ -124,6 +128,15 @@ export function botRace(rows, c, today) {
       } else if (b.k === 'mom315') {
         if (r.o315 == null || r.o315 < 0 || (r.o315 === 0 && r.rc == null)) { eksik++; continue; }
         p = r.o315 === 1 ? 3 : r.o315 === 2 ? -1.5 : +r.rc; res = r.o315 === 1 ? 'hedef' : r.o315 === 2 ? 'stop' : 'süre';
+      } else if (b.k === 'alg31') {
+        if (r.o31 == null || r.o31 < 0 || (r.o31 === 0 && r.rc == null)) { eksik++; continue; }
+        p = r.o31 === 1 ? 3 : r.o31 === 2 ? -1 : +r.rc; res = r.o31 === 1 ? 'hedef' : r.o31 === 2 ? 'stop' : 'süre';
+      } else if (b.k === 'alg21') {
+        if (r.o21 == null || r.o21 < 0 || (r.o21 === 0 && r.rc == null)) { eksik++; continue; }
+        p = r.o21 === 1 ? 2 : r.o21 === 2 ? -1 : +r.rc; res = r.o21 === 1 ? 'hedef' : r.o21 === 2 ? 'stop' : 'süre';
+      } else if (b.k === 'alg2b') {
+        if (r.b2 == null) { eksik++; continue; }
+        p = +r.b2; res = p <= -1 + 1e-9 ? 'stop' : p > 0 ? 'hedef' : 'süre';
       } else if (b.k === 'momh' || b.k === 'oglen') {
         if (r.h1 == null) { eksik++; continue; }
         p = +r.h1; res = p <= -1 + 1e-9 ? 'stop' : p > 0 ? 'hedef' : 'süre';
@@ -156,7 +169,7 @@ export async function paperCalc(env, fresh) {
   const c = paperCfg(raw);
   let rows = [];
   try { await sigEnsure(env); } catch (e) {}
-  try { rows = (await env.BT.prepare("SELECT d, t, src, sym, dir, px, done, o10, o15, o41, o315, h1, rc, tx, pb, pbn, meta FROM sig WHERE d >= ? AND err IS NULL AND src IN ('firsat-A','firsat-B','algi','momentum','radar','sessiz','dunguclu','oglen')").bind(c.start).all()).results || []; } catch (e) { if (!/no such table/i.test(String(e && e.message))) throw e; }
+  try { rows = (await env.BT.prepare("SELECT d, t, src, sym, dir, px, done, o10, o15, o31, o41, o315, o21, b2, h1, rc, tx, pb, pbn, meta FROM sig WHERE d >= ? AND err IS NULL AND src IN ('firsat-A','firsat-B','algi','momentum','radar','sessiz','dunguclu','oglen')").bind(c.start).all()).results || []; } catch (e) { if (!/no such table/i.test(String(e && e.message))) throw e; }
   const v = { ok: true, at: Date.now(), ...paperSim(rows, c, trDay(Date.now())) };
   cache = { at: Date.now(), v };
   try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('paper_v', ?)").bind(JSON.stringify(v)).run(); } catch (e) {}
