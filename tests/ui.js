@@ -289,6 +289,11 @@ async function page(b, opt) {
       await p.evaluate(() => xrayOpen('THYAO')); await p.waitForTimeout(1800);
       const xt = await p.evaluate(() => { const t = document.getElementById('xr_body').textContent; xrayClose(); return { pv: /Destek ve direnç/.test(t) && /Direnç 1/.test(t) && /Fiyat şimdi/.test(t), pat: /Mum formasyonları/.test(t) }; });
       ok('Röntgen: pivot destek/direnç ve mum formasyonları bölümü', xt.pv && xt.pat, JSON.stringify(xt));
+      const mk = await p.evaluate(() => { const real = Date.now, at = iso => { Date.now = () => Date.parse(iso); const r = mktSt(); Date.now = real; return r; };
+        return { open: at('2026-10-20T12:00:00+03:00').k, eve: at('2026-10-20T18:35:00+03:00'), fri: at('2026-10-23T19:00:00+03:00').sub, pre: at('2026-10-21T09:30:00+03:00'), kap: at('2026-10-20T18:05:00+03:00').k,
+          top: (renderPx(), document.getElementById('px').innerHTML) }; });
+      ok('Piyasa durumu: seansta açık, akşam kapalı + açılışa kalan süre, Cuma akşamı Pazartesi, sabah seans öncesi, 18:00–18:10 kapanış seansı',
+        mk.open === 'open' && mk.eve.k === 'cl' && mk.eve.sub === 'Açılışa 15 sa 25 dk' && mk.fri === "Pazartesi 10:00'da açılır" && mk.pre.k === 'pre' && mk.pre.sub === 'Açılışa 30 dk' && mk.kap === 'kap', JSON.stringify(mk).slice(0, 300));
       await p.screenshot({ path: require('path').join(OUT, 'kesif.png') });
       ok('Keşfet/aralık sayfasında hata yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }
     // v11.9 misafirde Ayarlar gizli
