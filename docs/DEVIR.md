@@ -287,3 +287,12 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
 - Tüm Algı 75 sinyal 4 kazandı, −51 puan. Piyasa değeri kırılımı (sig meta mc, 12–19.10, Algı 469): <5 Mr −0,18, 5–25 −0,24, 25–100 −0,25, 100+ −0,35/işlem → büyüklük filtresi Algı'yı kurtarmıyor. Fırsat B her dilimde −0,4…−0,65.
 - KAP kaynaklı sinyallerde (sunucu sigAdd) pe/pb/mc YOK → temel oran kırılımı KAP için yapılamıyor.
 - Sağlık: err yalnız 1 geçici KAP zaman aşımı (bakımda gürültü işaretli); cron 5-tamam, kap/sig yardımcıları canlı, sig_kill boş; motor bot_seen 18:59 (19:00 uyku); flow 96 satır 10:00–17:55; kaph bitti; uye 3; kanal pub_am/pub_pm gönderildi, pub_join 1.
+
+## 6s. 20.10 (Salı) GÜNLÜK GÖZDEN GEÇİRME (endeks +%3,2)
+- Momentum 1 sinyal (EDATA, sonuçsuz, gün sonu −0,9 → ≈ −900 TL). Canlı 05–20.10: 48 sinyal 9/34, −6,6 puan.
+- Telegram'a gidenler (yaklaşık, +3/−1, ikisi yoksa gün sonu, kayma hariç): Algı güçlü+rv≥2 7 işlem 5/2 (+13), Fırsat B 12 (1/3, +4,6; endeks artı → Telegram'a gitti), Fırsat A 2 (+1,5), tavan6 6 işlem 1/5 (−2), seans içi geri alım 2 (TCKRC −1; KGYO tekrar).
+- Algı Telegram (güçlü+rv≥2) 29.09–20.10: 58 işlem 15/31, +15,7 puan → 'Algı'yı Telegram'dan çıkar' önerisi şimdilik geri çekildi.
+- tavan6 16–20.10: 23 işlem 5/18, −3 puan, ortalama gün sonu −2,4%; bugün endeks +%3,2 iken 4'ü −%6…−%10 kapandı (BIGTK, LIDER, PRZMA, MERCN).
+- Gece KAP (09:59 giriş, 29.09'dan 1.599): 258/824, ort. +0,17 puan, gün sonu −0,22; stop olup ≥+%1 kapanan 126 → 'açılışta bekle' fikri zayıf, önerilmedi.
+- Sağlık: err temiz (1 geçici KAP zaman aşımı, işaretli); üç zamanlayıcı canlı; karne 20:15'te hâlâ ölçüyordu (kalan 8, sigsum 21:00'e kadar); motor 18:59 (uyku); flow 96 satır/gün (~3,6 MB); kaph bitti.
+- v13.5 algiB2Fill henüz başlamadı (29.09–19.10 Algı'nın o21'i boş, ~740 satır): sigBackfill yalnız karne ölçümü bitince çalışır; yarın dolmuş olmalı — dolmadıysa bak.
