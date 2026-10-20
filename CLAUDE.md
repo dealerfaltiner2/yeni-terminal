@@ -320,3 +320,9 @@ Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ"
   Renkler artık değişkende: cam paletindeki sabit renkler → var(--pir) / var(--pir2) / rgb(var(--pirc) / a) / var(--bgk) / var(--sis), Barlow → var(--fnt)/var(--fntc). Matrix bunları html.mx'te ezer; index.html sonundaki 'v13.1 MATRIX GÖRÜNÜMÜ' bloğu.
   Geçiş: LS temaV<131 ise klasik olmayan herkes bir kez 'matrix'e geçer. Grafik: chartCols()/chartTheme() (siyah zemin, #4CC35A/#EF5350 mum), temaSet çağırır. Telegram üst/alt rengi Matrix'te #000.
   Röntgen: xrayInfo 'Piyasa ve işlem bilgileri' tablosu (Son, Fark, % Fark, işlem hacmi/adedi, açılış, önceki kapanış, tavan/taban, piyasa değeri, F/K, PD/DD, temettü verimi — tarama verisi). SVG özniteliğinde var() ÇALIŞMAZ → renkli SVG'de style="fill:…" kullan.
+- v13.2 (20.10, Fatih: Matriks Mobil IQ'yu incele, 'en faydalı olanları yap') YALNIZ BİLGİ, sinyal kuralı DEĞİŞMEDİ:
+  (1) Röntgende PİVOT (pivotOf/pivotHtml, klasik P, Direnç 1-3, Destek 1-3; seans içinde dünkü mum, 18:00 sonrası bugünkü mum 'yarın için'), fiyatın yeri satır olarak.
+  (2) MUM FORMASYONLARI (patAt/patOf, günlük mum; trend = son 5 gün ±%3): çekiç, ters çekiç, asılı adam, kayan yıldız, yutan boğa/ayı, delen mum, kara bulut, sabah/akşam yıldızı, üç beyaz asker/üç kara karga, doji (PAT_AC düz Türkçe açıklama). Röntgende son 5 gün; Keşfet 'patu'/'patd' = kesCross taramasında son mum (LS kcross artık pu/pd taşır).
+  (3) KENDİ TARAYICIN Keşfet 'tar' (TAR_F alanları tarama verisinden, TAR_P 4 hazır şablon, LS 'ktar' kayıtlı taramalar en çok 12, 'ktarc' son koşullar).
+  (4) Bilanço takvimi 30 gün, gün başlıklı (kesItems satırında grp). (5) Sermaye artırımı listesi: /kesif 'sa' (bedelsiz/bedelli/tahsisli, 30 gün, ayrı 6 saatlik önbellek meta 'kesif_sa', kap_t indeksi).
+  Yapılamayanlar (Fatih'e söylendi): emir/hızlı al-sat, derinlik/kademe/aracı kurum dağılımı/takas (veri yok), sesli komut, sosyal medya.

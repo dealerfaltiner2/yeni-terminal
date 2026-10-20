@@ -51,7 +51,7 @@ function install(page, opt = {}) {
     }
     if (u.includes('/kesif')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, at: Date.now(),
       is: [{ idx: 1, t: Date.now() - 864e5, sym: 'ASELS', sum: 'Yurt dışı sözleşme <b>x</b>', amt: 125e6, cur: 'USD' }, { idx: 2, t: Date.now() - 2 * 864e5, sym: 'ASELS', sum: 'İkinci sözleşme', amt: 50e6, cur: 'TRY' }, { idx: 3, t: Date.now() - 3600e3, sym: 'SASA', sum: 'Sipariş', amt: null, cur: null }],
-      geri: [{ sym: 'KONTR', n: 3, last: Date.now() - 3600e3 }], tavan: { d: '2026-10-19', L: [{ s: 'PGSUS', c: 97.35 }] } }) });
+      geri: [{ sym: 'KONTR', n: 3, last: Date.now() - 3600e3 }], sa: [{ idx: 9, t: Date.now() - 5 * 864e5, sym: 'EREGL', tip: 'bedelsiz', sum: 'Bedelsiz sermaye artırımı' }], tavan: { d: '2026-10-19', L: [{ s: 'PGSUS', c: 97.35 }] } }) });
     if (u.includes('/sigstats')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify(SIG) });
     if (u.includes('/kap')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify(KAP) });
     if (u.includes('scan')) {

@@ -33,6 +33,8 @@ ins('INSERT INTO kap (idx,t,syms,summ,tip,onem) VALUES (?,?,?,?,?,?)', 110, now 
 ins('INSERT INTO kap (idx,t,syms,summ,tip,onem) VALUES (?,?,?,?,?,?)', 210, now - D / 2, 'THYAO', 'Geri alım', 'geri', 2);
 ins('INSERT INTO kap (idx,t,syms,summ,tip,onem) VALUES (?,?,?,?,?,?)', 220, now - 9 * D, 'ESKIG', 'Geri alım', 'geri', 2);
 ins("INSERT INTO meta VALUES ('tavan_list', ?)", JSON.stringify({ d: '2026-10-19', L: [{ s: 'MCARD', c: 97.35 }] }));
+ins('INSERT INTO kap (idx,t,syms,summ,tip,onem) VALUES (?,?,?,?,?,?)', 300, now - 10 * D, 'EREGL', 'Bedelsiz sermaye artırımı SPK başvurusu', 'bedelsiz', 3);
+ins('INSERT INTO kap (idx,t,syms,summ,tip,onem) VALUES (?,?,?,?,?,?)', 301, now - 40 * D, 'ESKSA', 'eski bedelli', 'bedelli', 3);
 const r = await kesifData(env);
 const cg = r.is.find(x => x.sym === 'CGCAM');
 ok('yeni iş: detaylı haberde tutar var, aynı haber iki kez yok', cg && cg.amt === 111719627 && cg.cur === 'TRY' && r.is.filter(x => x.idx === 100).length === 1, JSON.stringify(r.is));
@@ -40,6 +42,7 @@ ok('yeni iş: bugünkü (detayı henüz toplanmamış) haber de listede, tutars�
 ok('yeni iş: 30 günden eski ve detayı bekleyen yok', !r.is.some(x => x.sym === 'ESKI' || x.sym === 'BEKLE'));
 ok('geri alım: 7 gün, hisse başına sayım, çoktan aza', r.geri.length === 2 && r.geri[0].sym === 'SASA' && r.geri[0].n === 3 && r.geri[1].sym === 'THYAO', JSON.stringify(r.geri));
 ok('dün tavan kapananlar', r.tavan && r.tavan.L[0].s === 'MCARD');
+ok('sermaye artırımı: son 30 gün, eskisi yok', r.sa.length === 1 && r.sa[0].sym === 'EREGL' && r.sa[0].tip === 'bedelsiz', JSON.stringify(r.sa));
 ins('INSERT INTO kap (idx,t,syms,summ,tip,onem) VALUES (?,?,?,?,?,?)', 230, now - 600e3, 'KONTR', 'Geri alım', 'geri', 2);
 const r2 = await kesifData(env);
 ok('30 dk ortak önbellek: yeni satır hemen görünmez', r2.at === r.at && !r2.geri.some(x => x.sym === 'KONTR'));

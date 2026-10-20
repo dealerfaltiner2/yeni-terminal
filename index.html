@@ -3317,7 +3317,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="13.1";window.APPV=APP_VER;
+  const APP_VER="13.2";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -5465,6 +5465,7 @@ function xrayRender(){const body=document.getElementById('xr_body');if(!body)ret
   (o?'<div class="xpx"><b class="'+pxFl('x:'+sym,o.close).trim()+'">'+nf(o.close)+'</b><i class="'+cls(o.change)+'">'+pct(o.change)+'</i></div>':'')+'</div>';
  if(XR.err)h+='<div class="xnote">'+htmlEsc(XR.err)+'</div>';
  try{if(typeof xrayRange==='function')h+=xrayRange(sym,o)}catch(e){}
+ try{if(typeof xrayTech==='function')h+=xrayTech(sym,o)}catch(e){}
  try{if(typeof xrayInfo==='function')h+=xrayInfo(sym,o)}catch(e){}
  if(a){const g=a.side==='AL'?a.grade:'C',W=xrayWhy(a,o),gOk=W.G.every(x=>x[0]);
   const K=window.KSTAT,ka=K&&K.src&&K.src['firsat-A'],kb=K&&K.src&&K.src['firsat-B'],kr=x=>x&&x.h+x.s?'%'+Math.round(x.h/(x.h+x.s)*100)+' ('+(x.h+x.s)+' sinyal)':'henüz veri yok';
@@ -5939,7 +5940,7 @@ function nIdxRng(){try{const x=(S.mkt||{}).XU100||{},s=nowSess();
 
 /* ---------- KEŞFET ---------- */
 const KES={l:'',data:null,at:0,busy:false,err:''};
-const KCR=(()=>{let v=null;try{v=LS.get('kcross',null)}catch(e){}return v&&v.d?{d:v.d,up:v.up||[],dn:v.dn||[]}:{d:'',up:[],dn:[]}})();KCR.busy=false;KCR.done=0;KCR.tot=0;
+const KCR=(()=>{let v=null;try{v=LS.get('kcross',null)}catch(e){}return v&&v.d&&v.pu?{d:v.d,up:v.up||[],dn:v.dn||[],pu:v.pu||[],pd:v.pd||[]}:{d:'',up:[],dn:[],pu:[],pd:[]}})();KCR.busy=false;KCR.done=0;KCR.tot=0;
 const KSV=p=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
 const KIC={up:'<path d="M4 17l6-6 4 4 6-7"/><path d="M15 8h5v5"/>',dn:'<path d="M4 7l6 6 4-4 6 7"/><path d="M15 16h5v-5"/>',vol:'<path d="M5 20v-8M10 20V6M15 20v-9M20 20V9"/>',
  gc:'<path d="M3 13h18" opacity=".5"/><path d="M3 19L20 5"/><path d="M14.5 5H20v5.5"/>',
@@ -5955,13 +5956,17 @@ const KES_L=[
  {k:'dc',t:'Son 1 ayda Death Cross veren hisseler',d:'50 günlük ortalaması 200 günlük ortalamasını aşağı kesenler.'},
  {k:'is',t:'Son 1 ayda yeni iş ilişkisi açıklayanlar',d:'Yeni iş, sipariş ve sözleşmeler; tutarın piyasa değerine oranıyla.'},
  {k:'geri',t:'Son 1 haftada geri alım yapanlar',d:'Kendi hissesini geri alan şirketler ve bildirim sayısı.'},
+ {k:'tar',t:'Kendi tarayıcın',d:'Koşulları sen seç: değişim, hacim, F/K, ortalamalar… Kaydet, tek dokunuşla yeniden tara.'},
+ {k:'patu',t:'Son mumda yükseliş formasyonu verenler',d:'Günlük grafikte çekiç, yutan boğa, sabah yıldızı gibi dönüş kalıpları (en büyük 100 hisse).'},
+ {k:'patd',t:'Son mumda düşüş formasyonu verenler',d:'Kayan yıldız, yutan ayı, akşam yıldızı gibi kalıplar.'},
+ {k:'sa',t:'Son 1 ayda sermaye artırımı haberleri',d:'Bedelsiz, bedelli ve tahsisli sermaye artırımı bildirimleri.'},
  {k:'trend',t:'Güçlü trenddeki hisseler',d:'Fiyat 20 günlük, 20 günlük de 200 günlük ortalamanın üstünde.'},
  {k:'hi52',t:'52 haftanın zirvesine yakın olanlar',d:'Son bir yılın en yüksek fiyatına %3\'ten yakın.'},
  {k:'lo52',t:'52 haftanın dibine yakın olanlar',d:'Son bir yılın en düşük fiyatına %3\'ten yakın.'},
  {k:'rv',t:'Bugün olağandışı hacim',d:'Hacmi son 10 günün ortalamasının en az 2 katı.'},
  {k:'tavan',t:'Dün tavan kapananlar',d:'Önceki seansı tavandan kapatan hisseler ve bugünkü durumu.'},
  {k:'div',t:'Temettü hak kullanımı yaklaşanlar',d:'Önümüzdeki 14 gün içinde.'},
- {k:'earn',t:'Bilançosu yaklaşanlar',d:'Önümüzdeki 7 gün içinde finansal sonuç açıklayacaklar.'},
+ {k:'earn',t:'Bilanço takvimi',d:'Önümüzdeki 30 gün içinde finansal sonuç açıklayacaklar, gün gün.'},
  {k:'ted',t:'Borsa tedbiri olanlar',d:'İşlem durdurma, Yakın İzleme Pazarı ve hak kullanımı duyuruları.'}];
 const KES_T={up:'En çok yükselenler',dn:'En çok düşenler',vol:'En yüksek işlem hacmi'};
 function kesLoad(force){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)){KES.err='Sunucu adresi yok.';return}
@@ -5976,12 +5981,12 @@ function crossOf(cs){cs=(cs||[]).filter(b=>b&&b.close>0);const n=cs.length;if(n<
  return null}
 async function kesCross(){if(KCR.busy||!tvBarsBase())return;
  const U=(S.uni||[]).filter(o=>o.close>0&&o.market_cap_basic>0).sort((a,b)=>b.market_cap_basic-a.market_cap_basic).slice(0,100).map(o=>o.name);if(!U.length)return;
- KCR.busy=true;KCR.done=0;KCR.tot=U.length;const up=[],dn=[];
+ KCR.busy=true;KCR.done=0;KCR.tot=U.length;const up=[],dn=[],pu=[],pd=[];
  try{for(let i=0;i<U.length;i+=16){const part=U.slice(i,i+16);
-  await Promise.all(part.map(s=>getBars(s,'1day',true).then(cs=>{DBAR[s]={cs,t:Date.now()};const r=crossOf(cs);if(r)(r.k>0?up:dn).push(Object.assign({s},r))}).catch(()=>{}).then(()=>{KCR.done++})));
+  await Promise.all(part.map(s=>getBars(s,'1day',true).then(cs=>{DBAR[s]={cs,t:Date.now()};const r=crossOf(cs);if(r)(r.k>0?up:dn).push(Object.assign({s},r));try{const P=patOf(cs,1)[0];if(P&&P.yon)(P.yon>0?pu:pd).push({s,ad:P.ad,d:P.d})}catch(e){}}).catch(()=>{}).then(()=>{KCR.done++})));
   if(S.tab==='kesif'&&KES.l)renderKesif()}}catch(e){}
- KCR.d=todayStr();KCR.up=up.sort((a,b)=>a.ago-b.ago);KCR.dn=dn.sort((a,b)=>a.ago-b.ago);KCR.busy=false;
- try{LS.set('kcross',{d:KCR.d,up:KCR.up,dn:KCR.dn})}catch(e){}if(S.tab==='kesif')renderKesif()}
+ KCR.d=todayStr();KCR.up=up.sort((a,b)=>a.ago-b.ago);KCR.dn=dn.sort((a,b)=>a.ago-b.ago);KCR.pu=pu;KCR.pd=pd;KCR.busy=false;
+ try{LS.set('kcross',{d:KCR.d,up:KCR.up,dn:KCR.dn,pu,pd})}catch(e){}if(S.tab==='kesif')renderKesif()}
 function kesTL(v){return v>=1e9?nf(v/1e9,2)+' milyar':v>=1e6?nf(v/1e6,1)+' milyon':nf(v,0)}
 function kesFx(c){const mk=S.mkt||{};return c==='TRY'?1:c==='USD'?(mk.USD&&mk.USD.c)||null:c==='EUR'?(mk.EUR&&mk.EUR.c)||null:null}
 function kesDate(ms){try{return new Date(ms).toLocaleDateString('tr-TR',{day:'numeric',month:'long',timeZone:'Europe/Istanbul'})}catch(e){return istD(ms)}}
@@ -6005,9 +6010,11 @@ function kesItems(k){const U=(S.uni||[]).filter(o=>o&&o.name&&o.close>0),V=o=>o.
     .map(o=>row(o,'Hacim normalin '+nf(o.relative_volume_10d_calc,1)+' katı · '+kesTL(V(o))+' TL'));
   case 'div':return U.map(o=>({o,d:+o.ex_dividend_date_upcoming>0?kesDays(o.ex_dividend_date_upcoming*1000):null})).filter(x=>x.d!=null&&x.d>=0&&x.d<=14).sort((a,b)=>a.d-b.d)
     .map(x=>row(x.o,'Hak kullanımı '+kesDate(x.o.ex_dividend_date_upcoming*1000)+' ('+kesGun(x.d)+')'));
-  case 'earn':return U.map(o=>({o,d:+o.earnings_release_next_date>0?kesDays(o.earnings_release_next_date*1000):null})).filter(x=>x.d!=null&&x.d>=0&&x.d<=7).sort((a,b)=>a.d-b.d)
-    .map(x=>row(x.o,'Bilanço '+kesDate(x.o.earnings_release_next_date*1000)+' ('+kesGun(x.d)+')'));
+  case 'earn':return U.map(o=>({o,d:+o.earnings_release_next_date>0?kesDays(o.earnings_release_next_date*1000):null})).filter(x=>x.d!=null&&x.d>=0&&x.d<=30).sort((a,b)=>a.d-b.d||(V(b.o)-V(a.o)))
+    .map(x=>Object.assign(row(x.o,ds(x.o)),{grp:kesDate(x.o.earnings_release_next_date*1000)+' · '+kesGun(x.d)}));
   case 'ted':return Object.keys((typeof TEDB!=="undefined"&&TEDB.map)||{}).filter(s=>tedbOf(s)).sort().map(s=>{const o=S.umap[s]||{name:s};return {s,sub:htmlEsc(tedbTxt(s).replace(/^Borsa tedbiri: /,'')),val:o.close>0?nf(o.close):'',chg:o.change}});
+  case 'patu':case 'patd':return (k==='patu'?KCR.pu:KCR.pd).map(x=>{const o=S.umap[x.s]||{name:x.s};return {s:x.s,sub:x.ad+' — '+String(PAT_AC[x.ad]||'').split(':')[0].toLocaleLowerCase('tr-TR'),val:o.close>0?nf(o.close):'',chg:o.change}});
+  case 'sa':return ((D&&D.sa)||[]).map(x=>{const o=S.umap[x.sym]||{name:x.sym};return {s:x.sym,sub:({bedelsiz:'Bedelsiz',bedelli:'Bedelli',tahsisli:'Tahsisli'}[x.tip]||'')+' · '+htmlEsc(x.sum)+' · '+kesDate(x.t),val:o.close>0?nf(o.close):'',chg:o.change}});
   case 'gc':case 'dc':return (k==='gc'?KCR.up:KCR.dn).map(x=>{const o=S.umap[x.s]||{name:x.s};return {s:x.s,sub:(x.ago===0?'Bugün':x.ago===1?'Dün':x.ago+' iş günü önce')+' kesti ('+kesDate(Date.parse(x.d+'T12:00:00+03:00'))+')',val:o.close>0?nf(o.close):'',chg:o.change}});
   case 'tavan':{const T=D&&D.tavan;if(!T||!T.L)return [];return T.L.map(x=>{const o=S.umap[x.s]||{name:x.s};return {s:x.s,sub:'Tavan kapanış '+nf(x.c)+(T.d?' · '+kesDate(Date.parse(T.d+'T12:00:00+03:00')):''),val:o.close>0?nf(o.close):'',chg:o.change}})}
   case 'geri':return ((D&&D.geri)||[]).map(g=>{const o=S.umap[g.sym]||{name:g.sym};return {s:g.sym,sub:g.n+' bildirim · son '+kesDate(g.last),val:o.close>0?nf(o.close):'',chg:o.change}});
@@ -6019,21 +6026,22 @@ function kesItems(k){const U=(S.uni||[]).filter(o=>o&&o.name&&o.close>0),V=o=>o.
      val:o.close>0?nf(o.close):'',chg:o.change}}).sort((a,b)=>(b.r!=null)-(a.r!=null)||(b.r||0)-(a.r||0)||b.t-a.t)}
  }
  return R}
-function kesCount(k){try{if((k==='gc'||k==='dc')&&KCR.d!==todayStr())return null;if(/^(is|geri|tavan)$/.test(k)&&!KES.data)return null;
+function kesCount(k){try{if(k==='tar')return null;if(/^(gc|dc|patu|patd)$/.test(k)&&KCR.d!==todayStr())return null;if(/^(is|geri|tavan|sa)$/.test(k)&&!KES.data)return null;
  if(k==='is'){const S2=new Set(((KES.data&&KES.data.is)||[]).map(x=>x.sym));return S2.size}return kesItems(k).length}catch(e){return null}}
-function kesOpen(k){KES.l=k;if((k==='gc'||k==='dc')&&KCR.d!==todayStr())kesCross();renderKesif();try{window.scrollTo(0,0);const t=document.getElementById('t-kesif');if(t)t.scrollTop=0}catch(e){}}
+function kesOpen(k){KES.l=k;if(/^(gc|dc|patu|patd)$/.test(k)&&KCR.d!==todayStr())kesCross();renderKesif();try{window.scrollTo(0,0);const t=document.getElementById('t-kesif');if(t)t.scrollTop=0}catch(e){}}
 function kesBack(){KES.l='';renderKesif()}
 function kesRow(r){return '<div class="krow" onclick="xrayOpen(\''+r.s+'\')">'+nAvatar(r.s)+'<div class="ksm"><b>'+htmlEsc(r.s)+'</b><small>'+(r.sub||'')+'</small></div>'+
  '<div class="ksv">'+(r.val?'<b>'+r.val+'</b>':'')+(r.chg!=null&&isFinite(r.chg)?'<i class="'+cls(r.chg)+'">'+pct(r.chg)+'</i>':'')+'</div></div>'}
 function kesListHtml(k){const L=KES_L.find(x=>x.k===k),t=L?L.t:KES_T[k]||'',d=L?L.d:'Hacmi 5 milyon TL\'nin üstündeki hisseler; ilk 30.';
  let h='<div class="kes"><button class="kesb" onclick="kesBack()">‹ Keşfet</button><div class="kesti"><b>'+t+'</b><p>'+d+'</p></div>';
- const needSrv=/^(is|geri|tavan)$/.test(k);
- if((k==='gc'||k==='dc')&&KCR.d!==todayStr()){const p=KCR.tot?Math.round(KCR.done/KCR.tot*100):0;
+ const needSrv=/^(is|geri|tavan|sa)$/.test(k);
+ if(k==='tar')return h+tarHtml()+'<div class="xnote sm">Tarama, uygulamanın anlık piyasa verisiyle yapılır. Sinyal değildir; yatırım tavsiyesi değildir.</div></div>';
+ if(/^(gc|dc|patu|patd)$/.test(k)&&KCR.d!==todayStr()){const p=KCR.tot?Math.round(KCR.done/KCR.tot*100):0;
   return h+(tvBarsBase()?'<div class="xnote">⏳ 100 hissenin günlük grafiği taranıyor… '+KCR.done+'/'+(KCR.tot||100)+'</div><div class="kprog"><i style="width:'+p+'%"></i></div>':'<div class="xnote">Sunucu bağlantısı yok.</div>')+'</div>'}
  if(needSrv&&!KES.data)return h+'<div class="xnote">'+(KES.err?htmlEsc(KES.err)+' <a onclick="kesLoad(true)">Yeniden dene</a>':'⏳ Liste yükleniyor…')+'</div></div>';
  if(!(S.uni||[]).length&&!needSrv)return h+'<div class="xnote">⏳ Piyasa verisi bekleniyor…</div></div>';
  const R=kesItems(k);
- h+=R.length?'<div class="klist">'+R.map(kesRow).join('')+'</div>':'<div class="xnote">Şu an bu listeye giren hisse yok.</div>';
+ let gp=null;h+=R.length?'<div class="klist">'+R.map(r=>{let x='';if(r.grp&&r.grp!==gp){gp=r.grp;x='<div class="kgh">'+r.grp+'</div>'}return x+kesRow(r)}).join('')+'</div>':'<div class="xnote">Şu an bu listeye giren hisse yok.</div>';
  return h+'<div class="xnote sm">Sinyal değildir; bilgi amaçlıdır. Hisseye dokununca röntgeni açılır. Yatırım tavsiyesi değildir.</div></div>'}
 function renderKesif(){const el=document.getElementById('kesifbody');if(!el)return;kesLoad(false);
  if(KES.l){el.innerHTML=kesListHtml(KES.l);return}
@@ -6210,6 +6218,115 @@ html.mx .pfc{fill:#111113}html.mx .pbz{stroke:rgba(255,255,255,.10)}html.mx .phb
 /* grafik ekranı */
 html.mx #t-chart,html.mx #chart,html.mx #chart2{background:#000}
 html.mx #tfbar{background:#000!important}
+</style>
+<script>
+/* ================= v13.2 (20.10, Fatih: Matriks Mobil IQ'dan 'en faydalı olanlar') — yalnız bilgi, sinyal kuralı DEĞİŞMEDİ =================
+   1) PİVOT (klasik): önceki seansın tepe/dip/kapanışından Pivot, Direnç 1-3, Destek 1-3 — röntgende, fiyatın yeri işaretli
+   2) MUM FORMASYONLARI (patOf): günlük mumlarda çekiç, asılı adam, kayan yıldız, ters çekiç, yutan boğa/ayı, delen mum, kara bulut, sabah/akşam yıldızı, üç beyaz asker / üç kara karga, doji
+      röntgende son 5 gün; Keşfet'te 'Son mumda yükseliş/düşüş formasyonu verenler' (Golden Cross taramasıyla aynı 100 hisse, ek istek yok)
+   3) KENDİ TARAYICIN (Keşfet → 'tar'): tarama verisindeki alanlarla koşul kur, kaydet (LS 'ktar')
+   4) Bilanço takvimi 30 güne çıktı, gün gün başlıklı; 5) Sermaye artırımı listesi (sunucu /kesif 'sa') */
+function pivotOf(cs){cs=(cs||[]).filter(b=>b&&b.close>0&&b.high>0&&b.low>0);if(cs.length<2)return null;const s=nowSess(),td=istD(Date.now()),last=cs[cs.length-1];
+ const dk=b=>typeof b.time==='string'?b.time:istD(b.time*1000);
+ // seans içinde (ya da açılıştan önce) bugünün mumu varsa dünkü mum esas alınır; seans bittiyse bugünkü mum → yarının seviyeleri
+ let b=last,next=false;if(dk(last)===td){if(s.open||s.pre||s.m<1080)b=cs[cs.length-2];else next=true}
+ const H=b.high,L=b.low,C=b.close,P=(H+L+C)/3;
+ return {next,d:dk(b),P,R1:2*P-L,S1:2*P-H,R2:P+(H-L),S2:P-(H-L),R3:H+2*(P-L),S3:L-2*(H-P)}}
+function pivotHtml(pv,cur){if(!pv)return '';const dg=pv.P>=1000?0:2,L=[['R3','Direnç 3'],['R2','Direnç 2'],['R1','Direnç 1'],['P','Pivot'],['S1','Destek 1'],['S2','Destek 2'],['S3','Destek 3']];
+ let h='',put=!(cur>0);L.forEach(([k,ad])=>{if(!put&&cur>=pv[k]){h+='<div class="pvc"><span>Fiyat şimdi</span><em>'+nf(cur,dg)+'</em></div>';put=true}
+  h+='<div class="'+(k==='P'?'pvp':k[0]==='R'?'pvr':'pvs')+'"><span>'+ad+'</span><em>'+nf(pv[k],dg)+'</em></div>'});
+ if(!put)h+='<div class="pvc"><span>Fiyat şimdi</span><em>'+nf(cur,dg)+'</em></div>';
+ return '<div class="dsub">Destek ve direnç (pivot)</div><div class="xinf pvt">'+h+'</div><div class="xnote sm">'+(pv.next?'Bugünkü seansa göre hesaplandı; yarın için geçerli.':'Önceki seansın en yüksek, en düşük ve kapanış fiyatından hesaplandı.')+' Klasik pivot; fiyat bu seviyelerde sık sık durur ya da döner.</div>'}
+const PAT_AC={'Çekiç':'Düşüşten sonra alt gölgesi uzun mum: aşağıda alıcı çıktı, dönüş işareti olabilir.','Ters çekiç':'Düşüşten sonra üst gölgesi uzun mum: alıcılar denemeye başladı, ertesi gün teyit beklenir.',
+ 'Asılı adam':'Yükselişten sonra alt gölgesi uzun mum: satış baskısı başlıyor olabilir.','Kayan yıldız':'Yükselişten sonra üst gölgesi uzun mum: yukarıda satıcı çıktı, düşüş uyarısı.',
+ 'Yutan boğa':'Yeşil mum önceki kırmızı mumun gövdesini tamamen yuttu: alıcılar kontrolü aldı.','Yutan ayı':'Kırmızı mum önceki yeşil mumun gövdesini tamamen yuttu: satıcılar kontrolü aldı.',
+ 'Delen mum':'Kırmızı mumdan sonra aşağıda açılıp gövdesinin yarısını geçerek kapandı: dönüş işareti.','Kara bulut':'Yeşil mumdan sonra yukarıda açılıp gövdesinin yarısının altına indi: düşüş uyarısı.',
+ 'Sabah yıldızı':'Büyük kırmızı, küçük gövdeli mum, ardından güçlü yeşil: üç mumluk dönüş kalıbı.','Akşam yıldızı':'Büyük yeşil, küçük gövdeli mum, ardından güçlü kırmızı: üç mumluk düşüş kalıbı.',
+ 'Üç beyaz asker':'Üst üste üç güçlü yeşil mum, her biri daha yüksek kapandı: alıcılar kararlı.','Üç kara karga':'Üst üste üç güçlü kırmızı mum, her biri daha düşük kapandı: satıcılar kararlı.',
+ 'Doji':'Açılış ve kapanış neredeyse aynı: alıcı ve satıcı dengede, kararsızlık.'};
+function patAt(cs,i){const b=cs[i],p=cs[i-1],q=cs[i-2];if(!b||!p)return null;const rng=b.high-b.low;if(!(rng>0))return null;
+ const bd=x=>Math.abs(x.close-x.open),g=x=>x.close>x.open,r=x=>x.close<x.open,body=bd(b),up=Math.max(b.open,b.close),dn=Math.min(b.open,b.close),us=b.high-up,ls=dn-b.low;
+ const tr=i>=6?(cs[i-1].close/cs[i-6].close-1)*100:0,down=tr<=-3,rise=tr>=3,big=x=>bd(x)>=0.55*(x.high-x.low)&&x.high>x.low;
+ if(q){if(r(q)&&big(q)&&bd(p)<=0.35*bd(q)&&g(b)&&big(b)&&b.close>(q.open+q.close)/2&&!rise)return 'Sabah yıldızı';
+  if(g(q)&&big(q)&&bd(p)<=0.35*bd(q)&&r(b)&&big(b)&&b.close<(q.open+q.close)/2&&!down)return 'Akşam yıldızı';
+  if(g(q)&&g(p)&&g(b)&&big(q)&&big(p)&&big(b)&&p.close>q.close&&b.close>p.close&&p.open>q.open&&b.open>p.open)return 'Üç beyaz asker';
+  if(r(q)&&r(p)&&r(b)&&big(q)&&big(p)&&big(b)&&p.close<q.close&&b.close<p.close&&p.open<q.open&&b.open<p.open)return 'Üç kara karga'}
+ if(r(p)&&g(b)&&b.open<=p.close&&b.close>=p.open&&body>bd(p)&&!rise)return 'Yutan boğa';
+ if(g(p)&&r(b)&&b.open>=p.close&&b.close<=p.open&&body>bd(p)&&!down)return 'Yutan ayı';
+ if(r(p)&&big(p)&&g(b)&&b.open<p.close&&b.close>(p.open+p.close)/2&&b.close<p.open)return 'Delen mum';
+ if(g(p)&&big(p)&&r(b)&&b.open>p.close&&b.close<(p.open+p.close)/2&&b.close>p.open)return 'Kara bulut';
+ const sm=Math.max(body*0.5,rng*0.1);
+ if(body>0.04*rng&&ls>=2*body&&us<=sm){if(down)return 'Çekiç';if(rise)return 'Asılı adam'}
+ if(body>0.04*rng&&us>=2*body&&ls<=sm){if(rise)return 'Kayan yıldız';if(down)return 'Ters çekiç'}
+ if(body<=0.1*rng)return 'Doji';return null}
+const PAT_YON={'Çekiç':1,'Ters çekiç':1,'Yutan boğa':1,'Delen mum':1,'Sabah yıldızı':1,'Üç beyaz asker':1,'Asılı adam':-1,'Kayan yıldız':-1,'Yutan ayı':-1,'Kara bulut':-1,'Akşam yıldızı':-1,'Üç kara karga':-1,'Doji':0};
+function patOf(cs,n){cs=(cs||[]).filter(b=>b&&b.close>0&&b.open>0&&b.high>0&&b.low>0);const out=[];for(let i=cs.length-1;i>=Math.max(1,cs.length-(n||5));i--){const ad=patAt(cs,i);
+ if(ad)out.push({ad,yon:PAT_YON[ad],d:typeof cs[i].time==='string'?cs[i].time:istD(cs[i].time*1000),ago:cs.length-1-i})}return out}
+function patHtml(L){const head='<div class="dsub">Mum formasyonları (son 5 gün)</div>';
+ if(!L.length)return head+'<div class="xnote sm">Son 5 günlük mumlarda belirgin bir formasyon yok.</div>';
+ return head+'<div class="xpat">'+L.map(x=>'<div class="'+(x.yon>0?'up':x.yon<0?'dn':'')+'"><b>'+x.ad+'</b><small>'+(x.ago===0?'Son mum':x.ago===1?'Bir önceki mum':x.ago+' mum önce')+' · '+kesDate(Date.parse(x.d+'T12:00:00+03:00'))+'</small><p>'+PAT_AC[x.ad]+'</p></div>').join('')+'</div>'+
+  '<div class="xnote sm">Formasyonlar tek başına sinyal değildir; hacim ve trendle birlikte değerlendir.</div>'}
+function xrayTech(sym,o){const c=DBAR[sym],cs=c&&c.cs;if(!cs)return '';let h='';
+ try{h+=pivotHtml(pivotOf(cs),o&&o.close>0?o.close:cs[cs.length-1].close)}catch(e){}
+ try{h+=patHtml(patOf(cs,5))}catch(e){}return h}
+
+/* ---------- KENDİ TARAYICIN ---------- */
+const TAR_F=[['change','Bugünkü değişim (%)',o=>o.change],['vol','İşlem hacmi (milyon TL)',o=>o.voltl>0?o.voltl/1e6:null],['rv','Hacim normalin kaç katı',o=>o.relative_volume_10d_calc],
+ ['pe','F/K',o=>o.price_earnings_ttm],['pb','PD/DD',o=>o.price_book_fundamental],['mc','Piyasa değeri (milyar TL)',o=>o.market_cap_basic>0?o.market_cap_basic/1e9:null],['px','Fiyat (TL)',o=>o.close],
+ ['hi','Yılın zirvesine uzaklık (%)',o=>o.price_52_week_high>0?(1-o.close/o.price_52_week_high)*100:null],['e20','20 günlük ortalamaya göre (%)',o=>o.EMA20>0?(o.close/o.EMA20-1)*100:null],
+ ['e200','200 günlük ortalamaya göre (%)',o=>o.EMA200>0?(o.close/o.EMA200-1)*100:null],['w','1 haftalık değişim (%)',o=>o['Perf.W']],['m','1 aylık değişim (%)',o=>o['Perf.1M']],['dy','Temettü verimi (%)',o=>o.dividends_yield_current]];
+const TAR_P=[{ad:'Hacim patlaması',c:[['rv','>=',2],['vol','>=',20],['change','>=',1]]},{ad:'Ucuz ve trendde',c:[['pe','>=',1],['pe','<=',10],['e200','>=',0],['vol','>=',10]]},
+ {ad:'Zirveyi zorlayanlar',c:[['hi','<=',2],['vol','>=',20],['change','>=',0]]},{ad:'Yüksek temettü',c:[['dy','>=',5],['vol','>=',5]]}];
+const KT={c:(()=>{try{const v=LS.get('ktarc',null);return Array.isArray(v)&&v.length?v:null}catch(e){return null}})()||TAR_P[0].c.map(x=>x.slice()),run:false,
+ saved:(()=>{try{const v=LS.get('ktar',[]);return Array.isArray(v)?v:[]}catch(e){return []}})()};
+function tarRead(){const el=document.getElementById('kesifbody');if(!el)return;const R=[...el.querySelectorAll('.ktr')];if(!R.length)return;
+ KT.c=R.map(r=>[r.querySelector('.kf').value,r.querySelector('.ko').value,parseFloat(String(r.querySelector('.kvv').value).replace(',','.'))]).filter(x=>isFinite(x[2]));try{LS.set('ktarc',KT.c)}catch(e){}}
+function tarAdd(){tarRead();KT.c.push(['change','>=',0]);KT.run=false;renderKesif()}
+function tarDel(i){tarRead();KT.c.splice(i,1);KT.run=false;renderKesif()}
+function tarRun(){tarRead();KT.run=true;renderKesif()}
+function tarLoad(i,pre){const x=pre?TAR_P[i]:KT.saved[i];if(!x)return;KT.c=x.c.map(y=>y.slice());KT.run=true;try{LS.set('ktarc',KT.c)}catch(e){}renderKesif()}
+function tarSave(){tarRead();const n=document.getElementById('ktname'),ad=String(n&&n.value||'').trim().slice(0,30);if(!ad||!KT.c.length)return;
+ KT.saved=KT.saved.filter(x=>x.ad!==ad);KT.saved.unshift({ad,c:KT.c.map(y=>y.slice())});KT.saved=KT.saved.slice(0,12);try{LS.set('ktar',KT.saved)}catch(e){}renderKesif()}
+function tarRm(i){KT.saved.splice(i,1);try{LS.set('ktar',KT.saved)}catch(e){}renderKesif()}
+const TAR_S={vol:x=>'hacim '+nf(x,x>=100?0:1)+' Mn TL',rv:x=>'hacim '+nf(x,1)+' kat',pe:x=>'F/K '+nf(x,1),pb:x=>'PD/DD '+nf(x,2),mc:x=>'değer '+nf(x,x>=100?0:1)+' Mr TL',px:x=>nf(x)+' TL',
+ hi:x=>'zirveye %'+nf(x,1),e20:x=>'20 günlüğün %'+nf(Math.abs(x),1)+(x>=0?' üstünde':' altında'),e200:x=>'200 günlüğün %'+nf(Math.abs(x),1)+(x>=0?' üstünde':' altında'),w:x=>'1 hafta '+pct(x),m:x=>'1 ay '+pct(x),dy:x=>'temettü %'+nf(x,1)};
+function tarFmt(k,x){try{return TAR_S[k]?TAR_S[k](x):nf(x,1)}catch(e){return ''}}
+function tarItems(){const F={};TAR_F.forEach(f=>F[f[0]]=f);const C=KT.c.filter(c=>F[c[0]]);
+ return (S.uni||[]).filter(o=>o&&o.name&&o.close>0&&C.every(([k,op,v])=>{const x=F[k][2](o);return x!=null&&isFinite(x)&&(op==='>='?x>=v:x<=v)}))
+  .sort((a,b)=>(b.change||0)-(a.change||0)).slice(0,80)
+  .map(o=>({s:o.name,sub:C.filter(c=>c[0]!=='change').slice(0,3).map(([k])=>tarFmt(k,F[k][2](o))).join(' · ')||htmlEsc(String(o.description||'').slice(0,30)),val:nf(o.close),chg:o.change}))}
+function tarHtml(){const opt=sel=>TAR_F.map(f=>'<option value="'+f[0]+'"'+(f[0]===sel?' selected':'')+'>'+f[1]+'</option>').join('');
+ let h='<div class="ktar"><div class="ktp">'+TAR_P.map((p,i)=>'<button onclick="tarLoad('+i+',1)">'+p.ad+'</button>').join('')+KT.saved.map((p,i)=>'<button class="sv" onclick="tarLoad('+i+')">⭐ '+htmlEsc(p.ad)+'<i onclick="event.stopPropagation();tarRm('+i+')">✕</i></button>').join('')+'</div>';
+ h+=KT.c.map((c,i)=>'<div class="ktr"><select class="kf">'+opt(c[0])+'</select><select class="ko"><option value=">="'+(c[1]==='>='?' selected':'')+'>en az</option><option value="<="'+(c[1]==='<='?' selected':'')+'>en çok</option></select>'+
+  '<input class="kvv" inputmode="decimal" value="'+String(c[2]).replace('.',',')+'"><button class="kx" onclick="tarDel('+i+')" aria-label="Sil">✕</button></div>').join('');
+ h+='<div class="ktb"><button onclick="tarAdd()">+ Koşul ekle</button><button class="go" onclick="tarRun()">Tara</button></div>';
+ h+='<div class="kts"><input id="ktname" placeholder="Bu taramaya ad ver"><button onclick="tarSave()">Kaydet</button></div></div>';
+ if(KT.run){const R=tarItems();h+='<div class="kesh2">'+R.length+(R.length>=80?'+':'')+' hisse bulundu</div>'+(R.length?'<div class="klist">'+R.map(kesRow).join('')+'</div>':'<div class="xnote">Bu koşullara uyan hisse yok; koşulları gevşet.</div>')}
+ return h}
+</script>
+<style>
+.pvt .pvr em{color:var(--dn,#EF5350)}.pvt .pvs em{color:var(--up,#4CC35A)}.pvt .pvp span,.pvt .pvp em{color:var(--txt,#fff);font-weight:700}
+.pvt .pvc{background:rgba(255,255,255,.06)}.pvt .pvc span{color:var(--pir2,#FF8A3D);font-weight:700}.pvt .pvc em{color:var(--pir2,#FF8A3D);font-weight:700}
+.xpat{display:flex;flex-direction:column;gap:8px;margin:6px 0 6px}
+.xpat div{padding:11px 13px;border-radius:14px;background:rgba(255,255,255,.04);border-left:3px solid var(--sis,#8E8E93)}
+.xpat div.up{border-left-color:var(--up,#4CC35A)}.xpat div.dn{border-left-color:var(--dn,#EF5350)}
+.xpat b{font-size:15px;color:var(--txt,#fff)}.xpat div.up b{color:var(--up,#4CC35A)}.xpat div.dn b{color:var(--dn,#EF5350)}
+.xpat small{display:block;font-size:12px;color:var(--dim,#8E8E93);margin-top:1px}.xpat p{margin:5px 0 0;font-size:13px;line-height:1.4;color:var(--txt2,#E5E5EA)}
+html.mx .xpat div{background:var(--mxc)}
+.ktar{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.ktp{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:4px}
+.ktp button{padding:8px 12px;border-radius:9px;border:0;background:rgba(255,255,255,.07);color:var(--txt,#fff);font:inherit;font-size:13px;font-weight:600}
+.ktp button.sv{background:rgb(var(--pirc,255 106 0) / .15)}.ktp button i{font-style:normal;margin-left:8px;color:var(--dim)}
+.ktr{display:grid;grid-template-columns:minmax(0,1fr) 72px 70px 34px;gap:6px}
+.ktr select,.ktr input,.kts input{min-width:0;padding:10px 8px;border-radius:9px;border:0;background:rgba(255,255,255,.07);color:var(--txt,#fff);font:inherit;font-size:13.5px}
+.ktr .kx{border:0;border-radius:9px;background:rgba(255,255,255,.05);color:var(--dim);font-size:14px}
+.ktb{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ktb button,.kts button{padding:11px;border-radius:10px;border:0;background:rgba(255,255,255,.07);color:var(--txt,#fff);font:inherit;font-weight:700}
+.ktb button.go{background:var(--pir,#FF6A00);color:#fff}
+.kts{display:grid;grid-template-columns:minmax(0,1fr) 90px;gap:8px}
+.kesh2{font-size:15px;font-weight:700;margin:10px 2px 4px;color:var(--txt,#fff)}
+.kgh{font-size:13px;font-weight:700;color:var(--pir2,#FF8A3D);padding:12px 2px 4px;border-bottom:1px solid var(--line,rgba(255,255,255,.08))}
+html.mx .ktr select,html.mx .ktr input,html.mx .kts input,html.mx .ktp button,html.mx .ktb button,html.mx .kts button,html.mx .ktr .kx{background:var(--mxc)}
+html.mx .ktb button.go{background:var(--pir)}
 </style>
 <style>html.noset [data-t="set"],html.noset #t-set{display:none!important}
 html.uye [data-t="op"],html.uye [data-t="algi"],html.uye [data-t="brief"],html.uye #t-op,html.uye #t-algi,html.uye #t-brief{display:none!important}

@@ -249,7 +249,7 @@ async function page(b, opt) {
       ok('Ana sayfa: BIST 100 kartında gün/yıl aralığı ve 6 dönem getirisi', hm && hm.rows === 2 && hm.tiles === 6, JSON.stringify(hm));
       const kh = await p.evaluate(async () => { showTab('kesif'); await new Promise(r => setTimeout(r, 800)); renderKesif(); const el = document.getElementById('kesifbody');
         return { items: el.querySelectorAll('.kesi').length, quick: el.querySelectorAll('.kesq button').length, menu: !!document.querySelector('#more [data-t="kesif"]'), bar: getComputedStyle(document.querySelector('#tabs [data-t="kesif"]')).display }; });
-      ok('Keşfet: 3 hızlı liste + 12 hazır liste, menüde var, alt çubukta yalnız üyede', kh.items === 12 && kh.quick === 3 && kh.menu && kh.bar === 'none', JSON.stringify(kh));
+      ok('Keşfet: 3 hızlı liste + 16 hazır liste, menüde var, alt çubukta yalnız üyede', kh.items === 16 && kh.quick === 3 && kh.menu && kh.bar === 'none', JSON.stringify(kh));
       const ku = await p.evaluate(() => { kesOpen('up'); const el = document.getElementById('kesifbody'), r = [...el.querySelectorAll('.krow')].map(x => parseFloat(x.querySelector('.ksv i').innerText.replace(/[^0-9,−-]/g, '').replace(',', '.').replace('−', '-')));
         return { n: r.length, sorted: r.every((v, i) => !i || r[i - 1] >= v) }; });
       ok('Keşfet: Yükselenler listesi dolu ve büyükten küçüğe', ku.n > 5 && ku.sorted, JSON.stringify(ku));
@@ -268,6 +268,27 @@ async function page(b, opt) {
       const xi = await p.evaluate(() => { const t = document.getElementById('xr_body').textContent; xrayClose(); return /Piyasa ve işlem bilgileri/.test(t) && /Önceki gün kapanış/.test(t) && /İşlem hacmi/.test(t); });
       ok('Matrix görünümü varsayılan (siyah zemin), Cam/Matrix arası geçiş çalışıyor', /mx/.test(th.a) && th.bg === 'rgb(0, 0, 0)' && !th.b && th.c, JSON.stringify(th));
       ok('Röntgen: piyasa ve işlem bilgileri tablosu', xi);
+      const v2 = await p.evaluate(() => { const D = (o, h, l, c, i) => ({ time: istD(Date.now() - (10 - i) * 864e5), open: o, high: h, low: l, close: c, volume: 1 });
+        // düşüş trendi + yutan boğa
+        const cs1 = [D(110, 111, 108, 109, 0), D(109, 110, 106, 107, 1), D(107, 108, 104, 105, 2), D(105, 106, 102, 103, 3), D(103, 104, 100, 101, 4), D(101, 102, 98, 99, 5), D(99, 100, 96, 97, 6), D(97.5, 98, 95, 95.5, 7), D(95, 99, 94.5, 98.5, 8)];
+        const p1 = patOf(cs1, 1)[0];
+        // yükseliş trendi + kayan yıldız
+        const cs2 = [100, 102, 104, 106, 108, 110, 112, 114].map((c, i) => D(c - 1, c + 0.5, c - 1.5, c, i)); cs2.push(D(115, 119, 114.6, 115.4, 8));
+        const p2 = patOf(cs2, 1)[0];
+        const pv = pivotOf([{ time: '2026-01-01', open: 5, high: 6, low: 4, close: 5, volume: 1 }, { time: '2026-01-02', open: 10, high: 12, low: 9, close: 11, volume: 1 }]);
+        KT.c = [['change', '>=', 0], ['vol', '>=', 5]]; KT.run = true; const items = tarItems(); const okT = items.length > 0 && items.every(r => { const o = S.umap[r.s]; return o.change >= 0 && o.voltl >= 5e6; });
+        kesOpen('tar'); const tarUI = document.querySelectorAll('#kesifbody .ktr').length === 2 && /hisse bulundu/.test(document.getElementById('kesifbody').textContent);
+        kesOpen('sa'); const sa = /EREGL/.test(document.getElementById('kesifbody').textContent) && /Bedelsiz/.test(document.getElementById('kesifbody').textContent);
+        const o = S.umap.ASELS; o.earnings_release_next_date = Math.floor((Date.now() + 5 * 864e5) / 1000); kesOpen('earn'); const earn = document.querySelectorAll('#kesifbody .kgh').length >= 1;
+        kesBack();
+        return { p1: p1 && p1.ad, p2: p2 && p2.ad, pv: pv && [pv.P, pv.R1, pv.S1].map(x => Math.round(x * 100) / 100).join(), okT, tarUI, sa, earn }; });
+      ok('Mum formasyonu: düşüşte yutan boğa, yükselişte kayan yıldız bulunuyor', v2.p1 === 'Yutan boğa' && v2.p2 === 'Kayan yıldız', JSON.stringify(v2));
+      ok('Pivot hesabı doğru (P, Direnç 1, Destek 1)', v2.pv === '10.67,12.33,9.33', v2.pv);
+      ok('Kendi tarayıcın: koşullara uyanları buluyor, ekranda koşul satırları var', v2.okT && v2.tarUI, JSON.stringify(v2));
+      ok('Keşfet: sermaye artırımı listesi ve gün gün bilanço takvimi', v2.sa && v2.earn, JSON.stringify(v2));
+      await p.evaluate(() => xrayOpen('THYAO')); await p.waitForTimeout(1800);
+      const xt = await p.evaluate(() => { const t = document.getElementById('xr_body').textContent; xrayClose(); return { pv: /Destek ve direnç/.test(t) && /Direnç 1/.test(t) && /Fiyat şimdi/.test(t), pat: /Mum formasyonları/.test(t) }; });
+      ok('Röntgen: pivot destek/direnç ve mum formasyonları bölümü', xt.pv && xt.pat, JSON.stringify(xt));
       await p.screenshot({ path: require('path').join(OUT, 'kesif.png') });
       ok('Keşfet/aralık sayfasında hata yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }
     // v11.9 misafirde Ayarlar gizli

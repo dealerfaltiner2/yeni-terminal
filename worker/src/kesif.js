@@ -61,6 +61,17 @@ export async function kesifData(env, force) {
   out.is.sort((a, b) => b.t - a.t);
   // 3) dün tavan kapananlar (tavan.js tavanScan → meta 'tavan_list')
   try { const m = await env.BT.prepare("SELECT v FROM meta WHERE k = 'tavan_list'").first(); if (m) out.tavan = JSON.parse(m.v); } catch (e) {}
+  // 4) v13.2 sermaye artırımı (bedelsiz / bedelli / tahsisli, son 30 gün) — 30 günlük kap taraması pahalı (~12 bin satır) → ayrı 6 saatlik önbellek meta 'kesif_sa'
+  try {
+    let sa = null; const m = await env.BT.prepare("SELECT v FROM meta WHERE k = 'kesif_sa'").first();
+    if (m) { try { const v = JSON.parse(m.v); if (now - v.at < 6 * 3600e3) sa = v.L; } catch (e) {} }
+    if (!sa) {
+      const rs = (await env.BT.prepare("SELECT idx, t, syms, summ, tip FROM kap INDEXED BY kap_t WHERE t >= ? AND tip IN ('bedelsiz', 'bedelli', 'tahsisli') ORDER BY t DESC LIMIT 200").bind(now - 30 * 864e5).all()).results || [];
+      sa = rs.map(r => ({ idx: r.idx, t: r.t, sym: String(r.syms || '').split(',')[0], tip: r.tip, sum: String(r.summ || '').slice(0, 120) })).filter(x => x.sym);
+      await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kesif_sa', ?)").bind(JSON.stringify({ at: now, L: sa })).run();
+    }
+    out.sa = sa;
+  } catch (e) { out.sa = []; }
   try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kesif_v', ?)").bind(JSON.stringify(out)).run(); } catch (e) {}
   return out;
 }
