@@ -41,6 +41,17 @@ function install(page, opt = {}) {
     if (u.includes('/tedbir')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, map: {} }) });
     if (u.includes('/yorum')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, list: [{ t: Date.now() - 600000, slot: 'acilis', txt: 'Endeks **yatay** başladı.\n• Bankalar güçlü\n• <img src=x onerror=window.__XSS=1> deneme' }, { t: Date.now() - 86400000, slot: 'kapanis', txt: 'Dünkü yorum.' }] }) });
     if (u.includes('/paper')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, cfg: { amt: 20000, cap: 100000, max: 5, srcs: ['algi', 'momentum'], algiG: false, slip: 0.1, start: '2026-09-29' }, tot: { n: 3, w: 2, l: 1, z: 0, kar: 2, pl: 140, pct: 0.14, dd: -220, gun: 2, iyi: 1 }, days: [{ d: '2026-10-02', n: 2, w: 2, l: 0, z: 0, pl: 360 }, { d: '2026-10-01', n: 1, w: 0, l: 1, z: 0, pl: -220 }], trades: [{ d: '2026-10-02', t: 1790928401388, src: 'algi', sym: 'THYAO', px: 287.75, lot: 69, res: 'hedef', pct: 0.9, pl: 179 }], open: [{ t: Date.now(), src: 'momentum', sym: 'ASELS', px: 100, lot: 200, K: 1.5 }], pend: 0, bySrc: { algi: { n: 2, w: 2, l: 0, z: 0, pl: 360 }, radar: { n: 4, w: 1, l: 3, z: 0, pl: -500 } }, bots: [{ k: 'guclu', ad: 'Algı\'da yalnız güçlüler', not: 'x', n: 2, w: 2, l: 0, pl: 360, hafta: 360, bugun: 0, gun: 1, iyi: 1, eksik: 0 }, { k: 'mevcut', ad: 'Mevcut kurallar', not: 'y', n: 3, w: 2, l: 1, pl: 140, hafta: 140, bugun: 0, gun: 2, iyi: 1, eksik: 0 }, { k: 'geri', ad: 'Geri çekilmede gir', not: 'z', n: 0, w: 0, l: 0, pl: 0, hafta: 0, bugun: 0, gun: 0, iyi: 0, eksik: 3 }] }) });
+    // v13.0: günlük mumlar (Golden Cross: THYAO, Death Cross: ASELS, diğerleri düzgün yükseliş) ve Keşfet sunucu listeleri
+    if (/\/bars\?/.test(u) && /[?&]tf=1D/.test(u)) {
+      const syms = decodeURIComponent(/[?&]s=([^&]+)/.exec(u)[1]).split(','), data = {}, t0 = Math.floor(Date.now() / 1000) - 299 * 86400;
+      syms.forEach(x => { const k = x.includes(':') ? x : 'BIST:' + x, nm = k.split(':')[1];
+        data[k] = { bars: Array.from({ length: 300 }, (_, i) => { let c = nm === 'THYAO' ? (i < 250 ? 150 - 50 * i / 250 : 100 + 60 * (i - 250) / 49) : nm === 'ASELS' ? (i < 250 ? 100 + 50 * i / 250 : 150 - 60 * (i - 250) / 49) : 50 + i * 0.2;
+          if (nm === 'XU100') c = 9000 + i * 6; return [t0 + i * 86400, c, c * 1.01, c * 0.99, c, 1e6 + i * 1000]; }) }; });
+      return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, data }) });
+    }
+    if (u.includes('/kesif')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, at: Date.now(),
+      is: [{ idx: 1, t: Date.now() - 864e5, sym: 'ASELS', sum: 'Yurt dışı sözleşme <b>x</b>', amt: 125e6, cur: 'USD' }, { idx: 2, t: Date.now() - 2 * 864e5, sym: 'ASELS', sum: 'İkinci sözleşme', amt: 50e6, cur: 'TRY' }, { idx: 3, t: Date.now() - 3600e3, sym: 'SASA', sum: 'Sipariş', amt: null, cur: null }],
+      geri: [{ sym: 'KONTR', n: 3, last: Date.now() - 3600e3 }], tavan: { d: '2026-10-19', L: [{ s: 'PGSUS', c: 97.35 }] } }) });
     if (u.includes('/sigstats')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify(SIG) });
     if (u.includes('/kap')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify(KAP) });
     if (u.includes('scan')) {

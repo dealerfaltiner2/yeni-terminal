@@ -22,6 +22,7 @@ import { sigAdd, sigLog, sigEval, sigSummary, sigStats, sigToday, weeklySummary,
 import { errAdd, errLogRoute } from './err.js';
 import { botAlive, botBeat, botWatch, pairCreate, pairUse } from './bot.js';
 import { kapPoll, kapMorning, kapList } from './kap.js';
+import { kesifData } from './kesif.js';
 import { tgBotUpdate, tgHookEnsure } from './tgbot.js';
 import { kanalAm, kanalPm, kanalOnce, kanalKap, kanalWeek, kanalLinks } from './kanal.js';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
@@ -717,7 +718,7 @@ const OWN_ROUTES = new Set(['uyeler', 'sync', 'prefs', 'cron-test', 'pine-sync',
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
 const DEV_GRACE = Date.UTC(2026, 9, 6); // 6 Ekim 2026
-const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key', 'paper', 'sigsym', 'yorum', 'tedbir']);
+const DATA_ROUTES = new Set(['bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key', 'paper', 'sigsym', 'yorum', 'tedbir', 'kesif']);
 const devCache = new Map();
 let ownerCache = { v: undefined, at: 0 }, devReady = false;
 async function ownerTok(env) {
@@ -959,6 +960,7 @@ export default {
         return json({ ok: true, blocked: st === 'blocked', wait: st === 'wait', uye: st === 'uye', bot: env.BT ? await botAlive(env) : false });
       }
       case 'kap': return kapList(env, url, json);
+      case 'kesif': return json(await kesifData(env));   // v13.0 Keşfet hazır listeleri (30 dk ortak önbellek)
       case 'sigstats': return json(await sigStats(env));
       case 'sigtoday': return json(anon ? { ok: true, at: Date.now(), list: [], uye: 1 } : await sigToday(env));   // v12.2: üyeye canlı sinyal listesi yok
       case 'sigsym': return json(await sigSym(env, url.searchParams.get('s')));

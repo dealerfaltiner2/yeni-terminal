@@ -6,7 +6,7 @@ const FILE = 'file://' + path.resolve(__dirname, '..', 'index.html');
 const OUT = path.join(__dirname, 'out'); fs.mkdirSync(OUT, { recursive: true });
 const exe = (() => { const b = '/opt/pw-browsers'; const c = glob(b).filter(x => /^chromium-\d+$/.test(x)).sort().pop(); const p = c && path.join(b, c, 'chrome-linux', 'chrome'); return p && fs.existsSync(p) ? p : undefined; })();
 const results = []; const ok = (name, cond, info) => { results.push({ name, ok: !!cond, info: info || '' }); console.log((cond ? '✓ ' : '✗ ') + name + (info ? ' — ' + info : '')); };
-const TABS = ['now', 'op', 'algi', 'chart', 'watch', 'live', 'lab', 'brief', 'reg', 'mov', 'heat', 'kap', 'cal', 'alarm', 'jr', 'perf', 'risk', 'port', 'crypto', 'set'];
+const TABS = ['now', 'op', 'algi', 'chart', 'watch', 'live', 'lab', 'kesif', 'brief', 'reg', 'mov', 'heat', 'kap', 'cal', 'alarm', 'jr', 'perf', 'risk', 'port', 'crypto', 'set'];
 async function page(b, opt) {
   const p = await b.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
   const errs = []; p.on('pageerror', e => errs.push(e.message));
@@ -232,6 +232,39 @@ async function page(b, opt) {
       ok('BIST 100 genel taramada yoksa Türkiye taramasından alınıyor', ix.c === 10850 && ix.usd === 41.9 && ix.asked.includes('turkey'), JSON.stringify(ix));
       ok('Üye görünümü (B): Fırsat/Algı sekmeleri gizli ve açılmıyor, Karne açık', v.cls && v.a === 'now' && v.b2 === 'now' && v.c === 'lab' && !v.op && !v.algi && v.lab, JSON.stringify(v));
       ok('üye sayfasında hata yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }
+    // v13.0 fiyat aralığı + dönem getirisi + fiyat vurgusu + Keşfet
+    { const p = await b.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
+      await install(p, { proxy: true }); await p.addInitScript(() => { localStorage.setItem('tvproxy', JSON.stringify('wss://x.test/k')); localStorage.setItem('ownClaimed', '1'); localStorage.setItem('ownTok', JSON.stringify('sahipkodu')); });
+      await p.goto(FILE, { waitUntil: 'domcontentloaded', timeout: 20000 }); await p.waitForTimeout(3000);
+      const fl = await p.evaluate(() => [pxFl('t:A', 10), pxFl('t:A', 10), pxFl('t:A', 11), pxFl('t:A', 9)].join('|'));
+      ok('Fiyat vurgusu: yalnız değişince, yükselişte yeşil düşüşte kırmızı', fl === '|| pfu| pfd', fl);
+      const rc = await p.evaluate(() => { const d = Date.now(), cs = Array.from({ length: 400 }, (_, i) => { const c = 100 + i; return { time: istD(d - (399 - i) * 864e5), open: c, high: c + 2, low: c - 2, close: c, volume: 10 }; });
+        const R = rngCalc(cs, 499, { lo: 495, hi: 505 }); return { day: R.day, yrlo: R.yr.lo, monlo: R.mon.lo, r7: Math.round(R.ret[0][1] * 100) / 100, r52: Math.round(R.ret[4][1] * 100) / 100 }; });
+      ok('Aralık/getiri hesabı: gün, ay, yıl düşükleri ve 7 gün / 52 hafta getirisi doğru', rc.day.lo === 495 && rc.monlo === 468 && rc.yrlo === 133 && rc.r7 === 1.42 && rc.r52 === 269.63, JSON.stringify(rc));
+      await p.evaluate(() => xrayOpen('THYAO')); await p.waitForTimeout(2500);
+      const xr = await p.evaluate(() => { const b2 = document.getElementById('xr_body'); return { rows: b2.querySelectorAll('.rgc .rgr').length, tiles: b2.querySelectorAll('.rtg div').length, txt: b2.textContent }; });
+      ok('Röntgen: fiyat aralığı (günlük/aylık/yıllık) ve 6 dönem getirisi görünüyor', xr.rows === 3 && xr.tiles === 6 && /Dönem getirisi/.test(xr.txt) && /son bir yılın en düşüğünden/.test(xr.txt), JSON.stringify({ rows: xr.rows, tiles: xr.tiles }));
+      await p.evaluate(() => { xrayClose(); S.mkt = S.mkt || {}; S.mkt.XU100 = { c: 10800, ch: 0.5 }; showTab('now'); renderNow(); }); await p.waitForTimeout(1500);
+      const hm = await p.evaluate(() => { renderNow(); const x = document.querySelector('#nowbody .pcard .pxr'); return x ? { rows: x.querySelectorAll('.rgr').length, tiles: x.querySelectorAll('.rtg.mini div').length } : null; });
+      ok('Ana sayfa: BIST 100 kartında gün/yıl aralığı ve 6 dönem getirisi', hm && hm.rows === 2 && hm.tiles === 6, JSON.stringify(hm));
+      const kh = await p.evaluate(async () => { showTab('kesif'); await new Promise(r => setTimeout(r, 800)); renderKesif(); const el = document.getElementById('kesifbody');
+        return { items: el.querySelectorAll('.kesi').length, quick: el.querySelectorAll('.kesq button').length, menu: !!document.querySelector('#more [data-t="kesif"]'), bar: getComputedStyle(document.querySelector('#tabs [data-t="kesif"]')).display }; });
+      ok('Keşfet: 3 hızlı liste + 12 hazır liste, menüde var, alt çubukta yalnız üyede', kh.items === 12 && kh.quick === 3 && kh.menu && kh.bar === 'none', JSON.stringify(kh));
+      const ku = await p.evaluate(() => { kesOpen('up'); const el = document.getElementById('kesifbody'), r = [...el.querySelectorAll('.krow')].map(x => parseFloat(x.querySelector('.ksv i').innerText.replace(/[^0-9,−-]/g, '').replace(',', '.').replace('−', '-')));
+        return { n: r.length, sorted: r.every((v, i) => !i || r[i - 1] >= v) }; });
+      ok('Keşfet: Yükselenler listesi dolu ve büyükten küçüğe', ku.n > 5 && ku.sorted, JSON.stringify(ku));
+      const ki = await p.evaluate(() => { S.mkt.USD = { c: 42, ch: 0 }; S.umap.ASELS.market_cap_basic = 100e9; kesOpen('is'); const el = document.getElementById('kesifbody'); return { txt: el.innerText, html: el.innerHTML, first: (el.querySelector('.krow .ksm b') || {}).innerText }; });
+      ok('Keşfet: yeni iş listesi tutarı TL\'ye çevirip piyasa değerine oranlıyor, metin kaçışlı', ki.first === 'ASELS' && /5,30 milyar TL/.test(ki.txt) && /%5,3/.test(ki.txt) && /Tutar açıklanmamış/.test(ki.txt) && !/<b>x<\/b>/.test(ki.html), ki.txt.replace(/\s+/g, ' ').slice(0, 400));
+      const kg = await p.evaluate(async () => { kesOpen('gc'); for (let i = 0; i < 40 && KCR.busy; i++) await new Promise(r => setTimeout(r, 250)); renderKesif(); const g = [...document.querySelectorAll('#kesifbody .krow .ksm b')].map(x => x.innerText); kesOpen('dc'); const d = [...document.querySelectorAll('#kesifbody .krow .ksm b')].map(x => x.innerText); return { g, d, done: KCR.d === todayStr() }; });
+      ok('Keşfet: Golden Cross / Death Cross günlük mumlardan bulunuyor', kg.done && kg.g.join() === 'THYAO' && kg.d.join() === 'ASELS', JSON.stringify(kg));
+      const kt = await p.evaluate(() => { kesOpen('tavan'); const a = document.getElementById('kesifbody').innerText; kesOpen('geri'); const g = document.getElementById('kesifbody').innerText; kesBack(); return { a: /PGSUS/.test(a), g: /KONTR/.test(g) && /3 bildirim/.test(g), back: !!document.querySelector('#kesifbody .kesq') }; });
+      ok('Keşfet: dün tavan, geri alım listeleri ve geri dönüş', kt.a && kt.g && kt.back, JSON.stringify(kt));
+      const kx = await p.evaluate(() => { kesOpen('up'); const r = document.querySelector('#kesifbody .krow'); r.click(); return document.getElementById('xray').classList.contains('on'); });
+      ok('Keşfet: hisseye dokununca röntgen açılıyor', kx);
+      const km = await p.evaluate(() => { document.documentElement.classList.add('uye'); return getComputedStyle(document.querySelector('#tabs [data-t="kesif"]')).display; });
+      ok('Keşfet: üyede alt çubukta görünüyor', km !== 'none', km);
+      await p.screenshot({ path: require('path').join(OUT, 'kesif.png') });
+      ok('Keşfet/aralık sayfasında hata yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }
     // v11.9 misafirde Ayarlar gizli
     { const p = await b.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
       await install(p, { proxy: true }); await p.addInitScript(() => { localStorage.setItem('tvproxy', JSON.stringify('wss://x.test/k')); localStorage.setItem('ownClaimed', '1'); });

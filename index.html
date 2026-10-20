@@ -515,6 +515,7 @@ td.fl-up,td.fl-dn{border-radius:4px}
   </div>
   <div class="tab" id="t-brief"><div id="briefbody"></div></div>
   <div class="tab" id="t-lab"><div id="labbody"></div></div>
+  <div class="tab" id="t-kesif"><div id="kesifbody"></div></div>
 
   <div class="tab" id="t-kap">
    <div class="bar"><div class="seg" id="kapseg"><button data-f="onemli">Önemli</button><button data-f="hepsi">Tümü</button><button data-f="takip">Takibim</button></div><button onclick="loadKap(true)">↻ Yenile</button></div>
@@ -665,11 +666,12 @@ td.fl-up,td.fl-dn{border-radius:4px}
   <button data-t="op" style="--tc:#ffb020"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/></svg></span><span class="lbl">Fırsat</span></button>
   <button data-t="algi" style="--tc:#ff7a45"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12L19 5"/><path d="M19.5 12a7.5 7.5 0 1 1-4.2-6.74"/><path d="M15.7 12a3.7 3.7 0 1 1-2.1-3.33"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg></span><span class="lbl">Algı</span></button>
   <button data-t="lab" style="--tc:#E6C98A"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V11"/><path d="M12 20V4"/><path d="M19 20v-7"/></svg></span><span class="lbl">Karne</span></button>
+  <button data-t="kesif" style="--tc:#E6C98A"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/><path d="M8 13l2-4 4-2-2 4z"/></svg></span><span class="lbl">Keşfet</span></button>
   <button data-t="watch" style="--tc:#fbbf24"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 3 14.8 8.8 21 9.6 16.5 14 17.6 20.3 12 17.3 6.4 20.3 7.5 14 3 9.6 9.2 8.8"/></svg></span><span class="lbl">İzleme</span></button>
   <button data-more="1" id="morebtn" style="--tc:#e2e8f0"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8"/></svg></span><span class="lbl">Menü</span></button>
 </div>
 </div>
-<div id="more"><div class="bd"></div><div class="sh"><div class="grab"></div><div class="mhead"><b>Tüm bölümler</b><button class="mclose" aria-label="Kapat">✕</button></div><div class="mgrid"><button data-t="live" style="--tc:#00e5a0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 12 7 12 10 5 14 19 17 12 21 12"/></svg><span>Canlı</span></button><button data-t="brief" style="--tc:#fde047"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg><span>Özet</span></button><button data-t="chart" style="--tc:#22d3a6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="7" y1="3" x2="7" y2="21"/><rect x="5" y="7" width="4" height="8" rx="1"/><line x1="17" y1="4" x2="17" y2="20"/><rect x="15" y="9" width="4" height="6" rx="1"/></svg><span>Grafik</span></button><button data-t="lab" style="--tc:#a78bfa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9z"/><polyline points="9 13.5 11.3 15.8 15.5 11.5"/></svg><span>Karne</span></button><button data-t="reg" style="--tc:#38bdf8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 18a8.5 8.5 0 1 1 17 0"/><line x1="12" y1="18" x2="16.2" y2="11.2"/><circle cx="12" cy="18" r="1.2" fill="currentColor"/></svg><span>Piyasa</span></button><button data-t="mov" style="--tc:#c084fc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 20V5M4 9l4-4 4 4M16 4v15M12 15l4 4 4-4"/></svg><span>Hareket</span></button><button data-t="heat" style="--tc:#fb923c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="10" rx="1.5"/><rect x="14.5" y="3.5" width="6" height="6" rx="1.5"/><rect x="14.5" y="11.5" width="6" height="9" rx="1.5"/><rect x="3.5" y="15.5" width="9" height="5" rx="1.5"/></svg><span>Isı Haritası</span></button><button data-t="kap" style="--tc:#60a5fa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h13v13a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v9.5a2 2 0 0 1-2 2"/><path d="M7.5 9h6M7.5 12.5h6M7.5 16h4"/></svg><span>KAP Haber</span></button><button data-t="cal" style="--tc:#f472b6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Takvim</span></button><button data-t="alarm" style="--tc:#ff5d6c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.8 2H4.2z"/><path d="M10 21h4"/></svg><span>Alarm</span></button><button data-t="jr" style="--tc:#4ade80"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg><span>Günlük</span></button><button data-t="perf" style="--tc:#34d399"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg><span>Performans</span></button><button data-t="risk" style="--tc:#22d3ee"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 8v5M12 16v.5"/></svg><span>Risk</span></button><button data-t="port" style="--tc:#818cf8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4"/></svg><span>Portföy</span></button><button data-t="crypto" style="--tc:#f59e0b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 7.5h4a2.2 2.2 0 0 1 0 4.4h-4zM9.5 11.9h4.6a2.3 2.3 0 0 1 0 4.6H9.5zM9.5 7.5v9M11 6v1.5M11 16.5V18"/></svg><span>Kripto</span></button><button data-t="set" style="--tc:#94a3b8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>Ayarlar</span></button></div></div></div>
+<div id="more"><div class="bd"></div><div class="sh"><div class="grab"></div><div class="mhead"><b>Tüm bölümler</b><button class="mclose" aria-label="Kapat">✕</button></div><div class="mgrid"><button data-t="live" style="--tc:#00e5a0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 12 7 12 10 5 14 19 17 12 21 12"/></svg><span>Canlı</span></button><button data-t="brief" style="--tc:#fde047"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg><span>Özet</span></button><button data-t="kesif" style="--tc:#E6C98A"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/><path d="M8 13l2-4 4-2-2 4z"/></svg><span>Keşfet</span></button><button data-t="chart" style="--tc:#22d3a6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="7" y1="3" x2="7" y2="21"/><rect x="5" y="7" width="4" height="8" rx="1"/><line x1="17" y1="4" x2="17" y2="20"/><rect x="15" y="9" width="4" height="6" rx="1"/></svg><span>Grafik</span></button><button data-t="lab" style="--tc:#a78bfa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9z"/><polyline points="9 13.5 11.3 15.8 15.5 11.5"/></svg><span>Karne</span></button><button data-t="reg" style="--tc:#38bdf8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 18a8.5 8.5 0 1 1 17 0"/><line x1="12" y1="18" x2="16.2" y2="11.2"/><circle cx="12" cy="18" r="1.2" fill="currentColor"/></svg><span>Piyasa</span></button><button data-t="mov" style="--tc:#c084fc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 20V5M4 9l4-4 4 4M16 4v15M12 15l4 4 4-4"/></svg><span>Hareket</span></button><button data-t="heat" style="--tc:#fb923c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="10" rx="1.5"/><rect x="14.5" y="3.5" width="6" height="6" rx="1.5"/><rect x="14.5" y="11.5" width="6" height="9" rx="1.5"/><rect x="3.5" y="15.5" width="9" height="5" rx="1.5"/></svg><span>Isı Haritası</span></button><button data-t="kap" style="--tc:#60a5fa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h13v13a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v9.5a2 2 0 0 1-2 2"/><path d="M7.5 9h6M7.5 12.5h6M7.5 16h4"/></svg><span>KAP Haber</span></button><button data-t="cal" style="--tc:#f472b6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Takvim</span></button><button data-t="alarm" style="--tc:#ff5d6c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.8 2H4.2z"/><path d="M10 21h4"/></svg><span>Alarm</span></button><button data-t="jr" style="--tc:#4ade80"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg><span>Günlük</span></button><button data-t="perf" style="--tc:#34d399"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg><span>Performans</span></button><button data-t="risk" style="--tc:#22d3ee"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 8v5M12 16v.5"/></svg><span>Risk</span></button><button data-t="port" style="--tc:#818cf8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4"/></svg><span>Portföy</span></button><button data-t="crypto" style="--tc:#f59e0b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 7.5h4a2.2 2.2 0 0 1 0 4.4h-4zM9.5 11.9h4.6a2.3 2.3 0 0 1 0 4.6H9.5zM9.5 7.5v9M11 6v1.5M11 16.5V18"/></svg><span>Kripto</span></button><button data-t="set" style="--tc:#94a3b8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>Ayarlar</span></button></div></div></div>
 <div id="pal" onclick="if(event.target.id==='pal')closePal()"><div id="palbox"><input id="palin" placeholder="Hisse veya kripto ara" autocomplete="off"><div id="pallist"></div></div></div>
 
 <script>
@@ -685,6 +687,8 @@ const nf=(n,d=2)=>(n==null||isNaN(n))?'-':Number(n).toLocaleString('tr-TR',{mini
 const big=n=>{if(n==null||isNaN(n))return'-';const a=Math.abs(n);if(a>=1e12)return nf(n/1e12,2)+'Tr';if(a>=1e9)return nf(n/1e9,2)+'Mr';if(a>=1e6)return nf(n/1e6,1)+'Mn';if(a>=1e3)return nf(n/1e3,0)+'B';return nf(n,0)};
 const pct=n=>n==null?'-':(n>=0?'+':'')+nf(n,2)+'%';
 const cls=n=>n>0?'up':n<0?'dn':'';
+// v13.0 FİYAT VURGUSU: aynı anahtarın fiyatı değiştiyse kısa yeşil/kırmızı parlama sınıfı (yeniden çizimde yalnız değişince)
+const PXF={};function pxFl(k,v){if(v==null||!isFinite(v))return '';const o=PXF[k];PXF[k]=v;return o!=null&&o!==v?(v>o?' pfu':' pfd'):''}
 
 let WL=LS.get('wl',null);
 if(!WL){const o=LS.get('watch',['THYAO','ASELS','KCHOL','GARAN','TUPRS','EREGL','SISE','BIMAS']);WL={cur:'Takip',lists:{'Takip':o}};LS.set('wl',WL)}
@@ -832,7 +836,7 @@ setInterval(()=>{if(S.autoOn)autoRun(false)},15*60*1000);
 function saveCap(){S.cap=+$('#cap').value||0;S.rskp=+$('#rsk').value||1;LS.set('cap',S.cap);LS.set('rskp',S.rskp);renderRisk();alert('Kaydedildi')}
 async function testSrc(){const m=$('#srcmsg');m.textContent='test...';try{const cs=await getBars('THYAO','15min');m.innerHTML='<b class="up">Çalışıyor</b> — '+cs.length+' mum'}catch(e){m.innerHTML='<b class="dn">Başarısız</b> — '+e.message}}
 function mark(t){if(S.tab===t)draw(t);else S.dirty[t]=1}
-function draw(t){S.dirty[t]=0;const f={op:function(){try{renderOps()}catch(e){$('#oplist').innerHTML='<div class="note"><b class="dn">Ekran hatası:</b> '+String(e.message||e)+'</div>'}},live:renderLive,reg:renderReg,brief:renderBrief,lab:renderLab,watch:renderWatch,cal:calTab,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,kap:function(){loadKap(false)},crypto:renderCrypto,jr:renderJr,perf:renderPerf,risk:renderRisk}[t];if(f)f()}
+function draw(t){S.dirty[t]=0;const f={op:function(){try{renderOps()}catch(e){$('#oplist').innerHTML='<div class="note"><b class="dn">Ekran hatası:</b> '+String(e.message||e)+'</div>'}},live:renderLive,reg:renderReg,brief:renderBrief,lab:renderLab,watch:renderWatch,cal:calTab,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,kap:function(){loadKap(false)},kesif:function(){try{renderKesif()}catch(e){}},crypto:renderCrypto,jr:renderJr,perf:renderPerf,risk:renderRisk}[t];if(f)f()}
 const BACKUP_VER=12;
 function backupObj(){
  return {wl:WL,alarms:S.alarms,tx:S.tx,jr:S.jr,tdkey:S.key,src:S.src,cap:S.cap,rskp:S.rskp,
@@ -2201,7 +2205,7 @@ function renderWatch(){
  const list=[...W()].sort((a,b)=>{const x=S.wsig[a],y=S.wsig[b];return (x&&!x.err?GRO[x.grade]:3)-(y&&!y.err?GRO[y.grade]:3)});
  const rows=list.map(s=>{const q=S.quotes[s],w=S.wsig[s];if(!q)return'<tr><td class="sym">'+s+'</td><td colspan="7">...</td></tr>';
   const g=w&&!w.err?'<span class="sc sc'+(w.grade==='A'?(w.side==='AL'?'A':'As'):w.grade)+'">'+w.grade+'</span>':'<span class="sc scC">—</span>';
-  return'<tr class="row" onclick="selectSym(\''+s+'\',\'bist\')"><td class="sym">'+s+'</td><td>'+g+'</td><td>'+nf(q.close)+'</td><td class="'+cls(q.change)+'">'+pct(q.change)+'</td><td>'+(w&&!w.err?w.zone:'-')+'</td><td>'+(w&&w.pocD!=null?pct(w.pocD):'-')+'</td><td>'+(w&&!w.err&&w.dir!=='-'?w.dir+'·'+w.bars+'b':'-')+'</td><td>'+(w&&w.vr?nf(w.vr,1)+'x':'-')+'</td></tr>'}).join('');
+  return'<tr class="row" onclick="selectSym(\''+s+'\',\'bist\')"><td class="sym">'+s+'</td><td>'+g+'</td><td class="'+pxFl('w:'+s,q.close).trim()+'">'+nf(q.close)+'</td><td class="'+cls(q.change)+'">'+pct(q.change)+'</td><td>'+(w&&!w.err?w.zone:'-')+'</td><td>'+(w&&w.pocD!=null?pct(w.pocD):'-')+'</td><td>'+(w&&!w.err&&w.dir!=='-'?w.dir+'·'+w.bars+'b':'-')+'</td><td>'+(w&&w.vr?nf(w.vr,1)+'x':'-')+'</td></tr>'}).join('');
  $('#watch').innerHTML='<table><tr><th>Sembol</th><th>Not</th><th>Son</th><th>%</th><th>Bölge</th><th>POC</th><th>9/21</th><th>RVOL</th></tr>'+(rows||'<tr><td colspan="8" class="note">Liste boş</td></tr>')+'</table>';
 }
 function addWatch(){if(S.mode!=='bist')return;if(!W().includes(S.sym)){W().push(S.sym);saveWL();renderWatch()}}
@@ -3306,7 +3310,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="12.8";window.APPV=APP_VER;
+  const APP_VER="13.0";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4003,13 +4007,23 @@ const IC={
   ['DİKKAT','Sermayenin %80\'inden fazlası pozisyondaysa uyarı kırmızıya döner.',1]]},
  port:{ic:'💼',c:'#818cf8',t:'Portföy',s:'Pozisyonlar ve kâr/zarar',sec:[
   ['NEDİR?','Alış ve satışlarını gir; ortalama maliyet, gerçekleşen ve açık kâr/zarar, sektör dağılımı hesaplanır. Tek bir sektör portföyün %40\'ını geçerse uyarır.']]},
+ kesif:{ic:'🔭',c:'#E6C98A',t:'Keşfet',s:'Hazır hisse listeleri',sec:[
+  ['NEDİR?','Belirli bir özelliği taşıyan hisseleri tek dokunuşla listeler: en çok yükselenler, ortalamaları kesişenler, yeni iş açıklayanlar, kendi hissesini geri alanlar, yılın zirvesine ya da dibine yakın olanlar… Bir hisseye dokununca röntgeni açılır.'],
+  ['LİSTELER',['<b>Golden Cross / Death Cross</b>: 50 günlük ortalama, 200 günlüğü son 22 iş gününde yukarı ya da aşağı kesti. Piyasa değeri en büyük 100 hisse taranır; liste günde bir kez, açtığında hesaplanır.',
+   '<b>Yeni iş ilişkisi</b>: son 30 günde yeni iş, sipariş ya da sözleşme açıklayanlar. Tutar KAP açıklamasından okunur ve hissenin piyasa değerine bölünür (döviz tutarları günün kuruyla TL\'ye çevrilir). Tutar yazmayan şirketlerde oran yoktur.',
+   '<b>Geri alım</b>: son 7 günde kendi hissesini geri alan şirketler ve kaç bildirim yaptıkları.',
+   '<b>52 haftanın zirvesine / dibine yakın</b>: fiyat son bir yılın en yükseğine ya da en düşüğüne %3\'ten yakın.',
+   '<b>Güçlü trend</b>: fiyat 20 günlük ortalamanın, o da 200 günlüğün üstünde; günlük işlem en az 20 milyon TL.',
+   '<b>Olağandışı hacim</b>: bugünkü hacim son 10 günün ortalamasının en az 2 katı.',
+   '<b>Dün tavan kapananlar</b>, <b>temettü</b> (14 gün) ve <b>bilanço</b> (7 gün) yaklaşanlar, <b>Borsa tedbiri</b> olanlar.']],
+  ['DİKKAT','Bu listeler <b>sinyal değildir</b>; hisseleri tanımak için bilgidir. Yatırım tavsiyesi değildir.']]},
  crypto:{ic:'🪙',c:'#f59e0b',t:'Kripto',s:'Büyük kripto paralar',sec:[
   ['NEYİ GÖSTERİR?','Büyük kripto paraların fiyatı, 24 saatlik ve 7 günlük değişimi, hacmi. Satıra dokununca grafik açılır.']]},
  set:{ic:'⚙️',c:'#94a3b8',t:'Ayarlar',s:'Bağlantı, Telegram, cihazlar',rel:['radar'],sec:[
   ['NELER VAR?',['<b>Veri bağlantısı</b>: sunucu adresi ve bağlantı testi','<b>Telegram</b>: bot ve sohbet ayarı (yalnız ana cihazda)','<b>Ana cihaz · bağlı cihazlar</b>: kimlerin girdiği, yeni cihaz onayı, engelleme','<b>Sunucu</b>: sunucu radarı, alarm ve KAP bildirimleri','<b>Yedek</b>: ayarlarını dosyaya ya da sunucuya kaydet (yalnız ana cihazda)']]]},
 };
-const IC_GRP=[['SİNYAL VE HABER',['live','kap','mov','lab','alarm','cal']],['PİYASA',['chart','brief','reg','heat','crypto']],['BENİM',['jr','perf','port','risk','set']]];
-const IC_TD={live:'Anlık yükselen/düşen',lab:'Sinyaller tuttu mu?',kap:'Bildirimler ve tepkisi',mov:'Gap, zirve, hacim',alarm:'Fiyat gelince haber ver',brief:'Günün kısa özeti',reg:'Trend mi, yatay mı?',heat:'Sektörler tek bakışta',cal:'Veri ve faiz günleri',crypto:'Büyük kriptolar',jr:'İşlem defteri',perf:'Kazanç/kayıp istatistiği',risk:'Kaç lot almalıyım?',port:'Pozisyon ve kâr/zarar',set:'Bağlantı, Telegram, cihaz'};
+const IC_GRP=[['SİNYAL VE HABER',['live','kap','mov','lab','alarm','cal']],['PİYASA',['kesif','chart','brief','reg','heat','crypto']],['BENİM',['jr','perf','port','risk','set']]];
+const IC_TD={kesif:'Hazır hisse listeleri',live:'Anlık yükselen/düşen',lab:'Sinyaller tuttu mu?',kap:'Bildirimler ve tepkisi',mov:'Gap, zirve, hacim',alarm:'Fiyat gelince haber ver',brief:'Günün kısa özeti',reg:'Trend mi, yatay mı?',heat:'Sektörler tek bakışta',cal:'Veri ve faiz günleri',crypto:'Büyük kriptolar',jr:'İşlem defteri',perf:'Kazanç/kayıp istatistiği',risk:'Kaç lot almalıyım?',port:'Pozisyon ve kâr/zarar',set:'Bağlantı, Telegram, cihaz'};
 window.KSTAT=null; // 2. aşama: sunucu karnesi (kaynak → {h,s})
 function icKarne(c){
  try{if(!c.k||!window.KSTAT||!KSTAT.src)return '';
@@ -5441,8 +5455,9 @@ function xrayWhy(a,o){const up=a.side==='AL',G=[],P=[];
 function xrayRender(){const body=document.getElementById('xr_body');if(!body)return;const sym=XR.sym,o=S.umap[sym]||null,a=XR.a,tf=S.stf||'15';
  if(XR.busy){return}
  let h='<div class="xhd"><div><b>'+htmlEsc(sym)+'</b><small>'+htmlEsc(String(o&&o.description||'').slice(0,34))+(o&&o.sector?' · '+htmlEsc(secTr(o.sector)||o.sector):'')+'</small></div>'+
-  (o?'<div class="xpx"><b>'+nf(o.close)+'</b><i class="'+cls(o.change)+'">'+pct(o.change)+'</i></div>':'')+'</div>';
+  (o?'<div class="xpx"><b class="'+pxFl('x:'+sym,o.close).trim()+'">'+nf(o.close)+'</b><i class="'+cls(o.change)+'">'+pct(o.change)+'</i></div>':'')+'</div>';
  if(XR.err)h+='<div class="xnote">'+htmlEsc(XR.err)+'</div>';
+ try{if(typeof xrayRange==='function')h+=xrayRange(sym,o)}catch(e){}
  if(a){const g=a.side==='AL'?a.grade:'C',W=xrayWhy(a,o),gOk=W.G.every(x=>x[0]);
   const K=window.KSTAT,ka=K&&K.src&&K.src['firsat-A'],kb=K&&K.src&&K.src['firsat-B'],kr=x=>x&&x.h+x.s?'%'+Math.round(x.h/(x.h+x.s)*100)+' ('+(x.h+x.s)+' sinyal)':'henüz veri yok';
   const gt={A:'Güçlü kurulum',B:'Orta kurulum',C:'Zayıf / kurulum yok'}[g];
@@ -5627,12 +5642,12 @@ function nDial(){
   '<div><b>Pusula</b><span>'+gun+', '+d.getUTCDate()+' '+ay+'</span></div></div>'+
   '<div class="pst"><span class="'+(live?'on':'')+'" title="Canlı veri">Canlı</span></div></header>'+
   '<button class="psearch" onclick="xrayOpen()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>Hisse ara</button>'+
-  '<div class="pcard"><div class="pgrid">'+dial+'<div class="pinfo"><small>BIST 100</small><b class="pidx">'+(x.c?nf(x.c,0):'–')+'</b><span class="pchg '+(ok?(up?'up':'dn'):'')+'">'+chg+'</span>'+
+  '<div class="pcard"><div class="pgrid">'+dial+'<div class="pinfo"><small>BIST 100</small><b class="pidx'+pxFl('XU100',x.c)+'">'+(x.c?nf(x.c,0):'–')+'</b><span class="pchg '+(ok?(up?'up':'dn'):'')+'">'+chg+'</span>'+
    (Y?'<span class="pyon" style="--yc:'+ycol+'"><b>'+Y.lab+'</b><em>yön puanı '+(sc>0?'+':sc<0?'−':'')+Math.abs(sc)+'</em></span>':'<span class="pyon"><b>Veri bekleniyor</b></span>')+
    (nu+nd?'<span class="pbr2"><i class="u"></i>'+nu+' yükselen<i class="d"></i>'+nd+' düşen</span>':'')+'</div></div>'+
   '<div class="pses"><span>10:00</span><div class="psb"><i style="width:'+(f*100).toFixed(1)+'%"></i>'+(s.open?'<em style="left:'+(f*100).toFixed(1)+'%"></em>':'')+'</div><span>18:00</span></div>'+
   '<div class="pline"><span><i class="'+(s.open?(live?'on':'warn'):'')+'"></i>'+sessT+'</span>'+bot+((S.uye||TVL.uye)?'<span>Üye sürümü · fiyatlar 15 dk gecikmeli</span>':'')+'</div>'+
-  (st.length?'<div class="pstrip">'+st.map(t=>'<div><small>'+t[0]+'</small><b>'+nf(t[1],t[1]>1000?0:2)+'</b><em class="'+cls(t[2])+'">'+(t[2]!=null?(t[2]>=0?'+':'−')+nf(Math.abs(t[2]),2):'')+'</em></div>').join('')+'</div>':'')+'</div>';
+  (st.length?'<div class="pstrip">'+st.map(t=>'<div><small>'+t[0]+'</small><b>'+nf(t[1],t[1]>1000?0:2)+'</b><em class="'+cls(t[2])+'">'+(t[2]!=null?(t[2]>=0?'+':'−')+nf(Math.abs(t[2]),2):'')+'</em></div>').join('')+'</div>':'')+(typeof nIdxRng==='function'?nIdxRng():'')+'</div>';
  if(V&&V.c&&s.wk&&s.m>=570&&s.m<600)h+='<div class="nwarn info">📈 <b>VİOP açıldı:</b> BIST 30 vadeli '+pct(V.ch)+' → endeks '+(V.ch>0.3?'yukarı':V.ch<-0.3?'aşağı':'yatay')+' açılabilir'+(V.dl?' (15 dk gecikmeli)':'')+'.</div>';
  try{const ne=ecNear(45);if(ne.length)h+='<div class="nwarn">⚠️ <b>'+ne.map(e=>ecHm(e.t)+' '+ecFlag(e)+' '+htmlEsc(ecTitle(e))).join(', ')+'</b>: veri saatinde fiyatlar sert oynayabilir.</div>'}catch(e){}
  return '<div class="phero">'+h+'</div>'}
@@ -5869,7 +5884,216 @@ html.tgfs #sigtoast{top:calc(8px + var(--tg-safe-area-inset-top,0px) + var(--tg-
 #tgabox b{font-size:20px}#tgabox span{font-size:14px;color:#8F9BB3;line-height:1.45}
 #tgabox button{margin-top:8px;padding:11px 22px;border-radius:12px;border:1px solid rgba(201,163,91,.5);background:rgba(201,163,91,.12);color:#E6C98A;font:600 15px Barlow,system-ui,sans-serif}
 </style>
+<script>
+/* ================= v13.0 (20.10, Fatih: aracı kurum uygulamasındaki iyi fikirler) — yalnız bilgi/görünüm, sinyal kuralı DEĞİŞMEDİ =================
+   1) FİYAT ARALIĞI: Günlük / Aylık / Yıllık en düşük–en yüksek çubuğu, fiyatın yeri ve hacim ağırlıklı ortalama (röntgen; ana sayfada BIST 100 kompakt)
+   2) DÖNEM GETİRİSİ: 7 gün, 30 gün, 3 ay, 6 ay, 52 hafta, bu yıl (günlük mumlardan)
+   3) FİYAT VURGUSU: pxFl (erken tanımlı) — fiyat değişince kısa yeşil/kırmızı parlama
+   4) KEŞFET: hazır hisse listeleri (sinyal değil). Sunucu /kesif (yeni iş tutarı, geri alım, dün tavan) + tarama verisi + günlük mumlar (Golden/Death Cross) */
+const istD=ms=>new Date(ms+3*3600e3).toISOString().slice(0,10);
+const DBAR={};
+function dbarGet(sym,ttl,cb){const c=DBAR[sym]||{};const fresh=c.cs&&Date.now()-c.t<ttl;
+ if(!fresh&&!c.busy&&!(c.fail&&Date.now()-c.fail<120e3)&&tvBarsBase()){c.busy=true;DBAR[sym]=c;
+  getBars(sym,'1day',true).then(cs=>{c.cs=cs;c.t=Date.now();c.busy=false;c.fail=0;try{cb&&cb()}catch(e){}}).catch(()=>{c.busy=false;c.fail=Date.now();try{cb&&cb()}catch(e){}})}
+ return c.cs||null}
+function dayVw(sym){try{const c=S.ccache&&S.ccache['b:'+sym+':15min'],cs=c&&c.d;if(!cs)return null;const td=istD(Date.now());let sv=0,sw=0;
+ cs.forEach(b=>{if(typeof b.time!=='number'||istD(b.time*1000)!==td)return;const v=b.volume||0;sv+=(b.high+b.low+b.close)/3*v;sw+=v});return sw>0?sv/sw:null}catch(e){return null}}
+function rngCalc(cs,cur,dh){cs=(cs||[]).filter(b=>b&&b.close>0);if(cs.length<3)return null;
+ const dk=b=>typeof b.time==='string'?b.time:istD(b.time*1000),n=Date.now(),td=istD(n),last=cs[cs.length-1];
+ if(!(cur>0))cur=last.close;
+ const ago=d=>istD(n-d*864e5);
+ const rg=L=>{L=L.filter(b=>b.high>0&&b.low>0);if(!L.length)return null;let lo=Infinity,hi=-Infinity,sv=0,sw=0;
+  L.forEach(b=>{lo=Math.min(lo,b.low);hi=Math.max(hi,b.high);const v=b.volume||0;sv+=(b.high+b.low+b.close)/3*v;sw+=v});
+  return {lo:Math.min(lo,cur),hi:Math.max(hi,cur),avg:sw>0?sv/sw:null}};
+ const win=d=>{const a=ago(d);return cs.filter(b=>dk(b)>a)};
+ let day=null;if(dh&&dh.hi>0&&dh.lo>0)day={lo:Math.min(dh.lo,cur),hi:Math.max(dh.hi,cur),avg:dh.avg||null};
+ else if(dk(last)===td)day={lo:Math.min(last.low,cur),hi:Math.max(last.high,cur),avg:null};
+ const ref=d=>{const a=ago(d);for(let i=cs.length-1;i>=0;i--)if(dk(cs[i])<=a)return cs[i].close;return null};
+ const y0=td.slice(0,4)+'-01-01';let yb=null;for(let i=cs.length-1;i>=0;i--)if(dk(cs[i])<y0){yb=cs[i].close;break}
+ const R=r=>r>0?(cur/r-1)*100:null;
+ return {cur,day,mon:rg(win(30)),yr:rg(win(365)),ret:[['7 gün',R(ref(7))],['30 gün',R(ref(30))],['3 ay',R(ref(91))],['6 ay',R(ref(182))],['52 hafta',R(ref(364))],['Bu yıl',R(yb)]]}}
+function rngRow(lab,r,cur,dg){if(!r||!(r.hi>r.lo))return '';const P=v=>Math.max(0,Math.min(100,(v-r.lo)/(r.hi-r.lo)*100)),pc=P(cur);
+ return '<div class="rgr"><span class="rgl">'+lab+'</span><div class="rgw"><div class="rgt"><i class="rgu" style="width:'+pc.toFixed(1)+'%"></i>'+
+  (r.avg?'<em class="rga" style="left:'+P(r.avg).toFixed(1)+'%"></em>':'')+'<b class="rgd" style="left:'+pc.toFixed(1)+'%"></b></div>'+
+  '<div class="rgn"><span><b>'+nf(r.lo,dg)+'</b><small>En düşük</small></span>'+(r.avg?'<span class="m"><b>'+nf(r.avg,dg)+'</b><small>Ortalama</small></span>':'')+
+  '<span class="r"><b>'+nf(r.hi,dg)+'</b><small>En yüksek</small></span></div></div></div>'}
+function retGrid(ret,c2){return '<div class="rtg'+(c2?' '+c2:'')+'">'+ret.map(([l,v])=>'<div><small>'+l+'</small><b class="'+(v==null?'':cls(v))+'">'+(v==null?'–':(v>0?'+':v<0?'−':'')+'%'+nf(Math.abs(v),2))+'</b></div>').join('')+'</div>'}
+function xrayRange(sym,o){const cs=dbarGet(sym,30*60e3,()=>{if(XR.sym===sym&&!XR.busy)xrayRender()});
+ if(!cs)return '<div class="dsub">Fiyat aralığı</div><div class="xnote sm">'+(DBAR[sym]&&DBAR[sym].fail?'Günlük mumlar alınamadı.':'⏳ Günlük mumlar yükleniyor…')+'</div>';
+ const R=rngCalc(cs,o&&o.close>0?o.close:null,o?{lo:o.low,hi:o.high,avg:dayVw(sym)}:null);if(!R)return '';
+ const dg=R.cur>=1000?0:2;let h='<div class="dsub">Fiyat aralığı</div><div class="rgc">'+rngRow('Günlük',R.day,R.cur,dg)+rngRow('Aylık',R.mon,R.cur,dg)+rngRow('Yıllık',R.yr,R.cur,dg)+'</div>';
+ if(R.yr&&R.yr.lo>0&&R.yr.hi>0)h+='<div class="xnote sm">Fiyat son bir yılın en düşüğünden %'+nf((R.cur/R.yr.lo-1)*100,1)+' yukarıda, en yükseğinden %'+nf((1-R.cur/R.yr.hi)*100,1)+' aşağıda. Ortalama = hacim ağırlıklı ortalama fiyat.</div>';
+ return h+'<div class="dsub">Dönem getirisi</div>'+retGrid(R.ret)}
+function nIdxRng(){try{const x=(S.mkt||{}).XU100||{},s=nowSess();
+ const cs=dbarGet('XU100',s.open?10*60e3:60*60e3,()=>{if(S.tab==='now')renderNow()});if(!cs)return '';
+ const R=rngCalc(cs,x.c>0?x.c:null,null);if(!R)return '';const na=r=>r?Object.assign({},r,{avg:null}):r;
+ return '<div class="pxr">'+rngRow('Gün',na(R.day),R.cur,0)+rngRow('Yıl',na(R.yr),R.cur,0)+retGrid(R.ret,'mini')+'</div>'}catch(e){return ''}}
+
+/* ---------- KEŞFET ---------- */
+const KES={l:'',data:null,at:0,busy:false,err:''};
+const KCR=(()=>{let v=null;try{v=LS.get('kcross',null)}catch(e){}return v&&v.d?{d:v.d,up:v.up||[],dn:v.dn||[]}:{d:'',up:[],dn:[]}})();KCR.busy=false;KCR.done=0;KCR.tot=0;
+const KSV=p=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
+const KIC={up:'<path d="M4 17l6-6 4 4 6-7"/><path d="M15 8h5v5"/>',dn:'<path d="M4 7l6 6 4-4 6 7"/><path d="M15 16h5v-5"/>',vol:'<path d="M5 20v-8M10 20V6M15 20v-9M20 20V9"/>',
+ gc:'<path d="M3 13h18" opacity=".5"/><path d="M3 19L20 5"/><path d="M14.5 5H20v5.5"/>',
+ dc:'<path d="M3 11h18" opacity=".5"/><path d="M3 5l17 14"/><path d="M14.5 19H20v-5.5"/>',
+ is:'<path d="M8 12l3 3 5-5"/><rect x="3" y="4" width="18" height="16" rx="3"/>',geri:'<path d="M20 12a8 8 0 0 1-14 5.3"/><path d="M4 12a8 8 0 0 1 14-5.3"/><path d="M18 3v4h-4M6 21v-4h4"/>',
+ trend:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',hi52:'<path d="M3 20l6-10 4 6 3-4 5 8z"/><path d="M9 4v3M7.5 5.5h3"/>',lo52:'<path d="M3 4h18"/><path d="M6 9l6 11 6-11"/>',
+ rv:'<path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-7 2 1 3 2 3 4"/>',tavan:'<path d="M12 20V8M6.5 13.5L12 8l5.5 5.5M5 4h14"/>',
+ div:'<ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v6c0 1.6 3.1 2.8 7 2.8s7-1.2 7-2.8V6M5 12v6c0 1.6 3.1 2.8 7 2.8s7-1.2 7-2.8v-6"/>',
+ earn:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',ted:'<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>'};
+const KES_Q=[['up','Yükselenler'],['dn','Düşenler'],['vol','Hacimliler']];
+const KES_L=[
+ {k:'gc',t:'Son 1 ayda Golden Cross veren hisseler',d:'50 günlük ortalaması 200 günlük ortalamasını yukarı kesenler (piyasa değeri en büyük 100 hisse).'},
+ {k:'dc',t:'Son 1 ayda Death Cross veren hisseler',d:'50 günlük ortalaması 200 günlük ortalamasını aşağı kesenler.'},
+ {k:'is',t:'Son 1 ayda yeni iş ilişkisi açıklayanlar',d:'Yeni iş, sipariş ve sözleşmeler; tutarın piyasa değerine oranıyla.'},
+ {k:'geri',t:'Son 1 haftada geri alım yapanlar',d:'Kendi hissesini geri alan şirketler ve bildirim sayısı.'},
+ {k:'trend',t:'Güçlü trenddeki hisseler',d:'Fiyat 20 günlük, 20 günlük de 200 günlük ortalamanın üstünde.'},
+ {k:'hi52',t:'52 haftanın zirvesine yakın olanlar',d:'Son bir yılın en yüksek fiyatına %3\'ten yakın.'},
+ {k:'lo52',t:'52 haftanın dibine yakın olanlar',d:'Son bir yılın en düşük fiyatına %3\'ten yakın.'},
+ {k:'rv',t:'Bugün olağandışı hacim',d:'Hacmi son 10 günün ortalamasının en az 2 katı.'},
+ {k:'tavan',t:'Dün tavan kapananlar',d:'Önceki seansı tavandan kapatan hisseler ve bugünkü durumu.'},
+ {k:'div',t:'Temettü hak kullanımı yaklaşanlar',d:'Önümüzdeki 14 gün içinde.'},
+ {k:'earn',t:'Bilançosu yaklaşanlar',d:'Önümüzdeki 7 gün içinde finansal sonuç açıklayacaklar.'},
+ {k:'ted',t:'Borsa tedbiri olanlar',d:'İşlem durdurma, Yakın İzleme Pazarı ve hak kullanımı duyuruları.'}];
+const KES_T={up:'En çok yükselenler',dn:'En çok düşenler',vol:'En yüksek işlem hacmi'};
+function kesLoad(force){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)){KES.err='Sunucu adresi yok.';return}
+ if(KES.busy||(!force&&KES.data&&Date.now()-KES.at<10*60e3)||(!force&&KES.err&&Date.now()-KES.at<60e3))return;KES.busy=true;KES.at=Date.now();
+ fetch(dq(b+'/kesif')).then(r=>r.json()).then(j=>{if(j&&j.ok){KES.data=j;KES.err=''}else KES.err=(j&&(j.error||j.err))||'Liste alınamadı.'})
+  .catch(()=>{KES.err='Sunucuya ulaşılamadı.'}).then(()=>{KES.busy=false;if(S.tab==='kesif')renderKesif()})}
+function crossOf(cs){cs=(cs||[]).filter(b=>b&&b.close>0);const n=cs.length;if(n<222)return null;const ps=[0];for(let i=0;i<n;i++)ps.push(ps[i]+cs[i].close);
+ const sma=(p,i)=>(ps[i+1]-ps[i+1-p])/p;
+ for(let j=n-1;j>=n-22;j--){const a=sma(50,j)-sma(200,j),b=sma(50,j-1)-sma(200,j-1);
+  if(a>0&&b<=0)return {k:1,ago:n-1-j,d:typeof cs[j].time==='string'?cs[j].time:istD(cs[j].time*1000)};
+  if(a<0&&b>=0)return {k:-1,ago:n-1-j,d:typeof cs[j].time==='string'?cs[j].time:istD(cs[j].time*1000)}}
+ return null}
+async function kesCross(){if(KCR.busy||!tvBarsBase())return;
+ const U=(S.uni||[]).filter(o=>o.close>0&&o.market_cap_basic>0).sort((a,b)=>b.market_cap_basic-a.market_cap_basic).slice(0,100).map(o=>o.name);if(!U.length)return;
+ KCR.busy=true;KCR.done=0;KCR.tot=U.length;const up=[],dn=[];
+ try{for(let i=0;i<U.length;i+=16){const part=U.slice(i,i+16);
+  await Promise.all(part.map(s=>getBars(s,'1day',true).then(cs=>{DBAR[s]={cs,t:Date.now()};const r=crossOf(cs);if(r)(r.k>0?up:dn).push(Object.assign({s},r))}).catch(()=>{}).then(()=>{KCR.done++})));
+  if(S.tab==='kesif'&&KES.l)renderKesif()}}catch(e){}
+ KCR.d=todayStr();KCR.up=up.sort((a,b)=>a.ago-b.ago);KCR.dn=dn.sort((a,b)=>a.ago-b.ago);KCR.busy=false;
+ try{LS.set('kcross',{d:KCR.d,up:KCR.up,dn:KCR.dn})}catch(e){}if(S.tab==='kesif')renderKesif()}
+function kesTL(v){return v>=1e9?nf(v/1e9,2)+' milyar':v>=1e6?nf(v/1e6,1)+' milyon':nf(v,0)}
+function kesFx(c){const mk=S.mkt||{};return c==='TRY'?1:c==='USD'?(mk.USD&&mk.USD.c)||null:c==='EUR'?(mk.EUR&&mk.EUR.c)||null:null}
+function kesDate(ms){try{return new Date(ms).toLocaleDateString('tr-TR',{day:'numeric',month:'long',timeZone:'Europe/Istanbul'})}catch(e){return istD(ms)}}
+function kesDays(ms){return Math.floor((ms+3*3600e3)/864e5)-Math.floor((Date.now()+3*3600e3)/864e5)}
+function kesGun(d){return d===0?'bugün':d===1?'yarın':d+' gün sonra'}
+// her liste → [{s, sub (HTML, kaçışlı), val, chg}]
+function kesItems(k){const U=(S.uni||[]).filter(o=>o&&o.name&&o.close>0),V=o=>o.voltl||0,D=KES.data,R=[];
+ const row=(o,sub,val)=>({s:o.name,sub,val:val!=null?val:nf(o.close),chg:o.change});
+ const ds=o=>htmlEsc(String(o.description||'').slice(0,30));
+ switch(k){
+  case 'up':return U.filter(o=>V(o)>=5e6&&o.change!=null).sort((a,b)=>b.change-a.change).slice(0,30).map(o=>row(o,ds(o)));
+  case 'dn':return U.filter(o=>V(o)>=5e6&&o.change!=null).sort((a,b)=>a.change-b.change).slice(0,30).map(o=>row(o,ds(o)));
+  case 'vol':return U.filter(o=>V(o)>0).sort((a,b)=>V(b)-V(a)).slice(0,30).map(o=>row(o,ds(o)+' · '+kesTL(V(o))+' TL'));
+  case 'trend':return U.filter(o=>V(o)>=20e6&&o.EMA20>0&&o.EMA200>0&&o.close>o.EMA20&&o.EMA20>o.EMA200).map(o=>({o,d:(o.close/o.EMA200-1)*100})).sort((a,b)=>V(b.o)-V(a.o)).slice(0,40)
+    .map(x=>row(x.o,'200 günlük ortalamanın %'+nf(x.d,1)+' üstünde'));
+  case 'hi52':return U.filter(o=>o.price_52_week_high>0&&V(o)>=5e6).map(o=>({o,d:(1-o.close/o.price_52_week_high)*100})).filter(x=>x.d<=3).sort((a,b)=>a.d-b.d).slice(0,40)
+    .map(x=>row(x.o,x.d<=0.05?'Yılın en yükseğinde':'Yılın en yükseğine %'+nf(x.d,1)+' ('+nf(x.o.price_52_week_high)+')'));
+  case 'lo52':return U.filter(o=>o.price_52_week_low>0&&V(o)>=5e6).map(o=>({o,d:(o.close/o.price_52_week_low-1)*100})).filter(x=>x.d<=3).sort((a,b)=>a.d-b.d).slice(0,40)
+    .map(x=>row(x.o,x.d<=0.05?'Yılın en düşüğünde':'Yılın en düşüğüne %'+nf(x.d,1)+' ('+nf(x.o.price_52_week_low)+')'));
+  case 'rv':return U.filter(o=>o.relative_volume_10d_calc>=2&&V(o)>=5e6).sort((a,b)=>b.relative_volume_10d_calc-a.relative_volume_10d_calc).slice(0,40)
+    .map(o=>row(o,'Hacim normalin '+nf(o.relative_volume_10d_calc,1)+' katı · '+kesTL(V(o))+' TL'));
+  case 'div':return U.map(o=>({o,d:+o.ex_dividend_date_upcoming>0?kesDays(o.ex_dividend_date_upcoming*1000):null})).filter(x=>x.d!=null&&x.d>=0&&x.d<=14).sort((a,b)=>a.d-b.d)
+    .map(x=>row(x.o,'Hak kullanımı '+kesDate(x.o.ex_dividend_date_upcoming*1000)+' ('+kesGun(x.d)+')'));
+  case 'earn':return U.map(o=>({o,d:+o.earnings_release_next_date>0?kesDays(o.earnings_release_next_date*1000):null})).filter(x=>x.d!=null&&x.d>=0&&x.d<=7).sort((a,b)=>a.d-b.d)
+    .map(x=>row(x.o,'Bilanço '+kesDate(x.o.earnings_release_next_date*1000)+' ('+kesGun(x.d)+')'));
+  case 'ted':return Object.keys((typeof TEDB!=="undefined"&&TEDB.map)||{}).filter(s=>tedbOf(s)).sort().map(s=>{const o=S.umap[s]||{name:s};return {s,sub:htmlEsc(tedbTxt(s).replace(/^Borsa tedbiri: /,'')),val:o.close>0?nf(o.close):'',chg:o.change}});
+  case 'gc':case 'dc':return (k==='gc'?KCR.up:KCR.dn).map(x=>{const o=S.umap[x.s]||{name:x.s};return {s:x.s,sub:(x.ago===0?'Bugün':x.ago===1?'Dün':x.ago+' iş günü önce')+' kesti ('+kesDate(Date.parse(x.d+'T12:00:00+03:00'))+')',val:o.close>0?nf(o.close):'',chg:o.change}});
+  case 'tavan':{const T=D&&D.tavan;if(!T||!T.L)return [];return T.L.map(x=>{const o=S.umap[x.s]||{name:x.s};return {s:x.s,sub:'Tavan kapanış '+nf(x.c)+(T.d?' · '+kesDate(Date.parse(T.d+'T12:00:00+03:00')):''),val:o.close>0?nf(o.close):'',chg:o.change}})}
+  case 'geri':return ((D&&D.geri)||[]).map(g=>{const o=S.umap[g.sym]||{name:g.sym};return {s:g.sym,sub:g.n+' bildirim · son '+kesDate(g.last),val:o.close>0?nf(o.close):'',chg:o.change}});
+  case 'is':{const G={};((D&&D.is)||[]).forEach(x=>{const g=G[x.sym]=G[x.sym]||{s:x.sym,n:0,tl:0,raw:[],t:0,sum:'',miss:0};g.n++;if(x.t>g.t){g.t=x.t;g.sum=x.sum}
+    if(x.amt>0){const fx=kesFx(x.cur);if(fx)g.tl+=x.amt*fx;else g.raw.push(kesTL(x.amt)+' '+x.cur)}else g.miss++});
+   return Object.values(G).map(g=>{const o=S.umap[g.s]||{name:g.s},mc=o.market_cap_basic,r=g.tl>0&&mc>0?g.tl/mc*100:null;
+    const amt=g.tl>0?kesTL(g.tl)+' TL':g.raw.length?g.raw.join(' + '):'';
+    return {s:g.s,r,t:g.t,sub:htmlEsc(g.sum)+' · '+(g.n>1?g.n+' haber, son ':'')+kesDate(g.t)+(amt?'<br><span class="kamt">Toplam '+amt+(r!=null?' · piyasa değerinin %'+nf(r,r<1?2:1)+'\'i':'')+'</span>':'<br><span class="kamt dim">Tutar açıklanmamış</span>'),
+     val:o.close>0?nf(o.close):'',chg:o.change}}).sort((a,b)=>(b.r!=null)-(a.r!=null)||(b.r||0)-(a.r||0)||b.t-a.t)}
+ }
+ return R}
+function kesCount(k){try{if((k==='gc'||k==='dc')&&KCR.d!==todayStr())return null;if(/^(is|geri|tavan)$/.test(k)&&!KES.data)return null;
+ if(k==='is'){const S2=new Set(((KES.data&&KES.data.is)||[]).map(x=>x.sym));return S2.size}return kesItems(k).length}catch(e){return null}}
+function kesOpen(k){KES.l=k;if((k==='gc'||k==='dc')&&KCR.d!==todayStr())kesCross();renderKesif();try{window.scrollTo(0,0);const t=document.getElementById('t-kesif');if(t)t.scrollTop=0}catch(e){}}
+function kesBack(){KES.l='';renderKesif()}
+function kesRow(r){return '<div class="krow" onclick="xrayOpen(\''+r.s+'\')">'+nAvatar(r.s)+'<div class="ksm"><b>'+htmlEsc(r.s)+'</b><small>'+(r.sub||'')+'</small></div>'+
+ '<div class="ksv">'+(r.val?'<b>'+r.val+'</b>':'')+(r.chg!=null&&isFinite(r.chg)?'<i class="'+cls(r.chg)+'">'+pct(r.chg)+'</i>':'')+'</div></div>'}
+function kesListHtml(k){const L=KES_L.find(x=>x.k===k),t=L?L.t:KES_T[k]||'',d=L?L.d:'Hacmi 5 milyon TL\'nin üstündeki hisseler; ilk 30.';
+ let h='<div class="kes"><button class="kesb" onclick="kesBack()">‹ Keşfet</button><div class="kesti"><b>'+t+'</b><p>'+d+'</p></div>';
+ const needSrv=/^(is|geri|tavan)$/.test(k);
+ if((k==='gc'||k==='dc')&&KCR.d!==todayStr()){const p=KCR.tot?Math.round(KCR.done/KCR.tot*100):0;
+  return h+(tvBarsBase()?'<div class="xnote">⏳ 100 hissenin günlük grafiği taranıyor… '+KCR.done+'/'+(KCR.tot||100)+'</div><div class="kprog"><i style="width:'+p+'%"></i></div>':'<div class="xnote">Sunucu bağlantısı yok.</div>')+'</div>'}
+ if(needSrv&&!KES.data)return h+'<div class="xnote">'+(KES.err?htmlEsc(KES.err)+' <a onclick="kesLoad(true)">Yeniden dene</a>':'⏳ Liste yükleniyor…')+'</div></div>';
+ if(!(S.uni||[]).length&&!needSrv)return h+'<div class="xnote">⏳ Piyasa verisi bekleniyor…</div></div>';
+ const R=kesItems(k);
+ h+=R.length?'<div class="klist">'+R.map(kesRow).join('')+'</div>':'<div class="xnote">Şu an bu listeye giren hisse yok.</div>';
+ return h+'<div class="xnote sm">Sinyal değildir; bilgi amaçlıdır. Hisseye dokununca röntgeni açılır. Yatırım tavsiyesi değildir.</div></div>'}
+function renderKesif(){const el=document.getElementById('kesifbody');if(!el)return;kesLoad(false);
+ if(KES.l){el.innerHTML=kesListHtml(KES.l);return}
+ let h='<div class="kes"><div class="kesq">'+KES_Q.map(([k,t])=>'<button class="'+(k==='vol'?'':k)+'" onclick="kesOpen(\''+k+'\')">'+KSV(KIC[k])+'<b>'+t+'</b></button>').join('')+'</div>';
+ h+='<div class="kesh">Öne çıkanlar</div><div class="kesl">'+KES_L.map(L=>{const n=kesCount(L.k);
+  return '<button class="kesi" onclick="kesOpen(\''+L.k+'\')"><span class="kic">'+KSV(KIC[L.k])+'</span><span class="kst"><b>'+L.t+'</b><small>'+L.d+'</small></span>'+(n!=null?'<em>'+n+'</em>':'<em class="q"></em>')+'<i class="kch">›</i></button>'}).join('')+'</div>';
+ el.innerHTML=h+'<div class="xnote sm">Bu listeler sinyal değildir; hisseleri tanımak içindir. Yatırım tavsiyesi değildir.</div></div>'}
+</script>
+<style>
+/* ---- v13.0 FİYAT ARALIĞI + DÖNEM GETİRİSİ + FİYAT VURGUSU + KEŞFET (iki temada) ---- */
+.rgc{display:flex;flex-direction:column;gap:14px;margin:6px 2px 8px}
+.rgr{display:grid;grid-template-columns:56px minmax(0,1fr);gap:8px;align-items:start}
+.rgl{font-size:12.5px;font-weight:700;color:var(--txt2,#cbd5e1);line-height:16px}
+.rgw{min-width:0}
+.rgt{position:relative;height:6px;border-radius:4px;background:color-mix(in srgb,var(--dn,#F07A6A) 75%,transparent);margin:5px 7px 0}
+.rgu{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--up,#5FD39A)}
+.rgd{position:absolute;top:50%;width:13px;height:13px;margin:-6.5px 0 0 -6.5px;border-radius:50%;background:#fff;border:2.5px solid var(--up,#5FD39A);box-shadow:0 0 0 3px rgba(0,0,0,.28)}
+.rga{position:absolute;top:50%;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:var(--bg,#0E1626);border:2px solid #fff;opacity:.9}
+.rgn{display:flex;justify-content:space-between;align-items:flex-start;margin-top:8px;gap:6px}
+.rgn span{display:flex;flex-direction:column;line-height:1.2;min-width:0}.rgn .m{align-items:center;text-align:center}.rgn .r{align-items:flex-end;text-align:right}
+.rgn b{font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt,#fff)}
+.rgn small{font-size:10.5px;color:var(--dim,#8F9BB3)}
+.rtg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:4px 2px 10px}
+.rtg div{background:rgba(255,255,255,.035);border:1px solid var(--line,rgba(255,255,255,.08));border-radius:12px;padding:8px 4px;text-align:center;min-width:0}
+.rtg small{display:block;font-size:11px;color:var(--dim,#8F9BB3);white-space:nowrap}
+.rtg b{display:block;font-size:16px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums;color:var(--txt,#fff)}
+.rtg b.up{color:var(--up,#5FD39A)}.rtg b.dn{color:var(--dn,#F07A6A)}
+.pxr{margin-top:10px;padding-top:10px;border-top:1px solid var(--line,rgba(255,255,255,.08));display:flex;flex-direction:column;gap:7px}
+.pxr .rgr{grid-template-columns:28px minmax(0,1fr);gap:6px}
+.pxr .rgl{font-size:11px;font-weight:600;color:var(--dim,#8F9BB3);line-height:14px}
+.pxr .rgt{height:4px;margin-top:5px}.pxr .rgd{width:10px;height:10px;margin:-5px 0 0 -5px;border-width:2px;box-shadow:none}
+.pxr .rgn{margin-top:3px}.pxr .rgn b{font-size:11px;font-weight:600;color:var(--dim,#8F9BB3)}.pxr .rgn small{display:none}
+.rtg.mini{grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin:2px 0 0}
+.rtg.mini div{padding:5px 1px;border-radius:9px}.rtg.mini small{font-size:9px}.rtg.mini b{font-size:11.5px;font-weight:700}
+.pfu{animation:pfu 1.2s ease-out}.pfd{animation:pfd 1.2s ease-out}
+@keyframes pfu{0%{background:rgba(95,211,154,.55);color:#fff}100%{background:transparent}}
+@keyframes pfd{0%{background:rgba(240,122,106,.55);color:#fff}100%{background:transparent}}
+.pidx.pfu,.pidx.pfd,.xpx b.pfu,.xpx b.pfd{border-radius:7px}
+.kes{padding:4px 12px 18px}
+.kesq{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:2px 0 16px}
+.kesq button{display:flex;flex-direction:column;align-items:center;gap:7px;padding:15px 6px 13px;border-radius:15px;background:rgba(255,255,255,.04);border:1px solid var(--line,rgba(255,255,255,.08));color:var(--txt,#fff);font:inherit;cursor:pointer}
+.kesq svg{width:24px;height:24px;color:var(--pir,#C9A35B)}.kesq .up svg{color:var(--up,#5FD39A)}.kesq .dn svg{color:var(--dn,#F07A6A)}
+.kesq b{font-size:13px;font-weight:700}
+.kesh{font-size:17px;font-weight:800;margin:2px 2px 9px;color:var(--txt,#fff)}
+.kesl{display:flex;flex-direction:column;border-radius:16px;overflow:hidden;border:1px solid var(--line,rgba(255,255,255,.08));background:rgba(255,255,255,.025)}
+.kesi{display:grid;grid-template-columns:36px minmax(0,1fr) auto 10px;gap:11px;align-items:center;text-align:left;padding:13px 12px;border:0;border-bottom:1px solid var(--line,rgba(255,255,255,.08));background:none;color:var(--txt,#fff);font:inherit;cursor:pointer;width:100%}
+.kesi:last-child{border-bottom:0}.kesi:active{background:rgba(255,255,255,.05)}
+.kic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:rgba(201,163,91,.13);color:var(--pir2,#E6C98A)}
+.kic svg{width:20px;height:20px}
+.kesi .kst{min-width:0}.kesi .kst b{display:block;font-size:14.5px;font-weight:700;line-height:1.25}
+.kesi .kst small{display:block;font-size:12px;color:var(--dim,#8F9BB3);line-height:1.35;margin-top:3px}
+.kesi em{font-style:normal;font-size:12px;font-weight:700;color:var(--pir2,#E6C98A);background:rgba(201,163,91,.13);border-radius:20px;padding:2px 9px;min-width:12px;text-align:center}
+.kesi em.q{background:none;padding:0}
+.kch{font-style:normal;color:var(--dim,#8F9BB3);font-size:20px;line-height:1}
+.kesb{background:none;border:0;color:var(--pir2,#E6C98A);font:inherit;font-size:14.5px;font-weight:700;padding:6px 2px;cursor:pointer}
+.kesti b{display:block;font-size:18px;font-weight:800;margin:2px 2px 3px;color:var(--txt,#fff);line-height:1.25}.kesti p{margin:0 2px 8px;color:var(--dim,#8F9BB3);font-size:12.5px;line-height:1.4}
+.klist{border-top:1px solid var(--line,rgba(255,255,255,.08))}
+.krow{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 2px;border-bottom:1px solid var(--line,rgba(255,255,255,.08));cursor:pointer}
+.krow:active{background:rgba(255,255,255,.04)}
+.krow .ksm{min-width:0}.krow .ksm b{display:block;font-size:14.5px;color:var(--txt,#fff)}.krow .ksm small{display:block;font-size:12px;color:var(--dim,#8F9BB3);line-height:1.35;overflow:hidden;text-overflow:ellipsis}
+.krow .kamt{color:var(--pir2,#E6C98A);font-weight:600}.krow .kamt.dim{color:var(--dim,#8F9BB3);font-weight:400}
+.krow .ksv{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px}.krow .ksv b{font-size:13.5px;font-variant-numeric:tabular-nums;color:var(--txt,#fff)}
+.krow .ksv i{font-style:normal;font-size:12.5px;font-weight:700}.krow .ksv i.up{color:var(--up,#5FD39A)}.krow .ksv i.dn{color:var(--dn,#F07A6A)}
+.kprog{height:5px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;margin:8px 2px}.kprog i{display:block;height:100%;background:var(--pir,#C9A35B);transition:width .3s}
+html.cam #t-kesif{--ta:#E6C98A}
+</style>
 <style>html.noset [data-t="set"],html.noset #t-set{display:none!important}
-html.uye [data-t="op"],html.uye [data-t="algi"],html.uye [data-t="brief"],html.uye #t-op,html.uye #t-algi,html.uye #t-brief{display:none!important}</style>
+html.uye [data-t="op"],html.uye [data-t="algi"],html.uye [data-t="brief"],html.uye #t-op,html.uye #t-algi,html.uye #t-brief{display:none!important}
+html:not(.uye) #tabs [data-t="kesif"]{display:none!important}</style>
 </body>
 </html>
