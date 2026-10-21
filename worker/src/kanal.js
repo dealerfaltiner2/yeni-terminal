@@ -108,7 +108,14 @@ export async function kanalOnce(env, h) {
   const ch = await pubCh(env); if (!ch) return null;
   let o = null; try { o = JSON.parse(v); } catch (e) { o = { t: v }; }
   const tag = /^[a-z0-9]{1,16}$/.test(o.tag || '') ? o.tag : 'ozel';
-  const r = await pubSend(env, h, ch, String(o.t || ''), tag);
+  let r;
+  // v13.6 (20.10, Fatih: 'Keşfet'i birkaç görselle tanıt'): {photos: [url…], t: albüm altyazısı (≤1024), bt: düğmeli kısa mesaj} → albüm + düğmeli mesaj (albümde düğme olmaz)
+  if (Array.isArray(o.photos) && o.photos.length) {
+    const tok = await pubTok(env, h, ch); if (!tok) return null;
+    const media = o.photos.slice(0, 10).map((u, i) => Object.assign({ type: 'photo', media: String(u) }, i === 0 && o.t ? { caption: String(o.t).slice(0, 1024), parse_mode: 'HTML' } : {}));
+    r = await tgApi(tok, 'sendMediaGroup', { chat_id: ch.id, media });
+    if (r && r.ok && o.bt) await pubSend(env, h, ch, String(o.bt), tag);
+  } else r = await pubSend(env, h, ch, String(o.t || ''), tag);
   await metaSet(env, 'pub_once_res', new Date().toISOString() + ' ' + JSON.stringify(r).slice(0, 160));
   if (r && r.ok) await env.BT.prepare("DELETE FROM meta WHERE k = 'pub_once'").run();
   return { ok: !!(r && r.ok) };

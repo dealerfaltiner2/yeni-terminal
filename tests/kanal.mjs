@@ -57,6 +57,8 @@ ok('akşam ikinci kez gitmez', (await K.kanalPm(env, h, tr('2026-10-19T18:50:00'
 sent.length = 0; meta.pub_once = JSON.stringify({ t: '🧭 <b>Haftaya bakış</b>', tag: 'hafta' });
 const o1 = await K.kanalOnce(env, h), o2 = await K.kanalOnce(env, h);
 ok('tek seferlik paylaşım kanala düğmeli gitti, sonra silindi', o1 && o1.ok && o2 === null && meta.pub_once == null && /k_hafta/.test(JSON.stringify(sent[0].b.reply_markup)) && sent[0].b.chat_id === -1009, JSON.stringify(o1));
+sent.length = 0; meta.pub_once = JSON.stringify({ photos: ['https://x/1.jpg', 'https://x/2.jpg'], t: '🔭 <b>Keşfet</b>', bt: 'Aç', tag: 'kesif' });
+{ const oa = await K.kanalOnce(env, h); ok('albüm paylaşımı: önce sendMediaGroup (altyazı ilk fotoğrafta), sonra düğmeli mesaj', oa && oa.ok && sent[0].m === 'sendMediaGroup' && sent[0].b.media.length === 2 && sent[0].b.media[0].caption && !sent[0].b.media[1].caption && sent[1] && sent[1].m === 'sendMessage' && /k_kesif/.test(JSON.stringify(sent[1].b.reply_markup)), JSON.stringify(sent.map(x => x.m))); }
 // v12.5 seans içi KAP + Pazar haftaya bakış
 const kp = K.kapPubText({ t: tr('2026-10-19T11:05:00'), syms: 'THYAO,PGSUS', tip: 'is', yon: 1, subj: 'Yeni sözleşme <x>', summ: 'Tutar 100 milyon', q: { close: 312.5, change: 1.24 } }, esc);
 ok('anlık KAP mesajı: sembol, saat, olumlu, fiyat; AL/hedef/stop yok', /Son dakika KAP · THYAO/.test(kp) && /11:05/.test(kp) && /🟢 Olumlu/.test(kp) && /312,50 TL, bugün \+%1,24/.test(kp) && /&lt;x&gt;/.test(kp) && !/hedef|stop|\bAL\b/i.test(kp), kp);

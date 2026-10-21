@@ -1087,7 +1087,13 @@ export default {
           if (!sr || cat !== s.at) {
             // v11.10: duyuru JSON olabilir {t: metin, kb: düğmeler, pin: 1} — düğmeli mesaj + (bot yetkiliyse) gruba sabitleme
             let A = null; try { if (an.v.trim().startsWith('{')) A = JSON.parse(an.v); } catch (e) {}
-            const r = A ? await tgSend(cfg, A.t, A.kb || null) : await tgSend(cfg, an.v);
+            let r;
+            // v13.6: {photos: [url…], t: albüm altyazısı, bt: düğmeli kısa mesaj, kb} → albüm + (varsa) düğmeli mesaj
+            if (A && Array.isArray(A.photos) && A.photos.length) {
+              const media = A.photos.slice(0, 10).map((u, i) => Object.assign({ type: 'photo', media: String(u) }, i === 0 && A.t ? { caption: String(A.t).slice(0, 1024), parse_mode: 'HTML' } : {}));
+              try { r = await (await fetch('https://api.telegram.org/bot' + cfg.tgTok + '/sendMediaGroup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: cfg.chat, media }), signal: AbortSignal.timeout(10000) })).json(); } catch (e) { r = { ok: false, error: String(e.message || e) }; }
+              if (r && r.ok && A.bt) await tgSend(cfg, A.bt, A.kb || null);
+            } else r = A ? await tgSend(cfg, A.t, A.kb || null) : await tgSend(cfg, an.v);
             if (A && A.pin && r.ok && r.id) { try { const pr = await fetch('https://api.telegram.org/bot' + cfg.tgTok + '/pinChatMessage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: cfg.chat, message_id: r.id, disable_notification: true }) }).then(x => x.json()); r.pin = pr.ok ? 'sabitlendi' : (pr.description || 'sabitlenemedi'); } catch (e) { r.pin = 'sabitlenemedi'; } }
             s.n++; s.at = cat;
             if (r.ok || s.n >= 20) await env.BT.prepare("DELETE FROM meta WHERE k IN ('announce', 'announce_n')").run();

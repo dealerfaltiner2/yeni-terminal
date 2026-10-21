@@ -3302,7 +3302,7 @@ function tvReconnectReport(){
  });
  // ---- alt menu: 4 ana sekme + Menu sayfasi ----
  try{
-  const MAIN=['now','op','algi','chart','watch'],more=document.getElementById('more'),mb=document.getElementById('morebtn');
+  const MAIN=['now','op','algi','lab','kesif','watch'],more=document.getElementById('more'),mb=document.getElementById('morebtn');
   const open=()=>{more.classList.add('on');requestAnimationFrame(()=>requestAnimationFrame(()=>more.classList.add('open')))};
   const close=()=>{more.classList.remove('open');setTimeout(()=>more.classList.remove('on'),260)};
   document.getElementById('tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.more){open();return}if(b.dataset.t)showTab(b.dataset.t)};
@@ -3318,7 +3318,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="13.4";window.APPV=APP_VER;
+  const APP_VER="13.6";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
