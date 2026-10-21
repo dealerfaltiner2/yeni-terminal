@@ -4614,6 +4614,11 @@ function sparkFor(sym,w,h){try{
 }catch(e){return ''}}
 function nowSess(){const d=new Date(Date.now()+3*3600e3),wd=d.getUTCDay(),m=d.getUTCHours()*60+d.getUTCMinutes();
  const wk=wd>0&&wd<6;return{open:wk&&m>=600&&m<1080,pre:wk&&m<600,m,wd,wk}}
+// v13.7 (21.10, Fatih: 'VİOP neden yanlış'): VİOP verisi 15 dk gecikmeli → hafta içi 09:45'ten önce gördüğümüz dün akşamın fiyatı ve dünkü yüzde.
+// old = hafta içi 09:45 öncesi (yön puanına girmez, 'dünkü veri' yazar); pr = BIST 30'a göre fark (vadeli prim), endeks açılış seansındayken (09:45–10:00) hesaplanmaz.
+function viopInfo(){const V=S.viop;if(!V||!V.c)return null;const s=nowSess(),old=s.wk&&s.m<585,x=(S.mkt||{}).XU030;
+ const pr=x&&x.c>0&&!(s.wk&&s.m>=585&&s.m<600)?(V.c/x.c-1)*100:null;
+ return{c:V.c,ch:V.ch,dl:V.dl,old,wkend:!s.wk,pr:pr!=null&&isFinite(pr)&&Math.abs(pr)<15?pr:null}}
 // v13.4 (20.10, Fatih: 'kapanışta canlı yazmasın, piyasa kapalı / şu kadar sonra açılacak yazsın'): piyasa durumu + sonraki açılışa kalan süre
 const MK_IC={cl:'<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',pre:'<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/>',kap:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'};
 function mkIco(k){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(MK_IC[k]||MK_IC.cl)+'</svg>'}
@@ -4695,12 +4700,12 @@ function nHero(){
   '<div class="nh-mode"><small>PİYASANIN HAVASI</small><b>'+mdTr+'</b><span>'+tip+'</span></div></div>'+idxChart();
  if(r){const up=Math.max(0,Math.min(100,r.breadth||0));
   h+='<div class="nbr"><div class="nbr-bar"><i style="width:'+up+'%"></i></div><div class="nbr-l"><span><b class="up">%'+nf(up,0)+'</b> hisse artıda</span><span><b>%'+nf(r.above,0)+'</b>\'i 20 günlük ortalama üstünde</span></div></div>'}
- const V=S.viop,tiles=[];
- if(V&&V.c)tiles.push(['VİOP 30',V.c,V.ch,V.dl?'15 dk gecikmeli':'']);
+ const V=S.viop,VI=viopInfo(),tiles=[];
+ if(VI)tiles.push(['VİOP 30'+(VI.old?' · dünkü':''),VI.c,VI.ch,(VI.dl?'15 dk gecikmeli':'')+(VI.pr!=null?' · BIST 30\'a göre '+pct(VI.pr):'')]);
  ['BANKA','USD','EUR','ALTIN','S&P VADELİ','DOLAR END.'].forEach(k=>{if(mk[k])tiles.push([k,mk[k].c,mk[k].ch,''])});
  if(tiles.length)h+='<div class="nmk">'+tiles.map(t=>'<div'+(t[3]?' title="'+t[3]+'"':'')+'><small>'+t[0]+(t[3]?' ⏱':'')+'</small><b>'+nf(t[1],t[1]>1000?0:2)+'</b><i class="'+cls(t[2])+'">'+pct(t[2])+'</i></div>').join('')+'</div>';
  const ss=nowSess();
- if(V&&V.c&&ss.wk&&ss.m>=570&&ss.m<600)h+='<div class="nwarn info">📈 <b>VİOP açıldı:</b> BIST 30 vadeli '+pct(V.ch)+' → endeks '+(V.ch>0.3?'yukarı':V.ch<-0.3?'aşağı':'yatay')+' açılabilir'+(V.dl?' (veri 15 dk gecikmeli)':'')+'.</div>';
+ if(V&&V.c&&ss.wk&&ss.m>=585&&ss.m<600)h+='<div class="nwarn info">📈 <b>VİOP açıldı:</b> BIST 30 vadeli '+pct(V.ch)+' → endeks '+(V.ch>0.3?'yukarı':V.ch<-0.3?'aşağı':'yatay')+' açılabilir'+(V.dl?' (veri 15 dk gecikmeli)':'')+'.</div>';
  const ne=ecNear(45);if(ne.length)h+='<div class="nwarn">⚠️ <b>'+ne.map(e=>ecHm(e.t)+' '+ecFlag(e)+' '+htmlEsc(ecTitle(e))).join(' · ')+'</b> — veri saatinde fiyatlar sert oynayabilir; yeni işleme dikkat.</div>';
  return h+nowSessLine()+'</div>'}
 /* ---- canlı takip: bugünün sinyalleri (sunucu + bu cihaz), hedef/stop arasındaki yolculuk ---- */
@@ -4748,7 +4753,7 @@ function nPrep(s){const eve=!s.pre;const n=Date.now(),V=S.viop;
   '<div class="nprep-clock">'+(eve?'Sonraki seans<br><b>yarın 10:00</b>':'Açılışa<br><b>'+Math.max(0,600-s.m)+' dk</b>')+'</div></div><div class="nprep-g">';
  h+=tile('📰',(eve?'Kapanış sonrası':'Gece gelen')+' KAP',kl.length?kl.map(k=>'<div class="npl" onclick="showTab(\'kap\')"><b>'+htmlEsc(String(k.syms||'').split(',')[0])+'</b><span class="'+(k.yon>0?'up':k.yon<0?'dn':'')+'">'+htmlEsc(k.ad||k.tip||'')+'</span></div>').join(''):'<p>Önemli bildirim yok.</p>');
  h+=tile('🗓️','Yaklaşan veriler',ev.length?ev.map(e=>'<div class="npl"><b>'+(new Date(e.t+3*3600e3).toISOString().slice(0,10)===td?'':'Yarın ')+ecHm(e.t)+'</b><span>'+ecFlag(e)+' '+htmlEsc(ecTitle(e))+'</span></div>').join(''):'<p>Önemli veri yok — sakin bir takvim.</p>');
- h+=tile('📈','VİOP 30',V&&V.c&&!eve&&s.m>=570?'<div class="npv '+cls(V.ch)+'">'+pct(V.ch)+'</div><p>Endeks '+(V.ch>0.3?'yukarı':V.ch<-0.3?'aşağı':'yatay')+' açılabilir'+(V.dl?' · 15 dk gecikmeli':'')+'</p>':'<p>'+(eve?'Yarın 09:30\'da açılır; açılış yönünü burada gösterir.':'09:30\'da açılır; açılış yönünü burada gösterir.')+'</p>');
+ h+=tile('📈','VİOP 30',V&&V.c&&!eve&&s.m>=585?'<div class="npv '+cls(V.ch)+'">'+pct(V.ch)+'</div><p>Endeks '+(V.ch>0.3?'yukarı':V.ch<-0.3?'aşağı':'yatay')+' açılabilir'+(V.dl?' · 15 dk gecikmeli':'')+'</p>':'<p>'+(eve?'Yarın 09:30\'da açılır; açılış yönünü burada gösterir.':'09:30\'da açılır; veri 15 dk gecikmeli geldiği için 09:45\'te burada görünür.')+'</p>');
  h+=tile('📅','Bilançosu yaklaşan',es.length?es.map(x=>'<div class="npl"><b>'+htmlEsc(x.s)+'</b><span>'+(x.d===0?'bugün':x.d===1?'yarın':x.d+' gün sonra')+'</span></div>').join(''):'<p>Önümüzdeki günlerde bilanço yok.</p>');
  h+='</div>';
  if(wl.length)h+='<div class="nprep-wl"><span>🔭 İlk bakılacaklar:</span>'+wl.map(o=>'<button onclick="selectSym(\''+o.name+'\',\'bist\');showTab(\'chart\')">'+htmlEsc(o.name)+' <i class="'+cls(o.change)+'">'+pct(o.change)+'</i></button>').join('')+'</div>';
@@ -4979,7 +4984,7 @@ html.cam #t-now{--ta:var(--pir)}
 .psearch{display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--hat2,rgba(233,236,242,.07));background:rgba(233,236,242,.04);color:var(--sis,var(--sis));font:inherit;font-size:14px;text-align:left;cursor:pointer}
 .psearch svg{width:17px;height:17px;flex:none}
 .pstrip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:16px;border-top:1px solid rgba(233,236,242,.07);border-bottom:1px solid rgba(233,236,242,.07)}
-.pstrip div{padding:10px 0 9px;min-width:0}.pstrip div+div{padding-left:10px;border-left:1px solid rgba(233,236,242,.07)}
+.pstrip div{padding:10px 0 9px;min-width:0}.pstrip u{display:block;text-decoration:none;font-size:10px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pstrip div+div{padding-left:10px;border-left:1px solid rgba(233,236,242,.07)}
 .pstrip small{display:block;font-size:12px;color:var(--sis)}.pstrip b{display:block;font:600 17px var(--fntc);color:#E9ECF2;font-variant-numeric:tabular-nums}
 .pstrip em{display:block;font:500 13px var(--fntc);font-style:normal}
 .psess{margin-top:10px}.psess .nsess{border-top:0;margin-top:0;padding-top:0}
@@ -5694,7 +5699,7 @@ function nDial(){
   '<text x="44" y="4" class="pcd">AL</text><text x="-44" y="4" class="pcd">SAT</text>'+
   '<g transform="rotate('+ang.toFixed(1)+')"><polygon points="0,-50 5.5,0 -5.5,0" style="fill:'+ycol+'"/><polygon points="0,30 4,0 -4,0" class="ptl"/></g><circle r="5" class="phb"/></svg>';
  const chg=ok&&x.c?(up?'+':'−')+nf(Math.abs(x.c-x.c/(1+ch/100)),0)+'  '+(up?'+':'−')+'%'+nf(Math.abs(ch),2):'';
- const V=S.viop,st=[];if(V&&V.c)st.push(['VİOP 30',V.c,V.ch]);[['Banka','BANKA'],['Dolar','USD'],['Altın','ALTIN'],['Euro','EUR']].forEach(([a,k])=>{if(mk[k]&&st.length<4)st.push([a,mk[k].c,mk[k].ch])});
+ const VI=viopInfo(),st=[];if(VI)st.push(['VİOP 30 ⏱',VI.c,VI.ch,VI.old?(VI.wkend?'son seans':'dünkü veri'):VI.pr!=null?'endeksten '+pct(VI.pr):'15 dk gecikmeli']);[['Banka','BANKA'],['Dolar','USD'],['Altın','ALTIN'],['Euro','EUR']].forEach(([a,k])=>{if(mk[k]&&st.length<4)st.push([a,mk[k].c,mk[k].ch])});
  const hmm=v=>{v=Math.max(0,v);const h=Math.floor(v/60),m=v%60;return (h?h+' sa ':'')+m+' dk'};
  const f=Math.max(0,Math.min(1,(s.m-600)/480));
  const sessT=s.open?'Seans açık · kapanışa '+hmm(1080-s.m):s.pre?'Seans 10:00\'da · '+hmm(600-s.m)+' kaldı':'Piyasa kapalı · sonraki seans '+(s.wd===5&&s.m>=1080||s.wd===6||s.wd===0?'Pazartesi':'yarın')+' 10:00';
@@ -5708,8 +5713,8 @@ function nDial(){
    (nu+nd?'<span class="pbr2"><i class="u"></i>'+nu+' yükselen<i class="d"></i>'+nd+' düşen</span>':'')+'</div></div>'+
   '<div class="pses"><span>10:00</span><div class="psb"><i style="width:'+(f*100).toFixed(1)+'%"></i>'+(s.open?'<em style="left:'+(f*100).toFixed(1)+'%"></em>':'')+'</div><span>18:00</span></div>'+
   '<div class="pline"><span><i class="'+(s.open?(live?'on':'warn'):'')+'"></i>'+sessT+'</span>'+bot+((S.uye||TVL.uye)?'<span>Üye sürümü · fiyatlar 15 dk gecikmeli</span>':'')+'</div>'+
-  (st.length?'<div class="pstrip">'+st.map(t=>'<div><small>'+t[0]+'</small><b>'+nf(t[1],t[1]>1000?0:2)+'</b><em class="'+cls(t[2])+'">'+(t[2]!=null?(t[2]>=0?'+':'−')+nf(Math.abs(t[2]),2):'')+'</em></div>').join('')+'</div>':'')+(typeof nIdxRng==='function'?nIdxRng():'')+'</div>';
- if(V&&V.c&&s.wk&&s.m>=570&&s.m<600)h+='<div class="nwarn info">📈 <b>VİOP açıldı:</b> BIST 30 vadeli '+pct(V.ch)+' → endeks '+(V.ch>0.3?'yukarı':V.ch<-0.3?'aşağı':'yatay')+' açılabilir'+(V.dl?' (15 dk gecikmeli)':'')+'.</div>';
+  (st.length?'<div class="pstrip">'+st.map(t=>'<div><small>'+t[0]+'</small><b>'+nf(t[1],t[1]>1000?0:2)+'</b><em class="'+cls(t[2])+'">'+(t[2]!=null?(t[2]>=0?'+':'−')+nf(Math.abs(t[2]),2):'')+'</em>'+(t[3]?'<u>'+t[3]+'</u>':'')+'</div>').join('')+'</div>':'')+(typeof nIdxRng==='function'?nIdxRng():'')+'</div>';
+ if(VI&&!VI.old&&s.wk&&s.m<600)h+='<div class="nwarn info">📈 <b>VİOP açıldı:</b> BIST 30 vadeli '+pct(VI.ch)+' → endeks '+(VI.ch>0.3?'yukarı':VI.ch<-0.3?'aşağı':'yatay')+' açılabilir'+(VI.dl?' (15 dk gecikmeli)':'')+'.</div>';
  try{const ne=ecNear(45);if(ne.length)h+='<div class="nwarn">⚠️ <b>'+ne.map(e=>ecHm(e.t)+' '+ecFlag(e)+' '+htmlEsc(ecTitle(e))).join(', ')+'</b>: veri saatinde fiyatlar sert oynayabilir.</div>'}catch(e){}
  return '<div class="phero">'+h+'</div>'}
 </script>
@@ -5728,7 +5733,7 @@ function pusYon(){
  if(ch!=null&&isFinite(ch))P.push(['Endeks',.3,cl(ch/2)]);
  if(U.length>=20){nu=U.filter(o=>o.change>0).length;nd=U.filter(o=>o.change<0).length;br=(nu-nd)/Math.max(1,nu+nd);P.push(['Yükselen/düşen',.25,cl(br*1.5)]);
   const a=U.map(o=>o.change).sort((p,q)=>p-q);med=a[Math.floor(a.length/2)];P.push(['Ortanca hisse',.15,cl(med/2)])}
- const V=S.viop;if(V&&V.ch!=null&&isFinite(V.ch))P.push(['VİOP',.1,cl(V.ch/2)]);
+ const V=viopInfo();if(V&&!V.old&&V.ch!=null&&isFinite(V.ch))P.push(['VİOP',.1,cl(V.ch/2)]);   // v13.7: 09:45 öncesi dünkü VİOP yön puanına girmez
  if(mk.BANKA&&mk.BANKA.ch!=null&&isFinite(mk.BANKA.ch))P.push(['Bankalar',.1,cl(mk.BANKA.ch/2.5)]);
  const md=S.reg?S.reg.mode:'';if(md)P.push(['Trend',.1,md==='TREND'?.6:md==='ZAYIF'?-.6:0]);
  if(!P.length)return null;
@@ -5801,7 +5806,7 @@ function renderNowCam(){
  const F=[];
  try{const L=YRM.list;if(L&&L.length){const y=L[0];F.push(nFold('yrm','Pusula\'nın piyasa yorumu',String(YSLOT[y.slot]||'Yorum').replace(/^\S+\s/,'')+' · '+yorumAge(y.t),()=>yorumCard()))}}catch(e){}
  const prepTime=s.wk&&((s.m>=480&&s.m<600)||s.m>=1095);
- if(prepTime)try{const kn=(NOWK.list||[]).filter(k=>n-k.t<16*3600e3&&k.onem>=2).length,es=earnSoon(s.pre?2:3).length;F.push(nFold('prep',s.pre?'Güne hazırlık':'Yarına hazırlık',kn+' önemli KAP'+(es?' · '+es+' bilanço yaklaşıyor':'')+(S.viop&&S.viop.c&&s.pre&&s.m>=570?' · VİOP '+pct(S.viop.ch):''),()=>nPrep(s)))}catch(e){}
+ if(prepTime)try{const kn=(NOWK.list||[]).filter(k=>n-k.t<16*3600e3&&k.onem>=2).length,es=earnSoon(s.pre?2:3).length;F.push(nFold('prep',s.pre?'Güne hazırlık':'Yarına hazırlık',kn+' önemli KAP'+(es?' · '+es+' bilanço yaklaşıyor':'')+(S.viop&&S.viop.c&&s.pre&&s.m>=585?' · VİOP '+pct(S.viop.ch):''),()=>nPrep(s)))}catch(e){}
  if(!liveT&&!uy&&SIGT.list&&SIGT.list.length)F.push(nFold('live','Bugünün sinyalleri',SIGT.list.filter(r=>r.px>0&&r.src!=='radar').length+' sinyal · hedef ve stop yolculuğu',()=>nLive()));
  try{const kl=(NOWK.list||[]).filter(k=>n-k.t<(s.open?3:16)*3600e3&&k.onem>=2).slice(0,6),k0=kl[0];
   F.push(nFold('kap',s.open?'Son 3 saatin önemli KAP\'ları':'Önemli KAP\'lar',kl.length?kl.length+' haber · '+htmlEsc(String(k0.syms||'').split(',')[0]+' — '+String(k0.subj||'').slice(0,46)):'Önemli bildirim yok',()=>kl.length?kl.map(k=>{const sy=String(k.syms||'').split(',')[0]||'KAP',o=S.umap[sy]||{};return nowRow({sym:sy,src:k.ad||k.tip,cls:'kap',sub:(k.subj||'')+(k.summ?' — '+k.summ:''),val:s.open&&o.close?nf(o.close):new Date(k.t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}),chg:s.open?o.change:null,dn:k.yon<0,onclick:"showTab('kap')"})}).join('')+'<button class="pmore" onclick="showTab(\'kap\')">KAP Haber ekranı ›</button>':'<div class="nempty">Önemli bildirim yok.</div>'))}catch(e){}

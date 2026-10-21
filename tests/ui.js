@@ -294,6 +294,13 @@ async function page(b, opt) {
           top: (renderPx(), document.getElementById('px').innerHTML) }; });
       ok('Piyasa durumu: seansta açık, akşam kapalı + açılışa kalan süre, Cuma akşamı Pazartesi, sabah seans öncesi, 18:00–18:10 kapanış seansı',
         mk.open === 'open' && mk.eve.k === 'cl' && mk.eve.sub === 'Açılışa 15 sa 25 dk' && mk.fri === "Pazartesi 10:00'da açılır" && mk.pre.k === 'pre' && mk.pre.sub === 'Açılışa 30 dk' && mk.kap === 'kap', JSON.stringify(mk).slice(0, 300));
+      const vp = await p.evaluate(() => { const real = Date.now, keep = { v: S.viop, m: S.mkt }; S.viop = { c: 14803, ch: 2.72, dl: true }; S.mkt = Object.assign({}, S.mkt || {}, { XU030: { c: 14676.53, ch: 3.2 } });
+        const at = iso => { Date.now = () => Date.parse(iso); const r = viopInfo(); Date.now = real; return r; };
+        const a = at('2026-10-21T09:37:00+03:00'), o = at('2026-10-21T11:00:00+03:00'), w = at('2026-10-25T12:00:00+03:00');
+        Date.now = () => Date.parse('2026-10-21T09:37:00+03:00'); let yonOld = null; try { const t = document.createElement('div'); t.innerHTML = nDial(); yonOld = /dünkü veri/.test(t.textContent); } catch (e) { yonOld = 'hata ' + e.message; } Date.now = real;
+        S.viop = keep.v; S.mkt = keep.m; return { aOld: a.old, oOld: o.old, pr: o.pr != null ? +o.pr.toFixed(2) : null, w: w.wkend, yonOld }; });
+      ok('VİOP: 09:45 öncesi dünkü veri sayılır, seansta değil, BIST 30\'a göre fark hesaplanır, ana sayfada "dünkü veri" yazar',
+        vp.aOld === true && vp.oOld === false && vp.pr === 0.86 && vp.w === true && vp.yonOld === true, JSON.stringify(vp));
       await p.evaluate(() => selectSym('THYAO', 'bist')); await p.waitForTimeout(2500);
       const cn = await p.evaluate(() => { const el = document.getElementById('cnote'), t = el ? el.textContent : ''; const w = S.wsig.THYAO;
         return { card: !!el.querySelector('.cnc'), grade: (el.querySelector('.cng') || {}).textContent, wg: w && !w.err ? (w.side === 'AL' ? w.grade : 'C') : 'err', txt: /PUSULA NOTU/.test(t) && /Destek/.test(t) && /Direnç/.test(t),
