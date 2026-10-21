@@ -454,8 +454,19 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
 }
 // v7.9 ŞİMDİ · CANLI TAKİP — bugünün sinyalleri (KAP hariç); motorun gönderdikleri telefonda da görünsün. 30 sn önbellek.
 let todayCache = { at: 0, v: null };
-export async function sigToday(env) {
+// v14.1 (21.10, Fatih: 'Algı bana gelmemiş, arkadaşlara farklı gelmiş'): src='algi' → yalnız bugünün Algı ateşlemeleri (ana sunucunun karnesi = tek kaynak; her telefon bunu gösterir)
+let algiCache = { at: 0, v: null };
+export async function sigToday(env, src) {
   if (!env.BT) return { ok: false, error: 'D1 yok' };
+  if (src === 'algi') {
+    if (algiCache.v && Date.now() - algiCache.at < 20e3) return algiCache.v;
+    await sigEnsure(env);
+    const a0 = Date.parse(trDay(Date.now()) + 'T00:00:00Z') - TRMS;
+    const rs = (await env.BT.prepare("SELECT t, sym, px, sc, meta, done, o31, mfe, mae, rc FROM sig INDEXED BY sig_t WHERE t >= ? AND src = 'algi' ORDER BY t DESC LIMIT 120").bind(a0).all()).results || [];
+    const v = { ok: true, at: Date.now(), list: rs.map(r => { let m = null; try { m = r.meta ? JSON.parse(r.meta) : null; } catch (e) {} return { ...r, meta: m }; }) };
+    algiCache = { at: Date.now(), v };
+    return v;
+  }
   if (todayCache.v && Date.now() - todayCache.at < 30e3) return todayCache.v;
   await sigEnsure(env);
   const d0 = Date.parse(trDay(Date.now()) + 'T00:00:00Z') - TRMS;

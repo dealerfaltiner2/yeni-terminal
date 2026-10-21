@@ -304,6 +304,10 @@ async function page(b, opt) {
       const gt = await p.evaluate(() => { tgaGate({ url: 'https://t.me/bistpusulatr', title: 'BIST Pusula' }); const b = document.getElementById('tgabox'); const r = { t: b.textContent, n: b.querySelectorAll('button').length };
         tgaGate({ url: 'javascript:alert(1)', title: '<i>x</i>' }); r.bad = b.querySelectorAll('button').length; r.esc = !b.querySelector('i'); b.remove(); return r; });
       ok('Kanal kapısı: "Kanala katıl" ve "Katıldım, aç" düğmeleri; bozuk bağlantıda katıl düğmesi yok, başlık kaçışlı', /Kanala katıl, Pusula açılsın/.test(gt.t) && gt.n === 2 && gt.bad === 1 && gt.esc, JSON.stringify(gt).slice(0, 200));
+      const al = await p.evaluate(async () => { S.botAlive = true; ALS.at = 0; ALS.seen = null; alSrvLoad(); await new Promise(r => setTimeout(r, 1200)); showTab('algi'); await new Promise(r => setTimeout(r, 300));
+        const t = document.getElementById('t-algi').textContent; return { n: (ALS.list || []).length, jants: /JANTS/.test(t), sahol: /SAHOL/.test(t), tg: /📨/.test(t), srv: /Ana sunucudan/.test(t), toast: (typeof stCur !== 'undefined' && stCur && stCur.sym) || (STQ[0] && STQ[0].sym) || '' }; });
+      ok('Algı tek kaynak: ana sunucunun ateşlemeleri listede (Telegram işaretiyle), yeni olan üstten kart olarak çıkıyor', al.n === 2 && al.jants && al.sahol && al.tg && al.srv && al.toast === 'JANTS', JSON.stringify(al));
+      await p.evaluate(() => { S.botAlive = false; });
       await p.evaluate(() => selectSym('THYAO', 'bist')); await p.waitForTimeout(2500);
       const cn = await p.evaluate(() => { const el = document.getElementById('cnote'), t = el ? el.textContent : ''; const w = S.wsig.THYAO;
         return { card: !!el.querySelector('.cnc'), grade: (el.querySelector('.cng') || {}).textContent, wg: w && !w.err ? (w.side === 'AL' ? w.grade : 'C') : 'err', txt: /PUSULA NOTU/.test(t) && /Destek/.test(t) && /Direnç/.test(t),

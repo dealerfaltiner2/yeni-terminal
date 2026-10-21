@@ -3360,7 +3360,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.0";window.APPV=APP_VER;
+  const APP_VER="14.1";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3693,7 +3693,8 @@ function tvReconnectReport(){
     const fire=flow&&f.fc!=null&&f.fc>=.65&&(f.fd||f.fe)&&!f.late&&f.mv5<2.5&&sc>=AL.cfg.minSc&&now>st.cool&&!AL.log.some(x=>x.s===sym&&x.d===dayKey(now)); // 03.10: hisse başına günde tek sinyal
     st.cnt=fire?st.cnt+1:0;
     let stage=st.cnt>0?'hazir':awake?'uyanis':'';
-    if(st.cnt>=3){
+    if(st.cnt>=3&&!BOTMODE&&S.botAlive){st.cnt=0;st.cool=now+30*60000;stage='ates'}   // v14.1: ana sunucu çalışırken telefon kendi sinyalini VERMEZ — sinyaller sunucudan (alSrvLoad), herkes aynısını görür
+    else if(st.cnt>=3){
      const p0=(f.ask>0&&f.ask>=f.p&&f.ask<=f.p*1.01)?f.ask:f.p; // giris: satis kademesinden alim
      const stp=stopPct(p0);
      const e={id:sym+'-'+now,s:sym,t:now,d:dayKey(now),hr:se.hr,p0:p0,px:f.p,cost:COST,sc,stp,sp:p0*(1-stp/100),tp:p0*(1+2*stp/100),hi:p0,lo:p0,lastT:now,
@@ -3771,14 +3772,22 @@ function tvReconnectReport(){
   if(!AL.cfg.on)s='<span class="dn">○ Radar kapalı</span> — ⚙ Ayar’dan aç';
   else if(!se.open)s='<span style="color:var(--dim)">○ Piyasa kapalı</span> — radar 10:00–18:00 arası, sayfa açıkken çalışır';
   else s='<span class="up">● Aktif</span> · '+H+' hisse · kaynak '+src+ag+(warm<60?' · <span class="wrn">ısınıyor '+warm+'/60 sn</span>':'');
-  const tgs=!AL.cfg.tg?' · Telegram kapalı':!alChat()?' · <span class="wrn">Telegram Chat ID yok</span>':!S.tgTok?' · <span class="wrn">bot token yok (Ayarlar)</span>':' · Telegram ✓';
+  const tgs=(!BOTMODE&&S.botAlive)?' · sinyaller <b>Ana sunucudan</b> (herkeste aynı)':!AL.cfg.tg?' · Telegram kapalı':!alChat()?' · <span class="wrn">Telegram Chat ID yok</span>':!S.tgTok?' · <span class="wrn">bot token yok (Ayarlar)</span>':' · Telegram ✓';
   return '<div class="note" style="padding:8px 12px">'+s+tgs+(AL.err?'<br><span class="dn">'+htmlEsc(AL.err)+'</span>':'')+'</div>';
  }
  function vCanli(){
   const today=dayKey(Date.now());
   const ev=AL.log.filter(e=>e.d===today).slice().reverse();
   let h='<div class="note" style="padding:6px 12px 2px"><b style="color:#ffb020">⚡ BUGÜN ATEŞLENENLER</b></div>';
-  if(!ev.length)h+='<div class="note">Bugün henüz ateşleme yok.</div>';
+  const SL=(!BOTMODE&&window.ALS&&ALS.list)?ALS.list:null;
+  if(SL&&(S.botAlive||SL.length)){   // v14.1: ana sunucunun Algı ateşlemeleri (karnedekiyle birebir)
+   if(!SL.length)h+='<div class="note">Bugün henüz ateşleme yok.</div>';
+   else h+='<div class="note" style="padding:2px 12px 6px">'+SL.length+' ateşleme · 📨 = Telegram\'a gitti (güçlü ve hacim normalin 2 katı)</div><table><tr><th>Sembol</th><th>Saat</th><th>Giriş</th><th>Şimdi</th><th>Zirve</th><th>Güç</th><th>Sonuç</th></tr>'+SL.map(e=>{
+    const m=e.meta||{},q=S.umap[e.sym],now=q&&q.close&&e.px?(q.close/e.px-1)*100:null,tg=m.fc>=.8&&m.rv>=2;
+    const res=e.o31===1?'<b class="up">+%3 ✅</b>':e.o31===2?'<b class="dn">−%1 ❌</b>':e.done?'<span style="color:var(--dim)">sonuçsuz</span>':'<span class="wrn">⏳ açık</span>';
+    return '<tr class="row" onclick="algiGo(\''+e.sym+'\')"><td class="sym">'+htmlEsc(e.sym)+(tg?' 📨':'')+'</td><td>'+hm(e.t)+'</td><td>'+(e.px?nf(e.px):'-')+'</td><td class="'+cls(now)+'">'+(now!=null?pct(now):'-')+'</td><td class="up">'+(e.mfe!=null?pct(e.mfe):'-')+'</td><td>'+(m.fc!=null?'%'+nf(m.fc*100,0)+(m.fc>=.8?' 💪':''):'-')+'</td><td>'+res+'</td></tr>'}).join('')+'</table>';
+  }
+  else if(!ev.length)h+='<div class="note">Bugün henüz ateşleme yok.</div>';
   else h+='<table><tr><th>Sembol</th><th>Saat</th><th>Giriş</th><th>Şimdi</th><th>Zirve</th><th>Durum</th><th>Skor</th></tr>'+ev.map(e=>{
    const q=S.umap[e.s];const now=q&&q.close?(q.close/e.p0-1)*100:null;
    const stt=e.res?RES[e.res]:(e.fade?'<b style="color:#fb923c">🟠 sönüyor</b>':e.conf?'<b class="up">✅ teyit</b>':'<span class="wrn">⏳ açık</span>');
@@ -4708,6 +4717,19 @@ function nHero(){
  if(V&&V.c&&ss.wk&&ss.m>=585&&ss.m<600)h+='<div class="nwarn info">📈 <b>VİOP açıldı:</b> BIST 30 vadeli '+pct(V.ch)+' → endeks '+(V.ch>0.3?'yukarı':V.ch<-0.3?'aşağı':'yatay')+' açılabilir'+(V.dl?' (veri 15 dk gecikmeli)':'')+'.</div>';
  const ne=ecNear(45);if(ne.length)h+='<div class="nwarn">⚠️ <b>'+ne.map(e=>ecHm(e.t)+' '+ecFlag(e)+' '+htmlEsc(ecTitle(e))).join(' · ')+'</b> — veri saatinde fiyatlar sert oynayabilir; yeni işleme dikkat.</div>';
  return h+nowSessLine()+'</div>'}
+/* v14.1 (21.10, Fatih: 'Algı bana gelmemiş, arkadaşlara farklı gelmiş'): her telefon Algı'yı kendi hesaplıyordu → herkeste farklı sinyal.
+   Artık ana sunucu çalışırken telefon kendi sinyalini vermez; Algı ateşlemeleri sunucudan (/sigtoday?src=algi, 30 sn) gelir: Algı sekmesi listesi + üstten kayan kart herkeste AYNI. */
+var ALS={at:0,list:null,seen:null};
+function alSrvLoad(){if(BOTMODE||isUye())return;const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||Date.now()-ALS.at<28e3)return;ALS.at=Date.now();
+ fetch(dq(b+'/sigtoday?src=algi')).then(r=>r.json()).then(j=>{if(!j||!j.ok)return;const L=j.list||[],first=!ALS.seen;ALS.seen=ALS.seen||new Set();
+  L.slice().reverse().forEach(e=>{const k=e.sym+'@'+e.t;if(ALS.seen.has(k))return;ALS.seen.add(k);
+   if(!S.botAlive||(first&&Date.now()-e.t>6*60e3))return;   // ilk yüklemede yalnız son 6 dk'nın sinyali kart olur
+   const m=e.meta||{},w=[];if(m.rv!=null)w.push('Günlük hacim normalin '+nf(m.rv,1)+' katı');if(m.fc!=null)w.push('Alıcı oranı %'+nf(m.fc*100,0));if(m.brk)w.push('Zirveyi kırdı');else if(m.bid)w.push('Alış kademesi yükseliyor');
+   try{sigToast({src:'algi',sym:e.sym,dir:'AL',label:'⚡ ALGI · AL · '+(e.sc||'')+(m.fc>=.8?' · 💪 GÜÇLÜ':''),why:w,entry:e.px,stop:e.px?e.px*0.99:null,tgt:e.px?e.px*1.03:null})/* v9.1: hedef +%3, stop −%1 */}catch(x){}
+   try{notify('⚡ Algı: '+e.sym,'Ana sunucu sinyali · '+nf(e.px))}catch(x){}});
+  ALS.list=L;if(S.tab==='algi'&&typeof renderAlgi==='function')try{renderAlgi()}catch(x){}}).catch(()=>{})}
+setInterval(()=>{try{const s=nowSess();if(s.wk&&s.m>=595&&s.m<=1090&&!document.hidden)alSrvLoad()}catch(e){}},10000);
+setTimeout(()=>{try{alSrvLoad()}catch(e){}},4000);
 /* ---- canlı takip: bugünün sinyalleri (sunucu + bu cihaz), hedef/stop arasındaki yolculuk ---- */
 let SIGT={at:0,list:null},TRK={};
 function sigTodayLoad(){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||Date.now()-SIGT.at<45e3)return;SIGT.at=Date.now();
