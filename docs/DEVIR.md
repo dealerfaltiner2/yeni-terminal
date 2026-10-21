@@ -296,3 +296,13 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
 - Gece KAP (09:59 giriş, 29.09'dan 1.599): 258/824, ort. +0,17 puan, gün sonu −0,22; stop olup ≥+%1 kapanan 126 → 'açılışta bekle' fikri zayıf, önerilmedi.
 - Sağlık: err temiz (1 geçici KAP zaman aşımı, işaretli); üç zamanlayıcı canlı; karne 20:15'te hâlâ ölçüyordu (kalan 8, sigsum 21:00'e kadar); motor 18:59 (uyku); flow 96 satır/gün (~3,6 MB); kaph bitti.
 - v13.5 algiB2Fill henüz başlamadı (29.09–19.10 Algı'nın o21'i boş, ~740 satır): sigBackfill yalnız karne ölçümü bitince çalışır; yarın dolmuş olmalı — dolmadıysa bak.
+
+## 6t. 21.10 (Çarşamba) GÜNLÜK GÖZDEN GEÇİRME (endeks −%1,9; 52 yükselen / 569 düşen)
+- Momentum 4 sinyal 2/2 (TGSAS, YKSLN +3; BORLS, ADGYO −1) → +4 puan ≈ +4.000 TL (100 bin/sinyal, kayma hariç). BORLS stop olup günü +%5 kapattı.
+  Canlı 05–21.10: 52 sinyal 11/36, +3/−1 −2,6 puan; ±%1,5 (o15) +8,4; hedefsiz −1 (h1) −31; +4/−1 −11,6; +3/−1,5 −38,9. Endeks eksideyken 44 sinyal o15 +11,1, artıdayken 8 sinyal −2,7 (örnek az).
+- Algı Telegram (güçlü+rv≥2) bugün 5 işlem 0/5 (JANTS +%2 gördü sonra −2,7). 29.09–21.10: 63 işlem 15/36 → +3/−1 +10,7; +2 kâr al +8,1; +2'de stop girişe (b2) +16,8. algiB2Fill bitti (yalnız 02.10'da 4 boş).
+- Sessiz botlar 05–21.10: dunguclu 8 işlem 0/7 (−7,8); tavan6 33 işlem 7/26 (−5; ±1,5 ile −16,5); sessiz 14 (+4/−1 +10,8); oglen 3 (+4,3).
+- KAP geri alım 05–21.10: SEANS İÇİ (10:00–17:30) 33 sinyal 11/9, +30 puan, ort. gün sonu +0,83; gece/seans dışı (09:59 giriş) 414 sinyal 68/308, −73.
+- Fırsat bugün: B AL 0/13 (−13,3), B SAT 11/11 +41,6 (sert düşüş günü).
+- Sağlık: err temiz (2 terminal toparlama), üç zamanlayıcı canlı, sigsum gönderildi, ana sunucu 18:59 (uyku), flow 95 satır/gün, kaph bitti (21.10 00:00). BORSA aracı bağlanmadı.
+- HATA DÜZELTİLDİ: mkt_close 'dn' boştu (en kötü 60'ın hepsi taban/<100 Mn TL) → tavan.js tarama aralığı 200.

@@ -40,7 +40,7 @@ export async function mktClose(env, h) {
   const idx = (ix.data || []).map(x => ({ s: String(x.s).split(':').pop(), c: x.d[1], ch: x.d[2], hi: x.d[3], lo: x.d[4] })).filter(x => x.c > 0);
   if (!idx.length) return null;   // veri yok → sonraki dakika yeniden
   const side = async (op, ord) => {
-    const j = await scan({ filter: [{ left: 'type', operation: 'equal', right: 'stock' }, { left: 'change', operation: op, right: 0 }], columns: ['name', 'close', 'change', 'volume'], sort: { sortBy: 'change', sortOrder: ord }, range: [0, 60] });
+    const j = await scan({ filter: [{ left: 'type', operation: 'equal', right: 'stock' }, { left: 'change', operation: op, right: 0 }], columns: ['name', 'close', 'change', 'volume'], sort: { sortBy: 'change', sortOrder: ord }, range: [0, 200] });   // 21.10: 60 azdı — sert düşüş günü en kötü 60'ın hepsi taban/küçük hisseydi, 'düşenler' boş kaldı
     const L = (j.data || []).map(x => ({ s: String(x.s).split(':').pop(), c: x.d[1], ch: x.d[2], tl: (x.d[1] || 0) * (x.d[3] || 0) }))
       .filter(x => x.tl >= 100e6 && Math.abs(x.ch) < 9.4).slice(0, 3)   // 100 Mn TL üstü işlem; tavan/taban zaten karnede ayrı
       .map(x => ({ s: x.s, ch: Math.round(x.ch * 100) / 100 }));
