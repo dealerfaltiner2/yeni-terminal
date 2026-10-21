@@ -294,6 +294,14 @@ async function page(b, opt) {
           top: (renderPx(), document.getElementById('px').innerHTML) }; });
       ok('Piyasa durumu: seansta açık, akşam kapalı + açılışa kalan süre, Cuma akşamı Pazartesi, sabah seans öncesi, 18:00–18:10 kapanış seansı',
         mk.open === 'open' && mk.eve.k === 'cl' && mk.eve.sub === 'Açılışa 15 sa 25 dk' && mk.fri === "Pazartesi 10:00'da açılır" && mk.pre.k === 'pre' && mk.pre.sub === 'Açılışa 30 dk' && mk.kap === 'kap', JSON.stringify(mk).slice(0, 300));
+      await p.evaluate(() => selectSym('THYAO', 'bist')); await p.waitForTimeout(2500);
+      const cn = await p.evaluate(() => { const el = document.getElementById('cnote'), t = el ? el.textContent : ''; const w = S.wsig.THYAO;
+        return { card: !!el.querySelector('.cnc'), grade: (el.querySelector('.cng') || {}).textContent, wg: w && !w.err ? (w.side === 'AL' ? w.grade : 'C') : 'err', txt: /PUSULA NOTU/.test(t) && /Destek/.test(t) && /Direnç/.test(t),
+          leg: /Açılış/.test(document.getElementById('legend').textContent) && !/\bNot\b/.test(document.getElementById('legend').textContent), t: t.slice(0, 160) }; });
+      await p.screenshot({ path: require('path').join(OUT, 'grafik-not.png') });
+      ok('Grafik not kartı: açılan hissenin notu Fırsat hesabıyla aynı, düz Türkçe özet + Destek/Direnç, grafik satırı Türkçe',
+        cn.card && cn.txt && cn.grade === cn.wg && cn.leg, JSON.stringify(cn));
+      await p.evaluate(() => showTab('kesif'));
       await p.screenshot({ path: require('path').join(OUT, 'kesif.png') });
       ok('Keşfet/aralık sayfasında hata yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }
     // v11.9 misafirde Ayarlar gizli

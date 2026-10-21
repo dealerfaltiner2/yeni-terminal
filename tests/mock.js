@@ -49,6 +49,13 @@ function install(page, opt = {}) {
           if (nm === 'XU100') c = 9000 + i * 6; return [t0 + i * 86400, c, c * 1.01, c * 0.99, c, 1e6 + i * 1000]; }) }; });
       return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, data }) });
     }
+    // v13.9: gün içi mumlar (grafik not kartı) — yumuşak yükseliş + dalga, 15 dk
+    if (/\/bars\?/.test(u)) {
+      const syms = decodeURIComponent(/[?&]s=([^&]+)/.exec(u)[1]).split(','), data = {}, t0 = Math.floor(Date.now() / 1000) - 199 * 900;
+      syms.forEach(x => { const k = x.includes(':') ? x : 'BIST:' + x;
+        data[k] = { bars: Array.from({ length: 200 }, (_, i) => { const c = 100 + i * 0.08 + Math.sin(i / 6) * 0.9, o = c - Math.cos(i / 6) * 0.2; return [t0 + i * 900, o, Math.max(o, c) * 1.003, Math.min(o, c) * 0.997, c, 1e5 + (i % 7) * 2e4]; }) }; });
+      return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, data }) });
+    }
     if (u.includes('/kesif')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, at: Date.now(),
       is: [{ idx: 1, t: Date.now() - 864e5, sym: 'ASELS', sum: 'Yurt dışı sözleşme <b>x</b>', amt: 125e6, cur: 'USD' }, { idx: 2, t: Date.now() - 2 * 864e5, sym: 'ASELS', sum: 'İkinci sözleşme', amt: 50e6, cur: 'TRY' }, { idx: 3, t: Date.now() - 3600e3, sym: 'SASA', sum: 'Sipariş', amt: null, cur: null }],
       geri: [{ sym: 'KONTR', n: 3, last: Date.now() - 3600e3 }], sa: [{ idx: 9, t: Date.now() - 5 * 864e5, sym: 'EREGL', tip: 'bedelsiz', sum: 'Bedelsiz sermaye artırımı' }], tavan: { d: '2026-10-19', L: [{ s: 'PGSUS', c: 97.35 }] } }) });

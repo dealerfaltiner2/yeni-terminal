@@ -530,6 +530,7 @@ td.fl-up,td.fl-dn{border-radius:4px}
   <div class="tab" id="t-reg"><div id="regbody"></div></div>
 
   <div class="tab" id="t-chart">
+   <div id="cnote"></div>
    <div class="bar" id="tfbar"></div>
    <div id="newsbar"></div>
    <div id="panel">
@@ -3128,7 +3129,7 @@ function renderPort(){
 
 /* ================= grafik ================= */
 const TFS=[['1min','1d','1m'],['5min','5d','5m'],['15min','15d','15m'],['1h','1s','1h'],['4h','4s','4h'],['1day','G','1d'],['1week','H','1w'],['1month','A','1M']];
-$('#tfbar').innerHTML=TFS.map(t=>'<button data-tf="'+t[0]+'" class="'+(t[0]===S.tf?'on':'')+'">'+t[1]+'</button>').join('')+'<button class="ic" id="ptog">⚙</button><span style="flex:1"></span><span id="cmsg" style="color:var(--dim);font-size:9.5px"></span>';
+$('#tfbar').innerHTML=TFS.map(t=>'<button data-tf="'+t[0]+'" class="'+(t[0]===S.tf?'on':'')+'">'+t[1]+'</button>').join('')+'<button class="ic" id="ptog">⚙ Araçlar</button><span style="flex:1"></span><span id="cmsg" style="color:var(--dim);font-size:9.5px"></span>';
 $('#tfbar').onclick=e=>{
  if(e.target.closest('#ptog')){$('#panel').classList.toggle('on');setTimeout(()=>{chart.applyOptions({});chart2.applyOptions({})},60);return}
  const b=e.target.closest('[data-tf]');if(!b)return;S.tf=b.dataset.tf;LS.set('tf',S.tf);[...$('#tfbar').querySelectorAll('[data-tf]')].forEach(x=>x.classList.toggle('on',x===b));loadCandles()};
@@ -3170,7 +3171,7 @@ function drawLevels(){
  S.plines.forEach(p=>{try{main.removePriceLine(p)}catch(e){}});S.plines=[];
  const add=(price,color,title,style)=>S.plines.push(main.createPriceLine({price,color,lineWidth:1,lineStyle:style==null?2:style,axisLabelVisible:true,title}));
  const vp=S.vp;
- if(S.ind.poc&&vp&&vp.prev&&!isDaily(S.tf)){add(vp.prev.poc,'#fbbf24','POC',0);add(vp.prev.vah,'#78716c','VAH');add(vp.prev.val,'#78716c','VAL')}
+ if(S.ind.poc&&vp&&vp.prev&&!isDaily(S.tf)){add(vp.prev.poc,'#fbbf24','Yoğun',0);add(vp.prev.vah,'#78716c','Üst');add(vp.prev.val,'#78716c','Alt')}
  const b=S.box;if(b&&b.sym===S.sym){add(b.entry,'#ffb020',b.dir);add(b.sl,'#ff4d5e','SL');add(b.tp,'#00c48c','TP')}
 }
 function drawAll(){
@@ -3189,11 +3190,10 @@ function drawAll(){
  drawLevels();legend(cs.length-1);
 }
 function legend(i){const x=S.candles[i];if(!x)return;const dg=x.close<1?4:2,f=(k,v,c)=>'<span class="k">'+k+'</span> <span style="color:'+(c||'#fff')+'">'+v+'</span> ';
- let h='<b style="color:#fff">'+S.sym+'</b> <span class="k">'+S.tf+'</span> '+f('A',nf(x.open,dg))+f('Y',nf(x.high,dg))+f('D',nf(x.low,dg))+f('K',nf(x.close,dg),x.close>=x.open?'#00c48c':'#ff4d5e')+f('H',big(x.volume))+'<br>';
- if(S.ind.ema20)h+=f('EMA20',nf(calc.ema20[i],dg),'#ffb020');if(S.ind.ema50)h+=f('50',nf(calc.ema50[i],dg),'#38bdf8');if(S.ind.ema200)h+=f('200',nf(calc.ema200[i],dg),'#a78bfa');if(S.ind.vwap&&calc.vwap[i])h+=f('VWAP',nf(calc.vwap[i],dg),'#22d3ee');
+ let h='<b style="color:#fff">'+S.sym+'</b> <span class="k">'+S.tf+'</span> '+f('Açılış',nf(x.open,dg))+f('En yüksek',nf(x.high,dg))+f('En düşük',nf(x.low,dg))+f('Kapanış',nf(x.close,dg),x.close>=x.open?'#00c48c':'#ff4d5e')+f('Hacim',big(x.volume))+'<br>';
+ if(S.ind.ema20)h+=f('EMA20',nf(calc.ema20[i],dg),'#ffb020');if(S.ind.ema50)h+=f('50',nf(calc.ema50[i],dg),'#38bdf8');if(S.ind.ema200)h+=f('200',nf(calc.ema200[i],dg),'#a78bfa');if(S.ind.vwap&&calc.vwap[i])h+=f('Gün ort.',nf(calc.vwap[i],dg),'#22d3ee');
  if(S.lower==='rsi'&&calc.rsi)h+=f('RSI',nf(calc.rsi[i],1),'#a78bfa');
- const vp=S.vp;if(S.ind.poc&&vp&&vp.prev&&!isDaily(S.tf))h+='<br>'+f('POC',nf(vp.prev.poc,dg),'#fbbf24')+f('VAH',nf(vp.prev.vah,dg),'#78716c')+f('VAL',nf(vp.prev.val,dg),'#78716c');
- const w=S.wsig[S.sym];if(w&&!w.err)h+=' '+f('Not',w.grade+' '+w.side,w.grade==='A'?'#00c48c':w.grade==='B'?'#ffb020':'#64717f');
+ const vp=S.vp;if(S.ind.poc&&vp&&vp.prev&&!isDaily(S.tf))h+='<br>'+f('Yoğun bölge',nf(vp.prev.poc,dg),'#fbbf24')+f('Üst',nf(vp.prev.vah,dg),'#78716c')+f('Alt',nf(vp.prev.val,dg),'#78716c');
  const b=S.box;if(b&&b.sym===S.sym)h+='<br>'+f(b.dir,nf(b.entry,dg),'#ffb020')+f('SL',nf(b.sl,dg)+' ('+pct((b.sl/b.entry-1)*100)+')','#ff4d5e')+f('TP',nf(b.tp,dg)+' ('+pct((b.tp/b.entry-1)*100)+')','#00c48c');
  $('#legend').innerHTML=h}
 chart.subscribeCrosshairMove(p=>{if(!p.time){legend(S.candles.length-1);return}const i=S.candles.findIndex(c=>c.time===p.time);if(i>=0)legend(i)});
@@ -3205,16 +3205,58 @@ async function loadCandles(){
  try{
   let cs=[];
   if(S.mode==='crypto'){const iv=TFS.filter(t=>t[0]===S.tf)[0][2];const kl=await (await fetch('https://api.binance.com/api/v3/klines?symbol='+S.sym+'USDT&interval='+iv+'&limit=400')).json();cs=kl.map(r=>({time:r[0]/1000,open:+r[1],high:+r[2],low:+r[3],close:+r[4],volume:+r[5]}))}
-  else{cs=await getBars(S.sym,S.tf);if(S.tf==='15min'){S.wsig[S.sym]=analyze(cs,S.sym);mark('watch')}}
+  else{cs=await getBars(S.sym,S.tf);if(S.tf==='15min'){S.wsig[S.sym]=analyze(cs,S.sym);S.ccache['b:'+S.sym+':15min']={t:Date.now(),d:cs};mark('watch');try{cnRender()}catch(e){}}}
   if(my!==seq)return;
   S.candles=cs;S.ccache[k]={t:Date.now(),d:cs};S.vp=S.mode==='bist'?volumeProfiles(cs):null;
   drawAll();chart.timeScale().scrollToRealTime();if(msg)msg.textContent=S.mode==='crypto'?(cs.length+' mum · Binance · canlı: TradingView'):(cs.length+' mum · '+SRCINFO.src+' · '+nf(SRCINFO.lagMs/60000,0)+'dk'+(SRCINFO.stale?' · GECİKMELİ':''));renderSrcStatus();
  }catch(e){if(my===seq&&msg)msg.textContent='hata: '+String(e.message).slice(0,34)}
 }
+/* v13.9 (21.10, Fatih: 'grafiği açınca o hissenin notu olsun, Fırsat'taki gibi') GRAFİK NOT KARTI:
+   açılan hissenin notu Fırsat derin taramasıyla AYNI hesap (analyze, 15 dk mum) — grafikte hangi zaman dilimi seçili olursa olsun.
+   Kart: harf (A/B/C) + düz Türkçe özet + Destek/Direnç/Hacim + Gün/Yıl aralığı; dokununca röntgen. Not mantığı DEĞİŞMEDİ. Üyede 'AL' yazmaz. */
+const CN={busy:null};
+async function cnLoad(){const sym=S.sym;if(S.mode!=='bist'||!sym){cnRender();return}
+ const w=S.wsig[sym],k='b:'+sym+':15min',c=S.ccache[k],fresh=x=>x&&Date.now()-x.t<300000;
+ if(fresh(w)&&!w.err&&fresh(c)){cnRender();return}
+ if(CN.busy===sym)return;CN.busy=sym;cnRender();
+ try{const cs=fresh(c)?c.d:await getBars(sym,'15min',true);S.ccache[k]={t:Date.now(),d:cs};S.wsig[sym]=analyze(cs,sym)}catch(e){S.wsig[sym]={err:1,t:Date.now()}}
+ CN.busy=null;if(S.sym===sym)cnRender()}
+function cnText(a,cs){const g=a.side==='AL'?a.grade:'C',px=a.px,ref=a.ref,P=[];
+ const head=a.side!=='AL'?'Yön aşağı.':g==='A'?'Güçlü görünüm.':g==='B'?'Toparlanıyor.':'Zayıf, belirgin kurulum yok.';
+ if(a.stk===1)P.push('ortalamalar yukarı sıralı');else if(a.stk===-1)P.push('ortalamalar aşağı sıralı');
+ P.push('fiyat günün ortalamasının '+(a.vwUp?'üstünde':'altında'));
+ if(ref)P.push(px>ref.vah?'yoğun işlem bölgesinin üstüne çıktı':px<ref.val?'yoğun işlem bölgesinin altında':'yoğun işlem bölgesinin içinde ('+nf(ref.poc)+')');
+ const cap=x=>x.charAt(0).toLocaleUpperCase('tr-TR')+x.slice(1);
+ let t=head+' '+cap(P.join(', '))+'.';
+ if(a.vr!=null&&isFinite(a.vr))t+=a.vr>=1.2?' Hacim normalin '+nf(a.vr,1)+' katı.':a.vr<0.7?' Hacim zayıf.':'';
+ let r=null;try{const rr=rsi(cs.map(x=>x.close));r=rr[rr.length-1]}catch(e){}
+ if(r!=null&&isFinite(r))t+=r>=70?' RSI '+nf(r,0)+': ısınmış, kovalamak riskli.':r<=30?' RSI '+nf(r,0)+': aşırı satılmış.':'';
+ const ex=[];if(a.vcp)ex.push(a.vcp.brk?'daralan sıkışmayı yukarı kırdı':'daralan sıkışma var');if(a.pull)ex.push('ortalamaya geri çekilip döndü');if(a.kvw&&a.kvw.side==='AL')ex.push('günün ortalamasından sekti');else if(a.sq)ex.push('fiyat sıkıştı');
+ if(ex.length)t+=' Ayrıca '+ex.join(', ')+'.';
+ return {g,t,r}}
+function cnLevels(a,cs){const px=a.px,ref=a.ref,L=cs.slice(-26);let sup=null,res=null;
+ if(ref){sup=px>ref.vah?ref.vah:px>ref.poc?ref.poc:px>ref.val?ref.val:null;res=px<ref.val?ref.val:px<ref.poc?ref.poc:px<ref.vah?ref.vah:null}
+ if(sup==null)sup=Math.min.apply(null,L.map(x=>x.low));if(res==null)res=Math.max.apply(null,L.map(x=>x.high));
+ if(!(res>px))res=null;return {sup,res}}
+function cnRender(){const el=document.getElementById('cnote');if(!el)return;const sym=S.sym;
+ if(S.mode!=='bist'||!sym){el.innerHTML='';return}
+ const w=S.wsig[sym],c=S.ccache['b:'+sym+':15min'];
+ if(!w||(CN.busy===sym&&w.err)){el.innerHTML='<div class="cnc"><div class="cng g0">…</div><div class="cnt"><small>PUSULA NOTU · 15 DAKİKA</small><p>⏳ '+htmlEsc(sym)+' inceleniyor…</p></div></div>';return}
+ if(w.err||!c){el.innerHTML='<div class="cnc"><div class="cng g0">–</div><div class="cnt"><small>PUSULA NOTU</small><p>Bu hisse için not çıkaracak kadar 15 dakikalık mum yok.</p></div></div>';return}
+ const T=cnText(w,c.d),Lv=cnLevels(w,c.d),dg=w.px>=1000?0:2;
+ const lab=isUye()?'':(T.g!=='C'?' · AL':'');
+ let rg='';try{const o=S.umap[sym]||null,cs=dbarGet(sym,30*60e3,()=>{if(S.sym===sym&&S.tab==='chart')cnRender()});
+  if(cs){const R=rngCalc(cs,o&&o.close>0?o.close:null,o?{lo:o.low,hi:o.high}:null),na=r=>r?Object.assign({},r,{avg:null}):r;if(R)rg='<div class="pxr cnr">'+rngRow('Gün',na(R.day),R.cur,dg)+rngRow('Yıl',na(R.yr),R.cur,dg)+'</div>'}}catch(e){}
+ const tx=htmlEsc(T.t),i=tx.indexOf('.');
+ el.innerHTML='<div class="cnc" onclick="xrayOpen(\''+sym+'\')"><div class="cng g'+T.g+'">'+T.g+'</div><div class="cnt"><small>PUSULA NOTU · 15 DAKİKA'+lab+'</small><p><b>'+tx.slice(0,i+1)+'</b>'+tx.slice(i+1)+'</p></div>'+
+  '<div class="cnk"><div><small>Destek</small><b class="up">'+(Lv.sup!=null?nf(Lv.sup,dg):'–')+'</b></div><div><small>Direnç</small><b class="dn">'+(Lv.res!=null?nf(Lv.res,dg):'zirvede')+'</b></div><div><small>Hacim</small><b>'+(w.vr!=null&&isFinite(w.vr)?nf(w.vr,1)+' kat':'–')+'</b></div></div>'+rg+
+  '<div class="cnm">Ayrıntı için dokun — hisse röntgeni ›</div></div>'}
+setInterval(()=>{try{if(S.tab==='chart'&&!document.hidden)cnLoad()}catch(e){}},60000);
+setTimeout(()=>{try{cnLoad()}catch(e){}},2500);
 function selectSym(s,mode){if(s!==S.sym){S.box=null;S.vp=null}S.sym=s;S.mode=mode;LS.set('sym',s);LS.set('mode',mode);
  const q=mode==='crypto'?S.cmap[s]:S.umap[s];
  $('#symbtn').innerHTML=htmlEsc(s)+'<small>'+htmlEsc(mode==='crypto'?'USDT':((q&&q.description)||'BIST').slice(0,20))+'</small>';
- closePal();renderPx();showTab('chart');loadCandles()}
+ closePal();renderPx();showTab('chart');loadCandles();try{cnLoad()}catch(e){}}
 let pit=[];
 function openPal(){$('#pal').classList.add('on');$('#palin').value='';palFilter('');setTimeout(()=>$('#palin').focus(),60)}
 function closePal(){$('#pal').classList.remove('on')}
@@ -3318,7 +3360,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="13.6";window.APPV=APP_VER;
+  const APP_VER="13.9";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3432,7 +3474,7 @@ function tvReconnectReport(){
    const list=items.slice(0,3);
    if(!list.length){bar.classList.remove('on');bar.innerHTML='';return}
    const dt=t=>t?new Date(t*1000).toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
-   bar.innerHTML=list.map(n=>'<a href="'+htmlEsc(safeUrl(n.link))+'" target="_blank" rel="noopener">'+(n.kap?'<b>KAP</b>':'<b style="color:var(--c1)">HABER</b>')+'<i>'+dt(n.t)+'</i>'+htmlEsc(n.title)+'</a>').join('');
+   bar.innerHTML=list.map(n=>'<a href="'+htmlEsc(safeUrl(n.link))+'" target="_blank" rel="noopener">'+(n.kap?'<b>KAP</b>':'<b style="color:var(--c1)">HABER</b>')+'<i>'+dt(n.t)+'</i>'+htmlEsc(n.title)+'</a>').join('')+(list.length>1?'<span class="nbm" onclick="this.parentNode.classList.toggle(\'all\')">📰 '+list.length+' haber</span>':'');
    bar.classList.add('on');
   }
   const _lc=window.loadCandles;
@@ -6353,5 +6395,16 @@ html.mx .pst .mkpill{background:#1C1C1E}
 </style>
 <style>html.noset [data-t="set"],html.noset #t-set{display:none!important}
 html.uye [data-t="op"],html.uye [data-t="algi"],html.uye [data-t="brief"],html.uye #t-op,html.uye #t-algi,html.uye #t-brief{display:none!important}</style>
+<style>/* v13.9 grafik not kartı */
+#cnote:empty{display:none}#cnote{padding:10px 12px 4px}
+.cnc{display:grid;grid-template-columns:52px minmax(0,1fr);gap:4px 12px;background:var(--panel,#1c1c1e);border:1px solid rgba(255,106,0,.32);border-radius:16px;padding:12px;cursor:pointer}
+.cng{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-size:26px;font-weight:800;color:#000;background:#64717f;box-shadow:0 0 0 4px rgba(100,113,127,.18)}
+.cng.gA{background:#4CC35A;box-shadow:0 0 0 4px rgba(76,195,90,.2)}.cng.gB{background:#FFB020;box-shadow:0 0 0 4px rgba(255,176,32,.2)}.cng.g0{background:#2c2c2e;color:#8e8e93;box-shadow:none}
+.cnt small{display:block;color:#FF6A00;font-weight:700;font-size:10.5px;letter-spacing:.4px}.cnt p{margin:3px 0 0;font-size:13px;line-height:1.38;color:var(--txt,#fff)}
+.cnk{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}.cnk div{background:rgba(0,0,0,.45);border-radius:10px;padding:7px 9px}.cnk small{display:block;color:var(--dim,#8e8e93);font-size:10.5px}.cnk b{font-size:15px}
+.cnr{grid-column:1/-1;margin-top:8px}.cnm{grid-column:1/-1;text-align:right;font-size:11.5px;color:var(--dim,#8e8e93);margin-top:6px}
+#newsbar:not(.all) a:nth-child(n+2){display:none}#newsbar .nbm{display:inline-block;margin-top:3px;font-size:11px;color:var(--dim);cursor:pointer}#newsbar.all .nbm{color:#FF6A00}
+#ptog{white-space:nowrap;position:sticky;right:0;z-index:2;background:var(--bgk,#000)!important;box-shadow:-10px 0 10px var(--bgk,#000)}
+</style>
 </body>
 </html>
