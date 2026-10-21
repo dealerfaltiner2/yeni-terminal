@@ -21,6 +21,21 @@ export async function tgInitCheck(initData, botToken, now = Date.now(), maxAge =
   let user = null; try { user = JSON.parse(p.get('user') || 'null'); } catch (e) {}
   return user && user.id ? user : null;
 }
+// v13.8 (21.10, Fatih onayıyla: 'mecburi takip edenlere verelim, üye toplarız') KANAL KAPISI:
+// sahip ve sinyal grubu üyesi dışındaki herkes Pusula'yı açmak için kanala (meta 'pubch') katılmış olmalı.
+// Kontrol kanalı yöneten botla (pubch.via 'app' → TG_APP_TOKEN, yoksa eski bot) getChatMember. Kanal kayıtlı değilse ya da Telegram yanıt vermezse KAPI AÇIK (kimse dışarıda kalmasın).
+export const chanJoined = st => st === 'member' || st === 'administrator' || st === 'creator' || st === 'restricted';
+export async function tgChanGate(env, cfg, uid, fetchFn = fetch) {
+  let ch = null; try { const m = await env.BT.prepare("SELECT v FROM meta WHERE k = 'pubch'").first(); if (m) ch = JSON.parse(m.v); } catch (e) {}
+  if (!ch || !ch.id) return null;
+  const tok = ch.via === 'app' ? (env.TG_APP_TOKEN || cfg.tgTok) : cfg.tgTok;
+  try {
+    const r = await fetchFn('https://api.telegram.org/bot' + tok + '/getChatMember?chat_id=' + encodeURIComponent(ch.id) + '&user_id=' + uid, { signal: AbortSignal.timeout(6000) });
+    const j = await r.json(); if (!j || !j.ok || !j.result) return null;
+    if (chanJoined(j.result.status)) return null;
+  } catch (e) { return null; }
+  return { url: ch.user ? 'https://t.me/' + ch.user : '', title: ch.title || 'BIST Pusula' };
+}
 export async function tgAuth(request, env, h) {
   // h = { json, kvGet, ownerTok, errAdd }
   let b = {}; try { b = JSON.parse((await request.text()) || '{}'); } catch (e) { return h.json({ ok: false, error: 'geçersiz istek' }, 400); }
@@ -47,6 +62,10 @@ export async function tgAuth(request, env, h) {
   // cihazı 'üye' (dev.ok = 2) olur: tüm ekranlar açık ama fiyatlar 15 dk gecikmeli (sahibin TradingView oturumu KULLANILMAZ).
   // Sahip, Ayarlar → bağlı cihazlar'dan bir üyeyi canlı veriye yükseltebilir (dev.ok = 1).
   const grup = st === 'administrator' || st === 'member' || st === 'restricted';
+  // v13.8 kanal kapısı (grup üyeleri muaf); b.chk = yalnız kontrol (uygulama her açılışta bir kez sorar, kayıt yapmaz)
+  const gate = grup ? null : await (h.chanGate || tgChanGate)(env, cfg, user.id);
+  if (gate) return h.json({ ok: false, kanal: gate, error: 'Pusula\'yı kullanmak için önce kanala katıl.' });
+  if (b.chk) return h.json({ ok: true, kanal: null });
   // v12.4: nereden geldi? startapp=r_<davet eden no> (davet bağlantısı) ya da k_<etiket> (kanal mesajı) — yalnız ilk kayıtta yazılır
   let ref = ''; try { const sp = new URLSearchParams(String(b.d)).get('start_param') || ''; if (/^(r_\d{3,15}|k_[a-z0-9]{1,16})$/.test(sp) && sp !== 'r_' + user.id) ref = sp; } catch (e) {}
   try { if (h.uyeAdd) await h.uyeAdd(env, user, grup, ref); } catch (e) {}

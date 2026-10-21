@@ -3,7 +3,7 @@ import { createHmac } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 const W = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'worker', 'src');
-const { tgInitCheck } = await import(path.join(W, 'tgapp.js'));
+const { tgInitCheck, tgChanGate, tgAuth } = await import(path.join(W, 'tgapp.js'));
 const { tgKb } = await import(path.join(W, 'tgfmt.js'));
 const res = []; const ok = (n, c, i) => { res.push(!!c); console.log((c ? '✓ ' : '✗ ') + n + (i ? ' — ' + i : '')); };
 const TOK = '123456:TEST-token', now = Date.now();
@@ -20,5 +20,27 @@ ok('24 saatten eski giriş reddedildi', (await tgInitCheck(make(TOK, now - 2 * 8
 const k = tgKb('THYAO', 77);
 ok('sunucu düğmeleri: önce Pusula\'da aç (startapp), altında KAP ve Grafik', /t\.me\/BistPusulaBot\?startapp=THYAO$/.test(k.inline_keyboard[0][0].url) && k.inline_keyboard[1].length === 2);
 ok('hissesiz mesajda yalnız Pusula düğmesi', tgKb(null).inline_keyboard.length === 1 && /BistPusulaBot\?startapp$/.test(tgKb(null).inline_keyboard[0][0].url));
+
+// v13.8 kanal kapısı
+const envOf = ch => ({ ACCESS_KEY: 'K', TG_APP_TOKEN: 'APP', BT: { prepare: () => ({ first: async () => ch ? { v: JSON.stringify(ch) } : null }) } });
+const CH = { id: -100123, title: 'BIST Pusula', user: 'bistpusulatr', via: 'app' };
+let seen = '';
+const fk = st => async url => { seen = url; if (st === 'x') throw new Error('ağ'); return { json: async () => ({ ok: true, result: { status: st } }) }; };
+ok('kanal üyesi geçer', (await tgChanGate(envOf(CH), { tgTok: 'OLD' }, 42, fk('member'))) === null);
+const g = await tgChanGate(envOf(CH), { tgTok: 'OLD' }, 42, fk('left'));
+ok('kanala katılmamış kişi kapıya takılır, kanal bağlantısı döner, kontrol kanalı yöneten botla', g && g.url === 'https://t.me/bistpusulatr' && /botAPP\/getChatMember\?chat_id=-100123&user_id=42/.test(seen), JSON.stringify(g) + ' ' + seen);
+ok('kanal kayıtlı değilse kapı açık', (await tgChanGate(envOf(null), { tgTok: 'OLD' }, 42, fk('left'))) === null);
+ok('Telegram yanıt vermezse kapı açık', (await tgChanGate(envOf(CH), { tgTok: 'OLD' }, 42, fk('x'))) === null);
+// tgAuth akışı: grup üyesi muaf, dışarıdan gelen kapıya takılır, kontrol modu kayıt yapmaz
+const realFetch = globalThis.fetch;
+const run = async (grpSt, gate, chk) => { let added = 0; globalThis.fetch = async () => ({ json: async () => ({ ok: true, result: { status: grpSt } }) });
+  const req = { url: 'https://api.x/tgauth', text: async () => JSON.stringify({ d: make(TOK, Date.now() - 1000), dev: 'abcdefgh12', chk }) };
+  const h = { json: (o) => o, kvGet: async () => ({ tgTok: TOK, chat: -1 }), ownerTok: async () => 'OWN', errAdd: async () => {}, uyeAdd: async () => { added++; }, devMember: async () => {}, chanGate: async () => gate };
+  const r = await tgAuth(req, { ACCESS_KEY: 'K', BT: {} }, h); globalThis.fetch = realFetch; return { r, added }; };
+const G = { url: 'https://t.me/bistpusulatr', title: 'BIST Pusula' };
+let t1 = await run('left', G); ok('grupta olmayan + kanalda olmayan → kapı, üye kaydı yapılmaz', t1.r.ok === false && t1.r.kanal && t1.added === 0, JSON.stringify(t1));
+let t2 = await run('member', G); ok('sinyal grubu üyesi kapıdan muaf', t2.r.ok === true && t2.added === 1, JSON.stringify(t2));
+let t3 = await run('left', null, 1); ok('kontrol modunda kanal üyesi: ok, kayıt yok', t3.r.ok === true && t3.r.kanal === null && t3.added === 0, JSON.stringify(t3));
+let t4 = await run('creator', G); ok('sahip kapıdan muaf', t4.r.ok === true && t4.r.owner === true, JSON.stringify(t4).slice(0, 120));
 console.log('\nTELEGRAM UYGULAMASI: ' + res.filter(Boolean).length + '/' + res.length + ' geçti');
 process.exit(res.every(Boolean) ? 0 : 1);

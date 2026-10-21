@@ -3360,7 +3360,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="13.9";window.APPV=APP_VER;
+  const APP_VER="14.0";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -5905,10 +5905,18 @@ html.cam .pstrip div{padding:8px 0 4px}html.cam .pstrip b{font-size:16px}html.ca
 const TGA={on:false,wa:null,srv:'https://api.altinerpano.com'};
 function tgaBox(t,sub,btn){let b=document.getElementById('tgabox');if(!b){b=document.createElement('div');b.id='tgabox';document.body.appendChild(b)}
  b.innerHTML='<div class="tgac"><svg viewBox="-20 -20 40 40" width="54" height="54"><circle r="18" fill="none" style="stroke:var(--pir)" stroke-width="1.6"/><polygon points="0,-14 3.2,0 -3.2,0" fill="#5FD39A"/><polygon points="0,14 3.2,0 -3.2,0" fill="#F07A6A"/><circle r="2.2" style="fill:var(--bgk);stroke:var(--pir)" stroke-width="1.2"/></svg><b>'+t+'</b>'+(sub?'<span>'+sub+'</span>':'')+(btn||'')+'</div>'}
+// v13.8 KANAL KAPISI: sahip ve sinyal grubu dışındakiler Pusula'yı kanala katılınca açar (sunucu /tgauth karar verir; Telegram yanıt vermezse kapı açık)
+function tgaGate(k){const u=String(k&&k.url||'');
+ tgaBox('Kanala katıl, Pusula açılsın','Pusula tamamen ücretsiz. Kullanmak için <b>'+htmlEsc(k&&k.title||'BIST Pusula')+'</b> kanalını takip etmen yeterli: sabah özeti, önemli KAP\'lar ve akşam karnesi orada.',
+  (/^https:\/\/t\.me\/[A-Za-z0-9_]{4,40}$/.test(u)?'<button onclick="tgaJoin(\''+u+'\')">📢 Kanala katıl</button>':'')+'<button class="sec" onclick="sessionStorage.removeItem(\'tga_try\');sessionStorage.removeItem(\'tga_k\');location.reload()">✅ Katıldım, aç</button>')}
+function tgaJoin(u){try{if(TGA.wa&&TGA.wa.openTelegramLink){TGA.wa.openTelegramLink(u);return}}catch(e){}window.open(u,'_blank')}
+async function tgaChk(){try{const r=await fetch(TGA.srv+'/tgauth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({d:TGA.wa.initData,dev:devId(),chk:1})});
+ const j=await r.json().catch(()=>({}));if(j&&j.kanal)tgaGate(j.kanal);else sessionStorage.setItem('tga_k','1')}catch(e){}}
 async function tgaAuth(){
  tgaBox('Pusula hazırlanıyor','Telegram hesabınla giriş yapılıyor…');
  try{const r=await fetch(TGA.srv+'/tgauth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({d:TGA.wa.initData,dev:devId()})});
   const j=await r.json().catch(()=>({}));
+  if(j.kanal){tgaGate(j.kanal);return}
   if(!j.ok){tgaBox('Giriş yapılamadı',htmlEsc(j.error||('Sunucu yanıtı: '+r.status)),'<button onclick="sessionStorage.removeItem(\'tga_try\');location.reload()">Tekrar dene</button>');return}
   const m=String(j.setup||'').match(/^PUSULA\|(wss?:\/\/[^|\s]+)\|([^|\s]*)$/);if(!m){tgaBox('Giriş yapılamadı','Kurulum bilgisi okunamadı.');return}
   LS.set('tvproxy',m[1]);
@@ -5928,6 +5936,8 @@ async function tgaAuth(){
  if(!S.tvproxy){if(!sessionStorage.getItem('tga_try')){sessionStorage.setItem('tga_try','1');tgaAuth()}
   else tgaBox('Giriş tamamlanamadı','Bir kez daha dene.','<button onclick="sessionStorage.removeItem(\'tga_try\');location.reload()">Tekrar dene</button>');return}
  // v12.0: onay bekleyen eski Telegram cihazı (üye sürümünden önce girmiş) → bir kez yeniden giriş = üye
+ // v13.8: her açılışta (oturumda bir kez) kanal kapısı — sahip hariç
+ if(!LS.get('ownTok','')&&!sessionStorage.getItem('tga_k'))tgaChk();
  if(!LS.get('ownTok',''))setTimeout(()=>{try{if(OWN.wait&&!sessionStorage.getItem('tga_re')){sessionStorage.setItem('tga_re','1');tgaAuth()}}catch(e){}},4000);
  // v12.0: telefonda TAM EKRAN (Telegram'ın başlığı kalkar; üst boşluk Telegram'ın güvenli alanı kadar)
  try{if(W.requestFullscreen&&/ios|android/i.test(W.platform||'')){W.requestFullscreen();document.documentElement.classList.add('tgfs')}}catch(e){}
@@ -5948,6 +5958,7 @@ html.tgfs #sigtoast{top:calc(8px + var(--tg-safe-area-inset-top,0px) + var(--tg-
 #tgabox{position:fixed;inset:0;z-index:9999;background:var(--bgk);display:flex;align-items:center;justify-content:center;padding:24px}
 #tgabox .tgac{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;color:#E9ECF2;font-family:var(--fnt);max-width:320px}
 #tgabox b{font-size:20px}#tgabox span{font-size:14px;color:var(--sis);line-height:1.45}
+#tgabox span b{font-size:inherit;color:#E9ECF2}#tgabox button.sec{background:none;border-color:rgba(233,236,242,.18);color:#E9ECF2;margin-top:2px}
 #tgabox button{margin-top:8px;padding:11px 22px;border-radius:12px;border:1px solid rgb(var(--pirc) / .5);background:rgb(var(--pirc) / .12);color:var(--pir2);font:600 15px var(--fnt)}
 </style>
 <script>

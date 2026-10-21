@@ -301,6 +301,9 @@ async function page(b, opt) {
         S.viop = keep.v; S.mkt = keep.m; return { aOld: a.old, oOld: o.old, pr: o.pr != null ? +o.pr.toFixed(2) : null, w: w.wkend, yonOld }; });
       ok('VİOP: 09:45 öncesi dünkü veri sayılır, seansta değil, BIST 30\'a göre fark hesaplanır, ana sayfada "dünkü veri" yazar',
         vp.aOld === true && vp.oOld === false && vp.pr === 0.86 && vp.w === true && vp.yonOld === true, JSON.stringify(vp));
+      const gt = await p.evaluate(() => { tgaGate({ url: 'https://t.me/bistpusulatr', title: 'BIST Pusula' }); const b = document.getElementById('tgabox'); const r = { t: b.textContent, n: b.querySelectorAll('button').length };
+        tgaGate({ url: 'javascript:alert(1)', title: '<i>x</i>' }); r.bad = b.querySelectorAll('button').length; r.esc = !b.querySelector('i'); b.remove(); return r; });
+      ok('Kanal kapısı: "Kanala katıl" ve "Katıldım, aç" düğmeleri; bozuk bağlantıda katıl düğmesi yok, başlık kaçışlı', /Kanala katıl, Pusula açılsın/.test(gt.t) && gt.n === 2 && gt.bad === 1 && gt.esc, JSON.stringify(gt).slice(0, 200));
       await p.evaluate(() => selectSym('THYAO', 'bist')); await p.waitForTimeout(2500);
       const cn = await p.evaluate(() => { const el = document.getElementById('cnote'), t = el ? el.textContent : ''; const w = S.wsig.THYAO;
         return { card: !!el.querySelector('.cnc'), grade: (el.querySelector('.cng') || {}).textContent, wg: w && !w.err ? (w.side === 'AL' ? w.grade : 'C') : 'err', txt: /PUSULA NOTU/.test(t) && /Destek/.test(t) && /Direnç/.test(t),
