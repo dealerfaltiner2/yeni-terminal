@@ -1,6 +1,7 @@
 import { tgPlain } from './tgfmt.js';
 import { flowRoute } from './flow.js';
 import { kaphStep } from './kaph.js';
+import { emarStep } from './emar.js';
 import { tavanScan, mktClose, tavanOpen } from './tavan.js';
 import { tgAuth } from './tgapp.js';
 import { posRoute, posWatch } from './pos.js';
@@ -1116,6 +1117,8 @@ export default {
       try { await ecalPoll(env, UA); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'ekonomik takvim: ' + String(e && e.message || e).slice(0, 150), 'ecal'); }
       try { await probe(env, scanRaw, UA); } catch (e) {}
       try { await kaphStep(env, UA); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'KAP geçmişi: ' + String(e && e.message || e).slice(0, 150), 'kaphStep'); }
+      // v14.3: EMA hedef merdiveni araştırması (bir kerelik, seans dışında, meta 'emar_on'='1' iken dakikada 1 hisse)
+      if (!inSess && !(T.wd >= 1 && T.wd <= 5 && T.m >= 560 && T.m < 1100)) { try { const er = await emarStep(env, fetchBarsTV); if (er) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('emar_last', ?)").bind(JSON.stringify({ at: Date.now(), ...er })).run(); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'EMA araştırması: ' + String(e && e.message || e).slice(0, 150), 'emarStep'); } }
       await hb('5-tamam');
     })());
   }
