@@ -3177,6 +3177,8 @@ function drawLevels(){
 function drawAll(){
  const cs=S.candles;if(!cs.length)return;const c=cs.map(x=>x.close);
  main.setData(S.ct==='candle'||S.ct==='bar'?cs:cs.map(x=>({time:x.time,value:x.close})));
+ // v14.2 (21.10, Fatih ekranı: ASELS 15 dk'da ölçek 320–400, mumlar ezik): parmakla fiyat ekseni sürüklenince otomatik ölçek kapanıyor ve hisse/zaman dilimi değişince de kapalı kalıyordu → hisse ya da zaman dilimi değişince otomatik ölçek yeniden açılır
+ try{const ak=S.mode+':'+S.sym+':'+S.tf;if(S._asKey!==ak){S._asKey=ak;chart.priceScale('right').applyOptions({autoScale:true})}}catch(e){}
  vol.setData(cs.map(x=>({time:x.time,value:x.volume,color:x.close>=x.open?'rgba(0,196,140,.3)':'rgba(255,77,94,.3)'})));
  calc={ema20:ema(c,20),ema50:ema(c,50),ema200:ema(c,200),vwap:vwapCalc(cs)};
  const m=sma(c,20),sd=c.map((_,i)=>i<19?null:Math.sqrt(c.slice(i-19,i+1).reduce((s,v)=>s+(v-m[i])*(v-m[i]),0)/20));
@@ -3360,7 +3362,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.1";window.APPV=APP_VER;
+  const APP_VER="14.2";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');

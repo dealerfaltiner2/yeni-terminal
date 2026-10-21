@@ -313,6 +313,8 @@ async function page(b, opt) {
         return { card: !!el.querySelector('.cnc'), grade: (el.querySelector('.cng') || {}).textContent, wg: w && !w.err ? (w.side === 'AL' ? w.grade : 'C') : 'err', txt: /PUSULA NOTU/.test(t) && /Destek/.test(t) && /Direnç/.test(t),
           leg: /Açılış/.test(document.getElementById('legend').textContent) && !/\bNot\b/.test(document.getElementById('legend').textContent), t: t.slice(0, 160) }; });
       await p.screenshot({ path: require('path').join(OUT, 'grafik-not.png') });
+      const asc = await p.evaluate(async () => { chart.priceScale('right').applyOptions({ autoScale: false }); selectSym('ASELS', 'bist'); await new Promise(r => setTimeout(r, 2000)); return chart.priceScale('right').options().autoScale; });
+      ok('Grafik: hisse değişince fiyat ölçeği yeniden otomatik', asc === true, String(asc));
       ok('Grafik not kartı: açılan hissenin notu Fırsat hesabıyla aynı, düz Türkçe özet + Destek/Direnç, grafik satırı Türkçe',
         cn.card && cn.txt && cn.grade === cn.wg && cn.leg, JSON.stringify(cn));
       await p.evaluate(() => showTab('kesif'));
