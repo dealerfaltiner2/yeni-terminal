@@ -1094,6 +1094,12 @@ export default {
               const media = A.photos.slice(0, 10).map((u, i) => Object.assign({ type: 'photo', media: String(u) }, i === 0 && A.t ? { caption: String(A.t).slice(0, 1024), parse_mode: 'HTML' } : {}));
               try { r = await (await fetch('https://api.telegram.org/bot' + cfg.tgTok + '/sendMediaGroup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: cfg.chat, media }), signal: AbortSignal.timeout(10000) })).json(); } catch (e) { r = { ok: false, error: String(e.message || e) }; }
               if (r && r.ok && A.bt) await tgSend(cfg, A.bt, A.kb || null);
+            } else if (A && A.poll && A.poll.q && Array.isArray(A.poll.o) && A.poll.o.length >= 2) {
+              // v14.6 (22.10, Fatih: 'telegrama sor, anket yap'): {t: önce giden açıklama (isteğe bağlı), poll: {q: soru ≤300, o: [seçenek ≤100] (2–10), multi: 1, anon: 1}}
+              if (A.t) await tgSend(cfg, A.t, A.kb || null);
+              const body = { chat_id: cfg.chat, question: String(A.poll.q).slice(0, 300), options: A.poll.o.slice(0, 10).map(x => ({ text: String(x).slice(0, 100) })), is_anonymous: !!A.poll.anon, allows_multiple_answers: !!A.poll.multi };
+              try { const j = await (await fetch('https://api.telegram.org/bot' + cfg.tgTok + '/sendPoll', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(10000) })).json();
+                r = j.ok ? { ok: true, id: j.result && j.result.message_id, poll: j.result && j.result.poll && j.result.poll.id } : { ok: false, error: j.description || 'anket gönderilemedi' }; } catch (e) { r = { ok: false, error: String(e.message || e) }; }
             } else r = A ? await tgSend(cfg, A.t, A.kb || null) : await tgSend(cfg, an.v);
             if (A && A.pin && r.ok && r.id) { try { const pr = await fetch('https://api.telegram.org/bot' + cfg.tgTok + '/pinChatMessage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: cfg.chat, message_id: r.id, disable_notification: true }) }).then(x => x.json()); r.pin = pr.ok ? 'sabitlendi' : (pr.description || 'sabitlenemedi'); } catch (e) { r.pin = 'sabitlenemedi'; } }
             s.n++; s.at = cat;
