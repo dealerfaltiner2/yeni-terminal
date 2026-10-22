@@ -59,6 +59,9 @@ function install(page, opt = {}) {
     if (u.includes('/kesif')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, at: Date.now(),
       is: [{ idx: 1, t: Date.now() - 864e5, sym: 'ASELS', sum: 'Yurt dışı sözleşme <b>x</b>', amt: 125e6, cur: 'USD' }, { idx: 2, t: Date.now() - 2 * 864e5, sym: 'ASELS', sum: 'İkinci sözleşme', amt: 50e6, cur: 'TRY' }, { idx: 3, t: Date.now() - 3600e3, sym: 'SASA', sum: 'Sipariş', amt: null, cur: null }],
       geri: [{ sym: 'KONTR', n: 3, last: Date.now() - 3600e3 }], sa: [{ idx: 9, t: Date.now() - 5 * 864e5, sym: 'EREGL', tip: 'bedelsiz', sum: 'Bedelsiz sermaye artırımı' }], tavan: { d: '2026-10-19', L: [{ s: 'PGSUS', c: 97.35 }] } }) });
+    if (u.includes('/sigtoday') && /[?&]src=oto/.test(u)) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, at: Date.now(), list: [
+      { t: Date.now() - 60000, src: 'algi', sym: 'JANTS', dir: 'AL', px: 12.38, meta: { fc: 0.83, rv: 7.6 }, done: 0, o31: null, mfe: 1.2 },
+      { t: Date.now() - 3600e3, src: 'firsat-A', sym: 'ASELS', dir: 'AL', px: 100, meta: {}, done: 1, o31: 2, mfe: 0.4 }] }) });
     if (u.includes('/sigtoday') && /[?&]src=algi/.test(u)) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, at: Date.now(), list: [
       { t: Date.now() - 60000, sym: 'JANTS', px: 12.38, sc: 80, meta: { fc: 0.83, rv: 7.6, brk: false, bid: true }, done: 0, o31: null, mfe: 1.2, mae: -0.3 },
       { t: Date.now() - 3600e3, sym: 'SAHOL', px: 89.55, sc: 72, meta: { fc: 0.82, rv: 0.85, brk: true }, done: 1, o31: 2, mfe: 0.4, mae: -1.1 }] }) });

@@ -308,6 +308,11 @@ async function page(b, opt) {
         const t = document.getElementById('t-algi').textContent; return { n: (ALS.list || []).length, jants: /JANTS/.test(t), sahol: /SAHOL/.test(t), tg: /📨/.test(t), srv: /Ana sunucudan/.test(t), toast: (typeof stCur !== 'undefined' && stCur && stCur.sym) || (STQ[0] && STQ[0].sym) || '' }; });
       ok('Algı tek kaynak: ana sunucunun ateşlemeleri listede (Telegram işaretiyle), yeni olan üstten kart olarak çıkıyor', al.n === 2 && al.jants && al.sahol && al.tg && al.srv && al.toast === 'JANTS', JSON.stringify(al));
       await p.evaluate(() => { S.botAlive = false; });
+      const wo = await p.evaluate(async () => { LS.set('wmode', 'oto'); showTab('watch'); wotoLoad(true); await new Promise(r => setTimeout(r, 1200)); renderWatch();
+        const t = document.getElementById('woto').textContent; const r = { jants: /JANTS/.test(t), asels: /ASELS/.test(t), stop: /Stop oldu/.test(t), fa: /Fırsat A/.test(t), hid: document.getElementById('watch').style.display === 'none' };
+        document.querySelector('#woto .xbtn').click(); r.add = W().includes('JANTS');
+        document.querySelector('#wseg [data-w=ben]').click(); r.ben = document.getElementById('watch').style.display === '' && document.getElementById('woto').style.display === 'none'; return r; });
+      ok('İzleme Otomatik: sunucunun güçlü sinyalleri listede, durum yazıyor, Listeme ekle çalışıyor, Benim listem ayrı', Object.values(wo).every(Boolean), JSON.stringify(wo));
       await p.evaluate(() => selectSym('THYAO', 'bist')); await p.waitForTimeout(2500);
       const cn = await p.evaluate(() => { const el = document.getElementById('cnote'), t = el ? el.textContent : ''; const w = S.wsig.THYAO;
         return { card: !!el.querySelector('.cnc'), grade: (el.querySelector('.cng') || {}).textContent, wg: w && !w.err ? (w.side === 'AL' ? w.grade : 'C') : 'err', txt: /PUSULA NOTU/.test(t) && /Destek/.test(t) && /Direnç/.test(t),

@@ -456,6 +456,19 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
 let todayCache = { at: 0, v: null };
 // v14.1 (21.10, Fatih: 'Algı bana gelmemiş, arkadaşlara farklı gelmiş'): src='algi' → yalnız bugünün Algı ateşlemeleri (ana sunucunun karnesi = tek kaynak; her telefon bunu gösterir)
 let algiCache = { at: 0, v: null };
+let otoCache = { at: 0, v: null };
+export function otoPick(rs) {
+  const seen = new Set(), out = [];
+  for (const r of rs) {
+    let m = null; try { m = r.meta ? JSON.parse(r.meta) : null; } catch (e) {}
+    if (!(r.px > 0)) continue;
+    if (r.src === 'algi') { if (!(m && m.fc >= 0.8 && m.rv >= 2)) continue; }
+    else if (r.dir !== 'AL') continue;
+    const k = r.src + '|' + r.sym; if (seen.has(k)) continue; seen.add(k);
+    out.push({ ...r, meta: m });
+  }
+  return out.reverse();
+}
 export async function sigToday(env, src) {
   if (!env.BT) return { ok: false, error: 'D1 yok' };
   if (src === 'algi') {
@@ -465,6 +478,16 @@ export async function sigToday(env, src) {
     const rs = (await env.BT.prepare("SELECT t, sym, px, sc, meta, done, o31, mfe, mae, rc FROM sig INDEXED BY sig_t WHERE t >= ? AND src = 'algi' ORDER BY t DESC LIMIT 120").bind(a0).all()).results || [];
     const v = { ok: true, at: Date.now(), list: rs.map(r => { let m = null; try { m = r.meta ? JSON.parse(r.meta) : null; } catch (e) {} return { ...r, meta: m }; }) };
     algiCache = { at: Date.now(), v };
+    return v;
+  }
+  // v14.4 (22.10, Nihat'ın önerisi, Fatih onayıyla) İZLEME 'OTOMATİK' LİSTESİ: bugünün güçlü Algı'sı (Telegram'a gidenler: fc≥0,8 ve rv≥2) + Fırsat A/B AL — hisse+kaynak başına ilk sinyal
+  if (src === 'oto') {
+    if (otoCache.v && Date.now() - otoCache.at < 20e3) return otoCache.v;
+    await sigEnsure(env);
+    const a0 = Date.parse(trDay(Date.now()) + 'T00:00:00Z') - TRMS;
+    const rs = (await env.BT.prepare("SELECT t, src, sym, dir, px, sc, meta, done, o31, mfe, mae, rc FROM sig INDEXED BY sig_t WHERE t >= ? AND src IN ('algi','firsat-A','firsat-B') ORDER BY t ASC LIMIT 300").bind(a0).all()).results || [];
+    const v = { ok: true, at: Date.now(), list: otoPick(rs) };
+    otoCache = { at: Date.now(), v };
     return v;
   }
   if (todayCache.v && Date.now() - todayCache.at < 30e3) return todayCache.v;
