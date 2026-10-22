@@ -345,3 +345,5 @@ Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ"
 - v14.4 (22.10, Nihat'ın önerisi, Fatih onayıyla) İZLEME 'OTOMATİK' (yalnız görünüm, sinyal kuralı DEĞİŞMEDİ): İzleme sekmesinde #wseg '🤖 Otomatik | ⭐ Benim listem' (LS 'wmode', varsayılan oto).
   Otomatik = /sigtoday?src=oto (sig.js otoPick: bugünün Algı'sı fc≥0,8 ve rv≥2 + Fırsat A/B AL, hisse+kaynak başına ilk sinyal; sig_t indeksi, 20 sn önbellek; üyeye boş). Terminal WOTO/wotoLoad (sekme açıkken 25 sn)/renderWoto: sinyal, saat/fiyat, son fiyat, sinyalden %, durum (+%3/−%1/gün sonu), '＋ Listeme'.
   Üyede (isUye) seg gizli, yalnız kendi listesi. tests/oto.mjs + ui.js.
+- v14.5 (22.10, Fatih: 'otomatik ve takip listesinde ekleme çıkarma kolay olsun') — yalnız görünüm: wStar(sym) ☆/⭐ tek dokunuş (wTog → wAdd/wRm, wSync tüm yıldızları günceller) — röntgen başlığı, grafik not kartı, Keşfet satırı (kesRow), Otomatik liste (sembol altında ☆ + 👁).
+  Benim listem: arama kutusu #wadd (S.uni'den öneri, Enter ilk öneriyi ekler), satırda ✕ (sembolün solunda); eski '★ Ekle / − Çıkar' kalktı. Her ekle/çıkar 5 sn 'Geri al' (#wtoast). Otomatik'te 👁 = o gün gizle (LS 'wotoh' {d,s}), 'hepsini göster'.

@@ -553,7 +553,8 @@ td.fl-up,td.fl-dn{border-radius:4px}
   <div class="tab" id="t-watch">
    <div class="seg" id="wseg" style="margin:8px"><button data-w="oto">🤖 Otomatik</button><button data-w="ben">⭐ Benim listem</button></div>
    <div id="woto"></div>
-   <div class="bar" id="wbar"><select id="wlsel"></select><button onclick="newList()">+ Liste</button><button onclick="delList()">Sil</button><button onclick="addWatch()">★ Ekle</button><button onclick="rmWatch()">− Çıkar</button><span id="wmsg" style="color:var(--dim);font-size:9.5px"></span></div>
+   <div class="bar" id="wbar"><select id="wlsel"></select><button onclick="newList()">+ Liste</button><button onclick="delList()">Sil</button><span id="wmsg" style="color:var(--dim);font-size:9.5px"></span></div>
+   <div class="wadd" id="waddbox"><input id="wadd" placeholder="➕ Hisse ekle — adını yaz (ör. ASELS)" autocomplete="off" autocapitalize="characters" spellcheck="false"><div id="waddsug"></div></div>
    <div id="watch"></div>
   </div>
 
@@ -699,6 +700,17 @@ let WL=LS.get('wl',null);
 if(!WL){const o=LS.get('watch',['THYAO','ASELS','KCHOL','GARAN','TUPRS','EREGL','SISE','BIMAS']);WL={cur:'Takip',lists:{'Takip':o}};LS.set('wl',WL)}
 const W=()=>WL.lists[WL.cur]||[];
 const saveWL=()=>LS.set('wl',WL);
+/* v14.5 (22.10, Fatih: 'ekleme çıkarma kolay olsun') — her yerde tek dokunuş ☆/⭐, arama kutusuyla ekleme, satırda ✕, 5 sn 'Geri al' */
+function wHas(s){return W().includes(s)}
+function wStar(s){s=String(s||'');const on=wHas(s);return '<button class="wst'+(on?' on':'')+'" data-ws="'+htmlEsc(s)+'" title="İzleme listem" onclick="wTog(\''+htmlEsc(s)+'\',event)">'+(on?'★':'☆')+'</button>'}
+function wSync(){try{document.querySelectorAll('.wst[data-ws]').forEach(b=>{const on=wHas(b.dataset.ws);b.classList.toggle('on',on);b.textContent=on?'★':'☆'})}catch(e){}try{mark('watch')}catch(e){}try{if(S.tab==='watch')renderWatch()}catch(e){}}
+function wToast(msg,undo){let t=document.getElementById('wtoast');if(!t){t=document.createElement('div');t.id='wtoast';document.body.appendChild(t)}
+ t.innerHTML='<span>'+msg+'</span>'+(undo?'<button>Geri al</button>':'');t.className='on';clearTimeout(t._h);
+ if(undo)t.querySelector('button').onclick=()=>{undo();t.className=''};t._h=setTimeout(()=>{t.className=''},undo?5000:2200)}
+function wAdd(s,quiet){s=String(s||'').trim().toUpperCase();if(!s)return false;if(wHas(s)){if(!quiet)wToast(htmlEsc(s)+' zaten listende');return false}
+ W().push(s);saveWL();wSync();if(!quiet)wToast('⭐ '+htmlEsc(s)+' listene eklendi',()=>wRm(s,true));return true}
+function wRm(s,quiet){const L=W(),i=L.indexOf(s);if(i<0)return;L.splice(i,1);saveWL();wSync();if(!quiet)wToast(htmlEsc(s)+' listeden çıkarıldı',()=>{const M=W();if(!M.includes(s)){M.splice(Math.min(i,M.length),0,s);saveWL();wSync()}})}
+function wTog(s,ev){if(ev){ev.stopPropagation();ev.preventDefault()}if(wHas(s))wRm(s);else wAdd(s)}
 
 const S={sym:LS.get('sym','THYAO'),mode:LS.get('mode','bist'),tf:LS.get('tf','15min'),ct:'candle',
  ind:LS.get('ind',{ema20:1,ema50:1,ema200:0,vwap:0,bb:0,poc:1}),lower:'rsi',
@@ -2210,6 +2222,10 @@ const GRO={A:0,B:1,C:2};
 /* v14.4 (22.10, Nihat'ın önerisi, Fatih onayıyla) İZLEME 'OTOMATİK': bugünün güçlü Algı'sı (Telegram'a gidenler) + Fırsat A/B AL — Ana sunucudan, herkeste aynı.
    Yalnız görünüm, sinyal kuralı değişmedi. Üyede yok (canlı AL listesi = SPK riski). Hedef +%3 / stop −%1 (sinyal fiyatından). */
 var WOTO={at:0,list:null,err:0};
+function wotoHid(){const d=new Date(Date.now()+3*3600e3).toISOString().slice(0,10),o=LS.get('wotoh',null);return o&&o.d===d?o.s||[]:[]}
+function wotoHide(s,ev){if(ev){ev.stopPropagation();ev.preventDefault()}const d=new Date(Date.now()+3*3600e3).toISOString().slice(0,10),H=wotoHid();if(!H.includes(s))H.push(s);LS.set('wotoh',{d,s:H});renderWatch();
+ wToast(htmlEsc(s)+' bugün gizlendi',()=>{LS.set('wotoh',{d,s:wotoHid().filter(x=>x!==s)});renderWatch()})}
+function wotoShow(ev){if(ev)ev.preventDefault();LS.set('wotoh',null);renderWatch()}
 function wMode(){if(isUye())return 'ben';return LS.get('wmode','oto')}
 function wotoLoad(force){const b=srvBase(S.tvproxy);if(isUye()||!/^https:\/\//.test(b))return;if(!force&&Date.now()-WOTO.at<25e3)return;WOTO.at=Date.now();
  fetch(dq(b+'/sigtoday?src=oto')).then(r=>r.json()).then(j=>{if(j&&j.ok){WOTO.list=j.list||[];WOTO.err=0}else WOTO.err=1;if(S.tab==='watch')renderWatch()}).catch(()=>{WOTO.err=1;if(S.tab==='watch')renderWatch()})}
@@ -2219,26 +2235,34 @@ function renderWoto(){
  const L=WOTO.list,SN={algi:'⚡ Algı','firsat-A':'🅰️ Fırsat A','firsat-B':'🅱️ Fırsat B'};
  if(!L)return '<div class="note" style="padding:14px">'+(WOTO.err?'Liste alınamadı, bağlantı bekleniyor…':'Yükleniyor…')+'</div>';
  if(!L.length)return '<div class="note" style="padding:14px">Bugün henüz güçlü sinyal yok. Gün içinde Algı\'nın güçlü ateşlemeleri ve Fırsat A/B AL sinyalleri buraya kendiliğinden eklenir.</div>';
- const rows=L.map(r=>{const q=(S.quotes[r.sym]&&S.quotes[r.sym].close)||(S.umap[r.sym]&&S.umap[r.sym].close)||null,ch=q?(q/r.px-1)*100:null;
+ const H=wotoHid(),Lv=L.filter(r=>!H.includes(r.sym)),nh=L.length-Lv.length;
+ const rows=Lv.map(r=>{const q=(S.quotes[r.sym]&&S.quotes[r.sym].close)||(S.umap[r.sym]&&S.umap[r.sym].close)||null,ch=q?(q/r.px-1)*100:null;
   const tp=r.px*1.03,sp=r.px*0.99;let st,sc;
   if(r.o31===1||(r.mfe!=null&&r.mfe>=3))st='Hedefe ulaştı +%3',sc='up';else if(r.o31===2)st='Stop oldu −%1',sc='dn';
   else if(r.done&&r.o31===0)st='Gün bitti '+(r.rc!=null?pct(r.rc):''),sc=cls(r.rc);
   else if(q&&q>=tp)st='Hedefe ulaştı +%3',sc='up';else if(q&&q<=sp)st='Stopa geldi −%1',sc='dn';else st='Devam ediyor',sc='';
   const tm=new Date(r.t+3*3600e3).toISOString().slice(11,16),inL=W().includes(r.sym);
-  return '<tr class="row" onclick="selectSym(\''+htmlEsc(r.sym)+'\',\'bist\');showTab(\'chart\')"><td class="sym">'+htmlEsc(r.sym)+'</td><td style="white-space:nowrap">'+(SN[r.src]||htmlEsc(r.src))+'<br><span style="color:var(--dim);font-size:9.5px">'+tm+' · '+nf(r.px)+'</span></td><td>'+(q?nf(q):'–')+'</td><td class="'+cls(ch)+'">'+(ch!=null?pct(ch):'–')+'</td><td class="'+sc+'" style="font-size:10.5px">'+st+'</td><td><button class="xbtn" '+(inL?'disabled':'')+' onclick="wotoAdd(\''+htmlEsc(r.sym)+'\',event)">'+(inL?'✓ Listende':'＋ Listeme')+'</button></td></tr>'}).join('');
- return '<div class="note" style="padding:6px 8px">Bugünün güçlü sinyalleri (Algı güçlü + Fırsat A/B AL), Ana sunucudan. Hedef +%3, stop −%1 (sinyal fiyatından). Her sabah boş başlar.</div><table><tr><th>Hisse</th><th>Sinyal</th><th>Son</th><th>Sinyalden</th><th>Durum</th><th></th></tr>'+rows+'</table>';
+  return '<tr class="row" onclick="selectSym(\''+htmlEsc(r.sym)+'\',\'bist\');showTab(\'chart\')"><td class="sym">'+htmlEsc(r.sym)+'<div class="wact">'+wStar(r.sym)+'<button class="wx" title="Bugün gizle" onclick="wotoHide(\''+htmlEsc(r.sym)+'\',event)">👁</button></div></td><td style="white-space:nowrap">'+(SN[r.src]||htmlEsc(r.src))+'<br><span style="color:var(--dim);font-size:9.5px">'+tm+' · '+nf(r.px)+'</span></td><td>'+(q?nf(q):'–')+'</td><td class="'+cls(ch)+'">'+(ch!=null?pct(ch):'–')+'</td><td class="'+sc+'" style="font-size:10.5px">'+st+'</td></tr>'}).join('');
+ return '<div class="note" style="padding:6px 8px">Bugünün güçlü sinyalleri (Algı güçlü + Fırsat A/B AL), Ana sunucudan. Hedef +%3, stop −%1 (sinyal fiyatından). Her sabah boş başlar.</div><table><tr><th>Hisse</th><th>Sinyal</th><th>Son</th><th>Sinyalden</th><th>Durum</th></tr>'+rows+'</table>'+(nh?'<div class="note" style="padding:8px">'+nh+' hisse bugün gizli · <a href="#" onclick="wotoShow(event)">hepsini göster</a></div>':'');
 }
 function renderWatch(){
  {const m=wMode(),sg=$('#wseg');if(sg){sg.style.display=isUye()?'none':'';[...sg.children].forEach(b=>b.classList.toggle('on',b.dataset.w===m))}
-  const wo=$('#woto'),wb=$('#wbar'),wt=$('#watch');if(m==='oto'){if(wb)wb.style.display='none';if(wt)wt.style.display='none';if(wo){wo.style.display='';wotoLoad();wo.innerHTML=renderWoto()}return}
+  const wo=$('#woto'),wb=$('#wbar'),wt=$('#watch');const wa=$('#waddbox');if(wa)wa.style.display=m==='oto'?'none':'';if(m==='oto'){if(wb)wb.style.display='none';if(wt)wt.style.display='none';if(wo){wo.style.display='';wotoLoad();wo.innerHTML=renderWoto()}return}
   if(wo)wo.style.display='none';if(wb)wb.style.display='';if(wt)wt.style.display=''}
  const list=[...W()].sort((a,b)=>{const x=S.wsig[a],y=S.wsig[b];return (x&&!x.err?GRO[x.grade]:3)-(y&&!y.err?GRO[y.grade]:3)});
- const rows=list.map(s=>{const q=S.quotes[s],w=S.wsig[s];if(!q)return'<tr><td class="sym">'+s+'</td><td colspan="7">...</td></tr>';
+ const rows=list.map(s=>{const q=S.quotes[s],w=S.wsig[s];const X='<button class="wx" onclick="wTog(\''+s+'\',event)" title="Listeden çıkar">✕</button>';if(!q)return'<tr><td class="sym">'+X+s+'</td><td colspan="7">...</td></tr>';
   const g=w&&!w.err?'<span class="sc sc'+(w.grade==='A'?(w.side==='AL'?'A':'As'):w.grade)+'">'+w.grade+'</span>':'<span class="sc scC">—</span>';
-  return'<tr class="row" onclick="selectSym(\''+s+'\',\'bist\')"><td class="sym">'+s+'</td><td>'+g+'</td><td class="'+pxFl('w:'+s,q.close).trim()+'">'+nf(q.close)+'</td><td class="'+cls(q.change)+'">'+pct(q.change)+'</td><td>'+(w&&!w.err?w.zone:'-')+'</td><td>'+(w&&w.pocD!=null?pct(w.pocD):'-')+'</td><td>'+(w&&!w.err&&w.dir!=='-'?w.dir+'·'+w.bars+'b':'-')+'</td><td>'+(w&&w.vr?nf(w.vr,1)+'x':'-')+'</td></tr>'}).join('');
- $('#watch').innerHTML='<table><tr><th>Sembol</th><th>Not</th><th>Son</th><th>%</th><th>Bölge</th><th>POC</th><th>9/21</th><th>RVOL</th></tr>'+(rows||'<tr><td colspan="8" class="note">Liste boş</td></tr>')+'</table>';
+  return'<tr class="row" onclick="selectSym(\''+s+'\',\'bist\')"><td class="sym" style="white-space:nowrap">'+X+s+'</td><td>'+g+'</td><td class="'+pxFl('w:'+s,q.close).trim()+'">'+nf(q.close)+'</td><td class="'+cls(q.change)+'">'+pct(q.change)+'</td><td>'+(w&&!w.err?w.zone:'-')+'</td><td>'+(w&&w.pocD!=null?pct(w.pocD):'-')+'</td><td>'+(w&&!w.err&&w.dir!=='-'?w.dir+'·'+w.bars+'b':'-')+'</td><td>'+(w&&w.vr?nf(w.vr,1)+'x':'-')+'</td></tr>'}).join('');
+ $('#watch').innerHTML='<table><tr><th>Sembol</th><th>Not</th><th>Son</th><th>%</th><th>Bölge</th><th>POC</th><th>9/21</th><th>RVOL</th></tr>'+(rows||'<tr><td colspan="8" class="note">Liste boş. Yukarıdaki kutuya hisse adını yaz ya da her yerde ☆ işaretine dokun.</td></tr>')+'</table>';
 }
 $('#wseg').onclick=e=>{const b=e.target.closest('[data-w]');if(!b)return;LS.set('wmode',b.dataset.w);if(b.dataset.w==='oto')wotoLoad(true);renderWatch()};
+function waddSug(){const i=$('#wadd'),b=$('#waddsug');if(!i||!b)return;const q=i.value.trim().toUpperCase().replace(/[^A-Z0-9ÇĞİÖŞÜ]/g,'');
+ if(!q){b.innerHTML='';return}const U=(S.uni||[]).filter(o=>o&&o.name);
+ const L=U.filter(o=>o.name.startsWith(q)).concat(U.filter(o=>!o.name.startsWith(q)&&(o.name.includes(q)||String(o.description||'').toUpperCase().includes(q)))).slice(0,8);
+ b.innerHTML=(L.length?L:[{name:q}]).map(o=>'<button class="wsug'+(wHas(o.name)?' on':'')+'" data-s="'+htmlEsc(o.name)+'"><b>'+htmlEsc(o.name)+'</b>'+(o.description?'<small>'+htmlEsc(String(o.description).slice(0,22))+'</small>':'')+'<i>'+(wHas(o.name)?'★':'＋')+'</i></button>').join('')}
+$('#wadd').addEventListener('input',waddSug);
+$('#wadd').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();const f=$('#waddsug .wsug');const s=f?f.dataset.s:$('#wadd').value;if(wAdd(s)){$('#wadd').value='';waddSug()}}});
+$('#waddsug').addEventListener('click',e=>{const b=e.target.closest('.wsug');if(!b)return;const s=b.dataset.s;if(wHas(s))wRm(s);else wAdd(s);$('#wadd').value='';waddSug()});
 function addWatch(){if(S.mode!=='bist')return;if(!W().includes(S.sym)){W().push(S.sym);saveWL();renderWatch()}}
 function rmWatch(){WL.lists[WL.cur]=W().filter(s=>s!==S.sym);saveWL();renderWatch()}
 const SCOLS=[['name','SEMBOL'],['_sc','PUAN'],['close','SON'],['change','DEĞ%'],['voltl','HACİM'],['_al','HİZA'],['_prv','HAC%'],['_prs','GÜÇ%'],['_rsk','ATR%']];
@@ -3279,7 +3303,7 @@ function cnRender(){const el=document.getElementById('cnote');if(!el)return;cons
  const tx=htmlEsc(T.t),i=tx.indexOf('.');
  el.innerHTML='<div class="cnc" onclick="xrayOpen(\''+sym+'\')"><div class="cng g'+T.g+'">'+T.g+'</div><div class="cnt"><small>PUSULA NOTU · 15 DAKİKA'+lab+'</small><p><b>'+tx.slice(0,i+1)+'</b>'+tx.slice(i+1)+'</p></div>'+
   '<div class="cnk"><div><small>Destek</small><b class="up">'+(Lv.sup!=null?nf(Lv.sup,dg):'–')+'</b></div><div><small>Direnç</small><b class="dn">'+(Lv.res!=null?nf(Lv.res,dg):'zirvede')+'</b></div><div><small>Hacim</small><b>'+(w.vr!=null&&isFinite(w.vr)?nf(w.vr,1)+' kat':'–')+'</b></div></div>'+rg+
-  '<div class="cnm">Ayrıntı için dokun — hisse röntgeni ›</div></div>'}
+  '<div class="cnm">Ayrıntı için dokun — hisse röntgeni › <span style="float:right">'+wStar(sym)+'</span></div></div>'}
 setInterval(()=>{try{if(S.tab==='chart'&&!document.hidden)cnLoad()}catch(e){}},60000);
 setTimeout(()=>{try{cnLoad()}catch(e){}},2500);
 function selectSym(s,mode){if(s!==S.sym){S.box=null;S.vp=null}S.sym=s;S.mode=mode;LS.set('sym',s);LS.set('mode',mode);
@@ -3389,7 +3413,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.4";window.APPV=APP_VER;
+  const APP_VER="14.5";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -5569,7 +5593,7 @@ function xrayWhy(a,o){const up=a.side==='AL',G=[],P=[];
  return {G,P}}
 function xrayRender(){const body=document.getElementById('xr_body');if(!body)return;const sym=XR.sym,o=S.umap[sym]||null,a=XR.a,tf=S.stf||'15';
  if(XR.busy){return}
- let h='<div class="xhd"><div><b>'+htmlEsc(sym)+'</b><small>'+htmlEsc(String(o&&o.description||'').slice(0,34))+(o&&o.sector?' · '+htmlEsc(secTr(o.sector)||o.sector):'')+'</small></div>'+
+ let h='<div class="xhd"><div><b>'+htmlEsc(sym)+'</b> '+wStar(sym)+'<small>'+htmlEsc(String(o&&o.description||'').slice(0,34))+(o&&o.sector?' · '+htmlEsc(secTr(o.sector)||o.sector):'')+'</small></div>'+
   (o?'<div class="xpx"><b class="'+pxFl('x:'+sym,o.close).trim()+'">'+nf(o.close)+'</b><i class="'+cls(o.change)+'">'+pct(o.change)+'</i></div>':'')+'</div>';
  if(XR.err)h+='<div class="xnote">'+htmlEsc(XR.err)+'</div>';
  try{if(typeof xrayRange==='function')h+=xrayRange(sym,o)}catch(e){}
@@ -6150,7 +6174,7 @@ function kesCount(k){try{if(k==='tar')return null;if(/^(gc|dc|patu|patd)$/.test(
 function kesOpen(k){KES.l=k;if(/^(gc|dc|patu|patd)$/.test(k)&&KCR.d!==todayStr())kesCross();renderKesif();try{window.scrollTo(0,0);const t=document.getElementById('t-kesif');if(t)t.scrollTop=0}catch(e){}}
 function kesBack(){KES.l='';renderKesif()}
 function kesRow(r){return '<div class="krow" onclick="xrayOpen(\''+r.s+'\')">'+nAvatar(r.s)+'<div class="ksm"><b>'+htmlEsc(r.s)+'</b><small>'+(r.sub||'')+'</small></div>'+
- '<div class="ksv">'+(r.val?'<b>'+r.val+'</b>':'')+(r.chg!=null&&isFinite(r.chg)?'<i class="'+cls(r.chg)+'">'+pct(r.chg)+'</i>':'')+'</div></div>'}
+ '<div class="ksv">'+(r.val?'<b>'+r.val+'</b>':'')+(r.chg!=null&&isFinite(r.chg)?'<i class="'+cls(r.chg)+'">'+pct(r.chg)+'</i>':'')+'</div>'+wStar(r.s)+'</div>'}
 function kesListHtml(k){const L=KES_L.find(x=>x.k===k),t=L?L.t:KES_T[k]||'',d=L?L.d:'Hacmi 5 milyon TL\'nin üstündeki hisseler; ilk 30.';
  let h='<div class="kes"><button class="kesb" onclick="kesBack()">‹ Keşfet</button><div class="kesti"><b>'+t+'</b><p>'+d+'</p></div>';
  const needSrv=/^(is|geri|tavan|sa)$/.test(k);
@@ -6472,6 +6496,20 @@ html.uye [data-t="op"],html.uye [data-t="algi"],html.uye [data-t="brief"],html.u
 .cnr{grid-column:1/-1;margin-top:8px}.cnm{grid-column:1/-1;text-align:right;font-size:11.5px;color:var(--dim,#8e8e93);margin-top:6px}
 #newsbar:not(.all) a:nth-child(n+2){display:none}#newsbar .nbm{display:inline-block;margin-top:3px;font-size:11px;color:var(--dim);cursor:pointer}#newsbar.all .nbm{color:#FF6A00}
 #ptog{white-space:nowrap;position:sticky;right:0;z-index:2;background:var(--bgk,#000)!important;box-shadow:-10px 0 10px var(--bgk,#000)}
+
+/* v14.5 izleme: kolay ekle/çıkar */
+.wst{background:none!important;border:0!important;padding:4px 7px!important;min-height:0!important;font-size:19px!important;line-height:1;color:var(--dim)!important;cursor:pointer;vertical-align:middle}
+.wst.on{color:#FFC233!important}
+.wx{background:none!important;border:0!important;padding:4px 6px 4px 0!important;min-height:0!important;font-size:15px!important;color:var(--dim)!important}
+.wadd{padding:6px 8px 2px}.wadd input{width:100%;box-sizing:border-box;font-size:16px;padding:11px 12px;border-radius:12px;border:1.5px solid var(--line2);background:rgba(255,255,255,.04);color:var(--txt,#fff)}
+#waddsug{display:flex;flex-wrap:wrap;gap:6px;padding:6px 0}
+.wsug{display:flex;align-items:center;gap:6px;padding:7px 10px!important;border-radius:10px!important;min-height:0!important;font-size:13px!important}
+.wsug small{color:var(--dim);font-size:10.5px}.wsug i{font-style:normal;color:var(--up)}.wsug.on i{color:#FFC233}
+#wtoast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translate(-50%,20px);opacity:0;pointer-events:none;transition:.2s;z-index:9999;background:#1C1C1E;color:#fff;border:1px solid #3A3A3C;border-radius:14px;padding:10px 14px;display:flex;gap:12px;align-items:center;font-size:13.5px;box-shadow:0 8px 24px rgba(0,0,0,.5);max-width:92vw}
+#wtoast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.wact{display:flex;gap:2px;margin:2px 0 0 -6px}.wact .wst{font-size:17px!important}.wact .wx{font-size:13px!important}
+#wtoast button{white-space:nowrap;background:none!important;border:0!important;color:#FF9F0A!important;font-weight:700;padding:2px 4px!important;min-height:0!important;font-size:13.5px!important}
+.krow .wst{flex:0 0 auto;margin-left:2px}
 </style>
 </body>
 </html>

@@ -310,9 +310,20 @@ async function page(b, opt) {
       await p.evaluate(() => { S.botAlive = false; });
       const wo = await p.evaluate(async () => { LS.set('wmode', 'oto'); showTab('watch'); wotoLoad(true); await new Promise(r => setTimeout(r, 1200)); renderWatch();
         const t = document.getElementById('woto').textContent; const r = { jants: /JANTS/.test(t), asels: /ASELS/.test(t), stop: /Stop oldu/.test(t), fa: /Fırsat A/.test(t), hid: document.getElementById('watch').style.display === 'none' };
-        document.querySelector('#woto .xbtn').click(); r.add = W().includes('JANTS');
-        document.querySelector('#wseg [data-w=ben]').click(); r.ben = document.getElementById('watch').style.display === '' && document.getElementById('woto').style.display === 'none'; return r; });
-      ok('İzleme Otomatik: sunucunun güçlü sinyalleri listede, durum yazıyor, Listeme ekle çalışıyor, Benim listem ayrı', Object.values(wo).every(Boolean), JSON.stringify(wo));
+        document.querySelector('#woto .wst[data-ws=JANTS]').click(); r.add = W().includes('JANTS'); r.toast = /listene eklendi/.test((document.getElementById('wtoast') || {}).textContent || '');
+        document.querySelector('#wtoast button').click(); r.undo = !W().includes('JANTS');
+        document.querySelector('#woto .wx').click(); r.hide = !/JANTS/.test(document.querySelector('#woto table').textContent) && /bugün gizli/.test(document.getElementById('woto').textContent); wotoShow();
+        document.querySelector('#wseg [data-w=ben]').click(); r.ben = document.getElementById('watch').style.display === '' && document.getElementById('woto').style.display === 'none';
+        const inp = document.getElementById('wadd'); inp.value = 'ase'; inp.dispatchEvent(new Event('input')); const sg = document.querySelector('#waddsug .wsug'); r.sug = !!sg && sg.dataset.s === 'ASELS';
+        const had = W().includes('ASELS'); if (had) wRm('ASELS', true); inp.value = 'ase'; inp.dispatchEvent(new Event('input')); document.querySelector('#waddsug .wsug').click(); r.sugAdd = W().includes('ASELS');
+        renderWatch(); const x = [...document.querySelectorAll('#watch .wx')].find(b => /ASELS/.test(b.closest('tr').textContent)); x.click(); r.rmX = !W().includes('ASELS'); if (had) wAdd('ASELS', true);
+        const kr = document.createElement('div'); kr.innerHTML = kesRow({ s: 'SASA', sub: '' }); document.body.appendChild(kr); kr.querySelector('.wst').click(); r.kesStar = W().includes('SASA'); wRm('SASA', true); kr.remove(); return r; });
+      await p.evaluate(async () => { LS.set('wmode', 'oto'); wotoLoad(true); await new Promise(r => setTimeout(r, 800)); renderWatch(); });
+      await p.screenshot({ path: require('path').join(OUT, 'izleme-oto.png') });
+      await p.evaluate(() => { LS.set('wmode', 'ben'); renderWatch(); const i = document.getElementById('wadd'); i.value = 'ak'; i.dispatchEvent(new Event('input')); wToast('⭐ AKBNK listene eklendi', () => {}); });
+      await p.screenshot({ path: require('path').join(OUT, 'izleme-ben.png') });
+      await p.evaluate(() => { document.getElementById('wadd').value = ''; waddSug(); });
+      ok('İzleme: Otomatik liste (⭐ ekle, Geri al, 👁 gizle) + Benim listem (yazarak ekle, ✕ çıkar) + Keşfet ☆', Object.values(wo).every(Boolean), JSON.stringify(wo));
       await p.evaluate(() => selectSym('THYAO', 'bist')); await p.waitForTimeout(2500);
       const cn = await p.evaluate(() => { const el = document.getElementById('cnote'), t = el ? el.textContent : ''; const w = S.wsig.THYAO;
         return { card: !!el.querySelector('.cnc'), grade: (el.querySelector('.cng') || {}).textContent, wg: w && !w.err ? (w.side === 'AL' ? w.grade : 'C') : 'err', txt: /PUSULA NOTU/.test(t) && /Destek/.test(t) && /Direnç/.test(t),
