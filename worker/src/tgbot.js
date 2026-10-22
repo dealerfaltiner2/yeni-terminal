@@ -1,3 +1,4 @@
+import { pubOpen } from './tgapp.js';
 // v12.2 (16.10 gece, Fatih: 'uygulamayı herkese açık hale getirelim') BOT KARŞILAMA
 // Telegram bota gelen mesajları buraya (POST /tgbot, anahtarsız) gönderir; Telegram'ın 'secret_token' başlığı bot anahtarından türetilir (repoda sır yok).
 // v12.4: 'my_chat_member' (bot bir kanalda yönetici oldu) → kanal.js kanalSet.
@@ -34,6 +35,7 @@ export async function tgBotUpdate(request, env, h) {
   const bot = await botOf(request, env, h);
   if (!bot) return new Response('yetkisiz', { status: 401 });
   let u = null; try { u = await request.json(); } catch (e) { return new Response('ok'); }
+  if (!pubOpen()) return new Response('ok');   // v14.7 herkese açık sürüm kapalı: bot yanıt vermez
   if (u && u.my_chat_member) {
     const m = u.my_chat_member;
     // v12.4a: iz — son kanal/grup üyelik bildirimi (teşhis için) ve hata

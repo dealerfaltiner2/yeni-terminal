@@ -1,3 +1,4 @@
+globalThis.__PUSULA_PUBLIC = true;   // v14.7: bu testler herkese açık modu sınar (kapalı mod tgapp.mjs sonunda)
 // Telegram mini uygulaması girişi: imza doğrulama (Telegram'ın belgelediği yöntemle üretilmiş örnek veriyle)
 import { createHmac } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -42,5 +43,18 @@ let t1 = await run('left', G); ok('grupta olmayan + kanalda olmayan → kapı, �
 let t2 = await run('member', G); ok('sinyal grubu üyesi kapıdan muaf', t2.r.ok === true && t2.added === 1, JSON.stringify(t2));
 let t3 = await run('left', null, 1); ok('kontrol modunda kanal üyesi: ok, kayıt yok', t3.r.ok === true && t3.r.kanal === null && t3.added === 0, JSON.stringify(t3));
 let t4 = await run('creator', G); ok('sahip kapıdan muaf', t4.r.ok === true && t4.r.owner === true, JSON.stringify(t4).slice(0, 120));
+// v14.7 KAPALI MOD (herkese açık sürüm kapalı): yalnız sahip ve sinyal grubu üyeleri girer; grup üyesinin cihazı onaylanır (canlı), üye kaydı yok
+globalThis.__PUSULA_PUBLIC = false;
+{ let appr = 0; const runK = async (grpSt, chk) => { let added = 0; appr = 0; globalThis.fetch = async () => ({ json: async () => ({ ok: true, result: { status: grpSt } }) });
+    const req = { url: 'https://api.x/tgauth', text: async () => JSON.stringify({ d: make(TOK, Date.now() - 1000), dev: 'abcdefgh12', chk }) };
+    const h = { json: (o) => o, kvGet: async () => ({ tgTok: TOK, chat: -1 }), ownerTok: async () => 'OWN', errAdd: async () => {}, uyeAdd: async () => { added++; }, devMember: async () => {}, devApprove: async () => { appr++; }, chanGate: async () => G };
+    const r = await tgAuth(req, { ACCESS_KEY: 'K', BT: {} }, h); globalThis.fetch = realFetch; return { r, added, appr }; };
+  const k1 = await runK('left'); ok('kapalı: grup dışından gelen giremez, kanal sorulmaz, kayıt yok', k1.r.ok === false && k1.r.kapali === 1 && !k1.r.kanal && k1.added === 0, JSON.stringify(k1));
+  const k2 = await runK('member'); ok('kapalı: grup üyesi girer, cihazı onaylanır, üye kaydı yok', k2.r.ok === true && !k2.r.uye && k2.appr === 1 && k2.added === 0 && /^PUSULA\|/.test(k2.r.setup), JSON.stringify(k2));
+  const k3 = await runK('left', 1); ok('kapalı: kontrol modunda da grup dışı reddedilir', k3.r.ok === false && k3.r.kapali === 1, JSON.stringify(k3));
+  const k4 = await runK('creator'); ok('kapalı: sahip girer', k4.r.ok === true && k4.r.owner === true);
+  const { tgBotUpdate, hookSecret } = await import(path.join(W, 'tgbot.js')); let sent = 0; globalThis.fetch = async () => { sent++; return { json: async () => ({ ok: true }) }; };
+  const br = await tgBotUpdate(new Request('https://x/tgbot', { method: 'POST', headers: { 'X-Telegram-Bot-Api-Secret-Token': await hookSecret(TOK) }, body: JSON.stringify({ message: { chat: { id: 5, type: 'private' }, from: { id: 5 }, text: '/start' } }) }), {}, { kvGet: async () => ({ tgTok: TOK }) });
+  globalThis.fetch = realFetch; ok('kapalı: bot kimseye yanıt vermez', sent === 0 && br.status === 200, br.status + ' ' + sent); }
 console.log('\nTELEGRAM UYGULAMASI: ' + res.filter(Boolean).length + '/' + res.length + ' geçti');
 process.exit(res.every(Boolean) ? 0 : 1);

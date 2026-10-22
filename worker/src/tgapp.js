@@ -36,6 +36,12 @@ export async function tgChanGate(env, cfg, uid, fetchFn = fetch) {
   } catch (e) { return null; }
   return { url: ch.user ? 'https://t.me/' + ch.user : '', title: ch.title || 'BIST Pusula' };
 }
+// v14.7 (22.10 gece, Fatih: 'diğer botu kapatalım, yalnız 3 kişilik grubumuz kalsın' → 'Hepsini kapat'):
+// HERKESE AÇIK SÜRÜM KAPALI — @BistPusulaBot yanıt vermez, kanala zamanlanmış paylaşım gitmez, grup dışındakiler Pusula'yı açamaz,
+// eski üye cihazları (dev.ok = 2) veri alamaz. Grup üyeleri Telegram'dan girince cihazları onaylanır (canlı veri). Yeniden açmak: true yap.
+export const PUBLIC_OPEN = false;
+export const pubOpen = () => PUBLIC_OPEN || globalThis.__PUSULA_PUBLIC === true;   // testler açık modu da sınar
+export const KAPALI_MSG = 'Pusula şu an yalnız özel grubumuza açık.';
 export async function tgAuth(request, env, h) {
   // h = { json, kvGet, ownerTok, errAdd }
   let b = {}; try { b = JSON.parse((await request.text()) || '{}'); } catch (e) { return h.json({ ok: false, error: 'geçersiz istek' }, 400); }
@@ -62,6 +68,13 @@ export async function tgAuth(request, env, h) {
   // cihazı 'üye' (dev.ok = 2) olur: tüm ekranlar açık ama fiyatlar 15 dk gecikmeli (sahibin TradingView oturumu KULLANILMAZ).
   // Sahip, Ayarlar → bağlı cihazlar'dan bir üyeyi canlı veriye yükseltebilir (dev.ok = 1).
   const grup = st === 'administrator' || st === 'member' || st === 'restricted';
+  if (!pubOpen()) {
+    if (!grup) return h.json({ ok: false, kapali: 1, error: KAPALI_MSG }, 403);
+    if (b.chk) return h.json({ ok: true, kanal: null });
+    const dv = String(b.dev || '').toLowerCase();
+    if (/^[a-z0-9]{8,32}$/.test(dv) && h.devApprove) { try { await h.devApprove(env, dv); } catch (e) {} }
+    return h.json({ ok: true, owner: false, setup: 'PUSULA|' + base + '|' });
+  }
   // v13.8 kanal kapısı (grup üyeleri muaf); b.chk = yalnız kontrol (uygulama her açılışta bir kez sorar, kayıt yapmaz)
   const gate = grup ? null : await (h.chanGate || tgChanGate)(env, cfg, user.id);
   if (gate) return h.json({ ok: false, kanal: gate, error: 'Pusula\'yı kullanmak için önce kanala katıl.' });

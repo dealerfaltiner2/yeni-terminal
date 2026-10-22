@@ -1,3 +1,4 @@
+globalThis.__PUSULA_PUBLIC = true;   // v14.7: bu testler herkese açık modu sınar (kapalı mod tgapp.mjs sonunda)
 // v12.4 herkese açık kanal + davet kaydı
 import { createHmac } from 'node:crypto';
 import { fileURLToPath } from 'node:url';

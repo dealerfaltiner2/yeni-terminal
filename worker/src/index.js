@@ -3,7 +3,7 @@ import { flowRoute } from './flow.js';
 import { kaphStep } from './kaph.js';
 import { emarStep } from './emar.js';
 import { tavanScan, mktClose, tavanOpen } from './tavan.js';
-import { tgAuth } from './tgapp.js';
+import { tgAuth, pubOpen, KAPALI_MSG } from './tgapp.js';
 import { posRoute, posWatch } from './pos.js';
 import { pushRoute, pushSend } from './push.js';
 import { ecalPoll, ecalRoute } from './ecal.js';
@@ -807,7 +807,7 @@ async function devTouch(request, env, url) {
     const dg = String(url.searchParams.get('dg') || '').replace(/[^0-9a-z:.\-]/gi, '').slice(0, 200);
     const r = await env.BT.prepare('INSERT INTO dev (id,name,ua,city,ver,app,first,last,hits,diag,ok) VALUES (?,?,?,?,?,?,?,?,1,?,?) ON CONFLICT(id) DO UPDATE SET name = CASE WHEN excluded.name <> \'\' THEN excluded.name ELSE dev.name END, ua = excluded.ua, city = excluded.city, ver = excluded.ver, app = excluded.app, last = excluded.last, hits = dev.hits + 1, diag = CASE WHEN excluded.diag <> \'\' THEN excluded.diag ELSE dev.diag END, ok = CASE WHEN excluded.ok = 1 THEN 1 ELSE dev.ok END RETURNING blocked, ok')
       .bind(id, name, uaShort(ua), city, ver, url.searchParams.get('app') === '1' ? 1 : 0, now, now, dg, isOwn ? 1 : 0).first();
-    const st = !r ? '' : r.blocked ? 'blocked' : (own && !r.ok) ? 'wait' : (r.ok === 2 ? 'uye' : '');
+    const st = !r ? '' : r.blocked ? 'blocked' : (own && !r.ok) ? 'wait' : (r.ok === 2 ? (pubOpen() ? 'uye' : 'kapali') : '');
     devCache.set(id, { st, at: Date.now() });
     return st;
   } catch (e) { return ''; }
@@ -824,13 +824,13 @@ async function devGate(env, url) {
     if (c && Date.now() - c.at < 60000) return c.st;
     await devEnsure(env);
     const r = await env.BT.prepare('SELECT blocked, ok FROM dev WHERE id = ?').bind(id).first();
-    const st = !r ? 'wait' : r.blocked ? 'blocked' : r.ok === 2 ? 'uye' : r.ok ? '' : 'wait';
+    const st = !r ? 'wait' : r.blocked ? 'blocked' : r.ok === 2 ? (pubOpen() ? 'uye' : 'kapali') : r.ok ? '' : 'wait';
     if (devCache.size > 500) devCache.clear();
     devCache.set(id, { st, at: Date.now() });
     return st;
   } catch (e) { return ''; }
 }
-const DEV_MSG = { blocked: 'bu cihaz engellendi', wait: 'bu cihaz ana cihazın onayını bekliyor' };
+const DEV_MSG = { blocked: 'bu cihaz engellendi', wait: 'bu cihaz ana cihazın onayını bekliyor', kapali: KAPALI_MSG };
 async function devices(env) {
   await devEnsure(env);
   const r = await env.BT.prepare('SELECT id,name,ua,city,ver,app,first,last,hits,blocked,ok FROM dev ORDER BY last DESC LIMIT 100').all();
@@ -1039,7 +1039,7 @@ export default {
         kr = await kapPoll(env, { UA, tgSend, kvGet, esc, scanRaw, pushSend });
         try { await env.BT.prepare("DELETE FROM meta WHERE k = 'kap_kill'").run(); } catch (e) {}
         if (kr && kr.yeni) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_st', ?)").bind(JSON.stringify({ at: Date.now(), yeni: kr.yeni, telegram: kr.telegram })).run();
-        if (kr && kr.pub && kr.pub.length) try { await kanalKap(env, { kvGet, esc }, kr.pub); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'kanal KAP: ' + String(e && e.message || e).slice(0, 200), 'kanalKap'); }   // v12.5
+        if (pubOpen() && kr && kr.pub && kr.pub.length) try { await kanalKap(env, { kvGet, esc }, kr.pub); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'kanal KAP: ' + String(e && e.message || e).slice(0, 200), 'kanalKap'); }   // v12.5
       } catch (e) { try { await env.BT.prepare("DELETE FROM meta WHERE k = 'kap_kill'").run(); } catch (e2) {} await errAdd(env, 'sunucu', 'hata', 'KAP: ' + String(e && e.message || e).slice(0, 200), 'kapPoll'); try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_err', ?)").bind(new Date().toISOString() + ' ' + String(e && e.message || e).slice(0, 300)).run(); } catch {} }
       try { mr = await kapMorning(env, { tgSend, kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'KAP sabah özeti: ' + String(e && e.message || e).slice(0, 200), 'kapMorning'); }
       try { const n = (kr && kr.telegram || 0) + (mr && mr.ozet ? 1 : 0); if (n) { const st = await kvGet(env, 'st', {}); if (st.cnt) { st.cnt.kap = (st.cnt.kap || 0) + n; await kvPut(env, 'st', st); } } } catch (e) {}
@@ -1072,10 +1072,12 @@ export default {
       try { await tgHookEnsure(env, { kvGet }); } catch (e) {}   // v12.2: bot karşılama webhook'u (bir kez; sonra bellekte atlanır)
       // v12.4: herkese açık kanal — sabah 09:35 / akşam 18:30 bilgi mesajı (pencere dışında okuma yok)
       try { await kanalOnce(env, { kvGet, esc }); } catch (e) {}
+      if (pubOpen()) {   // v14.7: herkese açık sürüm kapalıyken kanala zamanlanmış paylaşım yok
       try { await kanalLinks(env, { kvGet }); } catch (e) {}   // v12.10 adlı davet bağlantıları (yalnız istek varsa)
       try { await kanalWeek(env, { kvGet, esc, fetchBarsTV }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'kanal hafta: ' + String(e && e.message || e).slice(0, 200), 'kanalWeek'); }
       try { await kanalAm(env, { kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'kanal sabah: ' + String(e && e.message || e).slice(0, 200), 'kanalAm'); }
       try { await kanalPm(env, { kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'kanal akşam: ' + String(e && e.message || e).slice(0, 200), 'kanalPm'); }
+      }
       // v6.8: TEK SEFERLİK DUYURU — D1 meta k='announce' varsa Telegram'a gönderilir; başarıda satır silinir.
       // Gönderilemezse (token geçersiz vb.) ayarlar sunucuya yeniden kaydedilince (cfg.at değişince) tekrar denenir; en çok 20 deneme.
       try {

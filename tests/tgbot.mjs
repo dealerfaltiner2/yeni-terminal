@@ -1,3 +1,4 @@
+globalThis.__PUSULA_PUBLIC = true;   // v14.7: bu testler herkese açık modu sınar (kapalı mod tgapp.mjs sonunda)
 // v12.2 bot karşılama: imza başlığı, yalnız özel sohbet, web_app düğmesi
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
