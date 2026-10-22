@@ -317,3 +317,11 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
 - Merdiven çıkış kuralı (ilk üstteki EMA 200, alt sınır %0,5) vs +%3/−%1, hedefi olan sinyallerde: tümü 891 işlem −46.100 TL vs −72.800 TL; Telegram'a gidenler 247 işlem −20.100 vs −33.300.
   İkisi de zararda; merdiven biraz daha az kaybettiriyor. Asıl sorun hedef değil, stopların çokluğu (%66).
 - Öneri (Fatih onayı bekliyor, kural değişmeden): (1) Telegram sinyal kartına 'üstte %1'den yakın EMA 200 var — yukarı yer dar' uyarı satırı; (2) grafik not kartında 'üstteki EMA 200'ler' satırı. Filtre olarak kullanmak 3 Kasım değerlendirmesine.
+
+## 6v. 22.10 (Perşembe) GÜNLÜK GÖZDEN GEÇİRME (endeks −%3,1)
+- Momentum, dunguclu, sessiz, oglen BUGÜN 0 sinyal (dün −%1,9 sonrası şartı geçen yok; motor canlıydı: Algı 10:21'den, Fırsat 10:10'dan).
+- Telegram'a gidenler (yaklaşık, +3/−1, 100.000 TL/işlem, kayma hariç): Algı güçlü+rv≥2 5 işlem 0/5 (BESTE, ARFYE, TAVHL, ULUFA, IZMDC; −5); tavan6 5 işlem 2/3 (+3); seans içi geri alım yalnız BLCYT (her gün bildiren → gitmemeli). Toplam ≈ −2 puan.
+- Algı Telegram 29.09–22.10, sinyal anı endeksine göre (idx): ≥+0,3 → 22 işlem 8/11, +13,7; ≤−0,3 → 36 işlem 5/23, −8,3; arada 10 işlem −1,1. (Fırsat B'deki endeks kapısıyla aynı desen.)
+- tavan6 05–22.10: 38 işlem 9/29, ≈ −2 puan.
+- Sağlık: err temiz; üç zamanlayıcı canlı (20:13); sigsum, pub_am/pub_pm gönderildi; ana sunucu 19:00 uyku; flow 95 satır (bugün ilk dakika 10:07 — 10:00–10:06 boş, küçük); kaph güncel (22.10 00:00); emar bitti. BORSA aracı bağlanmadı.
+- Öneri (onay bekliyor): Algı Telegram'a endeks kapısı (idx ≤ −0,3 iken gitmesin, karneye yazılsın); EMA 200 uyarı satırı (6u); tavan6'yı sessize almak.
