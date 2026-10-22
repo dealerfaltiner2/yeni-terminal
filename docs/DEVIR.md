@@ -325,3 +325,13 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
 - tavan6 05–22.10: 38 işlem 9/29, ≈ −2 puan.
 - Sağlık: err temiz; üç zamanlayıcı canlı (20:13); sigsum, pub_am/pub_pm gönderildi; ana sunucu 19:00 uyku; flow 95 satır (bugün ilk dakika 10:07 — 10:00–10:06 boş, küçük); kaph güncel (22.10 00:00); emar bitti. BORSA aracı bağlanmadı.
 - Öneri (onay bekliyor): Algı Telegram'a endeks kapısı (idx ≤ −0,3 iken gitmesin, karneye yazılsın); EMA 200 uyarı satırı (6u); tavan6'yı sessize almak.
+
+## 6v. 22.10 gece SİNYAL KURTARMA ARAŞTIRMASI (Fatih: 'başarıya ulaşmamız lazım, nasıl?'; sig, 29.09–22.10, yalnız AL; A = 29.09–10.10 / B = 13–22.10; +3/−1, ikisi de yoksa gün sonu; D1 gruplama sorgularıyla, ~7k okuma/sorgu)
+- Kaynak bazında (işlem başı): Algı −0,13 (1.034), Fırsat B −0,19 (335), Fırsat A −0,10 (30), Momentum −0,05 (52), tavan6 −0,05 (38). Sonuçlananların %15'i +3 (başabaş %25). Hiçbiri tek başına artı değil.
+- Tek tek özellik (A/B): saat, fiyat seviyesi, oynaklık, hacim, piyasa değeri → tutarlı fark YOK. Endeks ≥+1 A +0,15 / B +0,63 ama yalnız 2 gün (05.10, 20.10) → gün etkisi. Son 2 saatte KAP haberi A +0,24 / B +0,49 (20/30, az).
+- Endeks yönüyle kırılım (sinyal anı XU100 ≥0 / <0):
+  · KAP GERİ ALIM, SEANS İÇİNDE YAYINLANAN: artı 17 sinyal +0,47, eksi 44 sinyal +0,99 (A +1,41 / B +0,68), isabet %43–52 → İKİ DÖNEMDE DE ARTI, düşen piyasada bile. En sağlam kaynak (v11.4'ten beri Telegram'da).
+  · Algı Telegram (fc≥0,8, rv≥2): endeks artı 26 sinyal/6 gün A +0,46 / B +1,55 (hedefsiz +2,93); endeks eksi 42 sinyal A −0,91 / B −0,24. → 'endeks artıdayken' filtresi iki dönemde aynı yönde (geçmiş 14 ay feat bulgusu ile uyumlu: endeks etkisi 14 ayın 11'inde).
+  · Fırsat B: eksi günde A −0,33 / B −0,49; artı günde A +0,26 / B −0,30 → güvenilmez. Fırsat A az ve eksi. Momentum canlıda ~0 (geçmiş 14 ayda +0,3–0,4). tavan6 ~0. Gece gelen geri alım = piyasa yönü (artı +0,36, eksi −0,31).
+- ÖNERİ (Fatih onayı bekliyor): Telegram'a yalnız (1) seans içi geri alım (aynen), (2) Algı Telegram yalnız XU100 ≥ 0 iken, (3) Momentum izlemede kalsın; Fırsat A/B Telegram'dan çıksın (karneye yazmaya devam). Beklenen: günde ~4–5 sinyal, işlem başı +0,6…+0,9 (küçük örnek!). 2 hafta canlı deneme, %25 altına düşerse geri al.
+- Stop şikâyeti (22.10): hesap doğru (−%1'e 1 dk mumda değmek = stop). Bugün 4 AL sinyali stoptan sonra +3 gördü; 5 TL altı hisselerde 1 kuruş = %0,2–1,3 → −%1 stop 1–2 kademe. Stop çeşitleri (kademe payı, 5 dk kapanış, −1,5) için mum yeniden ölçümü gerekir (sig'de yok) — ayrı iş.
