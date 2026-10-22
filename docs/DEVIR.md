@@ -306,3 +306,14 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
 - Fırsat bugün: B AL 0/13 (−13,3), B SAT 11/11 +41,6 (sert düşüş günü).
 - Sağlık: err temiz (2 terminal toparlama), üç zamanlayıcı canlı, sigsum gönderildi, ana sunucu 18:59 (uyku), flow 95 satır/gün, kaph bitti (21.10 00:00). BORSA aracı bağlanmadı.
 - HATA DÜZELTİLDİ: mkt_close 'dn' boştu (en kötü 60'ın hepsi taban/<100 Mn TL) → tavan.js tarama aralığı 200.
+
+## 6u. 22.10 sabah EMA HEDEF MERDİVENİ ARAŞTIRMASI (Fatih + Nihat'ın kuralı; v14.3 emar tablosu, 29.09–21.10, yalnız AL, 1.385 sinyal)
+- Soru: 15 dk AL sonrası üst zaman dilimi EMA 200'leri (30 dk → 1 sa → 2 sa → 4 sa) hedef/direnç mi? Ölçüm aynı gün 5 dk mumla, stop −%1. |uzaklık| > %15 (bölünme/bedelsiz kirliliği) atıldı.
+- DİKKAT: Fırsat-A/B karne satırlarının çoğu SAT (dir) — ilk analizde karıştı; analizler s.dir='AL' ile yapılmalı.
+- EMA 200'e ulaşma (4 zaman dilimi toplamı): uzaklık %0–0,5 → %66 stoptan önce ulaştı (ulaşanların %34'ü orada durdu, gerisi geçti); %0,5–1 → %31; %1–2 → %21 (stop %32); %2–4 → %7 (stop %44); %4+ → %1 (stop %53).
+  → EMA 200 güçlü direnç DEĞİL (yakınsa çoğu geçiliyor); %1'den uzak seviyeler aynı gün nadiren geliyor.
+- En güçlü bulgu (sinyal kalitesi): ilk üstteki EMA 200 girişe %1'den yakınsa sinyal neredeyse hiç +%3 yapmıyor: 197 sinyalde 7 hedef / 92 stop, 100.000 TL'lik işlemlerle −45.800 TL.
+  %1–2: 133 → 8/58, −12.100; %2–4: 211 → 23/117, −19.100; %4+: 383 → 53/215, −1.400; fiyat bütün EMA 200'lerin üstünde (çoğu Fırsat AL): 328 → 18/194, −76.000 (ayrıca incelenmeli).
+- Merdiven çıkış kuralı (ilk üstteki EMA 200, alt sınır %0,5) vs +%3/−%1, hedefi olan sinyallerde: tümü 891 işlem −46.100 TL vs −72.800 TL; Telegram'a gidenler 247 işlem −20.100 vs −33.300.
+  İkisi de zararda; merdiven biraz daha az kaybettiriyor. Asıl sorun hedef değil, stopların çokluğu (%66).
+- Öneri (Fatih onayı bekliyor, kural değişmeden): (1) Telegram sinyal kartına 'üstte %1'den yakın EMA 200 var — yukarı yer dar' uyarı satırı; (2) grafik not kartında 'üstteki EMA 200'ler' satırı. Filtre olarak kullanmak 3 Kasım değerlendirmesine.
