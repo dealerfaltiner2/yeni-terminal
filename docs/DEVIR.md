@@ -335,3 +335,12 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
   · Fırsat B: eksi günde A −0,33 / B −0,49; artı günde A +0,26 / B −0,30 → güvenilmez. Fırsat A az ve eksi. Momentum canlıda ~0 (geçmiş 14 ayda +0,3–0,4). tavan6 ~0. Gece gelen geri alım = piyasa yönü (artı +0,36, eksi −0,31).
 - ÖNERİ (Fatih onayı bekliyor): Telegram'a yalnız (1) seans içi geri alım (aynen), (2) Algı Telegram yalnız XU100 ≥ 0 iken, (3) Momentum izlemede kalsın; Fırsat A/B Telegram'dan çıksın (karneye yazmaya devam). Beklenen: günde ~4–5 sinyal, işlem başı +0,6…+0,9 (küçük örnek!). 2 hafta canlı deneme, %25 altına düşerse geri al.
 - Stop şikâyeti (22.10): hesap doğru (−%1'e 1 dk mumda değmek = stop). Bugün 4 AL sinyali stoptan sonra +3 gördü; 5 TL altı hisselerde 1 kuruş = %0,2–1,3 → −%1 stop 1–2 kademe. Stop çeşitleri (kademe payı, 5 dk kapanış, −1,5) için mum yeniden ölçümü gerekir (sig'de yok) — ayrı iş.
+
+## 6w. 23.10 (Cuma) GÜNLÜK GÖZDEN GEÇİRME (XU100 −%0,9; gün içi dip −%4,6, 15:50'den sonra toparlandı)
+- v14.8 (endeks kapısı) 10:06'da yayınlandı ama motor sayfayı 09:40'ta yüklemişti → BUGÜN ESKİ KURAL ÇALIŞTI: Algı sig meta'sında 'tg' alanı hiç yok (yeni kod her zaman tg:0/1 yazar). Endeks bütün gün eksiydi; yeni kuralla hiç Algı gitmeyecekti.
+  Telegram'a giden (yaklaşık, +3/−1, 100.000 TL/işlem, kayma hariç): Algı güçlü+rv≥2 13 işlem 0/8 (4 sonuçsuz, 1 bekliyor) −6,0; tavan6 (10:01, v14.8'den önce) 5 işlem 2/3 +3; seans içi geri alım SANFM −1, OZYSR −1 (stop sonrası tavan), ISVEA 0 (TAVANDA geldi, alınamaz), OYLUM ölçülmedi → toplam ≈ −5 puan (−5.000 TL). Momentum 0 sinyal.
+  Bütün Algı (131, sessizler dahil) +72 puan / 107 ölçülen (o15 54/26) — dipten dönüş günü, tek gün.
+- Sessiz botlar: dunguclu 2/2 stop (−2); momentum/oglen/sessiz yok.
+- F/K kırılımı (12–23.10, algi+fırsat+momentum, 1.089 sinyal): F/K grubu tutarlı fark VERMİYOR; endeks artı/eksi her F/K grubunda belirleyici (artı 0…+0,7, eksi −0,07…−0,30).
+- Sağlık: err temiz; üç zamanlayıcı canlı; motor 19:00 uykuda (normal); flow 96 satır/gün (büyüyor); kaph güncel; karne ölçümü 20:15'te hâlâ sürüyordu (46 kalan, 2 dk'da 5 hisse) → özet ~20:35'te.
+- Öneri (onay bekliyor): sinyal meta'sına sürüm etiketi (v) + motorun yeni sürümü seans dışında hemen alması; seans içi geri alımda tavandaki (≥+%9,5) hisseyi Telegram'a göndermemek; stop kademe payı ölçümü (sessiz sütun).
