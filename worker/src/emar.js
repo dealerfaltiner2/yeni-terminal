@@ -77,3 +77,53 @@ export async function emarStep(env, fetchBarsTV) {
   }
   return { sym, n: w, kalan: q.length };
 }
+
+// v14.9 (24.10 gece, Fatih + arkadaşının gözlemi: 'Algı EMA 20 altında gelirse +%3 veriyor, EMA 50/200'e yakınsa gitmiyor') — bir kerelik, yalnız ölçüm.
+// Algı sinyalleri için 5 / 15 / 60 dk mumlarda EMA 20, 50, 200 → sinyal anında (bitmiş son mum) fiyata uzaklık % (pozitif = EMA fiyatın üstünde, fiyat altta)
+// + EMA 20'nin eğimi (son 3 mumda %). D1 tablo emar2 (id = sig rowid). Seans dışında dakikada 1 hisse, meta 'emar2_on'='1' iken; kuyruk 'emar2_q', durum 'emar2_st'.
+const TF2 = [['5', 2200], ['15', 900], ['60', 500]];
+export function emar2Calc(sig, tb) {
+  const out = [];
+  for (const [tf] of TF2) {
+    const bars = tb[tf] || []; const row = [tf];
+    for (const n of [20, 50, 200]) { const L = emaAt(bars, +tf, sig.t, n); row.push(L == null ? null : +((L / sig.px - 1) * 100).toFixed(2)); }
+    // EMA 20 eğimi: bitmiş son mum ile 3 mum önceki EMA 20 farkı (%)
+    let sl = null;
+    if (bars.length > 30) { const c = bars.map(b => b[4]), e = emaArr(c, 20); let idx = -1;
+      for (let i = bars.length - 1; i >= 0; i--) { if ((bars[i][0] + +tf * 60) * 1000 <= sig.t) { idx = i; break; } }
+      if (idx >= 3 && e[idx] != null && e[idx - 3] != null) sl = +((e[idx] / e[idx - 3] - 1) * 100).toFixed(3); }
+    row.push(sl); out.push(row);
+  }
+  return out;
+}
+export async function emar2Step(env, fetchBarsTV) {
+  if (!env.BT) return null;
+  let on = null; try { on = await env.BT.prepare("SELECT v FROM meta WHERE k = 'emar2_on'").first(); } catch (e) {}
+  if (!on || on.v !== '1') return null;
+  await env.BT.prepare('CREATE TABLE IF NOT EXISTS emar2 (id INTEGER PRIMARY KEY, sym TEXT, src TEXT, t INTEGER, px REAL, tg INTEGER, o31 INTEGER, o21 INTEGER, idx REAL, lv TEXT)').run();
+  let q = null; const m = await env.BT.prepare("SELECT v FROM meta WHERE k = 'emar2_q'").first();
+  if (m) { try { q = JSON.parse(m.v); } catch (e) { q = []; } }
+  else {
+    const rs = (await env.BT.prepare("SELECT DISTINCT sym FROM sig INDEXED BY sig_d WHERE d >= ? AND src = 'algi' AND px IS NOT NULL").bind(EMAR_FROM).all()).results || [];
+    q = rs.map(r => r.sym).filter(Boolean);
+    await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('emar2_q', ?)").bind(JSON.stringify(q)).run();
+    await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('emar2_st', ?)").bind(JSON.stringify({ basla: Date.now(), toplam: q.length })).run();
+    return { kuyruk: q.length };
+  }
+  if (!q.length) { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('emar2_on', '0')").run();
+    await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('emar2_st', ?)").bind(JSON.stringify({ bitti: Date.now() })).run(); return { bitti: 1 }; }
+  const sym = q.shift();
+  await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('emar2_q', ?)").bind(JSON.stringify(q)).run();
+  const sigs = (await env.BT.prepare("SELECT rowid id, t, src, px, meta, o31, o21, idx FROM sig INDEXED BY sig_sym WHERE sym = ? AND d >= ? AND src = 'algi' AND px IS NOT NULL").bind(sym, EMAR_FROM).all()).results || [];
+  if (!sigs.length) return { sym, n: 0 };
+  const key = 'BIST:' + sym, toBars = st => st ? [...st.m.values()].filter(v => v && v.length >= 5).sort((a, b) => a[0] - b[0]) : [];
+  const tb = {}; for (const [tf, n] of TF2) tb[tf] = toBars((await fetchBarsTV(env, [key], tf, n, 10000))[key]);
+  let w = 0;
+  for (const s of sigs) {
+    let mt = {}; try { mt = JSON.parse(s.meta || '{}') || {}; } catch (e) {}
+    const tg = mt.tg != null ? (mt.tg ? 1 : 0) : (mt.fc >= 0.8 && mt.rv >= 2 ? 1 : 0);
+    await env.BT.prepare('INSERT OR REPLACE INTO emar2 (id, sym, src, t, px, tg, o31, o21, idx, lv) VALUES (?,?,?,?,?,?,?,?,?,?)').bind(s.id, sym, s.src, s.t, s.px, tg, s.o31, s.o21, s.idx, JSON.stringify(emar2Calc(s, tb))).run();
+    w++;
+  }
+  return { sym, n: w, kalan: q.length };
+}

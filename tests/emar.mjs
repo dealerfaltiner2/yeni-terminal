@@ -1,4 +1,4 @@
-import { emaArr, emaAt, levelPath, emarCalc } from '../worker/src/emar.js';
+import { emaArr, emaAt, levelPath, emarCalc, emar2Calc } from '../worker/src/emar.js';
 let bad = 0; const ok = (n, c, x) => { console.log((c ? '✓ ' : '✗ ') + n + (c ? '' : ' — ' + JSON.stringify(x))); if (!c) bad++; };
 // EMA: sabit seri → sabit
 const e = emaArr(Array(250).fill(10), 200); ok('EMA sabit seride sabit', Math.abs(e[249] - 10) < 1e-9 && e[198] === null, e[249]);
@@ -20,4 +20,8 @@ const lv = emarCalc({ t: s0 * 1000, px: 100 }, mk([[103.2, 99.5, 103]]), tb);
 const g = k => lv.find(x => x[0] === k);
 ok('7 seviye üretir', lv.length === 7, lv.map(x => x[0]));
 ok('üstteki seviye (60-200 = 103) için yol var, alttaki (240-200 = 90) için yok, mum yoksa boş', g('60-200')[2] === 3 && g('60-200')[3] === 1 && g('240-200')[3] === null && g('120-200')[1] === null, lv);
+// v14.9 EMA 20/50/200 uzaklığı (5/15/60 dk): sabit 100 serisinde fiyat 98 → EMA'lar fiyatın %2,04 üstünde, eğim 0
+{ const T = Date.parse('2026-10-20T07:30:00Z'), mkB = (tf, n) => Array.from({ length: n }, (_, i) => [T / 1000 - (n - i) * tf * 60, 100, 100, 100, 100, 1]);
+  const r = emar2Calc({ t: T, px: 98 }, { 5: mkB(5, 300), 15: mkB(15, 300), 60: mkB(60, 100) });
+  ok('emar2: 3 zaman dilimi, EMA 20/50 uzaklığı +2,04, eğim 0; 60 dk\'da 200 mum yoksa EMA 200 boş', r.length === 3 && r[0][1] === 2.04 && r[0][2] === 2.04 && r[0][4] === 0 && r[2][3] === null && r[2][1] === 2.04, r); }
 if (bad) { console.log('EMA araştırması: ' + bad + ' HATA'); process.exit(1); } else console.log('EMA araştırması: hepsi geçti');
