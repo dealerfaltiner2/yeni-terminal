@@ -791,6 +791,10 @@ function withinMarketHours(){
  return mins>=600&&mins<=1090; // 10:00–18:10
 }
 function sigKey(sym,dir){return sym+'|'+dir+'|'+new Date().toISOString().slice(0,10)}
+/* v14.8 (23.10, sinyal grubu anketi: 3 oyun 2'si 'öneri') TELEGRAM SİNYAL KURALI (DEVIR 6v): Telegram'a yalnız seans içi geri alım (sunucu), Momentum,
+   ve güçlü Algı (fc≥0,8, hacim ≥2 kat) YALNIZ BIST 100 o an artıdayken. Fırsat A/B ve tavan sakin açılış Telegram'a gitmez; hepsi karneye yazılmaya devam eder. */
+var FIRSAT_TG=false;
+function tgIdxOk(){try{const v=S.mkt&&S.mkt.XU100&&S.mkt.XU100.ch;const x=v!=null&&isFinite(v)?v:S.idxCh;return !(x!=null&&isFinite(x)&&x<0)}catch(e){return true}}
 async function autoRun(manual){
  const m=$('#tgmsg');
  if(!manual&&!BOTMODE&&S.botAlive)return;   // v7.4: iş bilgisayarı motoru tarıyor ve gönderiyor
@@ -835,7 +839,7 @@ async function autoRun(manual){
      // v8.8 (Fatih: 'sadece önemli bildirimler'): SAT yalnız karneye yazılır. v9.2 (09.10, Fatih): B notlu AL da Telegram'a gider (hedef +%3 / stop −%1)
      // v11.4 (16.10, Fatih onayı, DEVIR 6n): endeks ekside iken B notu Telegram'a GİTMEZ (karnede −%0,55/işlem); karneye yazma sürer
      const ixc=(()=>{try{const v=S.mkt&&S.mkt.XU100&&S.mkt.XU100.ch;return v!=null&&isFinite(v)?v:S.idxCh}catch(e){return null}})();
-     if(dir==='AL'&&(a.grade==='A'||(a.grade==='B'&&!(ixc!=null&&isFinite(ixc)&&ixc<0))))await tgSend(txt,tgKb(c.o.name));
+     if(FIRSAT_TG&&dir==='AL'&&(a.grade==='A'||(a.grade==='B'&&!(ixc!=null&&isFinite(ixc)&&ixc<0))))await tgSend(txt,tgKb(c.o.name));   // v14.8: Fırsat Telegram'a gitmez (karneye yazılır)
      S.sentSig.push(key);sent++;
      beep();notify('BIST · Sinyal gönderildi',c.o.name+' '+dir);
      seenAAdd(c.o.name,dir);
@@ -3413,7 +3417,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.7";window.APPV=APP_VER;
+  const APP_VER="14.8";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3755,8 +3759,8 @@ function tvReconnectReport(){
      e.mute=muted(sc);
      AL.log.push(e);AL.dirty=true;saveLog(true);
      st.cnt=0;st.cool=now+30*60000;stage='ates';
-     if(!e.mute&&f.fc>=.8&&f.rv!=null&&f.rv>=2){e.tg=1;tg(msgFire(e,f,o),tgKb(sym))}   // v10.9 (15.10, Fatih: 'sıkılaştır, 30 fazla'): güçlü + hacim normalin ≥2 katı (karnede 10 gün: %12,6 → %24, günde ~24 → ~4)   // v8.8: Telegram'a yalnız 💪 GÜÇLÜ (karnede %60'a karşı %43); hepsi karneye yazılmaya devam eder
-     sigPost({src:'algi',sym:sym,t:now,px:p0,sc:sc,dir:'AL',meta:{fa:f.fa!=null?+(+f.fa).toFixed(1):null,rv:f.rv!=null?+(+f.rv).toFixed(1):null,fc:f.fc!=null?+(+f.fc).toFixed(2):null,ch:f.ch!=null?+(+f.ch).toFixed(2):null,brk:!!f.brk,abv:!!f.abv,bid:!!f.fd,tema:!!gOk,endeks:!!hOk,sig:!(o.voltl>=1e7),sessiz:!!e.mute}});
+     if(!e.mute&&f.fc>=.8&&f.rv!=null&&f.rv>=2&&tgIdxOk()){e.tg=1;tg(msgFire(e,f,o),tgKb(sym))}   // v14.8 (23.10, grup anketi 2/3): yalnız BIST 100 artıdayken (DEVIR 6v)   // v10.9 (15.10, Fatih: 'sıkılaştır, 30 fazla'): güçlü + hacim normalin ≥2 katı (karnede 10 gün: %12,6 → %24, günde ~24 → ~4)   // v8.8: Telegram'a yalnız 💪 GÜÇLÜ (karnede %60'a karşı %43); hepsi karneye yazılmaya devam eder
+     sigPost({src:'algi',sym:sym,t:now,px:p0,sc:sc,dir:'AL',meta:{tg:e.tg?1:0,fa:f.fa!=null?+(+f.fa).toFixed(1):null,rv:f.rv!=null?+(+f.rv).toFixed(1):null,fc:f.fc!=null?+(+f.fc).toFixed(2):null,ch:f.ch!=null?+(+f.ch).toFixed(2):null,brk:!!f.brk,abv:!!f.abv,bid:!!f.fd,tema:!!gOk,endeks:!!hOk,sig:!(o.voltl>=1e7),sessiz:!!e.mute}});
      try{notify('⚡ Algı: '+sym,'Skor '+sc+' · '+nf(f.p))}catch(x){}
      try{if(window.sigToast){const w=[];if(f.fa>=2.5)w.push('Hacim normalin '+nf(f.fa,1)+' katı');else if(f.rv!=null&&f.rv>=2)w.push('Günlük hacim '+nf(f.rv,1)+' kat');if(f.fc!=null)w.push('Alıcı oranı %'+nf(f.fc*100,0));if(f.fe)w.push('30 dk zirvesini VWAP üstünde kırdı');else if(f.fd)w.push('Alış kademesi yükseliyor');if(gOk)w.push('Sektörde hareket var');
       sigToast({src:'algi',sym:sym,dir:'AL',label:'⚡ ALGI · AL · '+sc+(f.fc>=.8?' · 💪 GÜÇLÜ':''),why:w,entry:p0,stop:e.sp,tgt:e.tp})}}catch(x){}
@@ -3836,7 +3840,7 @@ function tvReconnectReport(){
   if(SL&&(S.botAlive||SL.length)){   // v14.1: ana sunucunun Algı ateşlemeleri (karnedekiyle birebir)
    if(!SL.length)h+='<div class="note">Bugün henüz ateşleme yok.</div>';
    else h+='<div class="note" style="padding:2px 12px 6px">'+SL.length+' ateşleme · 📨 = Telegram\'a gitti (güçlü ve hacim normalin 2 katı)</div><table><tr><th>Sembol</th><th>Saat</th><th>Giriş</th><th>Şimdi</th><th>Zirve</th><th>Güç</th><th>Sonuç</th></tr>'+SL.map(e=>{
-    const m=e.meta||{},q=S.umap[e.sym],now=q&&q.close&&e.px?(q.close/e.px-1)*100:null,tg=m.fc>=.8&&m.rv>=2;
+    const m=e.meta||{},q=S.umap[e.sym],now=q&&q.close&&e.px?(q.close/e.px-1)*100:null,tg=m.tg!=null?m.tg===1:(m.fc>=.8&&m.rv>=2);
     const res=e.o31===1?'<b class="up">+%3 ✅</b>':e.o31===2?'<b class="dn">−%1 ❌</b>':e.done?'<span style="color:var(--dim)">sonuçsuz</span>':'<span class="wrn">⏳ açık</span>';
     return '<tr class="row" onclick="algiGo(\''+e.sym+'\')"><td class="sym">'+htmlEsc(e.sym)+(tg?' 📨':'')+'</td><td>'+hm(e.t)+'</td><td>'+(e.px?nf(e.px):'-')+'</td><td class="'+cls(now)+'">'+(now!=null?pct(now):'-')+'</td><td class="up">'+(e.mfe!=null?pct(e.mfe):'-')+'</td><td>'+(m.fc!=null?'%'+nf(m.fc*100,0)+(m.fc>=.8?' 💪':''):'-')+'</td><td>'+res+'</td></tr>'}).join('')+'</table>';
   }

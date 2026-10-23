@@ -64,6 +64,7 @@ export function tavanPick(L, Q) {
   }
   return out.sort((a, b) => a.gap - b.gap);
 }
+export const TAVAN_TG = false;
 export async function tavanOpen(env, h) {
   const d = new Date(Date.now() + TRMS), wd = d.getUTCDay(), m = d.getUTCHours() * 60 + d.getUTCMinutes(), day = d.toISOString().slice(0, 10);
   if (wd < 1 || wd > 5 || m < 601 || m > 620) return null;
@@ -86,6 +87,7 @@ export async function tavanOpen(env, h) {
   const msg = '🚀 <b>Dün tavan, bugün sakin açanlar</b>   <i>' + P.length + ' hisse</i>\n<blockquote>' +
     P.slice(0, 10).map(x => '<b>' + h.esc(x.s) + '</b>   <code>' + f(x.c) + '</code>   açılış ' + (x.gap >= 0 ? '+' : '−') + '%' + f(Math.abs(x.gap))).join('\n') + '</blockquote>' +
     'Hedef +%3 · Stop −%1 (şimdiki fiyattan)\n📌 %6 ve üstünde açanlar listede yok: canlı karnede tavandan açanlar hiç hedefe gitmedi, %6–9 arası açanlar da kaybettirdi. Bu liste deneme; karnede ayrı ölçülüyor.';
-  const t = await h.tgSend(cfg, msg, tgKb(P.length === 1 ? P[0].s : null));
+  // v14.8 (23.10, grup anketi): tavan sakin açılış listesi Telegram'a GİTMEZ (karnede 'tavan6' olarak ölçülmeye devam eder; canlıda ~0). Açmak için TAVAN_TG = true.
+  const t = TAVAN_TG ? await h.tgSend(cfg, msg, tgKb(P.length === 1 ? P[0].s : null)) : null;
   return { n: P.length, tg: !!(t && t.ok) };
 }

@@ -134,7 +134,7 @@ ok('takılı kayıt kalmadı', !meta('sig_run') && db.prepare("SELECT count(*) n
   ok('tavanOpen: 10:01 öncesi çalışmaz', (await tavanOpen(env, Object.assign({ scanRaw: sc({}) }, hh))) == null);
   T0 = T('2026-10-16T10:02');
   await tavanOpen(env, Object.assign({ scanRaw: sc({ A: { c: 10.35, ch: 3.5, o: 10.2 }, B: { c: 11, ch: 10, o: 11 } }) }, hh));
-  ok('tavanOpen: Telegram listesi yalnız sakin açanı içerir', sent.length === 1 && /<b>A<\/b>/.test(sent[0]) && !/<b>B<\/b>/.test(sent[0]), sent[0]);
+  ok('tavanOpen v14.8: Telegram\'a gitmez (yalnız karne)', sent.length === 0, sent[0]);
   ok('tavanOpen: karneye tavan6 (px = şimdiki fiyat)', add.length === 1 && add[0].src === 'tavan6' && add[0].px === 10.35);
   T0 = T('2026-10-16T10:03'); sent.length = 0;
   ok('tavanOpen: günde bir kez', (await tavanOpen(env, Object.assign({ scanRaw: sc({ A: { c: 10, ch: 0, o: 10 } }) }, hh))) == null && sent.length === 0);

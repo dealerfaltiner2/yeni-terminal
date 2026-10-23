@@ -462,7 +462,7 @@ export function otoPick(rs) {
   for (const r of rs) {
     let m = null; try { m = r.meta ? JSON.parse(r.meta) : null; } catch (e) {}
     if (!(r.px > 0)) continue;
-    if (r.src === 'algi') { if (!(m && m.fc >= 0.8 && m.rv >= 2)) continue; }
+    if (r.src === 'algi') { if (!(m && (m.tg != null ? m.tg === 1 : (m.fc >= 0.8 && m.rv >= 2)))) continue; }   // v14.8: meta.tg = Telegram'a gerçekten gitti mi
     else if (r.dir !== 'AL') continue;
     const k = r.src + '|' + r.sym; if (seen.has(k)) continue; seen.add(k);
     out.push({ ...r, meta: m });
