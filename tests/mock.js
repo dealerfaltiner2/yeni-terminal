@@ -65,6 +65,9 @@ function install(page, opt = {}) {
     if (u.includes('/sigtoday') && /[?&]src=oto/.test(u)) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, at: Date.now(), list: [
       { t: Date.now() - 60000, src: 'algi', sym: 'JANTS', dir: 'AL', px: 12.38, meta: { fc: 0.83, rv: 7.6 }, done: 0, o31: null, mfe: 1.2 },
       { t: Date.now() - 3600e3, src: 'firsat-A', sym: 'ASELS', dir: 'AL', px: 100, meta: {}, done: 1, o31: 2, mfe: 0.4 }] }) });
+    if (u.includes('/sigtoday') && /[?&]src=algi/.test(u) && /[?&]d=\d{4}-/.test(u)) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, at: Date.now(), d: u.match(/d=([\d-]+)/)[1], list: [
+      { t: Date.now() - 864e5, sym: 'DUNAL', px: 10, sc: 82, meta: { fc: 0.85, rv: 2.5, tg: 1 }, done: 1, o31: 1, mfe: 3.4, mae: -0.4, rc: 2.1 },
+      { t: Date.now() - 864e5 - 3600e3, sym: 'DUNST', px: 20, sc: 75, meta: { fc: 0.7, rv: 1.2 }, done: 1, o31: 2, mfe: 0.3, mae: -1.5, rc: -1.8 }] }) });
     if (u.includes('/sigtoday') && /[?&]src=algi/.test(u)) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, at: Date.now(), list: [
       { t: Date.now() - 60000, sym: 'JANTS', px: 12.38, sc: 80, meta: { fc: 0.83, rv: 7.6, brk: false, bid: true }, done: 0, o31: null, mfe: 1.2, mae: -0.3 },
       { t: Date.now() - 3600e3, sym: 'SAHOL', px: 89.55, sc: 72, meta: { fc: 0.82, rv: 0.85, brk: true }, done: 1, o31: 2, mfe: 0.4, mae: -1.1 }] }) });

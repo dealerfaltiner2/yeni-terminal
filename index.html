@@ -3417,7 +3417,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.10";window.APPV=APP_VER;
+  const APP_VER="14.11";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3837,12 +3837,16 @@ function tvReconnectReport(){
  function vCanli(){
   const today=dayKey(Date.now());
   const ev=AL.log.filter(e=>e.d===today).slice().reverse();
-  let h='<div class="note" style="padding:6px 12px 2px"><b style="color:#ffb020">⚡ BUGÜN ATEŞLENENLER</b></div>';
-  const SL=(!BOTMODE&&window.ALS&&ALS.list)?ALS.list:null;
-  if(SL&&(S.botAlive||SL.length)){   // v14.1: ana sunucunun Algı ateşlemeleri (karnedekiyle birebir)
-   if(!SL.length)h+='<div class="note">Bugün henüz ateşleme yok.</div>';
-   else h+='<div class="note" style="padding:2px 12px 6px">'+SL.length+' ateşleme · 📨 = Telegram\'a gitti (güçlü ve hacim normalin 2 katı)</div><table><tr><th>Sembol</th><th>Saat</th><th>Giriş</th><th>Şimdi</th><th>Zirve</th><th>Güç</th><th>Sonuç</th></tr>'+SL.map(e=>{
-    const m=e.meta||{},q=S.umap[e.sym],now=q&&q.close&&e.px?(q.close/e.px-1)*100:null,tg=m.tg!=null?m.tg===1:(m.fc>=.8&&m.rv>=2);
+  // v14.11 (24.10, Fatih: 'dünkü sinyaller nerede'): gün seçici — Bugün · Önceki gün · tarih (sunucudan, herkeste aynı; geçmiş günde 'Şimdi' yerine 'Gün sonu')
+  const dsel=ALS.day||'',past=!!dsel,pd=alPrevDay();
+  let h='<div class="note" style="padding:6px 12px 2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><b style="color:#ffb020">⚡ '+(past?alDayTxt(dsel).toUpperCase()+' ATEŞLENENLER':'BUGÜN ATEŞLENENLER')+'</b>'+
+   (isUye()?'':'<span class="aldays"><button class="'+(past?'':'on')+'" onclick="alDay(\'\')">Bugün</button><button class="'+(dsel===pd?'on':'')+'" onclick="alDay(\''+pd+'\')">'+alDayTxt(pd)+'</button><label class="'+(past&&dsel!==pd?'on':'')+'">📅<input type="date" value="'+(dsel||'')+'" max="'+alPrevDay(0)+'" onchange="alDay(this.value)"></label></span>')+'</div>';
+  const SL=past?(ALS.hist[dsel]||null):(!BOTMODE&&window.ALS&&ALS.list)?ALS.list:null;
+  if(past&&!SL)h+='<div class="note">Yükleniyor…</div>';
+  else if(SL&&(past||S.botAlive||SL.length)){   // v14.1: ana sunucunun Algı ateşlemeleri (karnedekiyle birebir)
+   if(!SL.length)h+='<div class="note">'+(past?'O gün Algı ateşlemesi yok (hafta sonu ya da tatil olabilir).':'Bugün henüz ateşleme yok.')+'</div>';
+   else h+='<div class="note" style="padding:2px 12px 6px">'+SL.length+' ateşleme'+(past?' · +%3: '+SL.filter(e=>e.o31===1).length+' · stop: '+SL.filter(e=>e.o31===2).length:'')+' · 📨 = Telegram\'a gitti</div><table><tr><th>Sembol</th><th>Saat</th><th>Giriş</th><th>'+(past?'Gün sonu':'Şimdi')+'</th><th>Zirve</th><th>Güç</th><th>Sonuç</th></tr>'+SL.map(e=>{
+    const m=e.meta||{},q=S.umap[e.sym],now=past?e.rc:(q&&q.close&&e.px?(q.close/e.px-1)*100:null),tg=m.tg!=null?m.tg===1:(m.fc>=.8&&m.rv>=2);
     const res=e.o31===1?'<b class="up">+%3 ✅</b>':e.o31===2?'<b class="dn">−%1 ❌</b>':e.done?'<span style="color:var(--dim)">sonuçsuz</span>':'<span class="wrn">⏳ açık</span>';
     return '<tr class="row" onclick="algiGo(\''+e.sym+'\')"><td class="sym">'+htmlEsc(e.sym)+(tg?' 📨':'')+'</td><td>'+hm(e.t)+'</td><td>'+(e.px?nf(e.px):'-')+'</td><td class="'+cls(now)+'">'+(now!=null?pct(now):'-')+'</td><td class="up">'+(e.mfe!=null?pct(e.mfe):'-')+'</td><td>'+(m.fc!=null?'%'+nf(m.fc*100,0)+(m.fc>=.8?' 💪':''):'-')+'</td><td>'+res+'</td></tr>'}).join('')+'</table>';
   }
@@ -4780,7 +4784,11 @@ function nHero(){
  return h+nowSessLine()+'</div>'}
 /* v14.1 (21.10, Fatih: 'Algı bana gelmemiş, arkadaşlara farklı gelmiş'): her telefon Algı'yı kendi hesaplıyordu → herkeste farklı sinyal.
    Artık ana sunucu çalışırken telefon kendi sinyalini vermez; Algı ateşlemeleri sunucudan (/sigtoday?src=algi, 30 sn) gelir: Algı sekmesi listesi + üstten kayan kart herkeste AYNI. */
-var ALS={at:0,list:null,seen:null};
+var ALS={at:0,list:null,seen:null,day:'',hist:{}};
+function alPrevDay(n){const d=new Date(Date.now()+3*3600e3);if(n===0)return d.toISOString().slice(0,10);do{d.setUTCDate(d.getUTCDate()-1)}while(d.getUTCDay()===0||d.getUTCDay()===6);return d.toISOString().slice(0,10)}
+function alDayTxt(d){try{const t=new Date(d+'T12:00:00Z'),G=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];return t.getUTCDate()+' '+['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'][t.getUTCMonth()]+' '+G[t.getUTCDay()]}catch(e){return d}}
+function alDay(d){d=String(d||'');if(d&&d>=alPrevDay(0))d='';ALS.day=d;if(d&&!ALS.hist[d]){const b=srvBase(S.tvproxy);if(/^https:\/\//.test(b))fetch(dq(b+'/sigtoday?src=algi&d='+d)).then(r=>r.json()).then(j=>{ALS.hist[d]=j&&j.ok?(j.list||[]):[];if(S.tab==='algi')renderAlgi()}).catch(()=>{ALS.hist[d]=[];if(S.tab==='algi')renderAlgi()})}
+ if(S.tab==='algi'&&typeof renderAlgi==='function')renderAlgi()}
 /* v14.10 (24.10, Fatih: 'bütün Algı sinyalleri herkeste aynı olsun') ALGI RADARI TEK KAYNAK: motor 20 sn'de bir radar satırlarını /algirows-set'e yollar;
    telefon (Ana sunucu canlıyken) /algirows'tan okur. Sunucu listesi 90 sn'den eskiyse telefon kendi hesabını gösterir (o zaman 'AL sinyali' yazmaz). */
 var ALR={at:0,push:0,v:null};
@@ -6536,6 +6544,12 @@ html.uye [data-t="op"],html.uye [data-t="algi"],html.uye [data-t="brief"],html.u
 .mver{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 2px 10px;padding:9px 12px;border-radius:12px;background:rgba(255,255,255,.05);font-size:12.5px;color:var(--dim)}
 .mver b{color:var(--txt,#fff)}
 .mver button{padding:7px 11px!important;min-height:0!important;font-size:12.5px!important;border-radius:10px!important;white-space:nowrap}
+
+/* v14.11 Algı gün seçici */
+.aldays{display:inline-flex;gap:4px;margin-left:auto}
+.aldays button,.aldays label{padding:4px 9px!important;min-height:0!important;font-size:11.5px!important;border-radius:9px!important;border:1px solid var(--line2)!important;background:none!important;color:var(--dim)!important;cursor:pointer;position:relative}
+.aldays .on{background:var(--acc,#FF6A00)!important;color:#000!important;border-color:transparent!important;font-weight:700}
+.aldays label input{position:absolute;inset:0;opacity:0;width:100%;height:100%}
 </style>
 </body>
 </html>

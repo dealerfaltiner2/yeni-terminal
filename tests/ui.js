@@ -332,6 +332,14 @@ async function page(b, opt) {
         const oldRows = S.algi.rows; ALR.v = null; S.algi.rows = [{ s: 'LOCAL', sc: 80, stage: 'ates', g: 0, f: { fa: 3, rv: 2, fc: 0.8 }, o: { voltl: 5e7 } }]; renderAlgi();
         const L2 = lbl(); res.local = L2.some(x => /LOCAL:.*Hazırlanıyor/.test(x)) && !L2.some(x => /LOCAL:.*AL sinyali/.test(x));
         S.algi.rows = oldRows; S.botAlive = old; renderAlgi(); const mv = document.getElementById('mvertxt'); res.menu = !!mv && /v\d/.test(mv.textContent) && !!document.querySelector('#more .mver button'); return res; });
+      const dy = await p.evaluate(async () => { const old = S.botAlive; S.botAlive = true; showTab('algi'); const pd = alPrevDay(); alDay(pd); await new Promise(r => setTimeout(r, 900)); renderAlgi();
+        const t = document.getElementById('t-algi').textContent; const r = { list: /DUNAL/.test(t) && /DUNST/.test(t), gs: /Gün sonu/.test(t), cnt: /\+%3: 1/.test(t) && /stop: 1/.test(t), btn: !!document.querySelector('#t-algi .aldays button.on') };
+        await new Promise(r2 => setTimeout(r2, 50)); window.__shot = 1;
+        alDay(''); renderAlgi(); r.back = /BUGÜN ATEŞLENENLER/.test(document.getElementById('t-algi').textContent); S.botAlive = old; return r; });
+      await p.evaluate(async () => { const old = S.botAlive; S.botAlive = true; showTab('algi'); alDay(alPrevDay()); await new Promise(r => setTimeout(r, 600)); renderAlgi(); document.querySelectorAll('.sigtoast,#sigtoast,#wtoast').forEach(e => e.remove()); window.__uyeOld = document.documentElement.className; document.documentElement.classList.remove('uye'); document.querySelectorAll('.tab').forEach(e => e.classList.toggle('on', e.id === 't-algi')); const a = document.querySelector('#t-algi .aldays'); if (a) a.scrollIntoView(); });
+      await p.screenshot({ path: require('path').join(OUT, 'algi-gun.png') });
+      await p.evaluate(() => { document.documentElement.className = window.__uyeOld; alDay(''); });
+      ok('Algı gün seçici: önceki günün ateşlemeleri sunucudan, gün sonu ve sayılarla; Bugün\'e dönüş', Object.values(dy).every(Boolean), JSON.stringify(dy));
       ok('Algı radarı tek kaynak: sunucu listesi herkeste aynı; telefonun kendi hesabı AL sinyali demez; Menü\'de sürüm + güncelleme düğmesi', Object.values(ar).every(Boolean), JSON.stringify(ar));
       await p.evaluate(() => selectSym('THYAO', 'bist')); await p.waitForTimeout(2500);
       const cn = await p.evaluate(() => { const el = document.getElementById('cnote'), t = el ? el.textContent : ''; const w = S.wsig.THYAO;

@@ -964,7 +964,7 @@ export default {
       case 'kap': return kapList(env, url, json);
       case 'kesif': return json(await kesifData(env));   // v13.0 Keşfet hazır listeleri (30 dk ortak önbellek)
       case 'sigstats': return json(await sigStats(env));
-      case 'sigtoday': return json(anon ? { ok: true, at: Date.now(), list: [], uye: 1 } : await sigToday(env, url.searchParams.get('src')));   // v12.2: üyeye canlı sinyal listesi yok
+      case 'sigtoday': return json(anon ? { ok: true, at: Date.now(), list: [], uye: 1 } : await sigToday(env, url.searchParams.get('src'), url.searchParams.get('d')));   // v12.2: üyeye canlı sinyal listesi yok
       case 'sigsym': return json(await sigSym(env, url.searchParams.get('s')));
       // v8.7 CLAUDE PİYASA YORUMU — yorumları zamanlanmış Claude görevi doğrudan D1 'yorum' tablosuna yazar (anahtar gerekmez); terminal buradan okur.
       case 'yorum': { try { await env.BT.prepare('CREATE TABLE IF NOT EXISTS yorum (id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER, slot TEXT, txt TEXT)').run(); const r = await env.BT.prepare('SELECT t, slot, txt FROM yorum ORDER BY t DESC LIMIT 8').all(); return json({ ok: true, list: r.results || [] }); } catch (e) { return json({ ok: false, error: String(e.message || e).slice(0, 100) }); } }

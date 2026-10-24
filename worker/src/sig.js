@@ -469,8 +469,21 @@ export function otoPick(rs) {
   }
   return out.reverse();
 }
-export async function sigToday(env, src) {
+let algiDayCache = new Map();
+export async function sigToday(env, src, day) {
   if (!env.BT) return { ok: false, error: 'D1 yok' };
+  // v14.11 (24.10, Fatih: 'dünkü sinyaller nerede'): src=algi&d=YYYY-MM-DD → o günün Algı ateşlemeleri (sig_d indeksi, son 60 gün, 5 dk önbellek)
+  if (src === 'algi' && day && /^\d{4}-\d{2}-\d{2}$/.test(day) && day !== trDay(Date.now())) {
+    const lo = trDay(Date.now() - 60 * 86400e3);
+    if (day < lo || day > trDay(Date.now())) return { ok: true, at: Date.now(), d: day, list: [] };
+    const c = algiDayCache.get(day); if (c && Date.now() - c.at < 5 * 60e3) return c.v;
+    await sigEnsure(env);
+    const rs = (await env.BT.prepare("SELECT t, sym, px, sc, meta, done, o31, mfe, mae, rc FROM sig INDEXED BY sig_d WHERE d = ? AND src = 'algi' ORDER BY t DESC LIMIT 200").bind(day).all()).results || [];
+    const v = { ok: true, at: Date.now(), d: day, list: rs.map(r => { let m = null; try { m = r.meta ? JSON.parse(r.meta) : null; } catch (e) {} return { ...r, meta: m }; }) };
+    if (algiDayCache.size > 20) algiDayCache.clear();
+    algiDayCache.set(day, { at: Date.now(), v });
+    return v;
+  }
   if (src === 'algi') {
     if (algiCache.v && Date.now() - algiCache.at < 20e3) return algiCache.v;
     await sigEnsure(env);
