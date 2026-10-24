@@ -325,6 +325,14 @@ async function page(b, opt) {
       await p.screenshot({ path: require('path').join(OUT, 'izleme-ben.png') });
       await p.evaluate(() => { document.getElementById('wadd').value = ''; waddSug(); });
       ok('İzleme: Otomatik liste (⭐ ekle, Geri al, 👁 gizle) + Benim listem (yazarak ekle, ✕ çıkar) + Keşfet ☆', Object.values(wo).every(Boolean), JSON.stringify(wo));
+      const ar = await p.evaluate(async () => { const old = S.botAlive; S.botAlive = true; ALR.at = 0; ALR.v = null; alRowsLoad(); await new Promise(r => setTimeout(r, 800));
+        showTab('algi'); renderAlgi(); const srv = !!alRowsSrv(), t = document.getElementById('t-algi').textContent;
+        const lbl = () => [...document.querySelectorAll('#t-algi .alc')].map(c => c.querySelector('.als').textContent + ':' + c.querySelector('.alt').textContent);
+        const L1 = lbl(); const res = { srv, src: /Ana sunucudan/.test(t), cards: /SRVAL/.test(t) && /SRVHZ/.test(t), srvAl: L1.some(x => /SRVAL:.*AL sinyali/.test(x)) };
+        const oldRows = S.algi.rows; ALR.v = null; S.algi.rows = [{ s: 'LOCAL', sc: 80, stage: 'ates', g: 0, f: { fa: 3, rv: 2, fc: 0.8 }, o: { voltl: 5e7 } }]; renderAlgi();
+        const L2 = lbl(); res.local = L2.some(x => /LOCAL:.*Hazırlanıyor/.test(x)) && !L2.some(x => /LOCAL:.*AL sinyali/.test(x));
+        S.algi.rows = oldRows; S.botAlive = old; renderAlgi(); const mv = document.getElementById('mvertxt'); res.menu = !!mv && /v\d/.test(mv.textContent) && !!document.querySelector('#more .mver button'); return res; });
+      ok('Algı radarı tek kaynak: sunucu listesi herkeste aynı; telefonun kendi hesabı AL sinyali demez; Menü\'de sürüm + güncelleme düğmesi', Object.values(ar).every(Boolean), JSON.stringify(ar));
       await p.evaluate(() => selectSym('THYAO', 'bist')); await p.waitForTimeout(2500);
       const cn = await p.evaluate(() => { const el = document.getElementById('cnote'), t = el ? el.textContent : ''; const w = S.wsig.THYAO;
         return { card: !!el.querySelector('.cnc'), grade: (el.querySelector('.cng') || {}).textContent, wg: w && !w.err ? (w.side === 'AL' ? w.grade : 'C') : 'err', txt: /PUSULA NOTU/.test(t) && /Destek/.test(t) && /Direnç/.test(t),

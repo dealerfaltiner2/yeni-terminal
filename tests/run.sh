@@ -25,6 +25,7 @@ echo "== Kanal + davet"; node kanal.mjs || fail=1
 echo "== Keşfet listeleri"; node kesif.mjs || fail=1
 echo "== EMA hedef araştırması"; node emar.mjs || fail=1
 echo "== İzleme otomatik"; node oto.mjs || fail=1
+echo "== Algı radarı tek kaynak"; node algirows.mjs || fail=1
 echo "== Arayüz"; timeout 300 node ui.js || fail=1
 echo "== Sunucu (yerel)"; timeout 300 bash worker.sh > out_worker.txt 2>/dev/null; wr=$?; grep -v agent-proxy out_worker.txt; rm -f out_worker.txt; [ $wr = 0 ] || fail=1
 echo; [ $fail = 0 ] && echo "SONUÇ: HEPSİ GEÇTİ" || echo "SONUÇ: HATA VAR"
