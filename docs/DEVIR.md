@@ -344,3 +344,11 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
 - F/K kırılımı (12–23.10, algi+fırsat+momentum, 1.089 sinyal): F/K grubu tutarlı fark VERMİYOR; endeks artı/eksi her F/K grubunda belirleyici (artı 0…+0,7, eksi −0,07…−0,30).
 - Sağlık: err temiz; üç zamanlayıcı canlı; motor 19:00 uykuda (normal); flow 96 satır/gün (büyüyor); kaph güncel; karne ölçümü 20:15'te hâlâ sürüyordu (46 kalan, 2 dk'da 5 hisse) → özet ~20:35'te.
 - Öneri (onay bekliyor): sinyal meta'sına sürüm etiketi (v) + motorun yeni sürümü seans dışında hemen alması; seans içi geri alımda tavandaki (≥+%9,5) hisseyi Telegram'a göndermemek; stop kademe payı ölçümü (sessiz sütun).
+
+## 6w. 24.10 sabah EMA 20 KURALI (arkadaşın gözlemi: 'Algı EMA 20 altında gelirse +%3 veriyor, EMA 50/200'e yakınsa gitmiyor'; v14.9 emar2, 1.163 Algı sinyali, 29.09–22.10, +3/−1, isabet = +3 / (+3 + stop))
+- EMA 20'ye göre fiyatın yeri (A = 29.09–10.10 / B = 13–22.10):
+  15 dk: EMA 20'nin %2+ üstü %8/%26 · %0,5–2 üstü %7/%16 · yakın %11/%14 · %0,5–2 ALTI %25/%24 · %2+ ALTI %40/%31.
+  5 dk: altında (≥%0,5) %30 (68 sinyal) · üstünde %6–19. 60 dk: %2+ altında %30/%28 (264 sinyal, 17 gün) · üstünde %4–23.
+- KURAL: 15 dk EMA 20'nin ≥%0,5 altında VE 15 dk EMA 50/200'e %1'den uzak → 163 sinyal, 16 gün, isabet %29 (A %36 / B %28); bunlardan Telegram'a gidenler (güçlü+rv≥2) 24 → %40; endeks artıyken 31 → %40, eksiyken %27.
+  EMA 20 altında AMA EMA 50/200'e %1 yakın → 15 sinyal %11 (arkadaş haklı, örnek az). EMA 20 üstü/yakın → 985 sinyal %15 (başabaş %25 altında).
+- Yorum: iki dönemde aynı yönde, 3 zaman diliminde tutarlı (geri çekilmede gelen para girişi, koşmuş hissede gelen değil). Örnek küçük, düşen piyasa ağırlıklı. Fatih onayı bekliyor: Telegram Algı'ya ek şart ya da önce sessiz ölçüm.
