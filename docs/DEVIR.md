@@ -352,3 +352,9 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
 - KURAL: 15 dk EMA 20'nin ≥%0,5 altında VE 15 dk EMA 50/200'e %1'den uzak → 163 sinyal, 16 gün, isabet %29 (A %36 / B %28); bunlardan Telegram'a gidenler (güçlü+rv≥2) 24 → %40; endeks artıyken 31 → %40, eksiyken %27.
   EMA 20 altında AMA EMA 50/200'e %1 yakın → 15 sinyal %11 (arkadaş haklı, örnek az). EMA 20 üstü/yakın → 985 sinyal %15 (başabaş %25 altında).
 - Yorum: iki dönemde aynı yönde, 3 zaman diliminde tutarlı (geri çekilmede gelen para girişi, koşmuş hissede gelen değil). Örnek küçük, düşen piyasa ağırlıklı. Fatih onayı bekliyor: Telegram Algı'ya ek şart ya da önce sessiz ölçüm.
+
+## 6x. 25.10 (Pazar) TRADINGVIEW HESAP RİSKİ (Fatih: 'TradingView beni engellemesin') — KARAR BEKLİYOR, kod değişmedi
+- Durum: onaylı her cihaz (dev.ok=1) /tv-token + ?direct=1 ile TradingView'a FATİH'İN oturumuyla bağlanıyor → aynı anda 4–5 bağlantı (Fatih, Nihat/Almanya, adsız İstanbul iPhone, Ankara Android, Ana sunucu).
+- A (önerildi): arkadaş cihazları oturumsuz (eski üye yolu, 15 dk gecikmeli fiyat); sinyaller sunucudan canlı ve aynı kalır.
+- B (araştırıldı): Ana sunucu (motor, 200 hisse canlı) saniyede bir değişen fiyatları Cloudflare Durable Object 'yayın odası'na yollar, arkadaşlar odaya bağlanır (TradingView'a hiç bağlanmaz). Ücretsiz plan: DO 100k istek/gün, 13k GB-s/gün; gelen WS mesajı 20:1 sayılır → ~1.440 istek/gün, giden mesaj ücretsiz. Grafik geçmişi /bars, son mum odadan; motor yoksa gecikmeli yedek. Not: B tespit riskini azaltır, veri paylaşımını değil.
+- Fatih: 'şimdilik böyle kalsın' — hiçbiri yapılmadı. Aynı gün dev tablosundan 11 ölü kayıt silindi (CLAUDE.md notu).
