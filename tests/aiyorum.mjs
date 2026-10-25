@@ -1,5 +1,5 @@
 // v14.13 Pusula yorumu: veri satırları, temizleme, önbellek, günlük sınır (sahte AI + D1 taklidi)
-import { aiFactLines, aiClean, aiText, aiYorumRoute, AI_MAX } from '../worker/src/aiyorum.js';
+import { aiFactLines, aiClean, aiText, aiYorumRoute, AI_MAX, aiBadSentences, aiComment } from '../worker/src/aiyorum.js';
 let bad = 0; const ok = (n, c, x) => { console.log((c ? '✓ ' : '✗ ') + n + (c ? '' : ' — ' + JSON.stringify(x))); if (!c) bad++; };
 const F = { px: 300.5, ch: 1.23, idx: -0.4, grade: 'B', stk: 1, e20: 298, e50: 295, vwap: 299, poc: 297, vah: 302, val: 294, sup: 297, res: 305, rsi: 61.2, sk: 72, sd: 65, macd: 1, st: 1, vr: 1.4, atrp: 0.8, kur: ['geri çekilme'], not: ['Bilanço 3 gün sonra'], zararli: '<script>', grade2: 'X' };
 const L = aiFactLines('THYAO', '15m', F);
@@ -26,4 +26,17 @@ M.ai_n = JSON.stringify({ d: new Date(2e12 + 3 * 3600e3).toISOString().slice(0, 
 ok('günlük sınır dolunca model çağrılmaz', /hakkı doldu/.test((await aiYorumRoute(req({ s: 'EREGL', tf: '15m', f: F }), env, json, false, 2e12)).o.err) && calls === 2);
 const env2 = mkEnv('kısa');
 ok('boş/kısa yanıt hata sayılır, sayaç artmaz', !(await aiYorumRoute(req({ s: 'SASA', tf: '15m', f: F }), env2, json, false, 3e12)).o.ok);
+// doğrulama: gerçek denemedeki hata (338 → 'otuz üç lira seksen')
+const LL = aiFactLines('ASELS', '15m', { px: 338, sup: 336, res: 341, rsi: 35.9, e20: 344.21, vr: 0.9 });
+const B1 = aiBadSentences('Fiyat şu an otuz üç lira seksen seviyesinde. Fiyat 338 seviyesinde, 341 direncinin altında.', LL);
+ok('yazıyla sayı yakalanır, doğru rakamlı cümle geçer', B1.bad.join() === '0', B1);
+const B2 = aiBadSentences('Fiyat 33,80 seviyesinde. EMA 20 344,21 üstünde; RSI 14 ile 35,9. Destek 336.', LL);
+ok('veride olmayan rakam yakalanır, gösterge adları ve Türkçe ondalık geçer', B2.bad.join() === '0', B2);
+ok('"on beş dakikalık", "yirmi günlük" gibi süre ifadeleri hata sayılmaz', aiBadSentences('Hisse on beş dakikalık grafikte düşüşte. Yirmi günlük ortalamanın altında.', LL).bad.length === 0);
+let n2 = 0; const envR = { AI: { run: async () => (++n2 === 1 ? { response: 'Fiyat otuz üç lira seksen. Trend aşağı yönlü ve fiyat ortalamaların altında kalıyor.' } : { response: 'Fiyat 338 seviyesinde, 341 direncinin altında. Trend aşağı yönlü ve fiyat ortalamaların altında kalıyor.' }) } };
+const RR = await aiComment(envR, 'ASELS', '15m', { px: 338, sup: 336, res: 341, rsi: 35.9, e20: 344.21, vr: 0.9 });
+ok('hatalı yorum bir kez yeniden yazdırılır', RR.ok && RR.retry === 1 && RR.cut === 0 && /338/.test(RR.txt) && n2 === 2, RR);
+const envB = { AI: { run: async () => ({ response: 'Fiyat 999 seviyesinde güçlü. Trend aşağı yönlü ve fiyat ortalamaların altında kalıyor, dikkatli olunmalı.' }) } };
+const RB = await aiComment(envB, 'ASELS', '15m', { px: 338, sup: 336, res: 341, rsi: 35.9, e20: 344.21, vr: 0.9 });
+ok('yine hatalıysa yanlış cümle atılır', RB.ok && !/999/.test(RB.txt) && RB.cut === 1, RB);
 if (bad) { console.log('PUSULA YORUMU: ' + bad + ' HATA'); process.exit(1); } else console.log('PUSULA YORUMU: hepsi geçti');

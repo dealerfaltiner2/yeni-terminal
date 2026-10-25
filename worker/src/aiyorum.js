@@ -13,17 +13,20 @@ export const AI_SYS = [
   'YALNIZ sana verilen verilere dayan. Veride olmayan hiçbir sayı, haber, hedef fiyat ya da olay UYDURMA. Bir bilgi yoksa ondan hiç bahsetme.',
   'Kesin fiyat tahmini yapma, "al" ya da "sat" tavsiyesi verme. "Yükselir/düşer" yerine "şu seviyenin üstünde kalırsa…, altına inerse…" gibi koşullu yaz.',
   'Sade, akıcı Türkçe yaz. En çok 5 cümle. Başlık, madde işareti, emoji, kalın yazı KULLANMA. Kısaltma yerine düz kelime kullan (örneğin "günün ortalama fiyatı").',
+  'SAYILAR: fiyat ve seviyeleri verideki rakamla AYNEN yaz (örneğin 338 ya da 31,6). Sayıyı ASLA yazıyla yazma ("otuz üç" gibi), yuvarlama, birimini değiştirme. Veride olmayan rakam yazma.',
+  'Hacmi yalnız "normalin X katı" bilgisine göre anlat: 1 üstü = normalden yüksek, 1 altı = normalden düşük.',
   'Sıra: 1) genel görünüm ve trend, 2) fiyatın destek ve direnç seviyelerine göre yeri (rakamlarıyla), 3) hacim ve momentum, 4) dikkat edilmesi gereken risk ya da izlenecek tetikleyici.'
 ].join('\n');
 
 const num = v => (v == null || !isFinite(+v) ? null : +v);
-const r2 = v => { v = num(v); return v == null ? null : Math.round(v * 100) / 100; };
+const r2n = v => { v = num(v); return v == null ? null : Math.round(v * 100) / 100; };
+const r2 = v => { v = r2n(v); return v == null ? null : String(v).replace('.', ','); };   // Türkçe ondalık virgül
 // Terminalden gelen alanları güvenli, kısa satırlara çevir (bilinmeyen alan alınmaz; metinler kırpılır)
 export function aiFactLines(s, tf, f) {
   f = f || {};
   const L = [];
   const p = (k, v) => { if (v != null && v !== '') L.push(k + ': ' + v); };
-  const pc = v => { v = r2(v); return v == null ? null : (v >= 0 ? '+' : '') + v + '%'; };
+  const pc = v => { const n = r2n(v); return n == null ? null : (n >= 0 ? '+' : '') + r2(n) + '%'; };
   p('Hisse', s); p('Grafik zaman dilimi', tf);
   p('Son fiyat', r2(f.px)); p('Bugünkü değişim', pc(f.ch)); p('BIST 100 bugün', pc(f.idx));
   p('Pusula notu (A en güçlü, C zayıf)', f.grade && /^[ABC]$/.test(f.grade) ? f.grade : null);
@@ -47,6 +50,18 @@ export function aiFactLines(s, tf, f) {
   return L;
 }
 
+// v14.13 DOĞRULAMA (gerçek denemede model 338'i 'otuz üç lira seksen' yazdı): yorumdaki her rakam verilen satırlarda (±%0,6) olmalı; yazıyla sayı yasak.
+const NUMW = /(^|[\s,(])(sıfır|iki|üç|dört|beş|altı|yedi|sekiz|dokuz|on|yirmi|otuz|kırk|elli|altmış|yetmiş|seksen|doksan|yüz|bin)\s+(lira|virgül|bir|iki|üç|dört|beş|altı|yedi|sekiz|dokuz|yirmi|otuz|kırk|elli|altmış|yetmiş|seksen|doksan|yüz|bin|kuruş)(?=[\s,.;]|$)/i;
+const numsIn = t => (String(t).match(/\d+(?:[.,]\d+)*/g) || []).map(x => { const y = /,\d{1,2}$/.test(x) ? x.replace(/\./g, '').replace(',', '.') : x.replace(/,/g, ''); return +y; }).filter(isFinite);
+const OKN = new Set([1, 2, 3, 4, 5, 9, 10, 12, 14, 15, 20, 21, 26, 30, 50, 70, 80, 100, 200]);   // gösterge adları / dönemler / eşikler
+export function aiBadSentences(txt, lines) {
+  const allow = numsIn(lines.join('\n'));
+  const S = String(txt).split(/(?<=[.!?])\s+/), bad = [];
+  S.forEach((x, i) => { const xw = x.replace(/(^|\s)(on beş|on|yirmi|otuz|elli|altmış|iki yüz)\s+(dakika|gün|saat|mum|hafta)\S*/gi, ' ');   // 'on beş dakikalık' süre ifadesi sayı değil
+    if (NUMW.test(xw)) { bad.push(i); return; }
+    if (numsIn(x).some(n => !OKN.has(n) && !allow.some(a => Math.abs(a - n) <= Math.max(0.011, Math.abs(a) * 0.006)))) bad.push(i); });
+  return { S, bad };
+}
 export function aiClean(t) {
   t = String(t || '').replace(/<think>[\s\S]*?<\/think>/g, '').replace(/\*\*|__|#+\s*/g, '').replace(/^\s*[-•*]\s+/gm, '').replace(/\n{2,}/g, '\n').trim();
   if (t.length > 900) { const i = t.lastIndexOf('.', 900); t = t.slice(0, i > 400 ? i + 1 : 900); }
@@ -66,9 +81,22 @@ export async function aiComment(env, s, tf, f) {
     messages: [{ role: 'system', content: AI_SYS }, { role: 'user', content: 'Aşağıdaki verilere göre bu hissenin grafiğini yorumla:\n' + lines.join('\n') }],
     max_tokens: 500, temperature: 0.3, chat_template_kwargs: { enable_thinking: false }
   });
-  const txt = aiClean(aiText(r));
+  let txt = aiClean(aiText(r));
   if (txt.length < 40) return { ok: false, err: 'model boş yanıt verdi' };
-  return { ok: true, txt, at: Date.now() };
+  let chk = aiBadSentences(txt, lines), retry = 0;
+  if (chk.bad.length) {   // bir kez uyarıp yeniden yazdır
+    retry = 1;
+    const r2x = await env.AI.run(AI_MODEL, {
+      messages: [{ role: 'system', content: AI_SYS }, { role: 'user', content: 'Aşağıdaki verilere göre bu hissenin grafiğini yorumla:\n' + lines.join('\n') },
+        { role: 'assistant', content: txt }, { role: 'user', content: 'Yorumunda veride olmayan ya da yazıyla yazılmış sayı var. Aynı yorumu yalnız verideki rakamları AYNEN (rakamla) kullanarak yeniden yaz.' }],
+      max_tokens: 500, temperature: 0.2, chat_template_kwargs: { enable_thinking: false }
+    });
+    const t2 = aiClean(aiText(r2x)), c2 = aiBadSentences(t2, lines);
+    if (t2.length >= 40 && c2.bad.length <= chk.bad.length) { txt = t2; chk = c2; }
+  }
+  if (chk.bad.length) txt = chk.S.filter((_, i) => !chk.bad.includes(i)).join(' ').trim();   // hâlâ hatalı cümle → at
+  if (txt.length < 40) return { ok: false, err: 'yorum doğrulanamadı, tekrar dene' };
+  return { ok: true, txt, at: Date.now(), retry, cut: chk.bad.length };
 }
 
 export async function aiYorumRoute(request, env, json, anon, now = Date.now()) {
