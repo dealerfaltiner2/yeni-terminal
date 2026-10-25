@@ -37,6 +37,17 @@ async function page(b, opt) {
     { const { p, errs, hits, T } = await page(b, { proxy: true }); await p.waitForTimeout(4000);
       await T(async () => { try { await loadUniverse(); } catch (e) {} });
       ok('piyasa verisi yüklendi', (await T(() => (S.uni || []).length)) > 10);
+      // v14.12: ana sayfada BIST 100 ve Tüm borsa ayrı satır
+      { const r = await T(() => { const U = (S.uni || []).filter(o => o && o.name); const L = U.slice(0, Math.min(60, U.length)).map(o => o.name);
+          ENDX.x100 = L; ENDX.s100 = new Set(L); if (L.length < 50) return 'az:' + L.length; showTab('now'); renderNow(); const tx = document.getElementById('nowbody').innerText;
+          const Y = pusYon(); return { b: /BIST 100\s*\n?\s*\d+ yükselen/.test(tx), t: /Tüm borsa\s*\n?\s*\d+ yükselen/.test(tx), n: Y.b1n, u: Y.b1u + Y.b1d <= Y.b1n }; });
+        ok('ana sayfa: BIST 100 ve Tüm borsa ayrı satır', r && (typeof r === 'string' || (r.b && r.t && r.n === 60 && r.u)), r); }
+      // v14.12: canlı liste yenileme seçimi (saf fonksiyon)
+      ok('canlı liste: yer yoksa korunmayan en düşük hacimliler çıkar, korunanlar kalır', await T(() => {
+        const cur = ['A', 'B', 'C', 'D', 'E'], vol = x => ({ A: 50, B: 1, C: 5, D: 2, E: 9 })[x];
+        const P = tvRotatePick(cur, ['B'], ['X', 'Y'], ['A', 'E'], 5, vol);
+        const P2 = tvRotatePick(['A', 'B'], [], ['X'], ['A'], 5, vol);
+        return P.rm.join() === 'D,C' && P.miss.join() === 'X,Y' && P2.rm.length === 0 && P2.miss.join() === 'X' && typeof tvRotate === 'function' && tvKeep().includes('XU100'); }));
       for (const t of TABS) {
         const e0 = errs.length; const r = await T(t => { showTab(t); return 1; }, t); await p.waitForTimeout(600);
         const on = await T(t => { if (t === 'set' && guestHideSet()) return S.tab === 'now'; const e = document.getElementById('t-' + t); return !!(e && e.classList.contains('on')); }, t);

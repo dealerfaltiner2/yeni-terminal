@@ -2885,6 +2885,7 @@ function tvLiveSubs(){
   if(S.mode==='bist'&&S.sym)want[S.sym]=1;
   if(S.mode==='bist'&&typeof W==='function')(W()||[]).slice(0,40).forEach(s=>want[s]=1);
   want['XU100']=1;
+  try{tvKeep().forEach(s=>want[s]=1);tvMovers().forEach(s=>want[s]=1)}catch(e){}   // v14.12: BIST 30, bugünkü sinyaller, radardakiler + o an hareketlenenler önce
   // radar ve Canli sekmesi icin: gunun en likit hisseleri (anlik akis)
   {(S.uni||[]).filter(o=>o&&o.name&&/^[A-Z0-9]{3,7}$/.test(o.name)&&o.voltl>0).sort((a,b)=>b.voltl-a.voltl).slice(0,BOTMODE?200:TV_TOPN).forEach(o=>want[o.name]=1)}  // v9.4: motor 200 hisse (Momentum'un ciro şartını geçenlerin hepsi)
   // v5.5: yalnizca gecerli BIST kodlari (bos/bozuk izleme listesi girdisi TV oturumunu dusuruyordu), bayraksiz, 20'lik paketler
@@ -2906,6 +2907,47 @@ function tvPump(){
  tvSend('quote_add_symbols',[TVL.ses].concat(ch.map(x=>'BIST:'+x)));
 }
 setInterval(()=>{try{tvPump()}catch(e){}},500);
+/* v14.12 (25.10, Fatih onayı: 'hisseleri kaçırmayalım') CANLI LİSTE GÜN İÇİNDE YENİLENİR — sinyal kuralı DEĞİŞMEDİ, yalnız hangi hisselerin canlı izlendiği.
+   Eskiden liste sabah dolunca (motor 260, telefon 160) gün boyu donuyordu: öğleden sonra hacimlenen küçük hisse hiç eklenmiyor, Algı onu göremiyordu.
+   Artık seansta 5 dk'da bir: istenen = korunanlar (tvKeep) + hareketlenenler (tvMovers) + günün en likitleri (TL hacim sırası, motor 200 / telefon 100).
+   Eksik varsa ve yer yoksa istenmeyenlerden en düşük hacimliler (en çok 30) quote_remove_symbols ile çıkarılır, tvLiveSubs eksikleri ekler. Toplam sınır AYNI.
+   Not: canlı olmayan hissenin tarama verisi oturumsuz (≈15 dk gecikmeli) → hareket en geç ~15 dk'da fark edilir. Durum: ROT (motor algirows-set ile sunucuya da yollar). */
+var ROT={at:0,n:0,add:0,rm:0,last:[]};
+function tvSymOk(x){return /^[A-Z][A-Z0-9]{1,9}$/.test(x)}
+function tvKeep(){const k=new Set(['XU100']);
+ try{if(S.mode==='bist'&&S.sym)k.add(S.sym)}catch(e){}
+ try{if(typeof W==='function')(W()||[]).slice(0,40).forEach(x=>k.add(String(x).toUpperCase()))}catch(e){}
+ try{((window.ENDX&&ENDX.x30)||[]).forEach(x=>k.add(x))}catch(e){}
+ try{(AL.rows||[]).slice(0,30).forEach(r=>r&&r.s&&k.add(r.s))}catch(e){}
+ try{const dk=dayKey(Date.now());(AL.log||[]).forEach(e=>{if(e&&e.d===dk&&e.s)k.add(e.s)})}catch(e){}
+ try{((window.ALS&&ALS.list)||[]).forEach(e=>e&&e.sym&&k.add(e.sym))}catch(e){}
+ return [...k].filter(tvSymOk)}
+function tvMovers(){   // o an hareketlenen: günlük hacim ≥10 Mn TL, değişim ±%3…±%9,5 (tavan/tabana kilitliler hariç), göreli hacim ≥1,5 → hacme göre en çok 40
+ return (S.uni||[]).filter(o=>o&&o.name&&tvSymOk(o.name)&&o.voltl>=1e7&&o.change!=null&&Math.abs(o.change)>=3&&Math.abs(o.change)<9.5&&(rvolOf(o)||0)>=1.5)
+  .sort((a,b)=>b.voltl-a.voltl).slice(0,40).map(o=>o.name)}
+function tvRotatePick(cur,keep,mov,top,cap,vol){   // saf: kim çıksın? (test edilir)
+ const want=[],seen=new Set();[keep,mov,top].forEach(L=>L.forEach(x=>{if(!seen.has(x)){seen.add(x);want.push(x)}}));
+ const have=new Set(cur),miss=want.filter(x=>!have.has(x));
+ const need=miss.length-Math.max(0,cap-cur.length);if(need<=0)return {rm:[],miss};
+ const rm=cur.filter(x=>!seen.has(x)).sort((a,b)=>(vol(a)||0)-(vol(b)||0)).slice(0,Math.min(need,30));
+ return {rm,miss}}
+function tvRotate(){
+ try{
+  if(!TVL.ws||TVL.ws.readyState!==1||TVL.state!=='acik'||TVL.pend||(TVL.q&&TVL.q.length))return;
+  if(!nowSess().open||Date.now()-ROT.at<5*60e3)return;
+  const U=(S.uni||[]).filter(o=>o&&o.name&&tvSymOk(o.name)&&o.voltl>0);if(U.length<100)return;
+  ROT.at=Date.now();
+  const cap=BOTMODE?260:TV_TOPN+60,top=U.slice().sort((a,b)=>b.voltl-a.voltl).slice(0,BOTMODE?200:TV_TOPN).map(o=>o.name);
+  const cur=Object.keys(TVL.syms).filter(x=>!TVL.bad[x]);
+  const P=tvRotatePick(cur,tvKeep(),tvMovers(),top,cap,x=>{const o=S.umap&&S.umap[x];return o?o.voltl:0});
+  ROT.n=cur.length;
+  if(P.rm.length){for(let i=0;i<P.rm.length;i+=20)tvSend('quote_remove_symbols',[TVL.ses].concat(P.rm.slice(i,i+20).map(x=>'BIST:'+x)));
+   P.rm.forEach(x=>{delete TVL.syms[x];delete TVL.okS[x]});ROT.rm+=P.rm.length}
+  const before=Object.keys(TVL.syms).length;tvLiveSubs();const added=Object.keys(TVL.syms).filter(x=>P.miss.includes(x));
+  if(Object.keys(TVL.syms).length>before){ROT.add+=Object.keys(TVL.syms).length-before;ROT.last=ROT.last.concat(added.filter(x=>!P.rm.includes(x)).map(x=>({s:x,t:Date.now()}))).slice(-12)}
+ }catch(e){}
+}
+setInterval(()=>{try{tvRotate()}catch(e){}},60e3);
 function tvQuoteRecover(){
  TVL.recov=(TVL.recov||0)+1;
  const P=TVL.pend;TVL.pend=null;
@@ -3417,7 +3459,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.11";window.APPV=APP_VER;
+  const APP_VER="14.12";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4659,6 +4701,11 @@ let TEDB={map:{},t:0};
 function tedbLoad(){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||Date.now()-TEDB.t<30*60e3)return;TEDB.t=Date.now();
  fetch(dq(b+'/tedbir')).then(r=>r.json()).then(j=>{if(j&&j.ok&&j.map)TEDB.map=j.map}).catch(()=>{})}
 setTimeout(tedbLoad,4000);setInterval(tedbLoad,10*60e3); // motor (başsız) da yüklesin — Şimdi ekranı çizilmese bile
+// v14.12 GÜNCEL ENDEKS ÜYELERİ (/endeks → BIST 100 ve BIST 30, sunucu meta idx_list): ana sayfada 'BIST 100' ile 'Tüm borsa' ayrı sayılır; BIST 30 canlı listede hep korunur
+var ENDX=(()=>{const v=LS.get('endx',null);return v&&Array.isArray(v.x100)?{x100:v.x100,x30:v.x30||[],s100:new Set(v.x100),t:0}:{x100:[],x30:[],s100:new Set(),t:0}})();
+function endxLoad(){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||Date.now()-ENDX.t<6*3600e3)return;ENDX.t=Date.now();
+ fetch(dq(b+'/endeks')).then(r=>r.json()).then(j=>{if(j&&j.ok&&Array.isArray(j.x100)&&j.x100.length>=50){ENDX.x100=j.x100;ENDX.x30=j.x30||[];ENDX.s100=new Set(j.x100);LS.set('endx',{x100:j.x100,x30:ENDX.x30})}}).catch(()=>{ENDX.t=Date.now()-5.5*3600e3})}
+setTimeout(endxLoad,3000);setInterval(endxLoad,30*60e3);
 function tedbOf(sym){const a=TEDB.map&&TEDB.map[sym];return Array.isArray(a)&&a.length?a:null}
 function tedbTxt(sym){const a=tedbOf(sym);if(!a)return '';const dm=t=>{const d=new Date(t+3*3600e3);return String(d.getUTCDate()).padStart(2,'0')+'.'+String(d.getUTCMonth()+1).padStart(2,'0')};
  return 'Borsa tedbiri: '+a.map(e=>e.ad+' ('+dm(e.t)+')').join(', ')}
@@ -4794,7 +4841,7 @@ function alDay(d){d=String(d||'');if(d&&d>=alPrevDay(0))d='';ALS.day=d;if(d&&!AL
 var ALR={at:0,push:0,v:null};
 function alRowsPush(){if(!BOTMODE||Date.now()-ALR.push<20e3)return;const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||!LS.get('ownTok',''))return;ALR.push=Date.now();
  const rows=(AL.rows||[]).slice(0,30).map(x=>({s:x.s,sc:x.sc,stage:x.stage||'',g:x.g||0,f:x.f||{},o:{voltl:x.o&&x.o.voltl}}));
- fetch(qAdd(b+'/algirows-set?'+devQ(),ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({rows})}).catch(()=>{})}
+ fetch(qAdd(b+'/algirows-set?'+devQ(),ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({rows,rot:{n:Object.keys(TVL.syms).length,add:ROT.add,rm:ROT.rm,last:ROT.last}})}).catch(()=>{})}
 function alRowsLoad(){if(BOTMODE||isUye()||!S.botAlive)return;const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||Date.now()-ALR.at<12e3)return;ALR.at=Date.now();
  fetch(dq(b+'/algirows')).then(r=>r.json()).then(j=>{if(j&&j.ok&&Array.isArray(j.rows)){ALR.v={at:j.at||0,rows:j.rows};if(S.tab==='algi'&&typeof renderAlgi==='function')try{renderAlgi()}catch(x){}}}).catch(()=>{})}
 function alRowsSrv(){return(!BOTMODE&&S.botAlive&&ALR.v&&ALR.v.at&&Date.now()-ALR.v.at<90e3)?ALR.v:null}
@@ -5811,7 +5858,8 @@ function nDial(){
   '<button class="psearch" onclick="xrayOpen()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>Hisse ara</button>'+
   '<div class="pcard"><div class="pgrid">'+dial+'<div class="pinfo"><small>BIST 100</small><b class="pidx'+pxFl('XU100',x.c)+'">'+(x.c?nf(x.c,0):'–')+'</b><span class="pchg '+(ok?(up?'up':'dn'):'')+'">'+chg+'</span>'+
    (Y?'<span class="pyon" style="--yc:'+ycol+'"><b>'+Y.lab+'</b><em>yön puanı '+(sc>0?'+':sc<0?'−':'')+Math.abs(sc)+'</em></span>':'<span class="pyon"><b>Veri bekleniyor</b></span>')+
-   (nu+nd?'<span class="pbr2"><i class="u"></i>'+nu+' yükselen<i class="d"></i>'+nd+' düşen</span>':'')+'</div></div>'+
+   (Y&&Y.b1n?'<span class="pbr2"><em>BIST 100</em><i class="u"></i>'+Y.b1u+' yükselen<i class="d"></i>'+Y.b1d+' düşen</span>':'')+   // v14.12: BIST 100 ve tüm borsa ayrı (önceden tek satır, BIST 100 rakamının altında → '600 hisse' karışıklığı)
+   (nu+nd?'<span class="pbr2"><em>Tüm borsa</em><i class="u"></i>'+nu+' yükselen<i class="d"></i>'+nd+' düşen</span>':'')+'</div></div>'+
   '<div class="pses"><span>10:00</span><div class="psb"><i style="width:'+(f*100).toFixed(1)+'%"></i>'+(s.open?'<em style="left:'+(f*100).toFixed(1)+'%"></em>':'')+'</div><span>18:00</span></div>'+
   '<div class="pline"><span><i class="'+(s.open?(live?'on':'warn'):'')+'"></i>'+sessT+'</span>'+bot+((S.uye||TVL.uye)?'<span>Üye sürümü · fiyatlar 15 dk gecikmeli</span>':'')+'</div>'+
   (st.length?'<div class="pstrip">'+st.map(t=>'<div><small>'+t[0]+'</small><b>'+nf(t[1],t[1]>1000?0:2)+'</b><em class="'+cls(t[2])+'">'+(t[2]!=null?(t[2]>=0?'+':'−')+nf(Math.abs(t[2]),2):'')+'</em>'+(t[3]?'<u>'+t[3]+'</u>':'')+'</div>').join('')+'</div>':'')+(typeof nIdxRng==='function'?nIdxRng():'')+'</div>';
@@ -5834,6 +5882,7 @@ function pusYon(){
  if(ch!=null&&isFinite(ch))P.push(['Endeks',.3,cl(ch/2)]);
  if(U.length>=20){nu=U.filter(o=>o.change>0).length;nd=U.filter(o=>o.change<0).length;br=(nu-nd)/Math.max(1,nu+nd);P.push(['Yükselen/düşen',.25,cl(br*1.5)]);
   const a=U.map(o=>o.change).sort((p,q)=>p-q);med=a[Math.floor(a.length/2)];P.push(['Ortanca hisse',.15,cl(med/2)])}
+ let b1u=0,b1d=0,b1n=0;try{if(ENDX.s100.size>=50)U.forEach(o=>{if(ENDX.s100.has(o.name)){b1n++;if(o.change>0)b1u++;else if(o.change<0)b1d++}})}catch(e){}   // v14.12: yalnız görünüm, yön puanı aynı
  const V=viopInfo();if(V&&!V.old&&V.ch!=null&&isFinite(V.ch))P.push(['VİOP',.1,cl(V.ch/2)]);   // v13.7: 09:45 öncesi dünkü VİOP yön puanına girmez
  if(mk.BANKA&&mk.BANKA.ch!=null&&isFinite(mk.BANKA.ch))P.push(['Bankalar',.1,cl(mk.BANKA.ch/2.5)]);
  const md=S.reg?S.reg.mode:'';if(md)P.push(['Trend',.1,md==='TREND'?.6:md==='ZAYIF'?-.6:0]);
@@ -5841,7 +5890,7 @@ function pusYon(){
  const w=P.reduce((a,p)=>a+p[1],0),sc=Math.round(P.reduce((a,p)=>a+p[1]*p[2],0)/w*100);
  const lab=sc>=40?'Güçlü alıcılı':sc>=15?'Alıcılı':sc>-15?'Kararsız':sc>-40?'Satıcılı':'Güçlü satıcılı';
  let div='';if(ch!=null&&isFinite(ch)&&br!=null){if(ch>=.3&&br<=-.15)div='Endeks artıda ama hisselerin çoğu düşüyor: yükselişi birkaç büyük hisse taşıyor, geniş tabanlı değil.';else if(ch<=-.3&&br>=.15)div='Endeks ekside ama hisselerin çoğu artıda: düşüş birkaç büyük hissede, piyasanın geneli sağlam.'}
- return {sc,lab,ch,nu,nd,br,med,div,P}}
+ return {sc,lab,ch,nu,nd,br,med,div,P,b1u,b1d,b1n:b1n>=50?b1n:0}}
 function pusAvg(v){return v&&v.n&&v.r0!=null?(3*v.h-v.s+(+v.r0||0))/v.n:null}
 function pusGuven(){const K=window.KSTAT;if(!K||!K.src)return null;
  const mk=S.mkt||{},ch=(mk.XU100&&mk.XU100.ch!=null)?mk.XU100.ch:S.idxCh,up=ch==null||!isFinite(ch)?null:ch>=0;
@@ -5944,6 +5993,7 @@ html.cam .pchg{font-size:15px;margin-top:2px}
 .pyon b{font-size:16px;font-weight:700;color:var(--yc,#E9ECF2)}
 .pyon em{font-style:normal;font:500 13px var(--fntc);color:var(--sis)}
 .pbr2{display:block;font-size:12.5px;color:var(--sis);margin-top:5px;font-variant-numeric:tabular-nums}
+.pbr2 em{font-style:normal;display:inline-block;min-width:66px;color:var(--sis);opacity:.85}
 .pbr2 i{display:inline-block;width:7px;height:7px;border-radius:50%;margin:0 5px 0 0;vertical-align:0}
 .pbr2 i.u{background:#5FD39A}.pbr2 i.d{background:#F07A6A;margin-left:12px}
 html.cam .pses{margin-top:12px}

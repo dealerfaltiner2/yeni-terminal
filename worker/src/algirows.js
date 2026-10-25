@@ -19,6 +19,9 @@ export async function algiRowsSet(request, env, json) {
   if (txt.length > MAXB) return json({ ok: false, error: 'çok büyük' }, 413);
   let b = null; try { b = JSON.parse(txt); } catch (e) { return json({ ok: false, error: 'geçersiz' }, 400); }
   const v = { at: Date.now(), rows: algiRowsClean(b && b.rows) };
+  // v14.12: motorun canlı liste durumu (kaç hisse, gün içi eklenen/çıkarılan, son eklenenler) — doğrulama için
+  const r = b && b.rot;
+  if (r && typeof r === 'object') v.rot = { n: +r.n || 0, add: +r.add || 0, rm: +r.rm || 0, last: (Array.isArray(r.last) ? r.last : []).slice(-12).filter(x => x && /^[A-Z0-9]{2,12}$/.test(String(x.s || ''))).map(x => ({ s: String(x.s), t: +x.t || 0 })) };
   await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('algi_rows', ?)").bind(JSON.stringify(v)).run();
   cache = { at: Date.now(), v };
   return json({ ok: true, n: v.rows.length });

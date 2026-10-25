@@ -150,7 +150,7 @@ export function weekText(now, ix, kaps, ecal, esc) {
   if (ix && ix.c > 0 && ix.p > 0) {
     const w = (ix.c / ix.p - 1) * 100;
     t += '\n\n' + (w >= 0 ? '📈' : '📉') + ' <b>Geçen hafta</b>\n<blockquote>BIST 100 haftayı ' + Math.round(ix.c).toLocaleString('tr-TR') + ' puanda, <b>%' + f2(w) + (w >= 0 ? ' yükselişle' : ' düşüşle') + '</b> kapattı.' +
-      (ix.fri != null ? ' Cuma günü ' + (ix.fri >= 0 ? '%' + f2(ix.fri) + ' yükseldi' : '%' + f2(ix.fri) + ' düştü') + (ix.nu + ix.nd ? '; ' + ix.nu + ' hisse yükselirken ' + ix.nd + ' hisse düştü' : '') + '.' : '') + '</blockquote>';
+      (ix.fri != null ? ' Cuma günü ' + (ix.fri >= 0 ? '%' + f2(ix.fri) + ' yükseldi' : '%' + f2(ix.fri) + ' düştü') + (ix.nu + ix.nd ? '; borsanın tamamında ' + ix.nu + ' hisse yükselirken ' + ix.nd + ' hisse düştü' : '') + '.' : '') + '</blockquote>';
   }
   if (kaps.length) t += '\n\n📰 <b>Haftanın öne çıkan KAP haberleri</b>\n<blockquote>' + kaps.map(r => (r.yon > 0 ? '🟢 ' : r.yon < 0 ? '🔴 ' : '⚪ ') + '<b>' + esc(String(r.syms || '').split(',')[0]) + '</b> · ' + esc(String(r.subj || '').slice(0, 80))).join('\n') + '</blockquote>';
   const ev = (ecal || []).filter(e => ecImp(e) && trp(e.t).day >= d0 && trp(e.t).day <= d4).slice(0, 8);

@@ -69,7 +69,7 @@ for (let i = 0; i < 5; i++) await K.kanalKap(env, h, P, tr('2026-10-19T11:00:00'
 ok('anlık KAP: çalışma başına 1, günde en çok 3; yönlü haber önce', sent.length === 3 && /BBB/.test(sent[0].b.text) && /k_kap/.test(JSON.stringify(sent[0].b.reply_markup)), sent.length + ' ' + (sent[0] && sent[0].b.text.slice(0, 40)));
 const wk = K.weekText(tr('2026-10-18T20:00:00'), { c: 11721.7, p: 12266, fri: -2.89, nu: 70, nd: 549 }, [{ syms: 'CGCAM', subj: 'Cam siparişi', yon: 1 }],
   [{ t: tr('2026-10-22T14:00:00'), c: 'TR', ti: 'TCMB Interest Rate Decision', im: 0, p: 37, u: '%' }, { t: tr('2026-10-25T10:00:00'), c: 'TR', ti: 'Inflation Rate YoY', im: 1 }], esc);
-ok('haftaya bakış: tarih aralığı, haftalık düşüş, Cuma, KAP, takvim (hafta dışı yok)', /19 Ekim – 23 Ekim/.test(wk) && /%4,4 düşüşle/.test(wk) && /Cuma günü %2,9 düştü; 70 hisse/.test(wk) && /CGCAM/.test(wk) && /Perşembe 14:00 · 🇹🇷 Faiz kararı \(önceki 37%\)/.test(wk) && !/Enflasyon/.test(wk), wk);
+ok('haftaya bakış: tarih aralığı, haftalık düşüş, Cuma, KAP, takvim (hafta dışı yok)', /19 Ekim – 23 Ekim/.test(wk) && /%4,4 düşüşle/.test(wk) && /Cuma günü %2,9 düştü; borsanın tamamında 70 hisse/.test(wk) && /CGCAM/.test(wk) && /Perşembe 14:00 · 🇹🇷 Faiz kararı \(önceki 37%\)/.test(wk) && !/Enflasyon/.test(wk), wk);
 sent.length = 0;
 const fakeBars = { fetchBarsTV: async () => ({ 'BIST:XU100': { m: new Map([[1, [Date.parse('2026-10-09T07:00:00Z') / 1000, 0, 0, 0, 12266, 1]], [2, [Date.parse('2026-10-16T07:00:00Z') / 1000, 0, 0, 0, 11721.7, 1]]]) } }) };
 ok('haftaya bakış: Cumartesi yok', (await K.kanalWeek(env, { ...h, ...fakeBars }, tr('2026-10-17T20:00:00'))) === null);

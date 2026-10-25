@@ -3,6 +3,7 @@
 // Sinyal değil; karne bu bulgu canlıda tutuyor mu diye ölçer. Telegram + iPhone bildirimi (kategori 'tavan').
 import { kapEntry } from './kap.js';
 import { tgKb } from './tgfmt.js';
+import { idxBreadthScan } from './endeks.js';
 const TRMS = 3 * 3600e3;
 export async function tavanScan(env, h) {
   const d = new Date(Date.now() + TRMS), wd = d.getUTCDay(), m = d.getUTCHours() * 60 + d.getUTCMinutes(), day = d.toISOString().slice(0, 10);
@@ -47,7 +48,9 @@ export async function mktClose(env, h) {
     return { L, n: +j.totalCount || 0 };
   };
   const up = await side('greater', 'desc'), dn = await side('less', 'asc');
-  const v = { d: day, idx, up: up.L, dn: dn.L, nu: up.n, nd: dn.n };
+  // v14.12: BIST 100 üyelerinin yükselen/düşen sayısı ayrı (nu/nd = TÜM borsa). Gelmezse özet yine yazılır, satır görünmez.
+  let b100 = null; try { b100 = await idxBreadthScan(env, h.scanRaw); } catch (e) {}
+  const v = { d: day, idx, up: up.L, dn: dn.L, nu: up.n, nd: dn.n, b100 };
   await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('mkt_close', ?)").bind(JSON.stringify(v)).run();
   return v;
 }
