@@ -3524,7 +3524,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.16";window.APPV=APP_VER;
+  const APP_VER="14.17";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4240,7 +4240,7 @@ const IC={
   ['NEDİR?','Alış ve satışlarını gir; ortalama maliyet, gerçekleşen ve açık kâr/zarar, sektör dağılımı hesaplanır. Tek bir sektör portföyün %40\'ını geçerse uyarır.']]},
  aisec:{ic:'✨',c:'#c4b5fd',t:'Yapay zekâ seçtikleri',s:'Sistemin bugünkü verisine göre seçilen hisseler',sec:[
   ['NEDİR?','Ana sunucu seans içinde <b>10 dakikada bir</b> bugünün sinyallerine ve o anki hacme bakar, en çok <b>8 hisse</b> seçer. Yapay zekâ her hisse için <b>neden listede</b> olduğunu tek cümleyle yazar. Liste herkeste aynıdır.'],
-  ['NASIL SEÇİLİR?',['<b>Seans içi geri alım</b> (şirket kendi hissesini aldı): 3 puan','<b>Momentum</b>: 3 puan (son günlerde de çıktıysa 1 puan eksik)','<b>Güçlü Algı</b> (Telegram\'a giden): 2 puan, diğer güçlü Algı: 1','<b>Fırsat A</b>: 1 puan · <b>şu an hacimle yükseliyor</b>: 1 puan','En az 2 puan gerekir. Tavana kilitli, Borsa tedbirli, sinyalden sonra −%1 düşmüş ya da +%3 koşmuş hisse alınmaz.','Listeye giren yerinde kalır; girdiği fiyattan −%1 düşerse çıkar. 17:30\'dan sonra yeni hisse eklenmez.']],
+  ['NASIL SEÇİLİR?',['<b>Seans içi geri alım</b> (şirket kendi hissesini aldı): 3 puan','<b>Momentum</b>: 3 puan (son günlerde de çıktıysa 1 puan eksik)','<b>Güçlü Algı</b> (Telegram\'a giden): 2 puan, diğer güçlü Algı: 1','<b>Fırsat A</b>: 1 puan · <b>şu an hacimle yükseliyor</b>: 1 puan','En az 2 puan gerekir. Tavana kilitli, Borsa tedbirli, sinyalden sonra −%1 düşmüş ya da +%3 koşmuş hisse alınmaz.','Listeye giren yerinde kalır; girdiği fiyattan −%1 düşerse çıkar. 17:30\'dan sonra yeni hisse eklenmez.','Kartın altındaki <b>EMA 20</b> satırı yalnız bilgidir (15 dakikalık grafik): fiyat ortalamanın ne kadar üstünde ya da altında. Puana ve sinyale karışmaz.']],
   ['DİKKAT','Bu bir <b>deneme listesidir, sinyal değildir</b>. Listeye giren her hisse karneye sessizce yazılır (girdiği andaki fiyattan +%3 / −%1); işe yarayıp yaramadığı birkaç haftada görülecek. Yatırım tavsiyesi değildir.',1]]},
  kesif:{ic:'🔭',c:'#FF8A3D',t:'Keşfet',s:'Hazır hisse listeleri',sec:[
   ['NEDİR?','Belirli bir özelliği taşıyan hisseleri tek dokunuşla listeler: en çok yükselenler, ortalamaları kesişenler, yeni iş açıklayanlar, kendi hissesini geri alanlar, yılın zirvesine ya da dibine yakın olanlar… Bir hisseye dokununca röntgeni açılır.'],
@@ -6849,6 +6849,7 @@ function navDeco(){try{document.querySelectorAll('.tab').forEach(tb=>{if(tb.id==
 .aic .ax{font-size:13px;line-height:1.45;color:var(--txt,#e5e7eb)}.aic .ax em{font-style:normal;color:#c4b5fd;margin-right:4px}
 .aic .af{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--dim);margin-top:7px}
 .aiout{margin-top:6px;font-size:12.5px;color:var(--dim)}.aiout summary{cursor:pointer;padding:6px 2px}.aiout div{display:flex;justify-content:space-between;padding:5px 4px;border-top:1px solid var(--line,rgba(255,255,255,.06))}
+.aic .ae{font-size:11.5px;color:var(--dim);margin-top:6px;padding-top:6px;border-top:1px dashed var(--line,rgba(255,255,255,.08))}.aic .ae b{color:var(--txt,#e5e7eb);font-weight:600}.aic .ae i{font-style:normal;opacity:.7}
 .aint{font-size:11.5px;color:var(--dim);line-height:1.45;padding:10px 2px 0}
 </style>
 <script>
@@ -6868,6 +6869,14 @@ function aisecPush(){try{if(!(BOTMODE||(!S.botAlive&&LS.get('ownTok',''))))retur
  if(Date.now()-AIS.push<10*60e3||!(S.uni&&S.uni.length>50))return;const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b))return;AIS.push=Date.now();
  fetch(qAdd(b+'/aisec-set?'+devQ(),ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({q:aisecQ()})}).then(r=>r.json()).then(j=>{if(j&&j.ok&&j.n!=null)aisecLoad(true)}).catch(()=>{})}catch(e){}}
 setInterval(()=>{try{aisecPush()}catch(e){}try{if(S.tab==='aisec'&&!document.hidden)aisecLoad()}catch(e){}},15000);
+// v14.17: EMA 20 bilgi satırı — 15 dk mumlardan, puana/sinyale KARIŞMAZ. Önbellek S.ccache 'b:SYM:15min' (5 dk), aynı anda bir yükleme.
+var AIE={busy:0};
+function aisecE20(sym){const c=S.ccache['b:'+sym+':15min'];if(!c||!c.d||c.d.length<25)return null;const cl=c.d.map(x=>x.close),e=ema(cl,20),v=e[e.length-1];
+ const lq=(S.quotes[sym]&&S.quotes[sym].close)||cl[cl.length-1];return v>0&&lq>0?{v,d:(lq/v-1)*100,up:e[e.length-1]>=e[e.length-4]}:null}
+async function aisecE20Load(L){if(AIE.busy)return;AIE.busy=1;let n=0;try{for(const e of L){const k='b:'+e.s+':15min',c=S.ccache[k];if(c&&Date.now()-c.t<300000)continue;
+  try{const cs=await getBars(e.s,'15min',true);if(cs&&cs.length)S.ccache[k]={t:Date.now(),d:cs};n++}catch(x){}}}finally{AIE.busy=0}if(n&&S.tab==='aisec')renderAisec()}
+function aisecE20Txt(sym){const x=aisecE20(sym);if(!x)return '<div class="ae">EMA 20 (15 dk) hesaplanıyor…</div>';const a=Math.abs(x.d);
+ return '<div class="ae">'+(a<0.15?'Fiyat 15 dakikalık EMA 20 ile aynı seviyede':'Fiyat 15 dakikalık EMA 20\'nin <b>%'+nf(a,1)+' '+(x.d>0?'üstünde':'altında')+'</b>')+' ('+nf(x.v)+') · ortalama '+(x.up?'yukarı':'aşağı')+' eğimli · <i>yalnız bilgi</i></div>'}
 function aisecHm(t){return new Date(t+3*3600e3).toISOString().slice(11,16)}
 function renderAisec(){const el=$('#aisecbody');if(!el)return;aisecLoad();const v=AIS.v;
  if(isUye()){el.innerHTML='<div class="note" style="padding:14px">Bu bölüm üye sürümünde yok.</div>';return}
@@ -6880,11 +6889,12 @@ function renderAisec(){const el=$('#aisecbody');if(!el)return;aisecLoad();const 
  else h+='<span>Seans kapalı · '+(isT?'bugünün':htmlEsc(String(v.d||'').split('-').reverse().join('.'))+' gününün')+' son listesi ('+aisecHm(v.at)+')</span>';
  h+='</div>';
  if(!L.length)h+='<div class="note" style="padding:12px 4px">'+(open?'Şu an listeye girecek hisse yok. Seans içinde 10 dakikada bir yeniden bakılır; geri alım, Momentum, güçlü Algı ya da Fırsat A sinyali gelen hisseler buraya eklenir.':'Bu gün listeye hisse girmedi.')+'</div>';
+ try{aisecE20Load(L)}catch(x){}
  h+=L.map(e=>{const lq=(S.quotes[e.s]&&S.quotes[e.s].close)||(S.umap[e.s]&&S.umap[e.s].close)||e.now||null,p=lq&&e.px?(lq/e.px-1)*100:e.p;
   let st='',sc='';if(e.hit||(p!=null&&p>=3))st='✓ +%3 geldi',sc='up';else if(p!=null&&p<=-1)st='Stopa geldi −%1',sc='dn';else st='Stop '+nf(e.px*0.99)+' · hedef '+nf(e.px*1.03);
   const ks=(e.k||[]).map(k=>'<i'+(k==='tk'?' class="w"':'')+'>'+(AIS_K[k]||htmlEsc(k))+'</i>').join('');
   return '<div class="aic" onclick="selectSym(\''+htmlEsc(e.s)+'\',\'bist\');showTab(\'chart\')"><div class="at">'+nAvatar(e.s)+'<div class="an"><b>'+htmlEsc(e.s)+'</b> '+wStar(e.s)+'<small>'+e.sc+' puan · '+aisecHm(e.t)+'\'de girdi · '+nf(e.px)+'</small></div><div class="ap"><b>'+(lq?nf(lq):'–')+'</b><span class="'+cls(p)+'">'+(p!=null?pct(p):'')+'</span></div></div>'+
-   '<div class="ak">'+ks+'</div><div class="ax">'+(e.ai?'<em>✨</em>':'')+htmlEsc(e.note||'')+'</div><div class="af"><span class="'+sc+'">'+st+'</span><span>Grafiği aç ›</span></div></div>'}).join('');
+   '<div class="ak">'+ks+'</div><div class="ax">'+(e.ai?'<em>✨</em>':'')+htmlEsc(e.note||'')+'</div>'+aisecE20Txt(e.s)+'<div class="af"><span class="'+sc+'">'+st+'</span><span>Grafiği aç ›</span></div></div>'}).join('');
  if(O.length){const why={stop:'Stop (−%1)'};h+='<details class="aiout"><summary>Bugün listeden çıkanlar ('+O.length+')</summary>'+O.slice().reverse().map(x=>'<div><span><b>'+htmlEsc(x.s)+'</b> · '+aisecHm(x.t)+'–'+aisecHm(x.at)+'</span><span class="'+cls(x.p)+'">'+(why[x.why]||htmlEsc(x.why||''))+(x.p!=null?' '+pct(x.p):'')+'</span></div>').join('')+'</details>'}
  h+='<div class="aint">Deneme listesi, <b>sinyal değildir</b>. Seçimi sistemin kendi verisi yapar (bugünün sinyalleri + o anki hacim); yapay zekâ yalnız nedenini yazar. Listeye girenler karneye sessizce yazılır. Yatırım tavsiyesi değildir.</div>';
  el.innerHTML=h}

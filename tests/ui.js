@@ -75,12 +75,12 @@ async function page(b, opt) {
         await T(() => showTab('chart')); await p.waitForTimeout(300); await T(() => fsToggle(true)); await p.waitForTimeout(500); await p.screenshot({ path: path.join(OUT, 'grafik-tamekran.png') }); await T(() => fsToggle(false));
         ok('Grafik sade: tek satır not, tek sıra araç, göstergeler/yorum pencerede, grafik büyük; tam ekran; her ekranda geri', g && Object.values(g).every(Boolean), JSON.stringify(g)); }
       // v14.16: Yapay zekâ seçtikleri sekmesi (alt menüde Karne yerine)
-      { await T(() => { document.querySelector('#tabs [data-t="aisec"]').click(); }); await p.waitForTimeout(1200); await p.screenshot({ path: path.join(OUT, 'ai-sectikleri.png') });
+      { await T(() => { document.querySelector('#tabs [data-t="aisec"]').click(); }); await p.waitForTimeout(2500); await T(() => renderAisec()); await p.waitForTimeout(300); await p.screenshot({ path: path.join(OUT, 'ai-sectikleri.png') });
         const a = await T(() => { const b = document.querySelector('#tabs [data-t="aisec"] .lbl'), body = document.getElementById('aisecbody');
           const q = (S.uni = [{ name: 'ZZTST', close: 100, change: 4, voltl: 5e7, relative_volume_10d_calc: 2 }], aisecQ());
           return { tab: S.tab === 'aisec', kart: body.querySelectorAll('.aic').length === 2, cip: /Momentum/.test(body.innerText) && /Hacim/.test(body.innerText), ai: !!body.querySelector('.aic .ax em'),
             cikan: /listeden çıkanlar \(1\)/.test(body.innerText), uyari: /sinyal değildir/.test(body.innerText), baslik: !!document.querySelector('#t-aisec .sechd'), geri: !!document.querySelector('#t-aisec .bkb'),
-            sigar: b && b.scrollWidth <= b.clientWidth + 2, q: q.ZZTST && q.ZZTST[0] === 100 && q.ZZTST[3] === 5e7 }; });
+            sigar: b && b.scrollWidth <= b.clientWidth + 2, e20: body.querySelectorAll('.aic .ae').length === 2, q: q.ZZTST && q.ZZTST[0] === 100 && q.ZZTST[3] === 5e7 }; });
         ok('AI Seçtikleri: alt menüden açılır, kartlar + etiketler + çıkanlar, yazı sığıyor, anlık veri paketi', a && Object.values(a).every(Boolean), JSON.stringify(a)); }
       // v14.12: canlı liste yenileme seçimi (saf fonksiyon)
       ok('canlı liste: yer yoksa korunmayan en düşük hacimliler çıkar, korunanlar kalır', await T(() => {
