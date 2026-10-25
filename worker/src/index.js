@@ -11,6 +11,7 @@ import { ecalPoll, ecalRoute } from './ecal.js';
 import { tedbirRoute } from './tedbir.js';
 import { probe } from './probe.js';
 import { endeksRoute } from './endeks.js';
+import { aiYorumRoute } from './aiyorum.js';
 import { paperRoute } from './paper.js';
 // BIST TV Köprüsü v5.5 — Cloudflare Worker (bist-tv)
 // Yayın: GitHub → Cloudflare Workers Builds (otomatik). Kodu burada değiştir, Cloudflare editöründe değil.
@@ -721,7 +722,7 @@ const OWN_ROUTES = new Set(['algirows-set', 'uyeler', 'sync', 'prefs', 'cron-tes
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
 const DEV_GRACE = Date.UTC(2026, 9, 6); // 6 Ekim 2026
-const DATA_ROUTES = new Set(['algirows', 'bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key', 'paper', 'sigsym', 'yorum', 'tedbir', 'kesif', 'endeks']);
+const DATA_ROUTES = new Set(['algirows', 'bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key', 'paper', 'sigsym', 'yorum', 'tedbir', 'kesif', 'endeks', 'aiyorum']);
 const devCache = new Map();
 let ownerCache = { v: undefined, at: 0 }, devReady = false;
 async function ownerTok(env) {
@@ -963,6 +964,7 @@ export default {
         return json({ ok: true, blocked: st === 'blocked', wait: st === 'wait', uye: st === 'uye', bot: env.BT ? await botAlive(env) : false });
       }
       case 'kap': return kapList(env, url, json);
+      case 'aiyorum': return aiYorumRoute(request, env, json, anon);   // v14.13 Pusula yorumu (Workers AI, ücretsiz kota; terminalin hesapladığı sayılarla)
       case 'endeks': return endeksRoute(env, json);   // v14.12 güncel BIST 100 / BIST 30 üyeleri (meta idx_list, 30 dk bellek)
       case 'kesif': return json(await kesifData(env));   // v13.0 Keşfet hazır listeleri (30 dk ortak önbellek)
       case 'sigstats': return json(await sigStats(env));

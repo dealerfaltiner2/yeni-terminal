@@ -1,3 +1,4 @@
+import { aiComment } from './aiyorum.js';
 // Tek seferlik deneme: D1 meta 'probe_req' varsa her dakika BİR deneme yapar, sonucu 'probe:<ad>' satırına yazar.
 // (Yeni TradingView kaynaklarını sunucudan denemek için; istek yokken hiçbir şey yapmaz.)
 export async function probe(env, scanRaw, UA) {
@@ -24,7 +25,11 @@ export async function probe(env, scanRaw, UA) {
     ...['earnings_release_next_date', 'earnings_release_date', 'ex_dividend_date_upcoming', 'dividends_yield_current', 'Recommend.All'].map(c => ['col_' + c, () => sc('turkey', ['BIST:THYAO', 'BIST:ASELS', 'BIST:EREGL'], ['name', c])]),
     // 25.10: endeks üyeleri tarama 'symbolset' ile alınabiliyor mu? (BIST 100 / BIST 30 güncel listesi)
     ...['XU100', 'XU030'].map(ix => ['set_' + ix, async () => { const r = await scanRaw(env, JSON.stringify({ symbols: { symbolset: ['SYML:BIST;' + ix] }, columns: ['name', 'change'], range: [0, 150] }), 'turkey'); const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {}
-      return r.status + ' n=' + (j ? j.totalCount : '?') + ' | ' + (j && j.data ? j.data.map(x => String(x.s).split(':').pop()).join(',') : t.slice(0, 400)); }])
+      return r.status + ' n=' + (j ? j.totalCount : '?') + ' | ' + (j && j.data ? j.data.map(x => String(x.s).split(':').pop()).join(',') : t.slice(0, 400)); }]),
+    // 25.10 (v14.13): Pusula yorumu modeli gerçek veriyle — meta 'ai_test_in' = [{s, tf, f}, …] (en çok 3) → probe:ai_test = [{s, ok, txt|err, ms}]
+    ['ai_test', async () => { const q = await env.BT.prepare("SELECT v FROM meta WHERE k = 'ai_test_in'").first(); const A = q ? JSON.parse(q.v) : []; const out = [];
+      for (const x of A.slice(0, 3)) { const t0 = Date.now(); let r; try { r = await aiComment(env, x.s, x.tf, x.f); } catch (e) { r = { ok: false, err: String(e && e.message || e).slice(0, 200) }; } out.push({ s: x.s, ...r, ms: Date.now() - t0 }); }
+      return JSON.stringify(out); }]
   ];
   const i = parseInt(q.v, 10) || 0;
   if (i >= L.length) { await env.BT.prepare("DELETE FROM meta WHERE k = 'probe_req'").run(); return null; }

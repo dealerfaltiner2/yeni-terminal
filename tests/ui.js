@@ -42,6 +42,19 @@ async function page(b, opt) {
           ENDX.x100 = L; ENDX.s100 = new Set(L); if (L.length < 50) return 'az:' + L.length; showTab('now'); renderNow(); const tx = document.getElementById('nowbody').innerText;
           const Y = pusYon(); return { b: /BIST 100\s*\n?\s*\d+ yükselen/.test(tx), t: /Tüm borsa\s*\n?\s*\d+ yükselen/.test(tx), n: Y.b1n, u: Y.b1u + Y.b1d <= Y.b1n }; });
         ok('ana sayfa: BIST 100 ve Tüm borsa ayrı satır', r && (typeof r === 'string' || (r.b && r.t && r.n === 60 && r.u)), r); }
+      // v14.12–14.13: gösterge çubuğu + şablon + Pusula yorumu (grafik)
+      { const r = await T(async () => { selectSym('ASELS', 'bist'); showTab('chart'); await new Promise(z => setTimeout(z, 2500)); try { await cnLoad(); } catch (e) {}
+          const ib = document.getElementById('indbar'); indTpl('scalp'); const sc = S.ind.ema9 === 1 && S.ind.ema21 === 1 && S.ind.ema200 === 0 && S.lower === 'stoch' && LS.get('indT', '') === 'scalp';
+          indTog('st'); const st = S.ind.st === 1 && LS.get('indT', '') === ''; lowerSet('atr'); const lw = S.lower === 'atr' && LS.get('lower', '') === 'atr';
+          const btn = !!(ib && ib.querySelector('[data-tpl="trend"]') && ib.querySelector('[data-lw="stoch"].on') === null && ib.querySelector('[data-lw="atr"].on'));
+          const sr = stochRsi(Array.from({ length: 80 }, (_, i) => 100 + Math.sin(i / 5) * 5)), stv = superTrend(Array.from({ length: 60 }, (_, i) => ({ high: 101 + i, low: 99 + i, close: 100 + i })));
+          const calcOk = sr.k.filter(v => v != null).length > 30 && sr.k.every(v => v == null || (v >= 0 && v <= 100)) && stv.dir[59] === 1;
+          const f = aiFacts('ASELS'); const box = (document.getElementById('cnote') || {}).innerHTML || '';
+          await aiAsk('ASELS'); const box2 = (document.getElementById('cnote') || {}).innerText || '';
+          return { sc, st, lw, btn, calcOk, f: !!(f && f.px > 0 && f.rsi != null && 'sup' in f), b1: /Grafiği yorumla/.test(box), b2: /ASELS yükseliş düzeninde/.test(box2) && /tavsiyesi değildir/.test(box2) }; });
+        ok('gösterge çubuğu: şablon, tek gösterge, alt panel hatırlanır', r && r.sc && r.st && r.lw && r.btn, r);
+        ok('yeni göstergeler (Stoch RSI 0–100, Supertrend yön) doğru hesaplanır', r && r.calcOk, r);
+        ok('Pusula yorumu: sayılar toplanır, düğme görünür, yorum karta gelir', r && r.f && r.b1 && r.b2, r); }
       // v14.12: canlı liste yenileme seçimi (saf fonksiyon)
       ok('canlı liste: yer yoksa korunmayan en düşük hacimliler çıkar, korunanlar kalır', await T(() => {
         const cur = ['A', 'B', 'C', 'D', 'E'], vol = x => ({ A: 50, B: 1, C: 5, D: 2, E: 9 })[x];

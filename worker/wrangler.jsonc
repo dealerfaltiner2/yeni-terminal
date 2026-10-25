@@ -19,5 +19,7 @@
   // 14.10: üç zamanlayıcı = üç ayrı çalışma (her biri kendi 10 ms işlemci payı). Ana iş dakikada bir, KAP ve karne iki dakikada bir; index.js scheduled() event.cron'a göre ayırır:
   // '* * * * *' ana iş · '*/2 * * * *' KAP (çift dakika) · '1-59/2 * * * *' karne ölçümü (tek dakika). Aynı anlama gelen ifadeler ('*/1', '0-59') Cloudflare'de tetiklenmiyor. İfadeleri değiştirirsen index.js'deki CR_KAP / CR_SIG'i de değiştir.
   "triggers": { "crons": ["* * * * *", "*/2 * * * *", "1-59/2 * * * *"] },
+  // v14.13: Workers AI (Pusula yorumu, src/aiyorum.js) — ücretsiz planda günde 10.000 birim; aşılırsa hata döner, ücret çıkmaz.
+  "ai": { "binding": "AI" },
   "observability": { "enabled": true }
 }

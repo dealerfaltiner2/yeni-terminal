@@ -2,7 +2,7 @@
 # Sunucuyu (Worker) yerelde çalıştırıp temel yolları dener: onay akışı, hata defteri, karne verisi, sahip yolları.
 # Gerçek Cloudflare'e DOKUNMAZ (wrangler dev --local, sahte ACCESS_KEY). Çıkış 0 = geçti.
 cd "$(dirname "$0")"
-T=$(mktemp -d); cp -r ../worker/src "$T/"; sed -E 's/"crons": \[[^]]*\]/"crons": []/' ../worker/wrangler.jsonc > "$T/wrangler.jsonc"; echo 'ACCESS_KEY=k123' > "$T/.dev.vars"
+T=$(mktemp -d); cp -r ../worker/src "$T/"; sed -E 's/"crons": \[[^]]*\]/"crons": []/; /"ai": \{ "binding": "AI" \},/d' ../worker/wrangler.jsonc > "$T/wrangler.jsonc"; echo 'ACCESS_KEY=k123' > "$T/.dev.vars"
 cd "$T"; PORT=87$((RANDOM%90+10))
 npx -y wrangler@3 d1 execute bist_bt --local --command "CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT)" >/dev/null 2>&1
 (npx -y wrangler@3 dev --local --test-scheduled --port $PORT > dev.log 2>&1 &) ; for i in $(seq 1 40); do curl -s -m 2 "http://localhost:$PORT/k123/" >/dev/null && break; sleep 1; done
@@ -36,6 +36,8 @@ chk "motor nabzı sonrası hello: bot=true" "$(curl -s -m 10 "$B/hello?dev=eskic
 chk "emir akışı sahipsiz yazılamaz" "$(curl -s -m 10 -X POST -d '{"v":1}' "$B/flow?d=2026-10-12&m=600&n=1&dev=eskicihaz0001")" "ana cihaz"
 chk "emir akışı kaydı (sahip)" "$(curl -s -m 10 -X POST -d '{"v":1,"s":{"ZZT":[[600,1,2,0,3,10,9.9,10]]}}' "$B/flow?d=2026-10-12&m=600&n=1&dev=eskicihaz0001&own=$OWN")" '"ok": ?true'
 chk "emir akışı bozuk gün reddedilir" "$(curl -s -m 10 -X POST -d '{"v":1}' "$B/flow?d=x&m=600&dev=eskicihaz0001&own=$OWN")" 'eksik'
+chk "Pusula yorumu: AI yokken anlaşılır hata" "$(curl -s -m 10 -X POST -d '{"s":"THYAO","tf":"15m","f":{"px":300,"ch":1,"idx":0.5,"rsi":55,"sup":295,"res":310}}' "$B/aiyorum?dev=eskicihaz0001")" "AI bağlantısı yok"
+chk "Pusula yorumu: onaysız cihaza kapalı" "$(curl -s -m 10 -X POST -d '{"s":"THYAO"}' "$B/aiyorum?dev=yabanci000002")" "onayını bekliyor"
 chk "hata defterine yazma" "$(curl -s -m 10 -X POST -d '{"items":[{"k":"hata","m":"test hatası","w":"x.js:1","tab":"now","v":"7.2"}]}' "$B/errlog?dev=eskicihaz0001")" '"n": ?1'
 curl -s -m 10 -X POST -d '{"items":[{"k":"hata","m":"test hatası","w":"x.js:1"}]}' "$B/errlog?dev=eskicihaz0001" >/dev/null
 chk "aynı hata sayaçla tek satır" "$(npx -y wrangler@3 d1 execute bist_bt --local --command "SELECT n FROM err WHERE msg='test hatası'" 2>/dev/null)" '"n": ?2'

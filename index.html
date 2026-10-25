@@ -532,12 +532,13 @@ td.fl-up,td.fl-dn{border-radius:4px}
   <div class="tab" id="t-chart">
    <div id="cnote"></div>
    <div class="bar" id="tfbar"></div>
+   <div id="indbar"></div>
    <div id="newsbar"></div>
    <div id="panel">
     <div class="bar wrap">
      <button data-ct="candle" class="on">Mum</button><button data-ct="bar">Bar</button><button data-ct="line">Çizgi</button><button data-ct="area">Alan</button>
-     <button data-ind="ema20" class="on">EMA20</button><button data-ind="ema50" class="on">EMA50</button><button data-ind="ema200">EMA200</button><button data-ind="vwap">VWAP</button><button data-ind="bb">BB</button><button data-ind="poc" class="on">POC/VA</button>
-     <select id="lower"><option value="rsi">RSI</option><option value="macd">MACD</option><option value="none">Alt panel yok</option></select>
+     <button data-ind="ema20" class="on">EMA20</button><button data-ind="ema50" class="on">EMA50</button><button data-ind="ema200">EMA200</button><button data-ind="vwap">VWAP</button><button data-ind="bb">BB</button><button data-ind="poc" class="on">POC/VA</button><button data-ind="ema9">EMA9</button><button data-ind="ema21">EMA21</button><button data-ind="st">Supertrend</button>
+     <select id="lower"><option value="rsi">RSI</option><option value="stoch">Stoch RSI</option><option value="macd">MACD</option><option value="atr">ATR (oynaklık)</option><option value="none">Alt panel yok</option></select>
     </div>
     <div class="bar wrap">
      <button class="gAL" onclick="setBox('AL')">AL kutusu</button><button class="gSAT" onclick="setBox('SAT')">SAT kutusu</button><button onclick="setBox(null)">Kaldır</button>
@@ -713,15 +714,16 @@ function wRm(s,quiet){const L=W(),i=L.indexOf(s);if(i<0)return;L.splice(i,1);sav
 function wTog(s,ev){if(ev){ev.stopPropagation();ev.preventDefault()}if(wHas(s))wRm(s);else wAdd(s)}
 
 const S={sym:LS.get('sym','THYAO'),mode:LS.get('mode','bist'),tf:LS.get('tf','15min'),ct:'candle',
- ind:LS.get('ind',{ema20:1,ema50:1,ema200:0,vwap:0,bb:0,poc:1}),lower:'rsi',
+ ind:LS.get('ind',{ema20:1,ema50:1,ema200:0,vwap:0,bb:0,poc:1}),lower:LS.get('lower','rsi'),
  tx:LS.get('tx',[]),jr:LS.get('jr',[]),key:LS.get('tdkey',''),src:LS.get('src','yahoo'),tvproxy:LS.get('tvproxy',''),tvUser:LS.get('tvUser',''),tvPass:LS.get('tvPass',''),tvSession:LS.get('tvsession',''),tvMan:LS.get('tvman',''),tvMan2:LS.get('tvman2',''),blim:LS.get('blim','short'),
  cap:LS.get('cap',100000),rskp:LS.get('rskp',1),alarms:LS.get('alarms',[]),
  uni:[],umap:{},sectors:new Set(),quotes:{},crypto:[],cmap:{},candles:[],ccache:{},wsig:{},vp:null,deep:{},
  sort:{k:'market_cap_basic',d:-1},mov:'gain',box:null,plines:[],tab:'op',limit:100,dirty:{},
  setup:'all',dir:'AL',stf:LS.get('stf','15'),view:LS.get('view','card'),cal:[],calC:'TR',reg:null,scanning:false,infoOn:false,seenA:LS.get('seenA',[]),tgTok:LS.get('tgTok',''),tgChat:LS.get('tgChat',''),tgMin:LS.get('tgMin',55),autoOn:LS.get('autoOn',0),sentSig:LS.get('sentSig',[]),autoLog:[],breadthLog:LS.get('breadthLog',[]),ext:LS.get('ext',{sqz:{},tks:{},bil:{}}),sigHist:LS.get('sigHist',[]),healthStats:null,btBusy:0,btProg:0,btResult:null,btDir:'AL',btTf:'1day',btHold:5,btM:6,btN:100,btSL:1.5,btTP:3};
 /* kisa vadeli giris filtreleri her zaman acik: EMA20/50 momentum, EMA200 ana trend, VWAP S/D */
-(function(){const d={ema20:1,ema50:1,ema200:1,vwap:1,bb:0,poc:0};for(const k in d){if(typeof S.ind[k]!=='number')S.ind[k]=d[k]}
- S.ind.ema20=1;S.ind.ema50=1;S.ind.ema200=1;S.ind.vwap=1;LS.set('ind',S.ind)})();
+(function(){const d={ema9:0,ema21:0,ema20:1,ema50:1,ema200:1,vwap:1,bb:0,poc:0,st:0};for(const k in d){if(typeof S.ind[k]!=='number')S.ind[k]=d[k]}
+ // v14.12: göstergeler artık HATIRLANIR (eskiden her açılışta EMA20/50/200+VWAP zorla açılıyordu) — eski ayarı bir kez varsayılana çek
+ if(LS.get('indV',0)<1412){S.ind.ema20=1;S.ind.ema50=1;S.ind.ema200=1;S.ind.vwap=1;LS.set('indV',1412)}LS.set('ind',S.ind)})();
 $('#tdkey').value=S.key;$('#tvproxy').value=S.tvproxy;try{localStorage.removeItem('tvPass');localStorage.removeItem('tvUser')}catch(e){}S.tvPass='';S.tvUser='';$('#tvman').value=S.tvMan;$('#tvman2').value=S.tvMan2;$('#srcsel').value=S.src;$('#barlim').value=S.blim;$('#cap').value=S.cap;$('#rsk').value=S.rskp;
 $('#tgtok').value=S.tgTok;$('#tgchat').value=S.tgChat;$('#tgmin').value=S.tgMin;
 function saveKey(){S.key=$('#tdkey').value.trim();LS.set('tdkey',S.key);S.tvproxy=$('#tvproxy').value.trim();LS.set('tvproxy',S.tvproxy);S.tvMan=$('#tvman').value.trim();LS.set('tvman',S.tvMan);S.tvMan2=$('#tvman2').value.trim();LS.set('tvman2',S.tvMan2);S.ccache={};try{TVL.syms={};if(TVL.ws)TVL.ws.close()}catch(e){}setTimeout(tvLiveStart,500);loadCandles();alert('Kaydedildi')}
@@ -3232,15 +3234,15 @@ $('#tfbar').onclick=e=>{
  const b=e.target.closest('[data-tf]');if(!b)return;S.tf=b.dataset.tf;LS.set('tf',S.tf);[...$('#tfbar').querySelectorAll('[data-tf]')].forEach(x=>x.classList.toggle('on',x===b));loadCandles()};
 $('#panel').onclick=e=>{const b=e.target.closest('button');if(!b)return;
  if(b.dataset.ct){S.ct=b.dataset.ct;[...$('#panel').querySelectorAll('[data-ct]')].forEach(x=>x.classList.toggle('on',x===b));buildMain();drawAll()}
- else if(b.dataset.ind){S.ind[b.dataset.ind]=S.ind[b.dataset.ind]?0:1;b.classList.toggle('on');LS.set('ind',S.ind);drawAll()}};
-$('#lower').onchange=e=>{S.lower=e.target.value;$('#chart2').style.display=S.lower==='none'?'none':'block';drawAll()};
+ else if(b.dataset.ind){indTog(b.dataset.ind)}};
+$('#lower').onchange=e=>{lowerSet(e.target.value)};
 const LC=LightweightCharts;
 function chartCols(){return document.documentElement.classList.contains('mx')?{bg:'#000000',tx:'#8E8E93',gr:'#141416',bd:'#2C2C2E',u:'#4CC35A',d:'#EF5350',fnt:"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif",fs:11}:{bg:'#080b10',tx:'#64717f',gr:'#111822',bd:'#1e2833',u:'#00c48c',d:'#ff4d5e',fnt:'ui-monospace,Menlo,monospace',fs:9}}
 const co={autoSize:true,layout:{background:{color:'#080b10'},textColor:'#64717f',fontFamily:'ui-monospace,Menlo,monospace',fontSize:9},grid:{vertLines:{color:'#111822'},horzLines:{color:'#111822'}},timeScale:{timeVisible:true,secondsVisible:false,borderColor:'#1e2833',rightOffset:4},rightPriceScale:{borderColor:'#1e2833'},crosshair:{mode:0}};
 const chart=LC.createChart($('#chart'),co),chart2=LC.createChart($('#chart2'),co);
 let main,vol=chart.addHistogramSeries({priceFormat:{type:'volume'},priceScaleId:'vol'});chart.priceScale('vol').applyOptions({scaleMargins:{top:0.85,bottom:0}});
 const lines={},mkl=(c,w)=>chart.addLineSeries({color:c,lineWidth:w||1,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
-lines.ema20=mkl('#ffb020');lines.ema50=mkl('#38bdf8');lines.ema200=mkl('#a78bfa',2);lines.vwap=mkl('#22d3ee');lines.bbU=mkl('#3f4b5c');lines.bbL=mkl('#3f4b5c');
+lines.ema9=mkl('#f472b6');lines.ema21=mkl('#34d399');lines.stU=mkl('#22c55e',2);lines.stD=mkl('#ef4444',2);lines.ema20=mkl('#ffb020');lines.ema50=mkl('#38bdf8');lines.ema200=mkl('#a78bfa',2);lines.vwap=mkl('#22d3ee');lines.bbU=mkl('#3f4b5c');lines.bbL=mkl('#3f4b5c');
 const l2={a:chart2.addLineSeries({color:'#a78bfa',lineWidth:1,priceLineVisible:false,lastValueVisible:false}),b:chart2.addLineSeries({color:'#fb923c',lineWidth:1,priceLineVisible:false,lastValueVisible:false}),h:chart2.addHistogramSeries({priceLineVisible:false,lastValueVisible:false})};
 const l2u=chart2.addLineSeries({color:'#232e3a',lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false}),l2d=chart2.addLineSeries({color:'#232e3a',lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false});
 let sy=false;const sync=(a,b)=>a.timeScale().subscribeVisibleLogicalRangeChange(r=>{if(sy||!r)return;sy=true;b.timeScale().setVisibleLogicalRange(r);sy=false});sync(chart,chart2);sync(chart2,chart);
@@ -3257,6 +3259,16 @@ function rsi(c,n){n=n||14;const r=[];let g=0,l=0;for(let i=1;i<c.length;i++){con
 function atr(cs,n){n=n||14;let a=null;const o=[];for(let i=0;i<cs.length;i++){const c=cs[i],p=cs[i-1],tr=p?Math.max(c.high-c.low,Math.abs(c.high-p.close),Math.abs(c.low-p.close)):c.high-c.low;a=a==null?tr:(a*(n-1)+tr)/n;o.push(a)}return o}
 function vwapCalc(cs){let cv=0,cp=0,day=null;return cs.map(c=>{const d=dayKey(c.time);if(d!==day){day=d;cv=0;cp=0}const tp=(c.high+c.low+c.close)/3;cv+=c.volume;cp+=tp*c.volume;return cv?cp/cv:null})}
 const pts=(cs,a)=>cs.map((c,i)=>a[i]==null?null:{time:c.time,value:a[i]}).filter(Boolean);
+// v14.12 yeni göstergeler (hepsi telefonda, mumlardan; sunucuya/TradingView'a yük yok)
+const smaN=(a,n)=>{const o=[];let q=[],sm=0;for(let i=0;i<a.length;i++){const v=a[i];if(v==null||!isFinite(v)){q=[];sm=0;o.push(null);continue}q.push(v);sm+=v;if(q.length>n)sm-=q.shift();o.push(q.length===n?sm/n:null)}return o};
+function stochRsi(c,n,k,d){n=n||14;k=k||3;d=d||3;const r=rsi(c,n),st=r.map((v,i)=>{if(v==null||i<n*2)return null;let lo=Infinity,hi=-Infinity;for(let j=i-n+1;j<=i;j++){const x=r[j];if(x==null)return null;if(x<lo)lo=x;if(x>hi)hi=x}return hi>lo?(v-lo)/(hi-lo)*100:50});
+ const cl=a=>a.map(v=>v==null?null:Math.max(0,Math.min(100,v))),K=cl(smaN(st,k));return{k:K,d:cl(smaN(K,d))}}
+function superTrend(cs,n,m){n=n||10;m=m||3;const a=atr(cs,n),o=[],dir=[];let ub=null,lb=null,tr=1;
+ for(let i=0;i<cs.length;i++){const c=cs[i],hl=(c.high+c.low)/2,u=hl+m*a[i],l=hl-m*a[i],pc=i?cs[i-1].close:c.close;
+  ub=(ub==null||u<ub||pc>ub)?u:ub;lb=(lb==null||l>lb||pc<lb)?l:lb;
+  if(tr===1&&c.close<lb)tr=-1;else if(tr===-1&&c.close>ub)tr=1;
+  o.push(i<n?null:(tr===1?lb:ub));dir.push(tr)}return{v:o,dir}}
+const ptsIf=(cs,a,ok)=>cs.map((c,i)=>(a[i]!=null&&ok(i))?{time:c.time,value:a[i]}:{time:c.time});
 let calc={};
 function setBox(dir){
  if(!dir){S.box=null;drawLevels();legend(S.candles.length-1);return}
@@ -3277,24 +3289,45 @@ function drawAll(){
  // v14.2 (21.10, Fatih ekranı: ASELS 15 dk'da ölçek 320–400, mumlar ezik): parmakla fiyat ekseni sürüklenince otomatik ölçek kapanıyor ve hisse/zaman dilimi değişince de kapalı kalıyordu → hisse ya da zaman dilimi değişince otomatik ölçek yeniden açılır
  try{const ak=S.mode+':'+S.sym+':'+S.tf;if(S._asKey!==ak){S._asKey=ak;chart.priceScale('right').applyOptions({autoScale:true})}}catch(e){}
  vol.setData(cs.map(x=>({time:x.time,value:x.volume,color:x.close>=x.open?'rgba(0,196,140,.3)':'rgba(255,77,94,.3)'})));
- calc={ema20:ema(c,20),ema50:ema(c,50),ema200:ema(c,200),vwap:vwapCalc(cs)};
+ calc={ema20:ema(c,20),ema50:ema(c,50),ema200:ema(c,200),vwap:vwapCalc(cs),ema9:ema(c,9),ema21:ema(c,21)};
  const m=sma(c,20),sd=c.map((_,i)=>i<19?null:Math.sqrt(c.slice(i-19,i+1).reduce((s,v)=>s+(v-m[i])*(v-m[i]),0)/20));
  calc.bbU=m.map((v,i)=>v==null?null:v+2*sd[i]);calc.bbL=m.map((v,i)=>v==null?null:v-2*sd[i]);
  const intr=!isDaily(S.tf);
  lines.ema20.setData(S.ind.ema20?pts(cs,calc.ema20):[]);lines.ema50.setData(S.ind.ema50?pts(cs,calc.ema50):[]);lines.ema200.setData(S.ind.ema200?pts(cs,calc.ema200):[]);
- lines.vwap.setData(S.ind.vwap&&intr?pts(cs,calc.vwap):[]);lines.bbU.setData(S.ind.bb?pts(cs,calc.bbU):[]);lines.bbL.setData(S.ind.bb?pts(cs,calc.bbL):[]);
+ lines.vwap.setData(S.ind.vwap&&intr?pts(cs,calc.vwap):[]);lines.ema9.setData(S.ind.ema9?pts(cs,calc.ema9):[]);lines.ema21.setData(S.ind.ema21?pts(cs,calc.ema21):[]);
+ if(S.ind.st&&cs.length>12){const T=superTrend(cs);calc.st=T;lines.stU.setData(ptsIf(cs,T.v,i=>T.dir[i]===1));lines.stD.setData(ptsIf(cs,T.v,i=>T.dir[i]===-1))}else{calc.st=null;lines.stU.setData([]);lines.stD.setData([])}lines.bbU.setData(S.ind.bb?pts(cs,calc.bbU):[]);lines.bbL.setData(S.ind.bb?pts(cs,calc.bbL):[]);
  if(S.lower==='rsi'){calc.rsi=rsi(c);l2.a.setData(pts(cs,calc.rsi));l2.b.setData([]);l2.h.setData([]);l2u.setData(cs.map(x=>({time:x.time,value:70})));l2d.setData(cs.map(x=>({time:x.time,value:30})))}
  else if(S.lower==='macd'){const e12=ema(c,12),e26=ema(c,26),mac=e12.map((v,i)=>v-e26[i]),sg=ema(mac,9),hi=mac.map((v,i)=>v-sg[i]);calc.macd=mac;calc.sig=sg;l2.a.setData(pts(cs,mac));l2.b.setData(pts(cs,sg));l2.h.setData(cs.map((x,i)=>({time:x.time,value:hi[i],color:hi[i]>=0?'rgba(0,196,140,.55)':'rgba(255,77,94,.55)'})));l2u.setData([]);l2d.setData([])}
+ else if(S.lower==='stoch'){const R=stochRsi(c);calc.sk=R.k;calc.sd=R.d;l2.a.setData(pts(cs,R.k));l2.b.setData(pts(cs,R.d));l2.h.setData([]);l2u.setData(cs.map(x=>({time:x.time,value:80})));l2d.setData(cs.map(x=>({time:x.time,value:20})))}
+ else if(S.lower==='atr'){const A=atr(cs,14),P=A.map((v,i)=>v!=null&&cs[i].close?v/cs[i].close*100:null);calc.atrp=P;l2.a.setData(pts(cs,P));l2.b.setData([]);l2.h.setData([]);l2u.setData([]);l2d.setData([])}
  else{l2.a.setData([]);l2.b.setData([]);l2.h.setData([]);l2u.setData([]);l2d.setData([])}
  drawLevels();legend(cs.length-1);
 }
 function legend(i){const x=S.candles[i];if(!x)return;const dg=x.close<1?4:2,f=(k,v,c)=>'<span class="k">'+k+'</span> <span style="color:'+(c||'#fff')+'">'+v+'</span> ';
  let h='<b style="color:#fff">'+S.sym+'</b> <span class="k">'+S.tf+'</span> '+f('Açılış',nf(x.open,dg))+f('En yüksek',nf(x.high,dg))+f('En düşük',nf(x.low,dg))+f('Kapanış',nf(x.close,dg),x.close>=x.open?'#00c48c':'#ff4d5e')+f('Hacim',big(x.volume))+'<br>';
  if(S.ind.ema20)h+=f('EMA20',nf(calc.ema20[i],dg),'#ffb020');if(S.ind.ema50)h+=f('50',nf(calc.ema50[i],dg),'#38bdf8');if(S.ind.ema200)h+=f('200',nf(calc.ema200[i],dg),'#a78bfa');if(S.ind.vwap&&calc.vwap[i])h+=f('Gün ort.',nf(calc.vwap[i],dg),'#22d3ee');
+ if(S.ind.ema9)h+=f('EMA9',nf(calc.ema9[i],dg),'#f472b6');if(S.ind.ema21)h+=f('21',nf(calc.ema21[i],dg),'#34d399');
+ if(S.ind.st&&calc.st&&calc.st.v[i]!=null)h+=f('Supertrend',(calc.st.dir[i]===1?'yukarı ':'aşağı ')+nf(calc.st.v[i],dg),calc.st.dir[i]===1?'#22c55e':'#ef4444');
  if(S.lower==='rsi'&&calc.rsi)h+=f('RSI',nf(calc.rsi[i],1),'#a78bfa');
+ if(S.lower==='stoch'&&calc.sk&&calc.sk[i]!=null)h+=f('Stoch RSI',nf(calc.sk[i],0)+' / '+nf(calc.sd[i],0),'#a78bfa');
+ if(S.lower==='macd'&&calc.macd&&calc.macd[i]!=null)h+=f('MACD',(calc.macd[i]>=calc.sig[i]?'sinyalin üstünde':'sinyalin altında'),calc.macd[i]>=calc.sig[i]?'#00c48c':'#ff4d5e');
+ if(S.lower==='atr'&&calc.atrp&&calc.atrp[i]!=null)h+=f('Ortalama mum boyu','%'+nf(calc.atrp[i],2),'#a78bfa');
  const vp=S.vp;if(S.ind.poc&&vp&&vp.prev&&!isDaily(S.tf))h+='<br>'+f('Yoğun bölge',nf(vp.prev.poc,dg),'#fbbf24')+f('Üst',nf(vp.prev.vah,dg),'#78716c')+f('Alt',nf(vp.prev.val,dg),'#78716c');
  const b=S.box;if(b&&b.sym===S.sym)h+='<br>'+f(b.dir,nf(b.entry,dg),'#ffb020')+f('SL',nf(b.sl,dg)+' ('+pct((b.sl/b.entry-1)*100)+')','#ff4d5e')+f('TP',nf(b.tp,dg)+' ('+pct((b.tp/b.entry-1)*100)+')','#00c48c');
  $('#legend').innerHTML=h}
+/* v14.12 (25.10, Fatih: 'en çok kullanılan göstergeleri seçip bakmak') GÖSTERGE ÇUBUĞU — grafiğin üstünde tek dokunuş; şablonlar; seçim hatırlanır (LS ind / lower / indT) */
+const IND_L=[['ema9','EMA 9'],['ema21','EMA 21'],['ema20','EMA 20'],['ema50','EMA 50'],['ema200','EMA 200'],['vwap','VWAP'],['bb','Bollinger'],['st','Supertrend'],['poc','Hacim bölgesi']];
+const LOW_L=[['rsi','RSI'],['stoch','Stoch RSI'],['macd','MACD'],['atr','ATR'],['none','Yok']];
+const IND_T={scalp:{ad:'Scalp',ind:{ema9:1,ema21:1,ema50:1,vwap:1},low:'stoch'},trend:{ad:'Trend',ind:{ema20:1,ema50:1,ema200:1},low:'macd'},hacim:{ad:'Hacim',ind:{vwap:1,poc:1,ema20:1},low:'rsi'},sade:{ad:'Sade',ind:{},low:'none'}};
+function indTog(k){S.ind[k]=S.ind[k]?0:1;LS.set('ind',S.ind);LS.set('indT','');indSync();drawAll()}
+function lowerSet(v){S.lower=v;LS.set('lower',v);try{$('#lower').value=v;$('#chart2').style.display=v==='none'?'none':'block'}catch(e){}indSync();drawAll();setTimeout(()=>{try{chart.applyOptions({});chart2.applyOptions({})}catch(e){}},60)}
+function indTpl(t){const T=IND_T[t];if(!T)return;IND_L.forEach(([k])=>S.ind[k]=T.ind[k]?1:0);LS.set('ind',S.ind);LS.set('indT',t);lowerSet(T.low)}
+function indSync(){try{[...document.querySelectorAll('#panel [data-ind]')].forEach(b=>b.classList.toggle('on',!!S.ind[b.dataset.ind]));const ib=document.getElementById('indbar');if(!ib)return;const cur=LS.get('indT','');
+ ib.innerHTML='<div class="ibr"><span class="ibl">Şablon</span>'+Object.keys(IND_T).map(t=>'<button data-tpl="'+t+'" class="'+(cur===t?'on':'')+'">'+IND_T[t].ad+'</button>').join('')+'</div>'+
+  '<div class="ibr"><span class="ibl">Grafikte</span>'+IND_L.map(([k,a])=>'<button data-ik="'+k+'" class="'+(S.ind[k]?'on':'')+'">'+a+'</button>').join('')+'</div>'+
+  '<div class="ibr"><span class="ibl">Alt panel</span>'+LOW_L.map(([k,a])=>'<button data-lw="'+k+'" class="'+(S.lower===k?'on':'')+'">'+a+'</button>').join('')+'</div>'}catch(e){}}
+$('#indbar').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.tpl)indTpl(b.dataset.tpl);else if(b.dataset.ik)indTog(b.dataset.ik);else if(b.dataset.lw)lowerSet(b.dataset.lw)};
+try{$('#lower').value=S.lower;$('#chart2').style.display=S.lower==='none'?'none':'block'}catch(e){}indSync();
 chart.subscribeCrosshairMove(p=>{if(!p.time){legend(S.candles.length-1);return}const i=S.candles.findIndex(c=>c.time===p.time);if(i>=0)legend(i)});
 let seq=0;
 async function loadCandles(){
@@ -3349,7 +3382,38 @@ function cnRender(){const el=document.getElementById('cnote');if(!el)return;cons
  const tx=htmlEsc(T.t),i=tx.indexOf('.');
  el.innerHTML='<div class="cnc" onclick="xrayOpen(\''+sym+'\')"><div class="cng g'+T.g+'">'+T.g+'</div><div class="cnt"><small>PUSULA NOTU · 15 DAKİKA'+lab+'</small><p><b>'+tx.slice(0,i+1)+'</b>'+tx.slice(i+1)+'</p></div>'+
   '<div class="cnk"><div><small>Destek</small><b class="up">'+(Lv.sup!=null?nf(Lv.sup,dg):'–')+'</b></div><div><small>Direnç</small><b class="dn">'+(Lv.res!=null?nf(Lv.res,dg):'zirvede')+'</b></div><div><small>Hacim</small><b>'+(w.vr!=null&&isFinite(w.vr)?nf(w.vr,1)+' kat':'–')+'</b></div></div>'+rg+
-  '<div class="cnm">Ayrıntı için dokun — hisse röntgeni › <span style="float:right">'+wStar(sym)+'</span></div></div>'}
+  '<div class="cnm">Ayrıntı için dokun — hisse röntgeni › <span style="float:right">'+wStar(sym)+'</span></div></div>'+aiBox(sym)}
+/* v14.13 (25.10, Fatih: 'bir AI modeli grafiği yorumlasın') PUSULA YORUMU — sunucu /aiyorum (Workers AI, ücretsiz kota). Model resme bakmaz:
+   burada HESAPLANAN sayılar gider (aiFacts). Hisse+zaman dilimi başına sunucuda 15 dk önbellek. Sinyal değil; üyede/misafir-kapalıda yok. */
+var AIY={};
+function aiFacts(sym){const w=S.wsig[sym],c=S.ccache['b:'+sym+':15min'];if(!w||w.err||!c||!c.d||c.d.length<30)return null;
+ const cs=c.d,cl=cs.map(x=>x.close),n=cl.length-1,E=k=>{const a=ema(cl,k);return a[n]},o=S.umap[sym]||{},Lv=cnLevels(w,cs);
+ const R=rsi(cl),SR=stochRsi(cl),T=superTrend(cs),A=atr(cs,14),m12=ema(cl,12),m26=ema(cl,26),mac=m12.map((v,i)=>v-m26[i]),sg=ema(mac,9);
+ const mk=S.mkt||{},f={px:w.px,ch:o.change,idx:mk.XU100&&mk.XU100.ch!=null?mk.XU100.ch:S.idxCh,grade:w.side==='AL'?w.grade:'C',stk:w.stk,
+  e9:E(9),e21:E(21),e20:E(20),e50:E(50),e200:cl.length>=200?E(200):null,vwap:vwapCalc(cs)[n],poc:w.ref?w.ref.poc:null,vah:w.ref?w.ref.vah:null,val:w.ref?w.ref.val:null,
+  sup:Lv.sup,res:Lv.res,rsi:R[n],sk:SR.k[n],sd:SR.d[n],macd:mac[n]-sg[n],st:cl.length>12?T.dir[n]:null,vr:w.vr,rv:rvolOf(o),atrp:A[n]&&cl[n]?A[n]/cl[n]*100:null,
+  dlo:o.low,dhi:o.high,kur:[],not:[]};
+ if(w.vcp)f.kur.push(w.vcp.brk?'daralan sıkışmayı yukarı kırdı':'daralan sıkışma');if(w.pull)f.kur.push('ortalamaya geri çekilip döndü');if(w.kvw&&w.kvw.side==='AL')f.kur.push('günün ortalamasından sekti');if(w.sq)f.kur.push('fiyat sıkıştı');
+ try{f.not=sigNotes(sym).slice(0,3);const kn=kapNote(sym);if(kn)f.not.push(kn.replace(/^📰\s*/,''))}catch(e){}
+ try{const d=DBAR[sym]&&DBAR[sym].cs;if(d&&d.length>25){const dc=d.map(x=>x.close),k=dc.length-1,ed=q=>ema(dc,q)[k];f.de20=ed(20);f.de50=ed(50);f.de200=dc.length>=200?ed(200):null;
+  f.d5=k>=5?(w.px/dc[k-5]-1)*100:null;f.d20=k>=20?(w.px/dc[k-20]-1)*100:null;const Rg=rngCalc(d,w.px,null);if(Rg&&Rg.yr){f.ylo=Rg.yr.lo;f.yhi=Rg.yr.hi}
+  const P=pivotOf(d);if(P)f.piv={p:P.P,r1:P.R1,s1:P.S1}}}catch(e){}
+ const r=x=>x==null||!isFinite(x)?null:Math.round(x*1e4)/1e4;Object.keys(f).forEach(k=>{if(typeof f[k]==='number')f[k]=r(f[k])});return f}
+function aiBox(sym){if(isUye()||S.mode!=='bist')return '';const a=AIY[sym];
+ const head='<div class="aih"><span>🧭 Pusula yorumu</span><small>yapay zekâ · sinyal değil</small></div>';
+ if(!a)return '<div class="aiw">'+head+'<button class="aib" onclick="aiAsk(\''+sym+'\')">Grafiği yorumla</button></div>';
+ if(a.busy)return '<div class="aiw">'+head+'<p class="aip">⏳ Grafik okunuyor…</p></div>';
+ if(a.err)return '<div class="aiw">'+head+'<p class="aip wrn">'+htmlEsc(a.err)+'</p><button class="aib" onclick="aiAsk(\''+sym+'\')">Tekrar dene</button></div>';
+ const t=new Date(a.at+3*3600e3),hm=String(t.getUTCHours()).padStart(2,'0')+':'+String(t.getUTCMinutes()).padStart(2,'0');
+ return '<div class="aiw">'+head+'<p class="aip">'+htmlEsc(a.txt).replace(/\n/g,'<br>')+'</p><div class="aif">'+hm+' · 15 dakikalık grafiğe göre · yatırım tavsiyesi değildir<button class="aib2" onclick="aiAsk(\''+sym+'\',1)">Yenile</button></div></div>'}
+async function aiAsk(sym,yeni){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)){AIY[sym]={err:'Sunucu adresi yok'};cnRender();return}
+ if(AIY[sym]&&AIY[sym].busy)return;const f=aiFacts(sym);if(!f){AIY[sym]={err:'Grafik verisi henüz hazır değil, birkaç saniye sonra tekrar dene'};cnRender();return}
+ const prev=AIY[sym];AIY[sym]={busy:1};cnRender();
+ try{const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),45e3);
+  const r=await fetch(dq(b+'/aiyorum'),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({s:sym,tf:'15m',f,yeni:yeni?1:0}),signal:ac.signal});clearTimeout(tm);
+  const j=await r.json();AIY[sym]=j&&j.ok&&j.txt?{txt:j.txt,at:j.at||Date.now()}:(prev&&prev.txt&&yeni?prev:{err:(j&&(j.err||j.error))||'Yorum alınamadı'})}
+ catch(e){AIY[sym]={err:e.name==='AbortError'?'Zaman aşımı, tekrar dene':'Sunucuya ulaşılamadı'}}
+ if(S.sym===sym)cnRender()}
 setInterval(()=>{try{if(S.tab==='chart'&&!document.hidden)cnLoad()}catch(e){}},60000);
 setTimeout(()=>{try{cnLoad()}catch(e){}},2500);
 function selectSym(s,mode){if(s!==S.sym){S.box=null;S.vp=null}S.sym=s;S.mode=mode;LS.set('sym',s);LS.set('mode',mode);
@@ -3459,7 +3523,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.12";window.APPV=APP_VER;
+  const APP_VER="14.13";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -5993,6 +6057,14 @@ html.cam .pchg{font-size:15px;margin-top:2px}
 .pyon b{font-size:16px;font-weight:700;color:var(--yc,#E9ECF2)}
 .pyon em{font-style:normal;font:500 13px var(--fntc);color:var(--sis)}
 .pbr2{display:block;font-size:12.5px;color:var(--sis);margin-top:5px;font-variant-numeric:tabular-nums}
+#indbar{padding:4px 8px 2px}
+.aiw{margin:6px 8px 4px;padding:10px 12px;border-radius:12px;border:1px solid var(--line,#2a3442);background:rgba(127,127,127,.06)}
+.aih{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.aih span{font-weight:700;font-size:13px}.aih small{font-size:10.5px;color:var(--dim)}
+.aip{margin:7px 0 4px;font-size:13.5px;line-height:1.5}.aif{font-size:10.5px;color:var(--dim);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.aib{margin-top:8px;width:100%;padding:9px;border-radius:10px;border:1px solid var(--acc,#ffb020);background:transparent;color:var(--acc,#ffb020);font-weight:600;font-size:13px}
+.aib2{padding:3px 10px;border-radius:10px;border:1px solid var(--line,#2a3442);background:transparent;color:var(--tx,#cbd5e1);font-size:11px}#indbar .ibr{display:flex;gap:5px;overflow-x:auto;white-space:nowrap;padding:2px 0;scrollbar-width:none;align-items:center}#indbar .ibr::-webkit-scrollbar{display:none}
+#indbar .ibl{font-size:10.5px;color:var(--dim);min-width:58px;flex:none}#indbar button{flex:none;font-size:11.5px;padding:4px 9px;border-radius:14px;border:1px solid var(--line,#2a3442);background:transparent;color:var(--tx,#cbd5e1)}
+#indbar button.on{background:var(--acc,#ffb020);border-color:var(--acc,#ffb020);color:#000;font-weight:600}
 .pbr2 em{font-style:normal;display:inline-block;min-width:66px;color:var(--sis);opacity:.85}
 .pbr2 i{display:inline-block;width:7px;height:7px;border-radius:50%;margin:0 5px 0 0;vertical-align:0}
 .pbr2 i.u{background:#5FD39A}.pbr2 i.d{background:#F07A6A;margin-left:12px}
