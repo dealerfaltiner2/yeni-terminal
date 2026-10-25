@@ -3523,7 +3523,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.14";window.APPV=APP_VER;
+  const APP_VER="14.15";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -6727,7 +6727,7 @@ html.mx .psh .sh{background:#111113}
 #fsx{display:none}
 html.chfs #top,html.chfs #tick,html.chfs #tabs,html.chfs #cnote,html.chfs #newsbar,html.chfs #setbar{display:none!important}
 html.chfs #t-chart{position:fixed!important;inset:0!important;z-index:55;background:var(--bgk,#000);padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);overflow:hidden}
-html.chfs #tfbar #fslab{display:inline-block}html.chfs #tfbar .bkb{display:none}
+html.chfs #tfbar #fslab{display:inline-block}html.chfs #tfbar .tfx small{display:none}html.chfs #tfbar .tfx{padding:3px 7px!important}html.chfs #tfbar .bkb{display:none}
 html.chfs #fsb{display:none}html.chfs #fsx{display:inline-flex;align-items:center;justify-content:center;width:auto!important;padding:0 12px!important;font-weight:700;font-size:14px!important;background:var(--acc,#FF6A00)!important;color:#000!important;border-color:transparent!important}
 #t-chart{overflow:hidden!important}
 #t-chart #chart{min-height:240px}
@@ -6794,7 +6794,7 @@ function fsToggle(on){const h=document.documentElement;on=on==null?!h.classList.
  setTimeout(()=>{try{chart.applyOptions({});chart2.applyOptions({});chart.timeScale().scrollToRealTime()}catch(e){}},80)}
 function fsLab(){const e=document.getElementById('fslab');if(!e)return;if(!document.documentElement.classList.contains('chfs')){e.textContent='';return}
  const q=S.mode==='crypto'?(S.cmap||{})[S.sym]:S.umap[S.sym],c=S.candles&&S.candles.length?S.candles[S.candles.length-1].close:(q&&q.close);
- e.innerHTML=htmlEsc(S.sym)+(c?' <span style="color:var(--dim);font-weight:600">'+nf(c,c>=1000?0:2)+'</span>':'')}
+ e.textContent=S.sym}   // fiyat zaten grafiğin üstündeki satırda; dar ekranda düğmeler taşmasın
 setInterval(()=>{try{fsLab()}catch(e){}},3000);
 // ---- ortak geri sistemi ----
 function ovOpen(id){const m=document.getElementById(id);return !!(m&&m.classList.contains('on'))}
