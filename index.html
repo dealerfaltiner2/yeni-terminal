@@ -3382,7 +3382,7 @@ function cnRender(){const el=document.getElementById('cnote');if(!el)return;cons
  const tx=htmlEsc(T.t),i=tx.indexOf('.');
  el.innerHTML='<div class="cnc" onclick="xrayOpen(\''+sym+'\')"><div class="cng g'+T.g+'">'+T.g+'</div><div class="cnt"><small>PUSULA NOTU · 15 DAKİKA'+lab+'</small><p><b>'+tx.slice(0,i+1)+'</b>'+tx.slice(i+1)+'</p></div>'+
   '<div class="cnk"><div><small>Destek</small><b class="up">'+(Lv.sup!=null?nf(Lv.sup,dg):'–')+'</b></div><div><small>Direnç</small><b class="dn">'+(Lv.res!=null?nf(Lv.res,dg):'zirvede')+'</b></div><div><small>Hacim</small><b>'+(w.vr!=null&&isFinite(w.vr)?nf(w.vr,1)+' kat':'–')+'</b></div></div>'+rg+
-  '<div class="cnm">Ayrıntı için dokun — hisse röntgeni › <span style="float:right">'+wStar(sym)+'</span></div></div>'+aiBox(sym)}
+  '<div class="cnm">Ayrıntı için dokun — hisse röntgeni › <span style="float:right">'+wStar(sym)+'</span></div></div>'}
 /* v14.13 (25.10, Fatih: 'bir AI modeli grafiği yorumlasın') PUSULA YORUMU — sunucu /aiyorum (Workers AI, ücretsiz kota). Model resme bakmaz:
    burada HESAPLANAN sayılar gider (aiFacts). Hisse+zaman dilimi başına sunucuda 15 dk önbellek. Sinyal değil; üyede/misafir-kapalıda yok. */
 var AIY={};
@@ -3413,7 +3413,7 @@ async function aiAsk(sym,yeni){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test
   const r=await fetch(dq(b+'/aiyorum'),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({s:sym,tf:'15m',f,yeni:yeni?1:0}),signal:ac.signal});clearTimeout(tm);
   const j=await r.json();AIY[sym]=j&&j.ok&&j.txt?{txt:j.txt,at:j.at||Date.now()}:(prev&&prev.txt&&yeni?prev:{err:(j&&(j.err||j.error))||'Yorum alınamadı'})}
  catch(e){AIY[sym]={err:e.name==='AbortError'?'Zaman aşımı, tekrar dene':'Sunucuya ulaşılamadı'}}
- if(S.sym===sym)cnRender()}
+ if(S.sym===sym){cnRender();try{aiRender()}catch(e){}}}
 setInterval(()=>{try{if(S.tab==='chart'&&!document.hidden)cnLoad()}catch(e){}},60000);
 setTimeout(()=>{try{cnLoad()}catch(e){}},2500);
 function selectSym(s,mode){if(s!==S.sym){S.box=null;S.vp=null}S.sym=s;S.mode=mode;LS.set('sym',s);LS.set('mode',mode);
@@ -3523,7 +3523,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.13";window.APPV=APP_VER;
+  const APP_VER="14.14";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -6170,8 +6170,8 @@ async function tgaAuth(){
  const sp=String((W.initDataUnsafe&&W.initDataUnsafe.start_param)||'').toUpperCase();
  if(/^[A-Z0-9]{2,8}$/.test(sp))setTimeout(()=>{try{xrayOpen(sp)}catch(e){}},900);
  const xo=()=>{const x=document.getElementById('xray');return !!(x&&x.classList.contains('on'))};
- W.BackButton.onClick(()=>{try{if(xo())xrayClose();else showTab('now')}catch(e){}});
- setInterval(()=>{try{(xo()||S.tab!=='now')?W.BackButton.show():W.BackButton.hide()}catch(e){}},400);
+ W.BackButton.onClick(()=>{try{if(typeof goBack==='function')goBack();else if(xo())xrayClose();else showTab('now')}catch(e){}});   // v14.14: ortak geri sistemi
+ setInterval(()=>{try{(typeof canBack==='function'?canBack():(xo()||S.tab!=='now'))?W.BackButton.show():W.BackButton.hide()}catch(e){}},400);
 }catch(e){}})();
 </script>
 <style>
@@ -6673,5 +6673,160 @@ html.uye [data-t="op"],html.uye [data-t="algi"],html.uye [data-t="brief"],html.u
 .aldays .on{background:var(--acc,#FF6A00)!important;color:#000!important;border-color:transparent!important;font-weight:700}
 .aldays label input{position:absolute;inset:0;opacity:0;width:100%;height:100%}
 </style>
+<style>
+/* v14.14 (25.10, Fatih: 'karışıklık giderilsin, göstergeler açılır menüden, yorum kapanabilsin, tam ekran, her ekranda geri') */
+/* tek satır not kartı */
+#cnote{padding:6px 8px 2px}
+.cnc.cnq{display:flex!important;align-items:center;gap:10px;padding:7px 10px!important;border-radius:12px!important;min-height:0!important}
+.cnq .cng{width:30px!important;height:30px!important;font-size:15px!important;flex:none;box-shadow:none!important}
+.cnq .cnqt{min-width:0;flex:1;display:flex;flex-direction:column;line-height:1.25}
+.cnq .cnqt b{font-size:13px;color:var(--txt,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cnq .cnqt span{font-size:11.5px;color:var(--dim,#8e8e93);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cnq .cnqt span i{font-style:normal;font-weight:700}.cnq .cnqa{color:var(--dim);font-size:20px;flex:none;margin-left:-2px}
+.cnq .wst{flex:none}
+/* tek sıra araç satırı */
+#tfbar.tfb2{display:flex!important;align-items:center;gap:3px!important;padding:5px 6px!important;overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap!important}
+#tfbar.tfb2::-webkit-scrollbar{display:none}
+#tfbar.tfb2 [data-tf]{flex:none;min-width:27px!important;padding:6px 3px!important;min-height:32px!important;font-size:12px!important;border-radius:9px!important}
+#tfbar .tfx{flex:none;display:flex;flex-direction:column;align-items:center;gap:1px;padding:3px 4px!important;min-height:36px!important;border-radius:10px!important;font-size:15px!important;line-height:1}
+#tfbar .tfx small{font-size:8.5px;letter-spacing:-.1px;color:var(--dim,#8e8e93);font-weight:600}
+#tfbar .tfx.on{border-color:var(--acc,#FF6A00)!important}#tfbar .tfx.on small{color:var(--acc,#FF6A00)}
+#tfbar #fslab{display:none;font-weight:700;font-size:13px;white-space:nowrap;margin-right:4px}
+#tfbar #cmsg{position:absolute;left:-9999px}
+/* ortak geri düğmesi */
+.bkb{flex:none;display:inline-flex;align-items:center;gap:3px;padding:7px 12px 7px 8px!important;min-height:36px!important;border-radius:11px!important;border:1px solid var(--line2,#2C2C2E)!important;
+ background:rgba(255,255,255,.07)!important;color:var(--txt,#fff)!important;font-weight:700!important;font-size:14px!important;line-height:1;white-space:nowrap}
+.bkb:before{content:'‹';font-size:22px;line-height:.6;margin-top:-2px;color:var(--acc,#FF6A00)}
+.bkb.sm{padding:6px 7px 6px 5px!important;min-height:34px!important;font-size:0!important;gap:0}.bkb.sm:before{font-size:24px}
+.sechd .bkb{margin-right:2px}
+.bkbar{display:flex;padding:8px 10px 2px}
+.xh .bkb,.adh .bkb,.ish .bkb,.mhead .bkb{margin-right:8px}
+/* alttan açılan pencereler (Göstergeler, Pusula yorumu) */
+.psh{position:fixed;inset:0;z-index:72;display:none}.psh.on{display:block}
+.psh .bd{position:absolute;inset:0;background:rgba(0,0,0,.55);opacity:0;transition:opacity .2s}.psh.open .bd{opacity:1}
+.psh .sh{position:absolute;left:0;right:0;bottom:0;max-height:82vh;display:flex;flex-direction:column;background:var(--panel,#111113);border-top:1px solid var(--line2,#2C2C2E);
+ border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform .24s cubic-bezier(.2,.8,.2,1);max-width:640px;margin:0 auto;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -16px 40px rgba(0,0,0,.5)}
+html.mx .psh .sh{background:#111113}
+.psh.open .sh{transform:none}
+.psbar{display:flex;align-items:center;gap:10px;padding:12px 12px 10px;border-bottom:1px solid var(--line,rgba(255,255,255,.08));touch-action:none}
+.psbar b{flex:1;font-size:16px;color:var(--txt,#fff);text-align:center;margin-right:40px}
+.psbar .x{flex:none;width:38px;height:38px;border-radius:50%!important;border:0!important;background:rgba(255,255,255,.1)!important;color:var(--txt,#fff)!important;font-size:17px!important;padding:0!important;min-height:0!important}
+.psbar .bkb+b{margin-right:0}
+.psb{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 12px 16px}
+.psb h4{margin:12px 2px 6px;font-size:11px;letter-spacing:.5px;color:var(--dim,#8e8e93);font-weight:700}
+#indsheet #indbar{padding:0}#indsheet #indbar .ibr{flex-wrap:wrap;white-space:normal;overflow:visible;gap:7px;padding:3px 0 9px}
+#indsheet #indbar .ibl{display:block;width:100%;min-width:0;font-size:11px;letter-spacing:.5px;font-weight:700;margin:4px 2px 0}
+#indsheet #indbar button{font-size:13.5px!important;padding:8px 13px!important}
+#indsheet #panel{display:block!important}#indsheet #panel [data-ind],#indsheet #panel #lower{display:none!important}
+#indsheet #panel .bar{flex-wrap:wrap;gap:7px;padding:2px 0 8px!important;background:none!important;border:0!important}
+#aisheet .aip{font-size:15px;line-height:1.55;margin:4px 0 10px}#aisheet .aif{font-size:11.5px}
+#aisheet .aiw{border:0;background:none;margin:0;padding:0}
+/* tam ekran grafik */
+.chov{position:absolute;top:4px;right:58px;z-index:7;display:flex;gap:6px}
+.chov button{width:34px;height:34px;border-radius:10px!important;border:1px solid var(--line2,#2C2C2E)!important;background:rgba(0,0,0,.55)!important;color:#fff!important;font-size:16px!important;padding:0!important;min-height:0!important;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#fsx{display:none}
+html.chfs #top,html.chfs #tick,html.chfs #tabs,html.chfs #cnote,html.chfs #newsbar,html.chfs #setbar{display:none!important}
+html.chfs #t-chart{position:fixed!important;inset:0!important;z-index:55;background:var(--bgk,#000);padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);overflow:hidden}
+html.chfs #tfbar #fslab{display:inline-block}html.chfs #tfbar .bkb{display:none}
+html.chfs #fsb{display:none}html.chfs #fsx{display:inline-flex;align-items:center;justify-content:center;width:auto!important;padding:0 12px!important;font-weight:700;font-size:14px!important;background:var(--acc,#FF6A00)!important;color:#000!important;border-color:transparent!important}
+#t-chart{overflow:hidden!important}
+#t-chart #chart{min-height:240px}
+#t-chart #legend{right:100px}html.chfs #t-chart #legend{right:120px}
+</style>
+<script>
+/* v14.14 YERLEŞİM + GEZİNME — yalnız görünüm, sinyal kuralı DEĞİŞMEDİ.
+   (1) Grafik: tek satır not (cnRender), tek sıra araç (zaman dilimi + Gösterge + Yorum), göstergeler ve Pusula yorumu alttan açılan pencerede (psOpen), grafik kalan alanı doldurur.
+   (2) Tam ekran grafik (fsToggle, html.chfs). (3) Ortak geri: NAV yığını + goBack/canBack; her ekranda '‹ Geri' (Şimdi hariç); Telegram geri düğmesi de goBack. */
+var NAV={st:[]};
+function psEl(id,title){let m=document.getElementById(id);if(m)return m;m=document.createElement('div');m.id=id;m.className='psh';
+ m.innerHTML='<div class="bd"></div><div class="sh"><div class="psbar"><button class="bkb" onclick="goBack()">Geri</button><b>'+title+'</b><button class="x" aria-label="Kapat">✕</button></div><div class="psb"></div></div>';
+ document.body.appendChild(m);m.querySelector('.bd').onclick=()=>psClose(id);m.querySelector('.x').onclick=()=>psClose(id);
+ // aşağı kaydırınca kapanır
+ const bar=m.querySelector('.psbar'),sh=m.querySelector('.sh');let y0=null;
+ bar.addEventListener('touchstart',e=>{y0=e.touches[0].clientY},{passive:true});
+ bar.addEventListener('touchmove',e=>{if(y0==null)return;const d=e.touches[0].clientY-y0;if(d>0)sh.style.transform='translateY('+d+'px)'},{passive:true});
+ bar.addEventListener('touchend',e=>{if(y0==null)return;const d=(e.changedTouches[0].clientY-y0);y0=null;sh.style.transform='';if(d>70)psClose(id)});
+ return m}
+function psOpen(id,title){const m=psEl(id,title);m.classList.add('on');requestAnimationFrame(()=>requestAnimationFrame(()=>m.classList.add('open')));return m.querySelector('.psb')}
+function psClose(id){const m=document.getElementById(id);if(!m)return;m.classList.remove('open');setTimeout(()=>m.classList.remove('on'),240);
+ try{if(id==='indsheet')indBtns();if(id==='aisheet')indBtns()}catch(e){}}
+function psIsOpen(id){const m=document.getElementById(id);return !!(m&&m.classList.contains('on')&&m.classList.contains('open'))}
+// ---- göstergeler penceresi: mevcut #indbar ve ⚙ Araçlar (#panel) buraya taşınır ----
+function indMove(){const b=psEl('indsheet','Göstergeler').querySelector('.psb');
+ if(!b.dataset.ready){b.dataset.ready=1;const ib=document.getElementById('indbar'),pn=document.getElementById('panel');
+  if(ib)b.appendChild(ib);const h=document.createElement('h4');h.textContent='MUM TÜRÜ VE RİSK KUTUSU';b.appendChild(h);if(pn){pn.classList.add('on');b.appendChild(pn)}}return b}
+function indOpen(){indMove();psOpen('indsheet','Göstergeler');try{indSync()}catch(e){}indBtns()}
+// ---- Pusula yorumu penceresi ----
+function aiBody(sym){if(isUye())return '<p class="aip">Bu sürümde yok.</p>';const a=AIY[sym];
+ const note='<div class="aif" style="margin-bottom:8px">Yapay zekâ · sinyal değil · '+htmlEsc(sym)+' · 15 dakikalık grafik</div>';
+ if(!a)return note+'<button class="aib" onclick="aiAsk(\''+sym+'\')">Grafiği yorumla</button>';
+ if(a.busy)return note+'<p class="aip">⏳ Grafik okunuyor…</p>';
+ if(a.err)return note+'<p class="aip wrn">'+htmlEsc(a.err)+'</p><button class="aib" onclick="aiAsk(\''+sym+'\')">Tekrar dene</button>';
+ const t=new Date(a.at+3*3600e3),hm=String(t.getUTCHours()).padStart(2,'0')+':'+String(t.getUTCMinutes()).padStart(2,'0');
+ return note+'<p class="aip">'+htmlEsc(a.txt).replace(/\n/g,'<br>')+'</p><div class="aif">'+hm+' · yatırım tavsiyesi değildir<button class="aib2" onclick="aiAsk(\''+sym+'\',1)">Yenile</button></div>'}
+function aiRender(){const m=document.getElementById('aisheet');if(!m||!m.classList.contains('on'))return;const b=m.querySelector('.psb');if(b)b.innerHTML=aiBody(S.sym)}
+function aiOpen(){const sym=S.sym;if(S.mode!=='bist'||!sym)return;const b=psOpen('aisheet','🧭 Pusula yorumu');b.innerHTML=aiBody(sym);indBtns();
+ if(!AIY[sym]&&!isUye())aiAsk(sym)}
+window.aiBox=function(){return ''};   // eski kart içi kutu kalktı
+// ---- tek satır not kartı ----
+window.cnRender=function(){const el=document.getElementById('cnote');if(!el)return;const sym=S.sym;
+ if(S.mode!=='bist'||!sym){el.innerHTML='';return}
+ const w=S.wsig[sym],c=S.ccache['b:'+sym+':15min'];
+ if(!w||(CN.busy===sym&&w.err)){el.innerHTML='<div class="cnc cnq"><div class="cng g0">…</div><div class="cnqt"><b>'+htmlEsc(sym)+' inceleniyor…</b><span>Pusula notu · 15 dakika</span></div></div>';return}
+ if(w.err||!c){el.innerHTML='<div class="cnc cnq"><div class="cng g0">–</div><div class="cnqt"><b>Not çıkarılamadı</b><span>Yeterli 15 dakikalık mum yok</span></div></div>';return}
+ const T=cnText(w,c.d),Lv=cnLevels(w,c.d),dg=w.px>=1000?0:2,head=String(T.t).split('. ')[0].replace(/\.$/,'')+'.';
+ const lab=isUye()?'':(T.g!=='C'?' · AL':'');
+ el.innerHTML='<div class="cnc cnq" onclick="xrayOpen(\''+sym+'\')"><div class="cng g'+T.g+'">'+T.g+'</div><div class="cnqt"><b>'+htmlEsc(head)+lab+'</b>'+
+  '<span>Destek <i class="up">'+(Lv.sup!=null?nf(Lv.sup,dg):'–')+'</i> · Direnç <i class="dn">'+(Lv.res!=null?nf(Lv.res,dg):'zirvede')+'</i>'+(w.vr!=null&&isFinite(w.vr)?' · Hacim '+nf(w.vr,1)+' kat':'')+'</span></div>'+
+  wStar(sym)+'<span class="cnqa">›</span></div>'};
+// ---- araç satırı (zaman dilimi + Gösterge + Yorum) ----
+function tfBuild(){const tb=document.getElementById('tfbar');if(!tb)return;tb.classList.add('tfb2');
+ tb.innerHTML='<button class="bkb sm" onclick="goBack()" aria-label="Geri">Geri</button><span id="fslab"></span>'+TFS.map(t=>'<button data-tf="'+t[0]+'" class="'+(t[0]===S.tf?'on':'')+'">'+t[1]+'</button>').join('')+
+  '<span style="flex:1;min-width:4px"></span><button class="tfx" id="indb" onclick="indOpen()">📊<small>Gösterge</small></button><button class="tfx" id="aib" onclick="aiOpen()">🧭<small>Yorum</small></button><span id="cmsg"></span>';
+ tb.onclick=e=>{const b=e.target.closest('[data-tf]');if(!b)return;S.tf=b.dataset.tf;LS.set('tf',S.tf);[...tb.querySelectorAll('[data-tf]')].forEach(x=>x.classList.toggle('on',x===b));loadCandles()};
+ const ch=document.getElementById('chart');if(ch&&!document.getElementById('fsb')){const o=document.createElement('div');o.className='chov';
+  o.innerHTML='<button id="fsb" onclick="fsToggle(true)" aria-label="Tam ekran" title="Tam ekran">⛶</button><button id="fsx" onclick="fsToggle(false)">✕ Çık</button>';ch.appendChild(o)}
+ indBtns()}
+function indBtns(){try{const a=document.getElementById('indb'),y=document.getElementById('aib');if(a)a.classList.toggle('on',psIsOpen('indsheet'));if(y)y.classList.toggle('on',psIsOpen('aisheet'))}catch(e){}}
+// ---- tam ekran ----
+function fsToggle(on){const h=document.documentElement;on=on==null?!h.classList.contains('chfs'):!!on;
+ if(on&&S.tab!=='chart')showTab('chart');h.classList.toggle('chfs',on);fsLab();
+ setTimeout(()=>{try{chart.applyOptions({});chart2.applyOptions({});chart.timeScale().scrollToRealTime()}catch(e){}},80)}
+function fsLab(){const e=document.getElementById('fslab');if(!e)return;if(!document.documentElement.classList.contains('chfs')){e.textContent='';return}
+ const q=S.mode==='crypto'?(S.cmap||{})[S.sym]:S.umap[S.sym],c=S.candles&&S.candles.length?S.candles[S.candles.length-1].close:(q&&q.close);
+ e.innerHTML=htmlEsc(S.sym)+(c?' <span style="color:var(--dim);font-weight:600">'+nf(c,c>=1000?0:2)+'</span>':'')}
+setInterval(()=>{try{fsLab()}catch(e){}},3000);
+// ---- ortak geri sistemi ----
+function ovOpen(id){const m=document.getElementById(id);return !!(m&&m.classList.contains('on'))}
+function canBack(){return ovOpen('aisheet')||ovOpen('indsheet')||ovOpen('infosheet')||ovOpen('aldim')||ovOpen('xray')||ovOpen('more')||document.documentElement.classList.contains('chfs')||S.tab!=='now'}
+function goBack(){
+ if(ovOpen('aisheet')){psClose('aisheet');return 'yorum'}
+ if(ovOpen('indsheet')){psClose('indsheet');return 'gosterge'}
+ if(ovOpen('infosheet')){infoClose();return 'bilgi'}
+ if(ovOpen('aldim')){aldimClose();return 'aldim'}
+ if(ovOpen('xray')){xrayClose();return 'rontgen'}
+ if(ovOpen('more')){const x=document.querySelector('#more .mclose');if(x)x.click();else document.getElementById('more').classList.remove('on','open');return 'menu'}
+ if(document.documentElement.classList.contains('chfs')){fsToggle(false);return 'tamekran'}
+ let t=NAV.st.pop();while(t&&t===S.tab)t=NAV.st.pop();
+ showTab(t||'now',{back:1});return 'sekme:'+(t||'now')}
+function navDeco(){try{document.querySelectorAll('.tab').forEach(tb=>{if(tb.id==='t-now'||tb.id==='t-chart'||tb.dataset.bk)return;
+  const hd=tb.querySelector(':scope>.sechd');
+  if(hd){if(!hd.querySelector('.bkb'))hd.insertAdjacentHTML('afterbegin','<button class="bkb" onclick="goBack()">Geri</button>');tb.dataset.bk=1}
+  else if(tb.children.length){tb.insertAdjacentHTML('afterbegin','<div class="bkbar"><button class="bkb" onclick="goBack()">Geri</button></div>');tb.dataset.bk=1}})}catch(e){}}
+(function(){
+ const _st=window.showTab;
+ window.showTab=function(t,o){const prev=S.tab;const r=_st.apply(this,arguments);
+  try{if(document.documentElement.classList.contains('chfs')&&S.tab!=='chart')document.documentElement.classList.remove('chfs')}catch(e){}
+  if(!(o&&o.back)&&prev&&prev!==S.tab){NAV.st.push(prev);if(NAV.st.length>30)NAV.st.shift()}
+  navDeco();return r};
+ // açılan pencerelere '‹ Geri'
+ const deco=(sel,hsel)=>{try{const h=document.querySelector(sel+' '+hsel);if(h&&!h.querySelector('.bkb'))h.insertAdjacentHTML('afterbegin','<button class="bkb" onclick="goBack()">Geri</button>')}catch(e){}};
+ const wrap=(name,fn)=>{const o=window[name];if(typeof o!=='function')return;window[name]=function(){const r=o.apply(this,arguments);try{fn()}catch(e){}return r}};
+ wrap('xrayOpen',()=>deco('#xray','.xh'));wrap('aldimOpen',()=>deco('#aldim','.adh'));wrap('infoOpen',()=>deco('#infobody','.ish'));
+ try{const mh=document.querySelector('#more .mhead');if(mh&&!mh.querySelector('.bkb'))mh.insertAdjacentHTML('afterbegin','<button class="bkb" onclick="goBack()">Geri</button>')}catch(e){}
+ tfBuild();try{indMove()}catch(e){}try{cnRender()}catch(e){}navDeco();setTimeout(navDeco,2500);
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&canBack())goBack()});
+})();
+</script>
 </body>
 </html>

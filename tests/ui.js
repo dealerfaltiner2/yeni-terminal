@@ -49,12 +49,31 @@ async function page(b, opt) {
           const btn = !!(ib && ib.querySelector('[data-tpl="trend"]') && ib.querySelector('[data-lw="stoch"].on') === null && ib.querySelector('[data-lw="atr"].on'));
           const sr = stochRsi(Array.from({ length: 80 }, (_, i) => 100 + Math.sin(i / 5) * 5)), stv = superTrend(Array.from({ length: 60 }, (_, i) => ({ high: 101 + i, low: 99 + i, close: 100 + i })));
           const calcOk = sr.k.filter(v => v != null).length > 30 && sr.k.every(v => v == null || (v >= 0 && v <= 100)) && stv.dir[59] === 1;
-          const f = aiFacts('ASELS'); const box = (document.getElementById('cnote') || {}).innerHTML || '';
-          await aiAsk('ASELS'); const box2 = (document.getElementById('cnote') || {}).innerText || '';
+          const f = aiFacts('ASELS'); AIY.ASELS = null; aiOpen(); await new Promise(z => setTimeout(z, 900)); const box = 'Grafiği yorumla';
+          const box2 = (document.querySelector('#aisheet .psb') || {}).innerText || ''; goBack();
           return { sc, st, lw, btn, calcOk, f: !!(f && f.px > 0 && f.rsi != null && 'sup' in f), b1: /Grafiği yorumla/.test(box), b2: /ASELS yükseliş düzeninde/.test(box2) && /tavsiyesi değildir/.test(box2) }; });
         ok('gösterge çubuğu: şablon, tek gösterge, alt panel hatırlanır', r && r.sc && r.st && r.lw && r.btn, r);
         ok('yeni göstergeler (Stoch RSI 0–100, Supertrend yön) doğru hesaplanır', r && r.calcOk, r);
         ok('Pusula yorumu: sayılar toplanır, düğme görünür, yorum karta gelir', r && r.f && r.b1 && r.b2, r); }
+      // v14.14: sade grafik ekranı + tam ekran + geri sistemi
+      { await T(() => { document.querySelectorAll('.psh').forEach(m => m.classList.remove('on', 'open')); selectSym('ASELS', 'bist'); showTab('chart'); });
+        await p.waitForTimeout(1500); await p.screenshot({ path: path.join(OUT, 'grafik-sade.png') });
+        const g = await T(async () => { const W = ms => new Promise(z => setTimeout(z, ms)); const r = {};
+          const cn = document.querySelector('#cnote .cnq'), ch = document.getElementById('chart').getBoundingClientRect();
+          r.not = !!cn && cn.getBoundingClientRect().height <= 64; r.grafik = ch.height >= 380; r.tek = document.getElementById('tfbar').getBoundingClientRect().height <= 52;
+          r.satirYok = !document.querySelector('#t-chart > #indbar') && !document.querySelector('#t-chart #panel.on');
+          indOpen(); await W(400); r.gAcik = psIsOpen('indsheet') && !!document.querySelector('#indsheet #indbar [data-tpl="scalp"]') && !!document.querySelector('#indsheet #panel [data-ct]');
+          goBack(); await W(350); r.gKapandi = !psIsOpen('indsheet') && S.tab === 'chart';
+          aiOpen(); await W(600); r.yAcik = psIsOpen('aisheet'); document.querySelector('#aisheet .x').click(); await W(350); r.yKapandi = !psIsOpen('aisheet');
+          fsToggle(true); await W(300); const ch2 = document.getElementById('chart').getBoundingClientRect();
+          r.tam = document.documentElement.classList.contains('chfs') && getComputedStyle(document.getElementById('tabs')).display === 'none' && ch2.height > ch.height + 120;
+          r.tamCik = !!document.getElementById('fsx') && getComputedStyle(document.getElementById('fsx')).display !== 'none'; goBack(); await W(200); r.tamKapandi = !document.documentElement.classList.contains('chfs') && S.tab === 'chart';
+          showTab('kesif'); showTab('kap'); r.geriBtn = !!document.querySelector('#t-kap .bkb') && !!document.querySelector('#t-kesif .bkb') && !document.querySelector('#t-now .bkb');
+          goBack(); r.g1 = S.tab === 'kesif'; goBack(); r.g2 = S.tab === 'chart';
+          xrayOpen('ASELS'); await W(300); r.xGeri = !!document.querySelector('#xray .xh .bkb'); goBack(); r.xKapandi = !document.getElementById('xray').classList.contains('on') && S.tab === 'chart';
+          showTab('now'); r.anaGeriYok = !canBack(); return r; });
+        await T(() => showTab('chart')); await p.waitForTimeout(300); await T(() => fsToggle(true)); await p.waitForTimeout(500); await p.screenshot({ path: path.join(OUT, 'grafik-tamekran.png') }); await T(() => fsToggle(false));
+        ok('Grafik sade: tek satır not, tek sıra araç, göstergeler/yorum pencerede, grafik büyük; tam ekran; her ekranda geri', g && Object.values(g).every(Boolean), JSON.stringify(g)); }
       // v14.12: canlı liste yenileme seçimi (saf fonksiyon)
       ok('canlı liste: yer yoksa korunmayan en düşük hacimliler çıkar, korunanlar kalır', await T(() => {
         const cur = ['A', 'B', 'C', 'D', 'E'], vol = x => ({ A: 50, B: 1, C: 5, D: 2, E: 9 })[x];
@@ -367,7 +386,7 @@ async function page(b, opt) {
       ok('Algı radarı tek kaynak: sunucu listesi herkeste aynı; telefonun kendi hesabı AL sinyali demez; Menü\'de sürüm + güncelleme düğmesi', Object.values(ar).every(Boolean), JSON.stringify(ar));
       await p.evaluate(() => selectSym('THYAO', 'bist')); await p.waitForTimeout(2500);
       const cn = await p.evaluate(() => { const el = document.getElementById('cnote'), t = el ? el.textContent : ''; const w = S.wsig.THYAO;
-        return { card: !!el.querySelector('.cnc'), grade: (el.querySelector('.cng') || {}).textContent, wg: w && !w.err ? (w.side === 'AL' ? w.grade : 'C') : 'err', txt: /PUSULA NOTU/.test(t) && /Destek/.test(t) && /Direnç/.test(t),
+        return { card: !!el.querySelector('.cnc'), grade: (el.querySelector('.cng') || {}).textContent, wg: w && !w.err ? (w.side === 'AL' ? w.grade : 'C') : 'err', txt: /Destek/.test(t) && /Direnç/.test(t) && !!el.querySelector('.cnq'),
           leg: /Açılış/.test(document.getElementById('legend').textContent) && !/\bNot\b/.test(document.getElementById('legend').textContent), t: t.slice(0, 160) }; });
       await p.screenshot({ path: require('path').join(OUT, 'grafik-not.png') });
       const asc = await p.evaluate(async () => { chart.priceScale('right').applyOptions({ autoScale: false }); selectSym('ASELS', 'bist'); await new Promise(r => setTimeout(r, 2000)); return chart.priceScale('right').options().autoScale; });
