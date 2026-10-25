@@ -516,6 +516,7 @@ td.fl-up,td.fl-dn{border-radius:4px}
   <div class="tab" id="t-brief"><div id="briefbody"></div></div>
   <div class="tab" id="t-lab"><div id="labbody"></div></div>
   <div class="tab" id="t-kesif"><div id="kesifbody"></div></div>
+  <div class="tab" id="t-aisec"><div id="aisecbody"></div></div>
 
   <div class="tab" id="t-kap">
    <div class="bar"><div class="seg" id="kapseg"><button data-f="onemli">Önemli</button><button data-f="hepsi">Tümü</button><button data-f="takip">Takibim</button></div><button onclick="loadKap(true)">↻ Yenile</button></div>
@@ -670,13 +671,13 @@ td.fl-up,td.fl-dn{border-radius:4px}
   <button data-t="now" class="on" style="--tc:#fbbf24"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg></span><span class="lbl">Şimdi</span></button>
   <button data-t="op" style="--tc:#ffb020"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/></svg></span><span class="lbl">Fırsat</span></button>
   <button data-t="algi" style="--tc:#ff7a45"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12L19 5"/><path d="M19.5 12a7.5 7.5 0 1 1-4.2-6.74"/><path d="M15.7 12a3.7 3.7 0 1 1-2.1-3.33"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg></span><span class="lbl">Algı</span></button>
-  <button data-t="lab" style="--tc:var(--pir2)"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V11"/><path d="M12 20V4"/><path d="M19 20v-7"/></svg></span><span class="lbl">Karne</span></button>
+  <button data-t="aisec" style="--tc:#c4b5fd"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l1.9 4.6 4.6 1.9-4.6 1.9L12 16.5l-1.9-4.6L5.5 10l4.6-1.9z"/><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/><path d="M5.5 16.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z"/></svg></span><span class="lbl">AI Seçtikleri</span></button>
   <button data-t="kesif" style="--tc:var(--pir2)"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/><path d="M8 13l2-4 4-2-2 4z"/></svg></span><span class="lbl">Keşfet</span></button>
   <button data-t="watch" style="--tc:#fbbf24"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 3 14.8 8.8 21 9.6 16.5 14 17.6 20.3 12 17.3 6.4 20.3 7.5 14 3 9.6 9.2 8.8"/></svg></span><span class="lbl">İzleme</span></button>
   <button data-more="1" id="morebtn" style="--tc:#e2e8f0"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8"/></svg></span><span class="lbl">Menü</span></button>
 </div>
 </div>
-<div id="more"><div class="bd"></div><div class="sh"><div class="grab"></div><div class="mhead"><b>Tüm bölümler</b><button class="mclose" aria-label="Kapat">✕</button></div><div class="mver"><span id="mvertxt">Sürüm</span><button onclick="window.appUpdate&&window.appUpdate()">🔄 Güncellemeyi kontrol et</button></div><div class="mgrid"><button data-t="live" style="--tc:#00e5a0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 12 7 12 10 5 14 19 17 12 21 12"/></svg><span>Canlı</span></button><button data-t="brief" style="--tc:#fde047"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg><span>Özet</span></button><button data-t="kesif" style="--tc:var(--pir2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/><path d="M8 13l2-4 4-2-2 4z"/></svg><span>Keşfet</span></button><button data-t="chart" style="--tc:#22d3a6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="7" y1="3" x2="7" y2="21"/><rect x="5" y="7" width="4" height="8" rx="1"/><line x1="17" y1="4" x2="17" y2="20"/><rect x="15" y="9" width="4" height="6" rx="1"/></svg><span>Grafik</span></button><button data-t="lab" style="--tc:#a78bfa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9z"/><polyline points="9 13.5 11.3 15.8 15.5 11.5"/></svg><span>Karne</span></button><button data-t="reg" style="--tc:#38bdf8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 18a8.5 8.5 0 1 1 17 0"/><line x1="12" y1="18" x2="16.2" y2="11.2"/><circle cx="12" cy="18" r="1.2" fill="currentColor"/></svg><span>Piyasa</span></button><button data-t="mov" style="--tc:#c084fc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 20V5M4 9l4-4 4 4M16 4v15M12 15l4 4 4-4"/></svg><span>Hareket</span></button><button data-t="heat" style="--tc:#fb923c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="10" rx="1.5"/><rect x="14.5" y="3.5" width="6" height="6" rx="1.5"/><rect x="14.5" y="11.5" width="6" height="9" rx="1.5"/><rect x="3.5" y="15.5" width="9" height="5" rx="1.5"/></svg><span>Isı Haritası</span></button><button data-t="kap" style="--tc:#60a5fa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h13v13a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v9.5a2 2 0 0 1-2 2"/><path d="M7.5 9h6M7.5 12.5h6M7.5 16h4"/></svg><span>KAP Haber</span></button><button data-t="cal" style="--tc:#f472b6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Takvim</span></button><button data-t="alarm" style="--tc:#ff5d6c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.8 2H4.2z"/><path d="M10 21h4"/></svg><span>Alarm</span></button><button data-t="jr" style="--tc:#4ade80"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg><span>Günlük</span></button><button data-t="perf" style="--tc:#34d399"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg><span>Performans</span></button><button data-t="risk" style="--tc:#22d3ee"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 8v5M12 16v.5"/></svg><span>Risk</span></button><button data-t="port" style="--tc:#818cf8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4"/></svg><span>Portföy</span></button><button data-t="crypto" style="--tc:#f59e0b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 7.5h4a2.2 2.2 0 0 1 0 4.4h-4zM9.5 11.9h4.6a2.3 2.3 0 0 1 0 4.6H9.5zM9.5 7.5v9M11 6v1.5M11 16.5V18"/></svg><span>Kripto</span></button><button data-t="set" style="--tc:#94a3b8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>Ayarlar</span></button></div></div></div>
+<div id="more"><div class="bd"></div><div class="sh"><div class="grab"></div><div class="mhead"><b>Tüm bölümler</b><button class="mclose" aria-label="Kapat">✕</button></div><div class="mver"><span id="mvertxt">Sürüm</span><button onclick="window.appUpdate&&window.appUpdate()">🔄 Güncellemeyi kontrol et</button></div><div class="mgrid"><button data-t="live" style="--tc:#00e5a0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 12 7 12 10 5 14 19 17 12 21 12"/></svg><span>Canlı</span></button><button data-t="brief" style="--tc:#fde047"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg><span>Özet</span></button><button data-t="kesif" style="--tc:var(--pir2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/><path d="M8 13l2-4 4-2-2 4z"/></svg><span>Keşfet</span></button><button data-t="chart" style="--tc:#22d3a6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="7" y1="3" x2="7" y2="21"/><rect x="5" y="7" width="4" height="8" rx="1"/><line x1="17" y1="4" x2="17" y2="20"/><rect x="15" y="9" width="4" height="6" rx="1"/></svg><span>Grafik</span></button><button data-t="aisec" style="--tc:#c4b5fd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l1.9 4.6 4.6 1.9-4.6 1.9L12 16.5l-1.9-4.6L5.5 10l4.6-1.9z"/><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/><path d="M5.5 16.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z"/></svg><span>AI Seçtikleri</span></button><button data-t="lab" style="--tc:#a78bfa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9z"/><polyline points="9 13.5 11.3 15.8 15.5 11.5"/></svg><span>Karne</span></button><button data-t="reg" style="--tc:#38bdf8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 18a8.5 8.5 0 1 1 17 0"/><line x1="12" y1="18" x2="16.2" y2="11.2"/><circle cx="12" cy="18" r="1.2" fill="currentColor"/></svg><span>Piyasa</span></button><button data-t="mov" style="--tc:#c084fc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 20V5M4 9l4-4 4 4M16 4v15M12 15l4 4 4-4"/></svg><span>Hareket</span></button><button data-t="heat" style="--tc:#fb923c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="10" rx="1.5"/><rect x="14.5" y="3.5" width="6" height="6" rx="1.5"/><rect x="14.5" y="11.5" width="6" height="9" rx="1.5"/><rect x="3.5" y="15.5" width="9" height="5" rx="1.5"/></svg><span>Isı Haritası</span></button><button data-t="kap" style="--tc:#60a5fa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h13v13a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v9.5a2 2 0 0 1-2 2"/><path d="M7.5 9h6M7.5 12.5h6M7.5 16h4"/></svg><span>KAP Haber</span></button><button data-t="cal" style="--tc:#f472b6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Takvim</span></button><button data-t="alarm" style="--tc:#ff5d6c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.8 2H4.2z"/><path d="M10 21h4"/></svg><span>Alarm</span></button><button data-t="jr" style="--tc:#4ade80"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg><span>Günlük</span></button><button data-t="perf" style="--tc:#34d399"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg><span>Performans</span></button><button data-t="risk" style="--tc:#22d3ee"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 8v5M12 16v.5"/></svg><span>Risk</span></button><button data-t="port" style="--tc:#818cf8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4"/></svg><span>Portföy</span></button><button data-t="crypto" style="--tc:#f59e0b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 7.5h4a2.2 2.2 0 0 1 0 4.4h-4zM9.5 11.9h4.6a2.3 2.3 0 0 1 0 4.6H9.5zM9.5 7.5v9M11 6v1.5M11 16.5V18"/></svg><span>Kripto</span></button><button data-t="set" style="--tc:#94a3b8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>Ayarlar</span></button></div></div></div>
 <div id="pal" onclick="if(event.target.id==='pal')closePal()"><div id="palbox"><input id="palin" placeholder="Hisse veya kripto ara" autocomplete="off"><div id="pallist"></div></div></div>
 
 <script>
@@ -859,7 +860,7 @@ setInterval(()=>{if(S.autoOn)autoRun(false)},15*60*1000);
 function saveCap(){S.cap=+$('#cap').value||0;S.rskp=+$('#rsk').value||1;LS.set('cap',S.cap);LS.set('rskp',S.rskp);renderRisk();alert('Kaydedildi')}
 async function testSrc(){const m=$('#srcmsg');m.textContent='test...';try{const cs=await getBars('THYAO','15min');m.innerHTML='<b class="up">Çalışıyor</b> — '+cs.length+' mum'}catch(e){m.innerHTML='<b class="dn">Başarısız</b> — '+e.message}}
 function mark(t){if(S.tab===t)draw(t);else S.dirty[t]=1}
-function draw(t){S.dirty[t]=0;const f={op:function(){try{renderOps()}catch(e){$('#oplist').innerHTML='<div class="note"><b class="dn">Ekran hatası:</b> '+String(e.message||e)+'</div>'}},live:renderLive,reg:renderReg,brief:renderBrief,lab:renderLab,watch:renderWatch,cal:calTab,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,kap:function(){loadKap(false)},kesif:function(){try{renderKesif()}catch(e){}},crypto:renderCrypto,jr:renderJr,perf:renderPerf,risk:renderRisk}[t];if(f)f()}
+function draw(t){S.dirty[t]=0;const f={op:function(){try{renderOps()}catch(e){$('#oplist').innerHTML='<div class="note"><b class="dn">Ekran hatası:</b> '+String(e.message||e)+'</div>'}},live:renderLive,reg:renderReg,brief:renderBrief,lab:renderLab,watch:renderWatch,cal:calTab,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,kap:function(){loadKap(false)},kesif:function(){try{renderKesif()}catch(e){}},aisec:function(){try{renderAisec()}catch(e){}},crypto:renderCrypto,jr:renderJr,perf:renderPerf,risk:renderRisk}[t];if(f)f()}
 const BACKUP_VER=12;
 function backupObj(){
  return {wl:WL,alarms:S.alarms,tx:S.tx,jr:S.jr,tdkey:S.key,src:S.src,cap:S.cap,rskp:S.rskp,
@@ -1060,7 +1061,7 @@ function devNameSave(v){LS.set('devName',String(v||'').replace(/[<>"'&]/g,'').tr
 const WAIT_MSG='bu cihaz ana cihazın onayını bekliyor';
 /* v12.2 ÜYE GÖRÜNÜMÜ (Fatih 'B'): üyede canlı AL/hedef/stop yok — Fırsat, Algı, Özet sekmeleri, canlı takip ve röntgen giriş/stop/hedef gizli; piyasa, KAP, röntgen, karne açık */
 function isUye(){try{return !!(S.uye||TVL.uye)}catch(e){return false}}
-function uyeMark(){try{document.documentElement.classList.toggle('uye',isUye());if(isUye()&&/^(op|algi|brief)$/.test(S.tab||''))showTab('now')}catch(e){}}
+function uyeMark(){try{document.documentElement.classList.toggle('uye',isUye());if(isUye()&&/^(op|algi|brief|aisec)$/.test(S.tab||''))showTab('now')}catch(e){}}
 async function devHello(){const b=ownBase();if(!/^https:\/\//.test(b))return;OWN.helloAt=Date.now();try{const j=await (await fetch(qAdd(b+'/hello?'+devQ()+(BOTMODE?'&bot=1':''),ownQ()))).json();OWN.wait=!!(j&&j.wait);S.uye=!!(j&&j.uye);uyeMark();S.botAlive=!!(j&&j.bot);S.botKnown=1;if(j&&j.blocked)TVL.err='bu cihaz engellendi';else if(j&&j.wait)TVL.err=WAIT_MSG}catch(e){}}
 // v6.8: sunucu veri yollarına cihaz kimliği (yeni cihaz onayı)
 function dq(u){return qAdd(u,'dev='+devId())}
@@ -3433,7 +3434,7 @@ $('#palin').onkeydown=e=>{if(e.key==='Enter'&&pit[0])selectSym(pit[0].s,pit[0].m
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openPal()}else if(e.key==='Escape')closePal()});
 function showTab(t){
  if(t==='set'&&typeof guestHideSet==='function'&&guestHideSet())t='now';
- if(/^(op|algi|brief)$/.test(t)&&typeof isUye==='function'&&isUye())t='now';
+ if(/^(op|algi|brief|aisec)$/.test(t)&&typeof isUye==='function'&&isUye())t='now';
  S.tab=t;
  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.id==='t-'+t));
  document.querySelectorAll('#tabs button').forEach(b=>{const on=b.dataset.t===t;b.classList.toggle('on',on);if(on)b.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'})});
@@ -3507,7 +3508,7 @@ function tvReconnectReport(){
  });
  // ---- alt menu: 4 ana sekme + Menu sayfasi ----
  try{
-  const MAIN=['now','op','algi','lab','kesif','watch'],more=document.getElementById('more'),mb=document.getElementById('morebtn');
+  const MAIN=['now','op','algi','aisec','kesif','watch'],more=document.getElementById('more'),mb=document.getElementById('morebtn');
   const open=()=>{more.classList.add('on');requestAnimationFrame(()=>requestAnimationFrame(()=>more.classList.add('open')))};
   const close=()=>{more.classList.remove('open');setTimeout(()=>more.classList.remove('on'),260)};
   document.getElementById('tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.more){open();return}if(b.dataset.t)showTab(b.dataset.t)};
@@ -3523,7 +3524,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.15";window.APPV=APP_VER;
+  const APP_VER="14.16";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4237,6 +4238,10 @@ const IC={
   ['DİKKAT','Sermayenin %80\'inden fazlası pozisyondaysa uyarı kırmızıya döner.',1]]},
  port:{ic:'💼',c:'#818cf8',t:'Portföy',s:'Pozisyonlar ve kâr/zarar',sec:[
   ['NEDİR?','Alış ve satışlarını gir; ortalama maliyet, gerçekleşen ve açık kâr/zarar, sektör dağılımı hesaplanır. Tek bir sektör portföyün %40\'ını geçerse uyarır.']]},
+ aisec:{ic:'✨',c:'#c4b5fd',t:'Yapay zekâ seçtikleri',s:'Sistemin bugünkü verisine göre seçilen hisseler',sec:[
+  ['NEDİR?','Ana sunucu seans içinde <b>10 dakikada bir</b> bugünün sinyallerine ve o anki hacme bakar, en çok <b>8 hisse</b> seçer. Yapay zekâ her hisse için <b>neden listede</b> olduğunu tek cümleyle yazar. Liste herkeste aynıdır.'],
+  ['NASIL SEÇİLİR?',['<b>Seans içi geri alım</b> (şirket kendi hissesini aldı): 3 puan','<b>Momentum</b>: 3 puan (son günlerde de çıktıysa 1 puan eksik)','<b>Güçlü Algı</b> (Telegram\'a giden): 2 puan, diğer güçlü Algı: 1','<b>Fırsat A</b>: 1 puan · <b>şu an hacimle yükseliyor</b>: 1 puan','En az 2 puan gerekir. Tavana kilitli, Borsa tedbirli, sinyalden sonra −%1 düşmüş ya da +%3 koşmuş hisse alınmaz.','Listeye giren yerinde kalır; girdiği fiyattan −%1 düşerse çıkar. 17:30\'dan sonra yeni hisse eklenmez.']],
+  ['DİKKAT','Bu bir <b>deneme listesidir, sinyal değildir</b>. Listeye giren her hisse karneye sessizce yazılır (girdiği andaki fiyattan +%3 / −%1); işe yarayıp yaramadığı birkaç haftada görülecek. Yatırım tavsiyesi değildir.',1]]},
  kesif:{ic:'🔭',c:'#FF8A3D',t:'Keşfet',s:'Hazır hisse listeleri',sec:[
   ['NEDİR?','Belirli bir özelliği taşıyan hisseleri tek dokunuşla listeler: en çok yükselenler, ortalamaları kesişenler, yeni iş açıklayanlar, kendi hissesini geri alanlar, yılın zirvesine ya da dibine yakın olanlar… Bir hisseye dokununca röntgeni açılır.'],
   ['LİSTELER',['<b>Golden Cross / Death Cross</b>: 50 günlük ortalama, 200 günlüğü son 22 iş gününde yukarı ya da aşağı kesti. Piyasa değeri en büyük 100 hisse taranır; liste günde bir kez, açtığında hesaplanır.',
@@ -4252,8 +4257,8 @@ const IC={
  set:{ic:'⚙️',c:'#94a3b8',t:'Ayarlar',s:'Bağlantı, Telegram, cihazlar',rel:['radar'],sec:[
   ['NELER VAR?',['<b>Veri bağlantısı</b>: sunucu adresi ve bağlantı testi','<b>Telegram</b>: bot ve sohbet ayarı (yalnız ana cihazda)','<b>Ana cihaz · bağlı cihazlar</b>: kimlerin girdiği, yeni cihaz onayı, engelleme','<b>Sunucu</b>: sunucu radarı, alarm ve KAP bildirimleri','<b>Yedek</b>: ayarlarını dosyaya ya da sunucuya kaydet (yalnız ana cihazda)']]]},
 };
-const IC_GRP=[['SİNYAL VE HABER',['live','kap','mov','lab','alarm','cal']],['PİYASA',['kesif','chart','brief','reg','heat','crypto']],['BENİM',['jr','perf','port','risk','set']]];
-const IC_TD={kesif:'Hazır hisse listeleri',live:'Anlık yükselen/düşen',lab:'Sinyaller tuttu mu?',kap:'Bildirimler ve tepkisi',mov:'Gap, zirve, hacim',alarm:'Fiyat gelince haber ver',brief:'Günün kısa özeti',reg:'Trend mi, yatay mı?',heat:'Sektörler tek bakışta',cal:'Veri ve faiz günleri',crypto:'Büyük kriptolar',jr:'İşlem defteri',perf:'Kazanç/kayıp istatistiği',risk:'Kaç lot almalıyım?',port:'Pozisyon ve kâr/zarar',set:'Bağlantı, Telegram, cihaz'};
+const IC_GRP=[['SİNYAL VE HABER',['aisec','live','kap','mov','lab','alarm','cal']],['PİYASA',['kesif','chart','brief','reg','heat','crypto']],['BENİM',['jr','perf','port','risk','set']]];
+const IC_TD={aisec:'Sistemin bugün seçtikleri',kesif:'Hazır hisse listeleri',live:'Anlık yükselen/düşen',lab:'Sinyaller tuttu mu?',kap:'Bildirimler ve tepkisi',mov:'Gap, zirve, hacim',alarm:'Fiyat gelince haber ver',brief:'Günün kısa özeti',reg:'Trend mi, yatay mı?',heat:'Sektörler tek bakışta',cal:'Veri ve faiz günleri',crypto:'Büyük kriptolar',jr:'İşlem defteri',perf:'Kazanç/kayıp istatistiği',risk:'Kaç lot almalıyım?',port:'Pozisyon ve kâr/zarar',set:'Bağlantı, Telegram, cihaz'};
 window.KSTAT=null; // 2. aşama: sunucu karnesi (kaynak → {h,s})
 function icKarne(c){
  try{if(!c.k||!window.KSTAT||!KSTAT.src)return '';
@@ -6400,7 +6405,7 @@ function renderKesif(){const el=document.getElementById('kesifbody');if(!el)retu
 .krow .ksv{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px}.krow .ksv b{font-size:13.5px;font-variant-numeric:tabular-nums;color:var(--txt,#fff)}
 .krow .ksv i{font-style:normal;font-size:12.5px;font-weight:700}.krow .ksv i.up{color:var(--up,#5FD39A)}.krow .ksv i.dn{color:var(--dn,#F07A6A)}
 .kprog{height:5px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;margin:8px 2px}.kprog i{display:block;height:100%;background:var(--pir,var(--pir));transition:width .3s}
-html.cam #t-kesif{--ta:var(--pir2)}
+html.cam #t-kesif{--ta:var(--pir2)}html.cam #t-aisec{--ta:#c4b5fd}
 </style>
 <script>
 /* v13.1 röntgen: Matrix IQ'daki gibi 'Piyasa ve İşlem Bilgileri' tablosu (tarama verisinden; yeni alan yok) */
@@ -6636,7 +6641,7 @@ html.mx .ktb button.go{background:var(--pir)}
 html.mx .pst .mkpill{background:#1C1C1E}
 </style>
 <style>html.noset [data-t="set"],html.noset #t-set{display:none!important}
-html.uye [data-t="op"],html.uye [data-t="algi"],html.uye [data-t="brief"],html.uye #t-op,html.uye #t-algi,html.uye #t-brief{display:none!important}</style>
+html.uye [data-t="aisec"],html.uye #t-aisec,html.uye [data-t="op"],html.uye [data-t="algi"],html.uye [data-t="brief"],html.uye #t-op,html.uye #t-algi,html.uye #t-brief{display:none!important}</style>
 <style>/* v13.9 grafik not kartı */
 #cnote:empty{display:none}#cnote{padding:10px 12px 4px}
 .cnc{display:grid;grid-template-columns:52px minmax(0,1fr);gap:4px 12px;background:var(--panel,#1c1c1e);border:1px solid rgba(255,106,0,.32);border-radius:16px;padding:12px;cursor:pointer}
@@ -6827,6 +6832,62 @@ function navDeco(){try{document.querySelectorAll('.tab').forEach(tb=>{if(tb.id==
  tfBuild();try{indMove()}catch(e){}try{cnRender()}catch(e){}navDeco();setTimeout(navDeco,2500);
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&canBack())goBack()});
 })();
+</script>
+<style>
+/* v14.16 YAPAY ZEKÂ SEÇTİKLERİ */
+#aisecbody{padding:0 10px 14px}
+.aih{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--dim);padding:6px 2px 8px}
+.aih b{color:var(--txt,#fff);font-weight:600}.aih .dot{width:7px;height:7px;border-radius:50%;background:#c4b5fd;box-shadow:0 0 8px #c4b5fd}.aih .dot.off{background:var(--dim);box-shadow:none}
+.aic{background:var(--panel,#1C1C1E);border:1px solid var(--line,rgba(255,255,255,.08));border-radius:14px;padding:11px 12px;margin:0 0 9px;cursor:pointer}
+.aic:active{opacity:.85}
+.aic .at{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center}
+.aic .an b{font-size:15px;color:var(--txt,#fff)}.aic .an small{display:block;font-size:11.5px;color:var(--dim);margin-top:1px}
+.aic .ap{text-align:right;font-variant-numeric:tabular-nums}.aic .ap b{display:block;font-size:14px;color:var(--txt,#fff)}.aic .ap span{font-size:12px;font-weight:600}
+.aic .ak{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0 6px}
+.aic .ak i{font-style:normal;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:999px;background:rgba(196,181,253,.13);color:#d8ccff}
+.aic .ak i.w{background:rgba(255,255,255,.07);color:var(--dim)}
+.aic .ax{font-size:13px;line-height:1.45;color:var(--txt,#e5e7eb)}.aic .ax em{font-style:normal;color:#c4b5fd;margin-right:4px}
+.aic .af{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--dim);margin-top:7px}
+.aiout{margin-top:6px;font-size:12.5px;color:var(--dim)}.aiout summary{cursor:pointer;padding:6px 2px}.aiout div{display:flex;justify-content:space-between;padding:5px 4px;border-top:1px solid var(--line,rgba(255,255,255,.06))}
+.aint{font-size:11.5px;color:var(--dim);line-height:1.45;padding:10px 2px 0}
+</style>
+<script>
+/* v14.16 (25.10, Fatih) YAPAY ZEKÂ SEÇTİKLERİ — liste sunucuda (worker/src/aisec.js), herkeste aynı. Sinyal kuralı DEĞİŞMEDİ; yalnız görünüm + sessiz karne (src 'aisec').
+   Ana sunucu (yoksa ana cihaz) seansta 10 dk'da bir anlık veriyi POST /aisec-set ile yollar; telefon sekme açıkken GET /aisec (30 sn). Üyede yok. */
+var AIS={at:0,v:null,err:0,push:0};
+const AIS_K={geri:'Geri alım',mom:'Momentum',tk:'Tekrar',algt:'Güçlü Algı',alg:'Algı',fa:'Fırsat A',hac:'Hacim'};
+function aisecLoad(force){const b=srvBase(S.tvproxy);if(isUye()||!/^https:\/\//.test(b))return;if(!force&&Date.now()-AIS.at<30e3)return;AIS.at=Date.now();
+ fetch(dq(b+'/aisec')).then(r=>r.json()).then(j=>{if(j&&j.ok){AIS.v=j;AIS.err=0}else AIS.err=1;if(S.tab==='aisec')renderAisec()}).catch(()=>{AIS.err=1;if(S.tab==='aisec')renderAisec()})}
+function aisecQ(){const q={};const U=(S.uni||[]).filter(o=>o&&o.name&&o.voltl>=3e6).sort((a,b)=>b.voltl-a.voltl).slice(0,450);
+ const n=(v,k)=>v==null||!isFinite(+v)?null:Math.round(+v*k)/k;
+ for(const o of U){const lq=S.quotes&&S.quotes[o.name],px=lq&&lq.close>0?lq.close:o.close;if(!(px>0))continue;
+  q[o.name]=[n(px,1e4),n(lq&&lq.change!=null?lq.change:o.change,100),n(rvolOf(o),100),Math.round(o.voltl)]}
+ return q}
+function aisecPush(){try{if(!(BOTMODE||(!S.botAlive&&LS.get('ownTok',''))))return;if(!LS.get('ownTok',''))return;
+ const t=new Date(Date.now()+3*3600e3),m=t.getUTCHours()*60+t.getUTCMinutes(),wd=t.getUTCDay();if(wd<1||wd>5||m<605||m>=1080)return;
+ if(Date.now()-AIS.push<10*60e3||!(S.uni&&S.uni.length>50))return;const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b))return;AIS.push=Date.now();
+ fetch(qAdd(b+'/aisec-set?'+devQ(),ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({q:aisecQ()})}).then(r=>r.json()).then(j=>{if(j&&j.ok&&j.n!=null)aisecLoad(true)}).catch(()=>{})}catch(e){}}
+setInterval(()=>{try{aisecPush()}catch(e){}try{if(S.tab==='aisec'&&!document.hidden)aisecLoad()}catch(e){}},15000);
+function aisecHm(t){return new Date(t+3*3600e3).toISOString().slice(11,16)}
+function renderAisec(){const el=$('#aisecbody');if(!el)return;aisecLoad();const v=AIS.v;
+ if(isUye()){el.innerHTML='<div class="note" style="padding:14px">Bu bölüm üye sürümünde yok.</div>';return}
+ if(!v){el.innerHTML='<div class="note" style="padding:14px">'+(AIS.err?'Liste alınamadı, bağlantı bekleniyor…':'Yükleniyor…')+'</div>';return}
+ const ms=(typeof mktSt==='function')?mktSt():null,open=ms?ms.k==='open'||ms.k==='kap':true,today=new Date(Date.now()+3*3600e3).toISOString().slice(0,10),isT=v.d===today;
+ const L=v.list||[],O=v.out||[];let h='';
+ h+='<div class="aih"><span class="dot'+(open&&isT?'':' off')+'"></span>';
+ if(!v.at)h+='<span>Henüz liste yok</span>';
+ else if(open&&isT)h+='<span>Ana sunucu seçti · güncelleme <b>'+aisecHm(v.at)+'</b>'+(v.next?' · sonraki ~'+aisecHm(v.next):'')+'</span>';
+ else h+='<span>Seans kapalı · '+(isT?'bugünün':htmlEsc(String(v.d||'').split('-').reverse().join('.'))+' gününün')+' son listesi ('+aisecHm(v.at)+')</span>';
+ h+='</div>';
+ if(!L.length)h+='<div class="note" style="padding:12px 4px">'+(open?'Şu an listeye girecek hisse yok. Seans içinde 10 dakikada bir yeniden bakılır; geri alım, Momentum, güçlü Algı ya da Fırsat A sinyali gelen hisseler buraya eklenir.':'Bu gün listeye hisse girmedi.')+'</div>';
+ h+=L.map(e=>{const lq=(S.quotes[e.s]&&S.quotes[e.s].close)||(S.umap[e.s]&&S.umap[e.s].close)||e.now||null,p=lq&&e.px?(lq/e.px-1)*100:e.p;
+  let st='',sc='';if(e.hit||(p!=null&&p>=3))st='✓ +%3 geldi',sc='up';else if(p!=null&&p<=-1)st='Stopa geldi −%1',sc='dn';else st='Stop '+nf(e.px*0.99)+' · hedef '+nf(e.px*1.03);
+  const ks=(e.k||[]).map(k=>'<i'+(k==='tk'?' class="w"':'')+'>'+(AIS_K[k]||htmlEsc(k))+'</i>').join('');
+  return '<div class="aic" onclick="selectSym(\''+htmlEsc(e.s)+'\',\'bist\');showTab(\'chart\')"><div class="at">'+nAvatar(e.s)+'<div class="an"><b>'+htmlEsc(e.s)+'</b> '+wStar(e.s)+'<small>'+e.sc+' puan · '+aisecHm(e.t)+'\'de girdi · '+nf(e.px)+'</small></div><div class="ap"><b>'+(lq?nf(lq):'–')+'</b><span class="'+cls(p)+'">'+(p!=null?pct(p):'')+'</span></div></div>'+
+   '<div class="ak">'+ks+'</div><div class="ax">'+(e.ai?'<em>✨</em>':'')+htmlEsc(e.note||'')+'</div><div class="af"><span class="'+sc+'">'+st+'</span><span>Grafiği aç ›</span></div></div>'}).join('');
+ if(O.length){const why={stop:'Stop (−%1)'};h+='<details class="aiout"><summary>Bugün listeden çıkanlar ('+O.length+')</summary>'+O.slice().reverse().map(x=>'<div><span><b>'+htmlEsc(x.s)+'</b> · '+aisecHm(x.t)+'–'+aisecHm(x.at)+'</span><span class="'+cls(x.p)+'">'+(why[x.why]||htmlEsc(x.why||''))+(x.p!=null?' '+pct(x.p):'')+'</span></div>').join('')+'</details>'}
+ h+='<div class="aint">Deneme listesi, <b>sinyal değildir</b>. Seçimi sistemin kendi verisi yapar (bugünün sinyalleri + o anki hacim); yapay zekâ yalnız nedenini yazar. Listeye girenler karneye sessizce yazılır. Yatırım tavsiyesi değildir.</div>';
+ el.innerHTML=h}
 </script>
 </body>
 </html>

@@ -74,6 +74,14 @@ async function page(b, opt) {
           showTab('now'); r.anaGeriYok = !canBack(); return r; });
         await T(() => showTab('chart')); await p.waitForTimeout(300); await T(() => fsToggle(true)); await p.waitForTimeout(500); await p.screenshot({ path: path.join(OUT, 'grafik-tamekran.png') }); await T(() => fsToggle(false));
         ok('Grafik sade: tek satır not, tek sıra araç, göstergeler/yorum pencerede, grafik büyük; tam ekran; her ekranda geri', g && Object.values(g).every(Boolean), JSON.stringify(g)); }
+      // v14.16: Yapay zekâ seçtikleri sekmesi (alt menüde Karne yerine)
+      { await T(() => { document.querySelector('#tabs [data-t="aisec"]').click(); }); await p.waitForTimeout(1200); await p.screenshot({ path: path.join(OUT, 'ai-sectikleri.png') });
+        const a = await T(() => { const b = document.querySelector('#tabs [data-t="aisec"] .lbl'), body = document.getElementById('aisecbody');
+          const q = (S.uni = [{ name: 'ZZTST', close: 100, change: 4, voltl: 5e7, relative_volume_10d_calc: 2 }], aisecQ());
+          return { tab: S.tab === 'aisec', kart: body.querySelectorAll('.aic').length === 2, cip: /Momentum/.test(body.innerText) && /Hacim/.test(body.innerText), ai: !!body.querySelector('.aic .ax em'),
+            cikan: /listeden çıkanlar \(1\)/.test(body.innerText), uyari: /sinyal değildir/.test(body.innerText), baslik: !!document.querySelector('#t-aisec .sechd'), geri: !!document.querySelector('#t-aisec .bkb'),
+            sigar: b && b.scrollWidth <= b.clientWidth + 2, q: q.ZZTST && q.ZZTST[0] === 100 && q.ZZTST[3] === 5e7 }; });
+        ok('AI Seçtikleri: alt menüden açılır, kartlar + etiketler + çıkanlar, yazı sığıyor, anlık veri paketi', a && Object.values(a).every(Boolean), JSON.stringify(a)); }
       // v14.12: canlı liste yenileme seçimi (saf fonksiyon)
       ok('canlı liste: yer yoksa korunmayan en düşük hacimliler çıkar, korunanlar kalır', await T(() => {
         const cur = ['A', 'B', 'C', 'D', 'E'], vol = x => ({ A: 50, B: 1, C: 5, D: 2, E: 9 })[x];
@@ -153,8 +161,8 @@ async function page(b, opt) {
       ok('Otomatik taramada derin kurulumlar (geri çekilme, Keskin VWAP, POC) karneye yazılır', dfx.al.join() === 'pull,kvw,poc' && dfx.sat.length === 0, JSON.stringify(dfx));
       const tgx = await T(() => ({ c: tgCard({ ic: '🟢', dir: 'AL', sym: 'THYAO', src: 'Fırsat · A notu', name: 'Türk <Hava>', px: 312.5, ch: 1.41, tp: 312.5 * 1.03, sl: 312.5 * 0.99, why: ['VWAP dönüşü'], more: 'Hacim profili' }), k: tgKb('THYAO', 123), p: tgPlain('<b>A</b>\n<blockquote>x &amp; y</blockquote>z') }));
       ok('Telegram kart düzeni: fiyat kutusu, kopyalanır rakam, katlanır ayrıntı, düğmeler, düz metin yedeği', /<blockquote>Giriş   <code>312,50<\/code>/.test(tgx.c) && /Hedef   <code>321,88<\/code>   \+%3\n/.test(tgx.c) && /−%1<\/blockquote>/.test(tgx.c) && /Türk &lt;Hava&gt;/.test(tgx.c) && /<blockquote expandable>/.test(tgx.c) && tgx.k.inline_keyboard[1].length === 2 && /BIST%3ATHYAO/.test(tgx.k.inline_keyboard[1][1].url) && /t\.me\/BistPusulaBot\?startapp=THYAO$/.test(tgx.k.inline_keyboard[0][0].url) && tgx.p === 'A\nx & y\nz', JSON.stringify(tgx));
-      const pus = await T(() => { renderNow(); return { d: nDial(), now: document.getElementById('nowbody').innerHTML.slice(0, 4000), tab: !!document.querySelector('#tabs button[data-t="lab"]'), chart: !!document.querySelector('#more [data-t="chart"]') }; });
-      ok('Pusula ana sayfa: kadran, alt menüde Karne, Grafik menüde', /class="pcomp"/.test(pus.d) && /class="phero"/.test(pus.now) && pus.tab && pus.chart, JSON.stringify({ tab: pus.tab, chart: pus.chart }));
+      const pus = await T(() => { renderNow(); return { d: nDial(), now: document.getElementById('nowbody').innerHTML.slice(0, 4000), tab: !!document.querySelector('#tabs button[data-t="aisec"]') && !document.querySelector('#tabs button[data-t="lab"]') && !!document.querySelector('#more [data-t="lab"]'), chart: !!document.querySelector('#more [data-t="chart"]') }; });
+      ok('Pusula ana sayfa: kadran, alt menüde AI Seçtikleri, Karne ve Grafik menüde', /class="pcomp"/.test(pus.d) && /class="phero"/.test(pus.now) && pus.tab && pus.chart, JSON.stringify({ tab: pus.tab, chart: pus.chart }));
       const ak = await T(() => { const oK = window.KSTAT, oJ = S.jr, oM = S.mkt; const td = todayStr();
         window.KSTAT = { _t: Date.now(), gun: 10, src: { tavan: { n: 134, h: 45, s: 81, r0: 2 }, 'firsat-B': { n: 600, h: 56, s: 350, r0: 120 } }, up: { tavan: { n: 98, h: 32, s: 59, r0: 0 }, 'firsat-B': { n: 247, h: 24, s: 145, r0: 44 } }, dn: { 'kap-geri': { n: 86, h: 13, s: 59, r0: 5.6 }, tavan: { n: 36, h: 10, s: 22, r0: 1.7 }, 'firsat-B': { n: 361, h: 32, s: 211, r0: 75 }, sessiz: { n: 9, h: 0, s: 6, r0: 1 } } };
         S.mkt = Object.assign({}, oM, { XU100: { c: 10000, ch: -1.2 } });
@@ -261,9 +269,9 @@ async function page(b, opt) {
       const u = await p.evaluate(async () => { TVL.tok = null; TVL.tokAt = 0; const t = await tvToken(); renderNow(); sigToast({ sym: 'THYAO', src: 'algi' });
         return { t, uye: TVL.uye, err: TVL.err, home: /Üye sürümü/.test(document.getElementById('nowbody').innerText), toast: document.getElementById('sigtoast').classList.contains('on') }; });
       ok('Üye sürümü: gecikmeli akış, hata yok, ana sayfada not, anlık sinyal kartı yok', u.t === '' && u.uye === 1 && !u.err && u.home && !u.toast, JSON.stringify(u));
-      const v = await p.evaluate(() => { showTab('op'); const a = S.tab; showTab('algi'); const b2 = S.tab; showTab('lab'); const c = S.tab;
+      const v = await p.evaluate(() => { showTab('op'); const a = S.tab; showTab('algi'); const b2 = S.tab; showTab('lab'); const c = S.tab; showTab('aisec'); const d2 = S.tab;
         const vis = q => { const e = document.querySelector('#tabs [data-t="' + q + '"]'); return !!e && getComputedStyle(e).display !== 'none'; };
-        return { a, b2, c, cls: document.documentElement.classList.contains('uye'), op: vis('op'), algi: vis('algi'), lab: vis('lab') }; });
+        return { a, b2, c, cls: document.documentElement.classList.contains('uye'), op: vis('op'), algi: vis('algi'), lab: !!document.querySelector('#more [data-t="lab"]'), d2, ai: vis('aisec') }; });
       const ix = await p.evaluate(async () => { const asked = []; window.tvScan = async (m, b) => { asked.push(m);
           if (m === 'global') return { data: [{ d: ['USDTRY', 41.9, 0.1] }] };
           if (m === 'turkey') return { data: b.symbols.tickers.map(t => ({ d: [t.split(':')[1], t.endsWith('XU100') ? 10850 : 100, -1.2] })) };
@@ -274,7 +282,7 @@ async function page(b, opt) {
         const kapali = R(); PUBLIC_OPEN = true; window.__inv = ''; const acik = R(); PUBLIC_OPEN = false; renderNow(); return { kapali, acik }; });
       ok('Davet kartı: herkese açık sürüm kapalıyken yok; açıkken kişiye özel bağlantıyla paylaşım', !inv.kapali.card && inv.acik.card && /t\.me\/share\/url\?url=https:\/\/t\.me\/BistPusulaBot\?startapp=r_99887766/.test(inv.acik.link), JSON.stringify(inv));
       ok('BIST 100 genel taramada yoksa Türkiye taramasından alınıyor', ix.c === 10850 && ix.usd === 41.9 && ix.asked.includes('turkey'), JSON.stringify(ix));
-      ok('Üye görünümü (B): Fırsat/Algı sekmeleri gizli ve açılmıyor, Karne açık', v.cls && v.a === 'now' && v.b2 === 'now' && v.c === 'lab' && !v.op && !v.algi && v.lab, JSON.stringify(v));
+      ok('Üye görünümü (B): Fırsat/Algı sekmeleri gizli ve açılmıyor, Karne açık', v.cls && v.a === 'now' && v.b2 === 'now' && v.c === 'lab' && !v.op && !v.algi && v.lab && v.d2 === 'now' && !v.ai, JSON.stringify(v));
       ok('üye sayfasında hata yok', !errs.length, errs.slice(0, 2).join(' | ')); await p.close(); }
     // v13.0 fiyat aralığı + dönem getirisi + fiyat vurgusu + Keşfet
     { const p = await b.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));

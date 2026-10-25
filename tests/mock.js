@@ -40,6 +40,12 @@ function install(page, opt = {}) {
     if (u.includes('/pair-create')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, code: 'ABCDE-FGH23', exp: Date.now() + 9e5 }) });
     if (u.includes('/aiyorum')) { let b = {}; try { b = JSON.parse(r.request().postData() || '{}'); } catch (e) {} globalThis.__AI_REQ = b;
       return r.fulfill({ contentType: 'application/json', body: JSON.stringify(b.f && b.f.px > 0 ? { ok: true, txt: b.s + ' yükseliş düzeninde, fiyat günün ortalamasının üstünde. Direnç aşılırsa hareket hızlanabilir.', at: Date.now() } : { ok: false, err: 'yorum için yeterli veri yok' }) }); }
+    if (u.includes('/aisec-set')) { globalThis.__AISEC_SET = (globalThis.__AISEC_SET || 0) + 1; return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, n: 2, yeni: 0, ai: 0 }) }); }
+    if (u.includes('/aisec')) { const now = Date.now(), d = new Date(now + 3 * 3600e3).toISOString().slice(0, 10);
+      return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, d, at: now - 120e3, next: now + 480e3,
+        list: [{ s: 'ASELS', sc: 4, k: ['mom', 'hac'], px: 100, t: now - 3600e3, now: 102, p: 2, note: 'Momentum taraması seçti ve hisse bugün +4% yükselirken hacim normalin 2 katı.', ai: 1 },
+          { s: 'THYAO', sc: 2, k: ['algt'], px: 300, t: now - 600e3, now: 301, p: 0.33, note: 'Algı radarı güçlü ateşledi.' }],
+        out: [{ s: 'SASA', px: 5, t: now - 7200e3, at: now - 1800e3, why: 'stop', p: -1.2 }] }) }); }
     if (u.includes('/endeks')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, at: 1, x100: [], x30: [] }) });
     if (u.includes('/tedbir')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, map: {} }) });
     if (u.includes('/yorum')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, list: [{ t: Date.now() - 600000, slot: 'acilis', txt: 'Endeks **yatay** başladı.\n• Bankalar güçlü\n• <img src=x onerror=window.__XSS=1> deneme' }, { t: Date.now() - 86400000, slot: 'kapanis', txt: 'Dünkü yorum.' }] }) });

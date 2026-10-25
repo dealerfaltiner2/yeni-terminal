@@ -192,7 +192,7 @@ export async function kapPoll(env, h) {
   for (const r0 of rows.filter(x => isNew.has(x.idx))) {
     if (r0.onem < 1 || !r0.syms || r0.tip === 'devre') continue; // devre kesici haber değil, hareketin sonucu → karneye yazılmaz
     const te = kapEntry(r0.t);
-    for (const s of r0.syms.split(',').slice(0, 2)) await sigAdd(env, { src: 'kap-' + r0.tip, sym: s, dir: 'AL', px: null, sc: r0.onem, t: te, meta: { idx: r0.idx, yon: r0.yon, pub: r0.t } });
+    for (const s of r0.syms.split(',').slice(0, 2)) await sigAdd(env, { src: 'kap-' + r0.tip, sym: s, dir: 'AL', px: null, sc: r0.onem, t: te, meta: { idx: r0.idx, yon: r0.yon, pub: r0.t, ...(r0.geri ? { g: 1 } : {}) } });   // v14.16: g = seans içi geri alım kartı (Telegram kuralı) → aisec.js
   }
   // Seans içindeyse fiyatı ekle (tek tarama isteği)
   let Q = {};
