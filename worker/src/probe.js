@@ -21,7 +21,10 @@ export async function probe(env, scanRaw, UA) {
       const r = await fetch('https://www.kap.org.tr/tr/api/disclosure/members/byCriteria', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', Referer: 'https://www.kap.org.tr/tr/bildirim-sorgu', Origin: 'https://www.kap.org.tr', 'User-Agent': UA },
         body: JSON.stringify({ fromDate: '2025-10-15', toDate: '2025-10-15', mkkMemberOidList: [], subjectList: [] }), signal: AbortSignal.timeout(10000) });
       const t = await r.text(); return r.status + ' len=' + t.length + ' yeniİş=' + (t.match(/Yeni İş İlişkisi/g) || []).length + ' | ' + t.slice(0, 900); }],
-    ...['earnings_release_next_date', 'earnings_release_date', 'ex_dividend_date_upcoming', 'dividends_yield_current', 'Recommend.All'].map(c => ['col_' + c, () => sc('turkey', ['BIST:THYAO', 'BIST:ASELS', 'BIST:EREGL'], ['name', c])])
+    ...['earnings_release_next_date', 'earnings_release_date', 'ex_dividend_date_upcoming', 'dividends_yield_current', 'Recommend.All'].map(c => ['col_' + c, () => sc('turkey', ['BIST:THYAO', 'BIST:ASELS', 'BIST:EREGL'], ['name', c])]),
+    // 25.10: endeks üyeleri tarama 'symbolset' ile alınabiliyor mu? (BIST 100 / BIST 30 güncel listesi)
+    ...['XU100', 'XU030'].map(ix => ['set_' + ix, async () => { const r = await scanRaw(env, JSON.stringify({ symbols: { symbolset: ['SYML:BIST;' + ix] }, columns: ['name', 'change'], range: [0, 150] }), 'turkey'); const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {}
+      return r.status + ' n=' + (j ? j.totalCount : '?') + ' | ' + (j && j.data ? j.data.map(x => String(x.s).split(':').pop()).join(',') : t.slice(0, 400)); }])
   ];
   const i = parseInt(q.v, 10) || 0;
   if (i >= L.length) { await env.BT.prepare("DELETE FROM meta WHERE k = 'probe_req'").run(); return null; }
