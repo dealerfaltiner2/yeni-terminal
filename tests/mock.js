@@ -41,6 +41,11 @@ function install(page, opt = {}) {
     if (u.includes('/aiyorum')) { let b = {}; try { b = JSON.parse(r.request().postData() || '{}'); } catch (e) {} globalThis.__AI_REQ = b;
       return r.fulfill({ contentType: 'application/json', body: JSON.stringify(b.f && b.f.px > 0 ? { ok: true, txt: b.s + ' yükseliş düzeninde, fiyat günün ortalamasının üstünde. Direnç aşılırsa hareket hızlanabilir.', at: Date.now() } : { ok: false, err: 'yorum için yeterli veri yok' }) }); }
     if (u.includes('/aisec-set')) { globalThis.__AISEC_SET = (globalThis.__AISEC_SET || 0) + 1; return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, n: 2, yeni: 0, ai: 0 }) }); }
+    if (u.includes('/haber')) { const now = Date.now();   // v14.19 Haber Merkezi
+      return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, at: now, st: { at: now, err: { aa: 'HTTP 403' } }, list: [
+        { id: 'ppk:1', t: now - 600e3, src: 'ppk', ad: 'TCMB · faiz kararı', title: 'Faiz Oranlarına İlişkin Basın Duyurusu', txt: '', syms: '', yon: 0, onem: 3, url: 'https://www.tcmb.gov.tr/x' },
+        { id: 'kap:5', t: now - 1200e3, src: 'kap', ad: 'KAP', title: 'Yeni İş İlişkisi', txt: 'Sözleşme imzalandı <b>', syms: 'ZZHAB', yon: 1, onem: 3, url: 'https://www.kap.org.tr/tr/Bildirim/5' },
+        { id: 'bist:6', t: now - 90000e3, src: 'bist', ad: 'Borsa İstanbul', title: 'Borsa duyurusu', txt: '', syms: 'ZZOLD', yon: 0, onem: 2, url: '' }] }) }); }
     if (u.includes('/aisec')) { const now = Date.now(), d = new Date(now + 3 * 3600e3).toISOString().slice(0, 10);
       return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, d, at: now - 120e3, next: now + 480e3,
         list: [{ s: 'ASELS', sc: 4, k: ['mom', 'hac'], px: 100, t: now - 3600e3, now: 102, p: 2, note: 'Momentum taraması seçti ve hisse bugün +4% yükselirken hacim normalin 2 katı.', ai: 1 },

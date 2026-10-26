@@ -28,6 +28,7 @@ import { errAdd, errLogRoute } from './err.js';
 import { botAlive, botBeat, botWatch, pairCreate, pairUse } from './bot.js';
 import { kapPoll, kapMorning, kapList } from './kap.js';
 import { kesifData } from './kesif.js';
+import { haberPoll, haberFromKap, haberRoute } from './haber.js';
 import { tgBotUpdate, tgHookEnsure } from './tgbot.js';
 import { kanalAm, kanalPm, kanalOnce, kanalKap, kanalWeek, kanalLinks } from './kanal.js';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
@@ -723,7 +724,7 @@ const OWN_ROUTES = new Set(['aisec-set', 'algirows-set', 'uyeler', 'sync', 'pref
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
 const DEV_GRACE = Date.UTC(2026, 9, 6); // 6 Ekim 2026
-const DATA_ROUTES = new Set(['algirows', 'bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key', 'paper', 'sigsym', 'yorum', 'tedbir', 'kesif', 'endeks', 'aiyorum', 'aisec']);
+const DATA_ROUTES = new Set(['algirows', 'bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key', 'paper', 'sigsym', 'yorum', 'tedbir', 'kesif', 'endeks', 'aiyorum', 'aisec', 'haber']);
 const devCache = new Map();
 let ownerCache = { v: undefined, at: 0 }, devReady = false;
 async function ownerTok(env) {
@@ -987,6 +988,7 @@ export default {
       case 'algirows': return algiRowsGet(env, json, anon);
       case 'aisec-set': if (request.method === 'POST') return aisecSet(request, env, json); break;   // v14.16 Yapay zekâ seçtikleri
       case 'aisec': return aisecGet(env, json, anon);
+      case 'haber': return haberRoute(env, json, anon);   // v14.19 Haber Merkezi
       case 'flow': return flowRoute(request, env, url, json);
       case 'sig-eval': return json(url.searchParams.get('sum') === '1' ? await sigSummary(env, tgSend, kvGet, esc, nf, true) : await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf));
       case 'test': return test(env, url);
@@ -1049,12 +1051,15 @@ export default {
         kr = await kapPoll(env, { UA, tgSend, kvGet, esc, scanRaw, pushSend });
         try { await env.BT.prepare("DELETE FROM meta WHERE k = 'kap_kill'").run(); } catch (e) {}
         if (kr && kr.yeni) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_st', ?)").bind(JSON.stringify({ at: Date.now(), yeni: kr.yeni, telegram: kr.telegram })).run();
+        if (kr && kr.hab && kr.hab.length) try { await haberFromKap(env, { UA, tgSend, kvGet, esc }, kr.hab); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'haber (KAP): ' + String(e && e.message || e).slice(0, 200), 'haberFromKap'); }   // v14.19
         if (pubOpen() && kr && kr.pub && kr.pub.length) try { await kanalKap(env, { kvGet, esc }, kr.pub); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'kanal KAP: ' + String(e && e.message || e).slice(0, 200), 'kanalKap'); }   // v12.5
       } catch (e) { try { await env.BT.prepare("DELETE FROM meta WHERE k = 'kap_kill'").run(); } catch (e2) {} await errAdd(env, 'sunucu', 'hata', 'KAP: ' + String(e && e.message || e).slice(0, 200), 'kapPoll'); try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('kap_err', ?)").bind(new Date().toISOString() + ' ' + String(e && e.message || e).slice(0, 300)).run(); } catch {} }
       try { mr = await kapMorning(env, { tgSend, kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'KAP sabah özeti: ' + String(e && e.message || e).slice(0, 200), 'kapMorning'); }
       try { const n = (kr && kr.telegram || 0) + (mr && mr.ozet ? 1 : 0); if (n) { const st = await kvGet(env, 'st', {}); if (st.cnt) { st.cnt.kap = (st.cnt.kap || 0) + n; await kvPut(env, 'st', st); } } } catch (e) {}
     };
     const sigJob = async () => {
+      // v14.19 HABER MERKEZİ: TCMB + Anadolu Ajansı RSS, her 2 dakikada (seans içinde de) — karne ölçümünden ÖNCE, hafif
+      try { await haberPoll(env, { UA, tgSend, kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'haber: ' + String(e && e.message || e).slice(0, 200), 'haberPoll'); }
       const T = trNow(); const inSess = T.wd >= 1 && T.wd <= 5 && T.m >= 590 && T.m < 1095;
       if (!inSess) {
         const t0 = Date.now(); let sr;

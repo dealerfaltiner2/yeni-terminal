@@ -4,6 +4,7 @@ import { tgKb, tgPct } from './tgfmt.js';
 // yazılır; seans sonrası tepkisi ölçülür. Gece gelen önemliler 09:30'da tek mesajda özetlenir.
 import { sigAdd, trDay } from './sig.js';
 import { tedbirAdd } from './tedbir.js';
+import { isSpkBulten, isBistDuyuru } from './haber.js';
 const TRMS = 3 * 3600e3;
 const KAP_URL = 'https://www.kap.org.tr/tr/api/disclosure/members/byCriteria';
 const trParts = ms => { const d = new Date(ms + TRMS); return { wd: d.getUTCDay(), m: d.getUTCHours() * 60 + d.getUTCMinutes(), day: d.toISOString().slice(0, 10) }; };
@@ -214,7 +215,9 @@ export async function kapPoll(env, h) {
   // v12.5: herkese açık kanal adayı — seans içi (10:00–18:00), TAZE, önem 3, BIST 100 şirketi; geri alım/içeriden/devre hariç (kanal.js kanalKap süzer ve günde en çok 3 gönderir)
   const pub = inSess || (p.wd >= 1 && p.wd <= 5 && p.m >= 600 && p.m < 1080) ? rows.filter(x => isNew.has(x.idx) && now - x.t <= 15 * 60e3 && x.onem >= 3 && x.syms && big.has(x.syms.split(',')[0]) && !['geri', 'icerden', 'devre'].includes(x.tip))
     .map(x => ({ idx: x.idx, t: x.t, syms: x.syms, subj: x.subj, summ: x.summ, tip: x.tip, yon: x.yon, q: Q[x.syms.split(',')[0]] || null })) : [];
-  return { yeni: rows.length, telegram: sent, pub };
+  // v14.19 Haber Merkezi: SPK bülteni ve Borsa İstanbul duyuruları (KAP'tan) → haber.js haberFromKap
+  const hab = rows.filter(x => isNew.has(x.idx) && (isSpkBulten(x) || isBistDuyuru(x))).map(x => ({ idx: x.idx, t: x.t, syms: x.syms, title: x.title, subj: x.subj, summ: x.summ }));
+  return { yeni: rows.length, telegram: sent, pub, hab };
 }
 // Sabah 09:30 (hafta içi): gece biriken önemli KAP'lar tek mesajda
 export async function kapMorning(env, h) {

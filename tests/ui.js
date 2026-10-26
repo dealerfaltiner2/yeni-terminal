@@ -82,6 +82,16 @@ async function page(b, opt) {
             cikan: /listeden çıkanlar \(1\)/.test(body.innerText), uyari: /sinyal değildir/.test(body.innerText), baslik: !!document.querySelector('#t-aisec .sechd'), geri: !!document.querySelector('#t-aisec .bkb'),
             sigar: b && b.scrollWidth <= b.clientWidth + 2, e20: body.querySelectorAll('.aic .ae').length === 2, q: q.ZZTST && q.ZZTST[0] === 100 && q.ZZTST[3] === 5e7 }; });
         ok('AI Seçtikleri: alt menüden açılır, kartlar + etiketler + çıkanlar, yazı sığıyor, anlık veri paketi', a && Object.values(a).every(Boolean), JSON.stringify(a)); }
+      // v14.19: Haber Merkezi (menüden) + Algı için haber notu
+      { await T(() => { HAB.list = null; HAB.at = 0; showTab('haber'); }); await p.waitForTimeout(1800); await T(() => renderHaber()); await p.screenshot({ path: path.join(OUT, 'haber-merkezi.png') });
+        const hb = await T(() => { const body = document.getElementById('haberbody'), t = body.innerText;
+          const n1 = haberNote('ZZHAB'), n2 = haberNote('ZZOLD'), n3 = haberNote('YOKYOK');
+          document.querySelector('#haberseg [data-f="genel"]').click(); const genel = !/ZZHAB/.test(body.innerText) && /Faiz/.test(body.innerText);
+          document.querySelector('#haberseg [data-f="hepsi"]').click();
+          return { tab: S.tab === 'haber', kart: body.querySelectorAll('.habrow').length === 3, kaynak: /TCMB/.test(t) && /KAP/.test(t), kacis: body.innerHTML.includes('imzalandı &lt;b&gt;'),
+            uyari: /Anadolu Ajansı/.test(t) && /ulaşılamayan/.test(t), genel, menu: !!document.querySelector('#more [data-t="haber"]'), baslik: !!document.querySelector('#t-haber .sechd'),
+            not: /^📰 Haber \d\d:\d\d · KAP: Yeni İş/.test(n1) && n2 === '' && n3 === '' }; });
+        ok('Haber Merkezi: menüden açılır, kaynaklar + filtre, çöken kaynak uyarısı, Algı için 16 saatlik haber notu', hb && Object.values(hb).every(Boolean), JSON.stringify(hb)); }
       // v14.18: Algı satırları blok dışından görülebiliyor (eskiden 'AL is not defined' sessizce yutuluyordu → motor radar listesini hiç yollamadı)
       ok('canlı liste ve sunucu radarı Algı satırlarını görüyor', await T(() => { const o = S.algi.rows; S.algi.rows = [{ s: 'ZZALG', sc: 80, stage: 'ates', f: {}, o: {} }];
         let k; try { k = tvKeep(); } finally { S.algi.rows = o; } return k.includes('ZZALG'); }));
