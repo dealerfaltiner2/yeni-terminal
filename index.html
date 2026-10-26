@@ -2921,8 +2921,8 @@ function tvKeep(){const k=new Set(['XU100']);
  try{if(S.mode==='bist'&&S.sym)k.add(S.sym)}catch(e){}
  try{if(typeof W==='function')(W()||[]).slice(0,40).forEach(x=>k.add(String(x).toUpperCase()))}catch(e){}
  try{((window.ENDX&&ENDX.x30)||[]).forEach(x=>k.add(x))}catch(e){}
- try{(AL.rows||[]).slice(0,30).forEach(r=>r&&r.s&&k.add(r.s))}catch(e){}
- try{const dk=dayKey(Date.now());(AL.log||[]).forEach(e=>{if(e&&e.d===dk&&e.s)k.add(e.s)})}catch(e){}
+ try{((S.algi&&S.algi.rows)||[]).slice(0,30).forEach(r=>r&&r.s&&k.add(r.s))}catch(e){}   // v14.18: AL Algı bloğunun içinde yerel — dışarıdan S.algi
+ try{const dk=dayKey(Date.now());((S.algi&&S.algi.log)||[]).forEach(e=>{if(e&&e.d===dk&&e.s)k.add(e.s)})}catch(e){}
  try{((window.ALS&&ALS.list)||[]).forEach(e=>e&&e.sym&&k.add(e.sym))}catch(e){}
  return [...k].filter(tvSymOk)}
 function tvMovers(){   // o an hareketlenen: günlük hacim ≥10 Mn TL, değişim ±%3…±%9,5 (tavan/tabana kilitliler hariç), göreli hacim ≥1,5 → hacme göre en çok 40
@@ -3524,7 +3524,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.17";window.APPV=APP_VER;
+  const APP_VER="14.18";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4909,7 +4909,7 @@ function alDay(d){d=String(d||'');if(d&&d>=alPrevDay(0))d='';ALS.day=d;if(d&&!AL
    telefon (Ana sunucu canlıyken) /algirows'tan okur. Sunucu listesi 90 sn'den eskiyse telefon kendi hesabını gösterir (o zaman 'AL sinyali' yazmaz). */
 var ALR={at:0,push:0,v:null};
 function alRowsPush(){if(!BOTMODE||Date.now()-ALR.push<20e3)return;const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||!LS.get('ownTok',''))return;ALR.push=Date.now();
- const rows=(AL.rows||[]).slice(0,30).map(x=>({s:x.s,sc:x.sc,stage:x.stage||'',g:x.g||0,f:x.f||{},o:{voltl:x.o&&x.o.voltl}}));
+ const rows=((S.algi&&S.algi.rows)||[]).slice(0,30).map(x=>({s:x.s,sc:x.sc,stage:x.stage||'',g:x.g||0,f:x.f||{},o:{voltl:x.o&&x.o.voltl}}));
  fetch(qAdd(b+'/algirows-set?'+devQ(),ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({rows,rot:{n:Object.keys(TVL.syms).length,add:ROT.add,rm:ROT.rm,last:ROT.last}})}).catch(()=>{})}
 function alRowsLoad(){if(BOTMODE||isUye()||!S.botAlive)return;const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||Date.now()-ALR.at<12e3)return;ALR.at=Date.now();
  fetch(dq(b+'/algirows')).then(r=>r.json()).then(j=>{if(j&&j.ok&&Array.isArray(j.rows)){ALR.v={at:j.at||0,rows:j.rows};if(S.tab==='algi'&&typeof renderAlgi==='function')try{renderAlgi()}catch(x){}}}).catch(()=>{})}

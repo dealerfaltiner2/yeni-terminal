@@ -82,6 +82,9 @@ async function page(b, opt) {
             cikan: /listeden çıkanlar \(1\)/.test(body.innerText), uyari: /sinyal değildir/.test(body.innerText), baslik: !!document.querySelector('#t-aisec .sechd'), geri: !!document.querySelector('#t-aisec .bkb'),
             sigar: b && b.scrollWidth <= b.clientWidth + 2, e20: body.querySelectorAll('.aic .ae').length === 2, q: q.ZZTST && q.ZZTST[0] === 100 && q.ZZTST[3] === 5e7 }; });
         ok('AI Seçtikleri: alt menüden açılır, kartlar + etiketler + çıkanlar, yazı sığıyor, anlık veri paketi', a && Object.values(a).every(Boolean), JSON.stringify(a)); }
+      // v14.18: Algı satırları blok dışından görülebiliyor (eskiden 'AL is not defined' sessizce yutuluyordu → motor radar listesini hiç yollamadı)
+      ok('canlı liste ve sunucu radarı Algı satırlarını görüyor', await T(() => { const o = S.algi.rows; S.algi.rows = [{ s: 'ZZALG', sc: 80, stage: 'ates', f: {}, o: {} }];
+        let k; try { k = tvKeep(); } finally { S.algi.rows = o; } return k.includes('ZZALG'); }));
       // v14.12: canlı liste yenileme seçimi (saf fonksiyon)
       ok('canlı liste: yer yoksa korunmayan en düşük hacimliler çıkar, korunanlar kalır', await T(() => {
         const cur = ['A', 'B', 'C', 'D', 'E'], vol = x => ({ A: 50, B: 1, C: 5, D: 2, E: 9 })[x];
