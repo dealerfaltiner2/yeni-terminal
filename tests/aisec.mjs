@@ -30,6 +30,11 @@ ok('yeni aday boş yere girer, eski sıralama korunur', S2.includes('YENI') && S
 ok('giriş fiyatından % ve hacim etiketi güncellenir', P2.list.find(e => e.s === 'GERI1').p === 3.75 && P2.list.find(e => e.s === 'GERI1').hit === 1, P2.list.find(e => e.s === 'GERI1'));
 const P3 = aisecPick(rows2, q2, { list: P2.list, out: P2.out }, {}, T + 20 * 60e3);
 ok('aynı gün çıkan hisse tekrar girmez', !P3.list.some(e => e.s === 'MOM1'));
+// v14.20: tabana kilitli hisse girmez; listedeyken tabana kilitlenirse çıkar
+const Pt = aisecPick([R('kap-geri', 'TBN', null, { g: 1 })], { TBN: [6.23, -9.97, 1, 2e7] }, null, {}, T);
+ok('tabana kilitli hisse listeye girmez (HRKET vakası)', Pt.list.length === 0, Pt.list);
+const Pt2 = aisecPick([R('kap-geri', 'TBN', null, { g: 1 })], { TBN: [6.2, -9.9, 1, 2e7] }, { list: [{ s: 'TBN', px: 6.23, t: T - 60e3, k: ['geri'], sc: 3 }], out: [] }, {}, T + 600e3);
+ok('listedeyken tabana kilitlenen çıkar (neden: taban)', Pt2.list.length === 0 && Pt2.out.some(x => x.s === 'TBN' && x.why === 'taban'), Pt2);
 const big = Array.from({ length: 12 }, (_, i) => R('momentum', 'M' + i, 10, {})), qb = Object.fromEntries(big.map(r => [r.sym, [10, 1, 1, 1e7]]));
 ok('en çok 8 hisse', aisecPick(big, qb, null, {}, T).list.length === 8);
 ok('17:30\'dan sonra yeni giriş yok', aisecPick(big, qb, null, {}, Date.parse('2026-10-26T14:45:00Z')).list.length === 0);

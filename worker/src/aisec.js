@@ -1,7 +1,7 @@
 // v14.16 (25.10, Fatih: 'alt menüye Yapay zekâ seçtikleri; sistem verilerine göre çıkan hisseler, seans içinde yenilensin') — YALNIZ GÖRÜNÜM + SESSİZ ÖLÇÜM.
 // Listeyi SİSTEMİN KENDİ VERİSİ seçer (yeni sinyal kuralı yok): bugünün karnede en iyi duran kaynakları + o anki hacim. Yapay zekâ yalnız 'neden listede' cümlesini yazar.
 // Puan: seans içi geri alım 3 · Momentum 3 (tekrar −1) · Algı Telegram'a giden 2 / güçlü 1 · Fırsat A 1 · şu an hacimle yükseliyor 1. En az 2 puan, en az bir sinyal kaynağı.
-// Elenir: tavana kilitli (≥ +%9,5), Borsa tedbiri, ilk sinyalden −%1 düşmüş (stop) ya da +%3 koşmuş (geç). Listede olan YERİNDE KALIR (stop gelene kadar); boş yere en yüksek puanlı girer, en çok 8.
+// Elenir: tavana ya da tabana kilitli (±%9,5), Borsa tedbiri, ilk sinyalden −%1 düşmüş (stop) ya da +%3 koşmuş (geç). Listede olan YERİNDE KALIR (stop gelene kadar); boş yere en yüksek puanlı girer, en çok 8.
 // Listeye giren her hisse karneye src 'aisec' (sessiz: Telegram/karne mesajı yok; Karne ekranı + bot yarışı). Giriş fiyatı = listeye girdiği andaki fiyat.
 // Akış: Ana sunucu (yoksa ana cihaz) 10 dk'da bir POST /aisec-set {q: {SYM: [fiyat, değişim%, göreli hacim, işlem TL]}} → meta 'aisec'. Telefonlar GET /aisec (DATA).
 // Dakikalık işe sorgu YOK. Yeni giren hisselerin notu Workers AI (aiyorum.js kotası ai_n ortak), yazamazsa düz cümle.
@@ -50,6 +50,7 @@ export function aisecPick(rows, q, prev, tb, now) {
   for (const e of prev.list || []) {
     const x = qOf(q, e.s), c = C.get(e.s);
     if (x && x.px <= e.px * 0.99) { out.push({ s: e.s, px: e.px, t: e.t, at: now, why: 'stop', p: +((x.px / e.px - 1) * 100).toFixed(2) }); outS.add(e.s); continue; }
+    if (x && x.ch != null && x.ch <= -9.5) { out.push({ s: e.s, px: e.px, t: e.t, at: now, why: 'taban', p: +((x.px / e.px - 1) * 100).toFixed(2) }); outS.add(e.s); continue; }   // v14.20: tabana kilitli → çıkar
     const n = { ...e };
     if (c) { const ks = new Set([...(e.k || []).filter(k => k !== 'hac'), ...c.k]); if (isMover(x)) ks.add('hac'); n.k = [...ks]; n.sc = score({ k: ks, w: { ...c.w, hac: 1 } }); }
     if (x) { n.now = x.px; n.p = +((x.px / e.px - 1) * 100).toFixed(2); if (x.px >= e.px * 1.03) n.hit = 1; }
@@ -60,7 +61,7 @@ export function aisecPick(rows, q, prev, tb, now) {
   if (!late) for (const c of C.values()) {
     if (have.has(c.s) || outS.has(c.s) || tb[c.s]) continue;
     const x = qOf(q, c.s); if (!x) continue;
-    if (x.ch != null && x.ch >= 9.5) continue;                          // tavana kilitli
+    if (x.ch != null && (x.ch >= 9.5 || x.ch <= -9.5)) continue;        // tavana ya da tabana kilitli (v14.20: taban da)
     if (c.px0 && (x.px <= c.px0 * 0.99 || x.px >= c.px0 * 1.03)) continue; // sinyalden sonra stop ya da hedef çoktan geldi → geç
     if (isMover(x)) { c.k.add('hac'); c.w.hac = 1; }
     const sc = score(c); if (sc < 2) continue;
