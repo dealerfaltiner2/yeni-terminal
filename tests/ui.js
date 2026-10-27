@@ -370,8 +370,11 @@ async function page(b, opt) {
         tgaGate({ url: 'javascript:alert(1)', title: '<i>x</i>' }); r.bad = b.querySelectorAll('button').length; r.esc = !b.querySelector('i'); b.remove(); return r; });
       ok('Kanal kapısı: "Kanala katıl" ve "Katıldım, aç" düğmeleri; bozuk bağlantıda katıl düğmesi yok, başlık kaçışlı', /Kanala katıl, Pusula açılsın/.test(gt.t) && gt.n === 2 && gt.bad === 1 && gt.esc, JSON.stringify(gt).slice(0, 200));
       const al = await p.evaluate(async () => { S.botAlive = true; ALS.at = 0; ALS.seen = null; alSrvLoad(); await new Promise(r => setTimeout(r, 1200)); showTab('algi'); await new Promise(r => setTimeout(r, 300));
-        const t = document.getElementById('t-algi').textContent; return { n: (ALS.list || []).length, jants: /JANTS/.test(t), sahol: /SAHOL/.test(t), tg: /📨/.test(t), srv: /Ana sunucudan/.test(t), toast: (typeof stCur !== 'undefined' && stCur && stCur.sym) || (STQ[0] && STQ[0].sym) || '' }; });
+        const t = document.getElementById('t-algi').textContent; return { n: (ALS.list || []).length, jants: /JANTS/.test(t), sahol: /SAHOL/.test(t), tg: /📨/.test(t), srv: /Ana sunucudan/.test(t), toast: (typeof stCur !== 'undefined' && stCur && stCur.sym) || (STQ[0] && STQ[0].sym) || '',
+          dots: (() => { const tr = [...document.querySelectorAll('#t-algi tr.row')]; const j = tr.find(x => /JANTS/.test(x.textContent)), s2 = tr.find(x => /SAHOL/.test(x.textContent)); return !!(j && j.querySelector('.ald.ok') && s2 && s2.querySelector('.ald.gr')); })(),
+          e20: alE20At(Array.from({ length: 40 }, (_, i) => ({ time: 1e6 + i * 900, close: 100 })), (1e6 + 40 * 900) * 1000, 97) > 2 }; });
       ok('Algı tek kaynak: ana sunucunun ateşlemeleri listede (Telegram işaretiyle), yeni olan üstten kart olarak çıkıyor', al.n === 2 && al.jants && al.sahol && al.tg && al.srv && al.toast === 'JANTS', JSON.stringify(al));
+      ok('Algı listesinde iyi/kötü grup noktası (yeşil geri çekilme, gri kovalayan) ve EMA 20 uzaklığı', al.dots && al.e20, JSON.stringify({ dots: al.dots, e20: al.e20 }));
       await p.evaluate(() => { S.botAlive = false; });
       const wo = await p.evaluate(async () => { LS.set('wmode', 'oto'); showTab('watch'); wotoLoad(true); await new Promise(r => setTimeout(r, 1200)); renderWatch();
         const t = document.getElementById('woto').textContent; const r = { jants: /JANTS/.test(t), asels: /ASELS/.test(t), stop: /Stop oldu/.test(t), fa: /Fırsat A/.test(t), hid: document.getElementById('watch').style.display === 'none' };

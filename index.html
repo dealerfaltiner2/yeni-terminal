@@ -3528,7 +3528,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.20";window.APPV=APP_VER;
+  const APP_VER="14.21";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3956,11 +3956,11 @@ function tvReconnectReport(){
   if(past&&!SL)h+='<div class="note">Yükleniyor…</div>';
   else if(SL&&(past||S.botAlive||SL.length)){   // v14.1: ana sunucunun Algı ateşlemeleri (karnedekiyle birebir)
    if(!SL.length)h+='<div class="note">'+(past?'O gün Algı ateşlemesi yok (hafta sonu ya da tatil olabilir).':'Bugün henüz ateşleme yok.')+'</div>';
-   else h+='<div class="note" style="padding:2px 12px 6px">'+SL.length+' ateşleme'+(past?' · +%3: '+SL.filter(e=>e.o31===1).length+' · stop: '+SL.filter(e=>e.o31===2).length:'')+' · 📨 = Telegram\'a gitti · 📰 = o sırada hisseyle ilgili haber vardı</div><table><tr><th>Sembol</th><th>Saat</th><th>Giriş</th><th>'+(past?'Gün sonu':'Şimdi')+'</th><th>Zirve</th><th>Güç</th><th>Sonuç</th></tr>'+SL.map(e=>{
+   else h+='<div class="note" style="padding:2px 12px 6px">'+SL.length+' ateşleme'+(past?' · +%3: '+SL.filter(e=>e.o31===1).length+' · stop: '+SL.filter(e=>e.o31===2).length:'')+' · 📨 = Telegram\'a gitti · 📰 = o sırada hisseyle ilgili haber vardı<br><span style="color:#22c55e">●</span> geri çekilmede geldi · <span style="color:#22c55e">●●</span> ayrıca 15 dk EMA 20\'nin %2+ altında (karnede en iyi grup) · <span style="color:#8b93a1">●</span> kovalayan (VWAP üstü + kırılım; karnede zayıf)</div><table><tr><th>Sembol</th><th>Saat</th><th>Giriş</th><th>'+(past?'Gün sonu':'Şimdi')+'</th><th>Zirve</th><th>Güç</th><th>Sonuç</th></tr>'+SL.map(e=>{
     const m=e.meta||{},q=S.umap[e.sym],now=past?e.rc:(q&&q.close&&e.px?(q.close/e.px-1)*100:null),tg=m.tg!=null?m.tg===1:(m.fc>=.8&&m.rv>=2);
     const res=e.o31===1?'<b class="up">+%3 ✅</b>':e.o31===2?'<b class="dn">−%1 ❌</b>':e.done?'<span style="color:var(--dim)">sonuçsuz</span>':'<span class="wrn">⏳ açık</span>';
     const hn=typeof haberNote==='function'?haberNote(e.sym,e.t+30*60e3):'';
-    return '<tr class="row" onclick="algiGo(\''+e.sym+'\')"><td class="sym"'+(hn?' title="'+htmlEsc(hn)+'"':'')+'>'+htmlEsc(e.sym)+(tg?' 📨':'')+(hn?' 📰':'')+'</td><td>'+hm(e.t)+'</td><td>'+(e.px?nf(e.px):'-')+'</td><td class="'+cls(now)+'">'+(now!=null?pct(now):'-')+'</td><td class="up">'+(e.mfe!=null?pct(e.mfe):'-')+'</td><td>'+(m.fc!=null?'%'+nf(m.fc*100,0)+(m.fc>=.8?' 💪':''):'-')+'</td><td>'+res+'</td></tr>'}).join('')+'</table>';
+    return '<tr class="row" onclick="algiGo(\''+e.sym+'\')"><td class="sym"'+(hn?' title="'+htmlEsc(hn)+'"':'')+'>'+htmlEsc(e.sym)+(typeof alDot==='function'?alDot(e):'')+(tg?' 📨':'')+(hn?' 📰':'')+'</td><td>'+hm(e.t)+'</td><td>'+(e.px?nf(e.px):'-')+'</td><td class="'+cls(now)+'">'+(now!=null?pct(now):'-')+'</td><td class="up">'+(e.mfe!=null?pct(e.mfe):'-')+'</td><td>'+(m.fc!=null?'%'+nf(m.fc*100,0)+(m.fc>=.8?' 💪':''):'-')+'</td><td>'+res+'</td></tr>'}).join('')+'</table>';
   }
   else if(!ev.length)h+='<div class="note">Bugün henüz ateşleme yok.</div>';
   else h+='<table><tr><th>Sembol</th><th>Saat</th><th>Giriş</th><th>Şimdi</th><th>Zirve</th><th>Durum</th><th>Skor</th></tr>'+ev.map(e=>{
@@ -6939,6 +6939,26 @@ function renderAisec(){const el=$('#aisecbody');if(!el)return;aisecLoad();const 
  if(O.length){const why={stop:'Stop (−%1)',taban:'Tabana kilitlendi'};h+='<details class="aiout"><summary>Bugün listeden çıkanlar ('+O.length+')</summary>'+O.slice().reverse().map(x=>'<div><span><b>'+htmlEsc(x.s)+'</b> · '+aisecHm(x.t)+'–'+aisecHm(x.at)+'</span><span class="'+cls(x.p)+'">'+(why[x.why]||htmlEsc(x.why||''))+(x.p!=null?' '+pct(x.p):'')+'</span></div>').join('')+'</details>'}
  h+='<div class="aint">Deneme listesi, <b>sinyal değildir</b>. Seçimi sistemin kendi verisi yapar (bugünün sinyalleri + o anki hacim); yapay zekâ yalnız nedenini yazar. Listeye girenler karneye sessizce yazılır. Yatırım tavsiyesi değildir.</div>';
  el.innerHTML=h}
+</script>
+<style>.ald{font-style:normal;font-size:10px;margin-left:3px;letter-spacing:-1px;vertical-align:1px}.ald.ok{color:#22c55e}.ald.gr{color:#8b93a1}</style>
+<script>
+/* v14.21 (27.10, Fatih: 'ateşlenenler listesinde iyi/kötü grubu nokta ile göster'; araştırma DEVIR 6y) — YALNIZ GÖSTERGE, sinyal kuralı/Telegram DEĞİŞMEDİ.
+   Kovalayan = sinyal anında fiyat VWAP üstünde VE kırılım (meta.abv && meta.brk) → gri nokta. Diğerleri (geri çekilmede) → yeşil.
+   Ayrıca sinyal anında bitmiş son 15 dk mumunun EMA 20'si fiyatın ≥%2 üstündeyse (fiyat EMA 20'nin %2+ altında) → çift yeşil. EMA telefonda 15 dk mumlardan (emar2Calc ile aynı tanım). */
+var ALE={m:{},busy:0};
+function alE20At(cs,t,px){if(!cs||cs.length<25||!(px>0))return null;let idx=-1;for(let i=cs.length-1;i>=0;i--){if((cs[i].time+900)*1000<=t){idx=i;break}}
+ if(idx<20)return null;const e=ema(cs.slice(0,idx+1).map(x=>x.close),20),v=e[e.length-1];return v>0?(v/px-1)*100:null}
+function alDot(e){const m=e.meta||{};if(m.abv==null&&m.brk==null)return '';
+ if(m.abv&&m.brk)return '<i class="ald gr" title="Kovalayan: VWAP üstü + kırılım (karnede zayıf grup)">●</i>';
+ const d=ALE.m[e.sym+'|'+e.t],two=d!=null&&d>=2;
+ return '<i class="ald ok" title="Geri çekilmede geldi'+(two?' · 15 dk EMA 20\'nin %'+nf(d,1)+' altında':'')+'">'+(two?'●●':'●')+'</i>'}
+async function alE20Load(list){if(ALE.busy||!list||!list.length)return;ALE.busy=1;let n=0;
+ try{const need=list.filter(e=>{const m=e.meta||{};return !(m.abv&&m.brk)&&(m.abv!=null||m.brk!=null)&&e.px>0&&!((e.sym+'|'+e.t) in ALE.m)}).slice(0,30);
+  for(const e of need){const k='b:'+e.sym+':15min';let c=S.ccache[k];
+   if(!c||Date.now()-c.t>300000){try{const cs=await getBars(e.sym,'15min',true);if(cs&&cs.length){c={t:Date.now(),d:cs};S.ccache[k]=c}}catch(x){}}
+   ALE.m[e.sym+'|'+e.t]=c&&c.d?alE20At(c.d,e.t,e.px):null;n++}}finally{ALE.busy=0}
+ if(n&&S.tab==='algi'&&typeof renderAlgi==='function')try{renderAlgi()}catch(x){}}
+setInterval(()=>{try{if(S.tab!=='algi'||document.hidden||!window.ALS)return;const L=(ALS.day&&ALS.hist&&ALS.hist[ALS.day])||ALS.list;if(L)alE20Load(L)}catch(e){}},4000);
 </script>
 </body>
 </html>

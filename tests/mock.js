@@ -84,7 +84,7 @@ function install(page, opt = {}) {
       { t: Date.now() - 864e5 - 3600e3, sym: 'DUNST', px: 20, sc: 75, meta: { fc: 0.7, rv: 1.2 }, done: 1, o31: 2, mfe: 0.3, mae: -1.5, rc: -1.8 }] }) });
     if (u.includes('/sigtoday') && /[?&]src=algi/.test(u)) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, at: Date.now(), list: [
       { t: Date.now() - 60000, sym: 'JANTS', px: 12.38, sc: 80, meta: { fc: 0.83, rv: 7.6, brk: false, bid: true }, done: 0, o31: null, mfe: 1.2, mae: -0.3 },
-      { t: Date.now() - 3600e3, sym: 'SAHOL', px: 89.55, sc: 72, meta: { fc: 0.82, rv: 0.85, brk: true }, done: 1, o31: 2, mfe: 0.4, mae: -1.1 }] }) });
+      { t: Date.now() - 3600e3, sym: 'SAHOL', px: 89.55, sc: 72, meta: { fc: 0.82, rv: 0.85, brk: true, abv: true }, done: 1, o31: 2, mfe: 0.4, mae: -1.1 }] }) });
     if (u.includes('/sigstats')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify(SIG) });
     if (u.includes('/kap')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify(KAP) });
     if (u.includes('scan')) {
