@@ -353,6 +353,14 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
   EMA 20 altında AMA EMA 50/200'e %1 yakın → 15 sinyal %11 (arkadaş haklı, örnek az). EMA 20 üstü/yakın → 985 sinyal %15 (başabaş %25 altında).
 - Yorum: iki dönemde aynı yönde, 3 zaman diliminde tutarlı (geri çekilmede gelen para girişi, koşmuş hissede gelen değil). Örnek küçük, düşen piyasa ağırlıklı. Fatih onayı bekliyor: Telegram Algı'ya ek şart ya da önce sessiz ölçüm.
 
+## 6y. 27.10 ALGI ALT GRUP ARAŞTIRMASI (Fatih: 'neden başarıyı yakalayamıyoruz'; 1.301 Algı, 29.09–26.10; eğitim 29.09–14.10 / deneme 15–26.10; çıkış: +3/−1 ve 'stop −1 yoksa gün sonu')
+- Kaynak geneli (29.09–26.10, işlem başı, stop/hedef ne olursa olsun ~0 ya da eksi): Algı −0,03…−0,21, Fırsat B −0,19…−0,72, Momentum −0,08…−1,31, geri alım +0,10 (+3/−1). Algı sonrası ortalama en iyi +%1,71 / en kötü −%1,71 → GİRİŞTE YÖN ÜSTÜNLÜĞÜ YOK; çıkış oyunları kurtarmaz.
+- Tek tek özellik (saat, endeks, rv, fc, akış, adr, p30, haber, piyasa değeri): iki dönemde AYNI yönde tutarlı fark yok (eğitim dönemi genel −0,21, deneme +0,07 → piyasa havası baskın).
+- TUTARLI TEK AYRIM — KOVALAYAN vs GERİ ÇEKİLMEDE: 'VWAP üstü + kırılım' (abv & brk) = Algı'nın %71'i: stop/gün sonu eğitim −0,29 / deneme −0,01, gün sonu −0,56 / −0,29, artı gün 1/10 ve 3/8.
+  Geri kalan %29 (VWAP altı ya da kırılımsız): eğitim +0,19 / deneme +0,18. VWAP altı (abv=0): +0,35 / +0,15, gün sonu +0,23 / +0,32. 15 dk EMA 20'nin ≥%2 altında: +0,69 / +0,63 (22 + 51 sinyal) — 6w EMA 20 bulgusuyla AYNI yön.
+  Uyarı: fark küçük (+0,2…+0,4/işlem), artı gün oranı ~yarı yarıya, 18 iş günü; 'geri çekilme + endeks ≥0' eğitimde −0,02 / denemede +1,43 → tutarsız, kullanma.
+- ÖNERİ (Fatih onayı bekliyor): Algı Telegram'a 'kovalayan' (VWAP üstü + kırılım) gitmesin; geri çekilmede gelen Algı + seans içi geri alım kalsın. Önce 2 hafta SESSİZ ölçüm (bot yarışı) ya da doğrudan Telegram kapısı — karar Fatih'in.
+
 ## 6x. 25.10 (Pazar) TRADINGVIEW HESAP RİSKİ (Fatih: 'TradingView beni engellemesin') — KARAR BEKLİYOR, kod değişmedi
 - Durum: onaylı her cihaz (dev.ok=1) /tv-token + ?direct=1 ile TradingView'a FATİH'İN oturumuyla bağlanıyor → aynı anda 4–5 bağlantı (Fatih, Nihat/Almanya, adsız İstanbul iPhone, Ankara Android, Ana sunucu).
 - A (önerildi): arkadaş cihazları oturumsuz (eski üye yolu, 15 dk gecikmeli fiyat); sinyaller sunucudan canlı ve aynı kalır.
