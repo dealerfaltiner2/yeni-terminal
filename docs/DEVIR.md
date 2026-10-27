@@ -361,6 +361,10 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
   Uyarı: fark küçük (+0,2…+0,4/işlem), artı gün oranı ~yarı yarıya, 18 iş günü; 'geri çekilme + endeks ≥0' eğitimde −0,02 / denemede +1,43 → tutarsız, kullanma.
 - ÖNERİ (Fatih onayı bekliyor): Algı Telegram'a 'kovalayan' (VWAP üstü + kırılım) gitmesin; geri çekilmede gelen Algı + seans içi geri alım kalsın. Önce 2 hafta SESSİZ ölçüm (bot yarışı) ya da doğrudan Telegram kapısı — karar Fatih'in.
 
+## 6z. 27.10 'VOLUME DELTA PIVOT MATRIX' (BigBeluga) FİKRİ — GERÇEK EMİR AKIŞIYLA TEST (flow tablosu, 12–26.10, 981 Algı sinyali, 5 dk mum, pivot ±3 mum, delta = alıcılı − satıcılı, güçlü = en güçlü aktif seviyenin ≥%30'u, kırılan seviye silinir)
+- Güçlü ALICILI desteğe %1,5 yakın gelen Algı: 12–16.10 −0,26 / 19–26.10 +0,10 (stop −1, yoksa gün sonu) — 'destek yok' −0,21 / +0,13 → FARK YOK. Güçlü SATICILI direncin altında gelen: −0,03 / +0,07, direnç yok: −0,28 / +0,14 → tutarsız.
+- Geri çekilme + destek birlikte: −0,35 / −0,20 (17 + 32) → geri çekilme tek başına daha iyi (−0,04 / +0,19). SONUÇ: göstergenin mantığı Algı'ya üstünlük katmıyor; eklenmedi.
+
 ## 6x. 25.10 (Pazar) TRADINGVIEW HESAP RİSKİ (Fatih: 'TradingView beni engellemesin') — KARAR BEKLİYOR, kod değişmedi
 - Durum: onaylı her cihaz (dev.ok=1) /tv-token + ?direct=1 ile TradingView'a FATİH'İN oturumuyla bağlanıyor → aynı anda 4–5 bağlantı (Fatih, Nihat/Almanya, adsız İstanbul iPhone, Ankara Android, Ana sunucu).
 - A (önerildi): arkadaş cihazları oturumsuz (eski üye yolu, 15 dk gecikmeli fiyat); sinyaller sunucudan canlı ve aynı kalır.
