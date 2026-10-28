@@ -86,6 +86,10 @@ async function page(b, opt) {
       { const gc = await T(async () => { GECE.at = 0; geceLoad(); await new Promise(r => setTimeout(r, 1200)); NOWF.f_gece = 1; showTab('now'); renderNow(); const t = document.getElementById('t-now').innerText;
           const r = { kart: /Gece Kuşu/.test(t), hisse: /ZZGEC/.test(t) && /ZZGE2/.test(t), ozet: /yarın 10:25–10:30 sat/.test(t), gecmis: /Son 1 gece/.test(t), uyari: /tavsiyesi değildir/.test(t) }; NOWF.f_gece = 0; return r; });
         ok('Gece Kuşu: Şimdi\'de sepet kartı (hisse, giriş, sat saati, geçmiş, uyarı)', gc && Object.values(gc).every(Boolean), JSON.stringify(gc)); }
+      // v14.24: alt çubukta Gece sekmesi (İzleme'nin yerinde), İzleme Menü'de
+      { const gt = await T(async () => { document.querySelector('#tabs [data-t=gece]').click(); await new Promise(r => setTimeout(r, 300)); const t = document.getElementById('t-gece').innerText;
+          const r = { tab: S.tab === 'gece', hisse: /ZZGEC/.test(t), baslik: !!document.querySelector('#t-gece .sechd'), izlemeYok: !document.querySelector('#tabs [data-t=watch]'), menude: !!document.querySelector('#more .mgrid [data-t=watch]') }; showTab('now'); return r; });
+        ok('Gece sekmesi: alt çubukta, sepet görünür; İzleme Menü\'de', gt && Object.values(gt).every(Boolean), JSON.stringify(gt)); }
       // v14.19: Haber Merkezi (menüden) + Algı için haber notu
       { await T(() => { HAB.list = null; HAB.at = 0; showTab('haber'); }); await p.waitForTimeout(1800); await T(() => renderHaber()); await p.screenshot({ path: path.join(OUT, 'haber-merkezi.png') });
         const hb = await T(() => { const body = document.getElementById('haberbody'), t = body.innerText;

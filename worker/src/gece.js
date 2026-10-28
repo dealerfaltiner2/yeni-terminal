@@ -33,9 +33,9 @@ export function geceBuyMsg(L, esc) {
     'Risk: gece stop konamaz; kötü bir haberle sabah boşlukla düşüş olabilir (13 ayın en kötü sabahı sepet ort. −%4). Çöküş aylarında bu strateji de kaybettirir. ' +
     'Hisse başına beklenen kazanç küçüktür (~%0,2); kazanç çok günün toplamından gelir.</blockquote>Yatırım tavsiyesi değildir.';
 }
-export function geceSellMsg(R, avg, esc) {
+export function geceSellMsg(R, avg, esc, deneme) {
   const w = R.filter(x => x.r > 0).length;
-  return '☀️ <b>GECE KUŞU · satış zamanı</b>   <i>sepet ' + pc(avg) + '</i>\n<blockquote>' +
+  return '☀️ <b>GECE KUŞU · satış zamanı</b>   <i>sepet ' + pc(avg) + '</i>' + (deneme ? '\n<i>Deneme sepeti: ' + esc(deneme) + ' kapanış fiyatlarıyla kuruldu.</i>' : '') + '\n<blockquote>' +
     R.map(x => (x.r >= 0 ? '🟢' : '🔴') + ' <b>' + esc(x.s) + '</b>   ' + f2(x.p0) + ' → <code>' + f2(x.p1) + '</code>   ' + pc(x.r)).join('\n') + '</blockquote>' +
     w + ' artı · ' + (R.length - w) + ' eksi · <b>10:30\'a kadar sat.</b> Sonuç karnede "Gece Kuşu" olarak ölçülüyor.';
 }
@@ -68,9 +68,9 @@ export async function geceStep(env, h, now = Date.now()) {
         .bind(G.d, G.t || now, 'gece', x.s, 'AL', x.p0, null, '', JSON.stringify({ cikis: x.p1, sat: T.day }), x.r).run(); } catch (e) {}
     }
     const hist = (G.hist || []).concat([{ d: G.d, s: T.day, ort: avg, n: R.length, w: R.filter(x => x.r > 0).length }]).slice(-30);
-    await metaSet(env, 'gece', Object.assign({}, G, { st: 'satildi', res: { d: T.day, ort: avg, list: R }, hist }));
+    await metaSet(env, 'gece', Object.assign({}, G, { deneme: 0, st: 'satildi', res: { d: T.day, ort: avg, list: R }, hist }));
     const cfg = await h.kvGet(env, 'cfg', null);
-    let tg = null; if (cfg && !(cfg.opt && cfg.opt.gece === 0)) tg = await h.tgSend(cfg, geceSellMsg(R, avg, h.esc));
+    let tg = null; if (cfg && !(cfg.opt && cfg.opt.gece === 0)) tg = await h.tgSend(cfg, geceSellMsg(R, avg, h.esc, G.deneme ? G.d.split('-').reverse().slice(0, 2).join('.') : ''));
     return { sat: R.length, ort: avg, tg: !!(tg && tg.ok) };
   }
   // 2) SEÇİM (17:40–17:55)
@@ -99,6 +99,22 @@ export async function geceStep(env, h, now = Date.now()) {
     return { kapa: list.length };
   }
   return null;
+}
+// v14.24 (28.10 gece, Fatih: 'sepeti kapanış verilerine göre oluştur'): TEK SEFERLİK deneme sepeti — probe 'gece_now' çağırır.
+// Seans kapandıktan sonra tarama = günün kapanışı → giriş fiyatı p0 = kapanış, st 'alindi'. Telegram'a alış mesajı GİTMEZ; satış her zamanki gibi ertesi iş günü 10:25.
+export async function geceNow(env, scanRaw, now = Date.now()) {
+  const T = trT(now), G = await metaGet(env, 'gece') || {};
+  if (G.d === T.day && (G.st === 'secildi' || G.st === 'alindi')) return 'zaten sepet var';
+  if (G.st === 'alindi' || G.st === 'secildi') return 'satılmamış sepet var';
+  const h = { scanRaw };
+  const L100 = await metaGet(env, 'idx_list'), syms = ((L100 && L100.x100) || []).slice(0, 120);
+  if (!syms.length) return 'idx_list yok';
+  const ix = await ixClose(h, env); if (!ix) return 'endeks yok';
+  const tb = await metaGet(env, 'tedbir') || {};
+  const L = gecePick(await scanQ(h, env, syms), new Set(Object.keys(tb)));
+  if (!L.length) return 'sepet boş';
+  await metaSet(env, 'gece', { d: T.day, t: now, ix, st: 'alindi', deneme: 1, list: L.map(x => ({ s: x.s, c: x.c, ch: x.ch, p0: x.c })), hist: G.hist || [], res: G.res || null });
+  return 'tamam ' + L.map(x => x.s + ' ' + x.c + ' ' + x.ch).join(', ');
 }
 // GET /gece (terminal kartı) — üyeye boş
 let GC = { at: 0, v: null };

@@ -1,4 +1,5 @@
 import { aiComment } from './aiyorum.js';
+import { geceNow } from './gece.js';
 // Tek seferlik deneme: D1 meta 'probe_req' varsa her dakika BİR deneme yapar, sonucu 'probe:<ad>' satırına yazar.
 // (Yeni TradingView kaynaklarını sunucudan denemek için; istek yokken hiçbir şey yapmaz.)
 export async function probe(env, scanRaw, UA) {
@@ -29,7 +30,9 @@ export async function probe(env, scanRaw, UA) {
     // 25.10 (v14.13): Pusula yorumu modeli gerçek veriyle — meta 'ai_test_in' = [{s, tf, f}, …] (en çok 3) → probe:ai_test = [{s, ok, txt|err, ms}]
     ['ai_test', async () => { const q = await env.BT.prepare("SELECT v FROM meta WHERE k = 'ai_test_in'").first(); const A = q ? JSON.parse(q.v) : []; const out = [];
       for (const x of A.slice(0, 3)) { const t0 = Date.now(); let r; try { r = await aiComment(env, x.s, x.tf, x.f); } catch (e) { r = { ok: false, err: String(e && e.message || e).slice(0, 200) }; } out.push({ s: x.s, ...r, ms: Date.now() - t0 }); }
-      return JSON.stringify(out); }]
+      return JSON.stringify(out); }],
+    // 28.10 (v14.24): Gece Kuşu tek seferlik deneme sepeti (günün kapanışıyla) — probe_req = bu satırın sırası
+    ['gece_now', () => geceNow(env, scanRaw)]
   ];
   const i = parseInt(q.v, 10) || 0;
   if (i >= L.length) { await env.BT.prepare("DELETE FROM meta WHERE k = 'probe_req'").run(); return null; }

@@ -1,5 +1,5 @@
 // v14.23 Gece Kuşu: seçim, mesajlar, akşam→sabah akışı, tatil, karne kaydı (D1 + tarama taklidi)
-import { gecePick, geceBuyMsg, geceSellMsg, geceStep, geceRoute } from '../worker/src/gece.js';
+import { gecePick, geceBuyMsg, geceSellMsg, geceStep, geceRoute, geceNow } from '../worker/src/gece.js';
 let bad = 0; const ok = (n, c, x) => { console.log((c ? '✓ ' : '✗ ') + n + (c ? '' : ' — ' + JSON.stringify(x))); if (!c) bad++; };
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 // 1) seçim
@@ -44,4 +44,15 @@ r = await geceStep(env, h, at(34, 17, 45));
 ok('tatil akşamı (endeks aynı) sepet gönderilmez', r && r.tatil === 1, r);
 const json = (o, st) => ({ o, st: st || 200 });
 ok('/gece: sahibe durum, üyeye boş', (await geceRoute(env, json, false)).o.g.st === 'satildi' && (await geceRoute(env, json, true)).o.g === null);
+// 3) v14.24 deneme sepeti (kapanışla, tek seferlik)
+PX = { XU100: 11100, AAA: 10, BBB: 20, DUS: 5 }; CH = { AAA: 1, BBB: 0.5, DUS: -4, XU100: 0.1 };
+meta.gece = JSON.stringify({ d: '2026-10-30', st: 'satildi', hist: [{ ort: 1 }] }); sent.length = 0;
+let dn = await geceNow(env, scanRaw, at(28, 23, 15));
+let GD = JSON.parse(meta.gece);
+ok('deneme sepeti: kapanışla alındı, Telegram yok, geçmiş korunur', /^tamam/.test(dn) && GD.st === 'alindi' && GD.deneme === 1 && GD.d === '2026-10-28' && GD.list.every(x => x.p0 === x.c) && GD.hist.length === 1 && !sent.length, dn);
+ok('deneme: ikinci kez kurmaz', (await geceNow(env, scanRaw, at(28, 23, 20))) === 'zaten sepet var');
+ok('29 Ekim tatil: satış yok', (await geceStep(env, h, at(29, 10, 26))) === null);
+PX.AAA = 10.2; PX.BBB = 20; PX.XU100 = 11200;
+r = await geceStep(env, h, at(30, 10, 26));
+ok('Cuma 10:26 deneme satış mesajında not', r && r.sat === 2 && /Deneme sepeti: 28\.10/.test(sent[0]) && JSON.parse(meta.gece).deneme === 0, r);
 if (bad) { console.log('GECE KUŞU: ' + bad + ' HATA'); process.exit(1); } else console.log('GECE KUŞU: hepsi geçti');
