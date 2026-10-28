@@ -378,6 +378,13 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
   Eleme önemli: elemesiz tüm hisseler +%49 / Eylül −12,3; elemeli Eylül +0,5. Ekim 2026 hisse verisi yok (feat 25.09'da bitiyor; BORSA servisi o an yanıt vermedi) → Ekim için yalnız endeks düzeyi (gece −%0,4 / gün içi −%11).
 - KARAR (Fatih 'kur, yayınla'): v14.23 GECE KUŞU — 17:40 sepet (8 likit BIST 100 hissesi), kapanış seansında al, ertesi 10:25–10:30 sat; karne src 'gece'. 2–4 hafta canlı sonuç izlenecek; zirve eleme (20g yüksek alanı taramada yok) ve Çarşamba ağırlığı sonraki adım adayı.
 
+- 28.10 23:45 YENİ STRATEJİ ARAMASI (Fatih: 'başka strateji bul'; feat 100 hisse 279 gün, D1'den tek sorguyla yerel; eski <15.03 / yeni ≥):
+  Gün içi: ertesi gün 10:30→kapanış hiçbir alt grupta iki dönemde artı DEĞİL (hepsi −0,05 / −0,22). 5 günlük swing (d20, zirveye uzaklık): eski artı, yeni eksi → piyasa yönü, kenar yok.
+  GECE İYİLEŞTİRMESİ (gün içi sıraya göre): sabahı güçlü (r30 üst çeyrek) + öğleden sonrası zayıf (rest alt yarı) → gece +0,34 / +0,45 (taban +0,22 / +0,24), 14/14 ay.
+  Sepet: skor = r30 sırası − rest sırası, ilk 8, −3…+9,5 eleme; ÇIKIŞ AÇILIŞTA (ertesi açılış fiyatı): ort +0,28 (eski 0,29 / yeni 0,28), 13 ay toplam +%119 (maliyetsiz; %0,1 maliyetle +%66),
+  en derin düşüş −%5,9, artı gün %78, 14/14 ay artı; en sık 10 hisse hariç +0,26. 10:30 çıkışı ort +0,33 ama düşüş −%8,4, artı gün %66. Rastgele 8 / 10:30: +%90 (ortanca).
+  Öneri Fatih'e: Gece Kuşu v2 (seçim kuralı + açılış seansında satış) — ONAY BEKLİYOR. Canlıda 10:30 anlık fiyatı kaydetmek gerekir (meta). Ekim 2026 hisse verisi yok.
+
 ## 6x. 25.10 (Pazar) TRADINGVIEW HESAP RİSKİ (Fatih: 'TradingView beni engellemesin') — KARAR BEKLİYOR, kod değişmedi
 - Durum: onaylı her cihaz (dev.ok=1) /tv-token + ?direct=1 ile TradingView'a FATİH'İN oturumuyla bağlanıyor → aynı anda 4–5 bağlantı (Fatih, Nihat/Almanya, adsız İstanbul iPhone, Ankara Android, Ana sunucu).
 - A (önerildi): arkadaş cihazları oturumsuz (eski üye yolu, 15 dk gecikmeli fiyat); sinyaller sunucudan canlı ve aynı kalır.
