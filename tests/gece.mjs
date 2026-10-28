@@ -1,5 +1,5 @@
 // v14.23 Gece Kuşu: seçim, mesajlar, akşam→sabah akışı, tatil, karne kaydı (D1 + tarama taklidi)
-import { gecePick, geceBuyMsg, geceSellMsg, geceStep, geceRoute, geceNow } from '../worker/src/gece.js';
+import { gecePick, geceBuyMsg, geceSellMsg, geceStep, geceRoute, geceNow, geceBuyPx, geceSellPx, geceFixMsg } from '../worker/src/gece.js';
 let bad = 0; const ok = (n, c, x) => { console.log((c ? '✓ ' : '✗ ') + n + (c ? '' : ' — ' + JSON.stringify(x))); if (!c) bad++; };
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 // 1) seçim
@@ -9,8 +9,12 @@ const P = gecePick(Q, new Set(['TED']));
 ok('seçim: −%3 altı, tavan, az işlem, tedbirli, eksik veri elenir; en likit önce', P.map(x => x.s).join() === 'BBB,AAA', P);
 ok('en çok 8', gecePick(Array.from({ length: 20 }, (_, i) => ({ s: 'S' + i, c: 10, ch: 0, v: 2e7 + i }))).length === 8);
 const bm = geceBuyMsg(P, esc), sm = geceSellMsg([{ s: 'AAA', p0: 10, p1: 10.2, r: 2 }, { s: 'B<B', p0: 10, p1: 9.9, r: -1 }], 0.5, esc);
-ok('mesajlar: kapanış seansı, 10:25–10:30, risk, tavsiye değil; kaçışlı', bm.includes('Kapanış seansında') && bm.includes('10:25–10:30') && bm.includes('stop konamaz') && bm.includes('tavsiyesi değildir') &&
+ok('mesajlar: kapanış seansı, 10:25–10:30, risk, tavsiye değil; kaçışlı', bm.includes('Kapanış seansında') && bm.includes('açılış seansında') && bm.includes('AL <code>') && bm.includes('stop konamaz') && bm.includes('tavsiyesi değildir') &&
   sm.includes('+%0,50') && sm.includes('B&lt;B') && sm.includes('1 artı · 1 eksi'));
+ok('emir fiyatları: fiyat adımına yuvarlı, alış %1 üstü (tavanı aşmaz), satış %2 altı', geceBuyPx(252.5, -0.2) === 255.25 && geceSellPx(252.5) === 247.4 && geceSellPx(34.48) === 33.78 && geceBuyPx(10, 9.4) === 10.05 && geceBuyPx(63, 0) === 63.65,
+  [geceBuyPx(252.5, -0.2), geceSellPx(252.5), geceSellPx(34.48), geceBuyPx(10, 9.4), geceBuyPx(63, 0)]);
+const fm = geceFixMsg([{ s: 'THYAO', c: 252.5, p0: 252.5 }, { s: 'A<B', c: 10, p0: 10 }], esc);
+ok('satış emri mesajı: açılış seansı, SAT fiyatı, lot, kaçışlı', fm.includes('09:40–09:55') && fm.includes('SAT <code>247,40</code>') && fm.includes('49 lot') && fm.includes('A&lt;B'), fm);
 // 2) akış
 const meta = { idx_list: JSON.stringify({ x100: ['AAA', 'BBB', 'DUS'] }), tedbir: JSON.stringify({}) }, sigs = [];
 const stmt = q => { const S = { a: [], bind(...a) { const n = stmt(q); n.a = a; return n; },

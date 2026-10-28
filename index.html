@@ -3529,7 +3529,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.24";window.APPV=APP_VER;
+  const APP_VER="14.25";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4847,9 +4847,11 @@ setInterval(()=>{if(!document.hidden&&!BOTMODE)geceLoad()},60000);setTimeout(()=
 function geceSum(g){const H=g.hist||[],tot=H.reduce((a,x)=>a+x.ort,0);
  const st=g.st==='secildi'?'Bu akşamın sepeti hazır — kapanışta al':g.st==='alindi'?'Sepet elde · yarın 10:25–10:30 sat':g.res?'Son sonuç '+pct(g.res.ort):'Sepet bekleniyor';
  return st+(H.length?' · '+H.length+' gece toplam '+pct(tot):'')}
+function geceTick(p){return p<20?.01:p<50?.02:p<100?.05:p<250?.1:p<500?.25:p<1000?.5:p<2500?1:2.5}
+function geceSellPx(p0){const v=p0*.98,t=geceTick(v);return Math.round(Math.floor(v/t+1e-9)*t*100)/100}   // v14.25 worker/src/gece.js ile aynı
 function geceCard(g){const f=v=>nf(v);let h='';
- if(g.st!=='satildi'){h+='<div class="note" style="padding:4px 2px"><b>'+(g.st==='secildi'?'Bu akşamın sepeti':'Elindeki sepet')+'</b> ('+htmlEsc(g.d||'')+') — her birine eşit tutar · kapanış seansında (18:00–18:10) al, ertesi sabah 10:25–10:30 sat.</div><table><tr><th>Hisse</th><th>Giriş</th><th>Şimdi</th><th>Fark</th></tr>'+
-  g.list.map(x=>{const p0=x.p0||x.c,q=S.umap[x.s],nw=q&&q.close?q.close:null,r=nw&&p0?(nw/p0-1)*100:null;return '<tr class="row" onclick="xrayOpen(\''+htmlEsc(x.s)+'\')"><td class="sym">'+htmlEsc(x.s)+'</td><td>'+f(p0)+'</td><td>'+(nw?f(nw):'-')+'</td><td class="'+cls(r)+'">'+(r!=null?pct(r):'-')+'</td></tr>'}).join('')+'</table>'}
+ if(g.st!=='satildi'){h+='<div class="note" style="padding:4px 2px"><b>'+(g.st==='secildi'?'Bu akşamın sepeti':'Elindeki sepet')+'</b> ('+htmlEsc(g.d||'')+') — her birine eşit tutar · kapanış seansında (18:00–18:10) al, ertesi sabah açılış seansında (09:40–09:55) \'Sat emri\' fiyatıyla limit sat.</div><table><tr><th>Hisse</th><th>Giriş</th><th>Sat emri</th><th>Şimdi</th><th>Fark</th></tr>'+
+  g.list.map(x=>{const p0=x.p0||x.c,q=S.umap[x.s],nw=q&&q.close?q.close:null,r=nw&&p0?(nw/p0-1)*100:null;return '<tr class="row" onclick="xrayOpen(\''+htmlEsc(x.s)+'\')"><td class="sym">'+htmlEsc(x.s)+'</td><td>'+f(p0)+'</td><td>'+(g.st==='alindi'?'<b>'+f(geceSellPx(p0))+'</b>':'-')+'</td><td>'+(nw?f(nw):'-')+'</td><td class="'+cls(r)+'">'+(r!=null?pct(r):'-')+'</td></tr>'}).join('')+'</table>'}
  else if(g.res){h+='<div class="note" style="padding:4px 2px"><b>Son gece</b> ('+htmlEsc(g.d)+' → '+htmlEsc(g.res.d)+'): sepet '+pct(g.res.ort)+'</div><table><tr><th>Hisse</th><th>Giriş</th><th>Satış</th><th>Sonuç</th></tr>'+g.res.list.map(x=>'<tr><td class="sym">'+htmlEsc(x.s)+'</td><td>'+f(x.p0)+'</td><td>'+f(x.p1)+'</td><td class="'+cls(x.r)+'">'+pct(x.r)+'</td></tr>').join('')+'</table>'}
  const H=(g.hist||[]).slice(-10);if(H.length)h+='<div class="note" style="padding:6px 2px 0">Son '+H.length+' gece: '+H.map(x=>'<span class="'+cls(x.ort)+'">'+pct(x.ort)+'</span>').join(' · ')+'</div>';
  h+='<div class="note" style="padding:6px 2px 0;color:var(--dim)">13 ayda büyük hisseler kapanıştan ertesi sabah 10:30\'a ortalama +%0,15 kazandırdı (günlerin %63\'ü artı); gün içinde kaybettirdi. Gece stop konamaz, çöküş aylarında kaybettirir. Yatırım tavsiyesi değildir.</div>';

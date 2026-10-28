@@ -24,10 +24,23 @@ export function gecePick(Q, bad = new Set(), n = GECE_N) {
     .filter(x => x.ch > -3 && x.ch < 9.5 && x.tl >= GECE_MIN_TL && !bad.has(x.s))
     .sort((a, b) => b.tl - a.tl).slice(0, n);
 }
+// v14.25 (28.10, Fatih: 'emir fiyatlarını Telegram'a at, nereden alıp satacağımı bileyim'): BIST fiyat adımına yuvarlanmış limit fiyatlar
+export function tickOf(p) { return p < 20 ? 0.01 : p < 50 ? 0.02 : p < 100 ? 0.05 : p < 250 ? 0.1 : p < 500 ? 0.25 : p < 1000 ? 0.5 : p < 2500 ? 1 : 2.5; }
+const rnd = (v, t, up) => { const k = v / t; return Math.round((up ? Math.ceil(k - 1e-9) : Math.floor(k + 1e-9)) * t * 100) / 100; };
+// alış limiti: son fiyatın %1 üstü (tavanı geçmez: dünkü kapanış ×1,10); satış limiti: alış fiyatının %2 altı
+export function geceBuyPx(c, ch) { let v = rnd(c * 1.01, tickOf(c * 1.01), true); if (ch != null && isFinite(ch)) { const tav = c / (1 + ch / 100) * 1.1; if (v > tav) v = rnd(tav, tickOf(tav), false); } return v; }
+export function geceSellPx(p0) { return rnd(p0 * 0.98, tickOf(p0 * 0.98), false); }
+const lot100 = p => Math.floor(12500 / p);
+export function geceFixMsg(L, esc, deneme) {
+  return '🌙 <b>GECE KUŞU · satış emirleri</b>   <i>' + (deneme ? 'deneme sepeti · ' + esc(deneme) + ' kapanışı' : 'bugünün kapanışı') + '</i>\n' +
+    '☀️ ' + (deneme ? 'Sıradaki iş günü' : 'Yarın') + ' <b>açılış seansında (09:40–09:55)</b> bu fiyatlarla <b>limit SAT</b> emri gir. Açılış tek fiyattan olur; yazdığın fiyat sadece emrin dışarıda kalmaması için.\n<blockquote>' +
+    L.map(x => { const p0 = x.p0 || x.c; return '<b>' + esc(x.s) + '</b>   alış ' + f2(p0) + '  →  SAT <code>' + f2(geceSellPx(p0)) + '</code>   (' + lot100(p0) + ' lot)'; }).join('\n') + '</blockquote>' +
+    '<i>Lot = 100.000 TL ÷ 8 hisse örneği. Açılışı kaçırırsan 10:00–10:30 arası normal seansta sat.</i>';
+}
 export function geceBuyMsg(L, esc) {
   return '🌙 <b>GECE KUŞU · akşam sepeti</b>   <i>' + L.length + ' hisse</i>\n<blockquote>' +
-    L.map(x => '<b>' + esc(x.s) + '</b>   <code>' + f2(x.c) + '</code>   bugün ' + pc(x.ch)).join('\n') + '</blockquote>' +
-    '🕕 <b>Kapanış seansında</b> (18:00–18:10) her birine <b>eşit tutarla</b> al.\n☀️ Yarın <b>10:25–10:30</b> arası sat (Pusula hatırlatır).\n' +
+    L.map(x => '<b>' + esc(x.s) + '</b>   şimdi ' + f2(x.c) + ' (' + pc(x.ch) + ')  →  AL <code>' + f2(geceBuyPx(x.c, x.ch)) + '</code>   (' + lot100(x.c) + ' lot)').join('\n') + '</blockquote>' +
+    '🕕 <b>Kapanış seansında (18:00–18:05)</b> bu fiyatlarla <b>limit AL</b> emri gir — herkes tek kapanış fiyatından alır, yazdığın fiyat sadece emrin dışarıda kalmaması için. Lot = 100.000 TL ÷ 8 örneği.\n☀️ 18:15 civarı <b>satış emri fiyatları</b> gelir; yarın sabah açılış seansında satılır.\n' +
     '<blockquote expandable>Neden: 13 ayda büyük hisseler kapanıştan ertesi sabah 10:30\'a ortalama +%0,15 kazandırdı (günlerin %63\'ü artı); gün içinde ise kaybettirdi. ' +
     'O gün %3\'ten fazla düşenler, tavandakiler ve Borsa tedbirliler sepete alınmaz.\n' +
     'Risk: gece stop konamaz; kötü bir haberle sabah boşlukla düşüş olabilir (13 ayın en kötü sabahı sepet ort. −%4). Çöküş aylarında bu strateji de kaybettirir. ' +
@@ -96,7 +109,9 @@ export async function geceStep(env, h, now = Date.now()) {
     const list = G.list.map(x => Object.assign({}, x, { p0: M[x.s] && M[x.s].c > 0 ? M[x.s].c : x.c }));
     const ix = await ixClose(h, env);
     await metaSet(env, 'gece', Object.assign({}, G, { st: 'alindi', list, ix: ix || G.ix }));
-    return { kapa: list.length };
+    const cfg = await h.kvGet(env, 'cfg', null);
+    let tg = null; if (cfg && !(cfg.opt && cfg.opt.gece === 0)) tg = await h.tgSend(cfg, geceFixMsg(list, h.esc));
+    return { kapa: list.length, tg: !!(tg && tg.ok) };
   }
   return null;
 }
