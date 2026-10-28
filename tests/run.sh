@@ -30,6 +30,7 @@ echo "== BIST 100 / tüm borsa + canlı liste"; node endeks.mjs || fail=1
 echo "== Pusula yorumu (AI)"; node aiyorum.mjs || fail=1
 echo "== Yapay zekâ seçtikleri"; node aisec.mjs || fail=1
 echo "== Haber Merkezi"; node haber.mjs || fail=1
+echo "== Gece Kuşu"; node gece.mjs || fail=1
 echo "== Arayüz"; timeout 300 node ui.js || fail=1
 echo "== Sunucu (yerel)"; timeout 300 bash worker.sh > out_worker.txt 2>/dev/null; wr=$?; grep -v agent-proxy out_worker.txt; rm -f out_worker.txt; [ $wr = 0 ] || fail=1
 echo; [ $fail = 0 ] && echo "SONUÇ: HEPSİ GEÇTİ" || echo "SONUÇ: HATA VAR"

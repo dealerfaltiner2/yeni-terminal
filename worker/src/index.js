@@ -29,6 +29,7 @@ import { botAlive, botBeat, botWatch, pairCreate, pairUse } from './bot.js';
 import { kapPoll, kapMorning, kapList } from './kap.js';
 import { kesifData } from './kesif.js';
 import { haberPoll, haberFromKap, haberRoute } from './haber.js';
+import { geceStep, geceRoute } from './gece.js';
 import { tgBotUpdate, tgHookEnsure } from './tgbot.js';
 import { kanalAm, kanalPm, kanalOnce, kanalKap, kanalWeek, kanalLinks } from './kanal.js';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
@@ -724,7 +725,7 @@ const OWN_ROUTES = new Set(['aisec-set', 'algirows-set', 'uyeler', 'sync', 'pref
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
 const DEV_GRACE = Date.UTC(2026, 9, 6); // 6 Ekim 2026
-const DATA_ROUTES = new Set(['algirows', 'bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key', 'paper', 'sigsym', 'yorum', 'tedbir', 'kesif', 'endeks', 'aiyorum', 'aisec', 'haber']);
+const DATA_ROUTES = new Set(['algirows', 'bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key', 'paper', 'sigsym', 'yorum', 'tedbir', 'kesif', 'endeks', 'aiyorum', 'aisec', 'haber', 'gece']);
 const devCache = new Map();
 let ownerCache = { v: undefined, at: 0 }, devReady = false;
 async function ownerTok(env) {
@@ -989,6 +990,7 @@ export default {
       case 'aisec-set': if (request.method === 'POST') return aisecSet(request, env, json); break;   // v14.16 Yapay zekâ seçtikleri
       case 'aisec': return aisecGet(env, json, anon);
       case 'haber': return haberRoute(env, json, anon);   // v14.19 Haber Merkezi
+      case 'gece': return geceRoute(env, json, anon);   // v14.23 Gece Kuşu
       case 'flow': return flowRoute(request, env, url, json);
       case 'sig-eval': return json(url.searchParams.get('sum') === '1' ? await sigSummary(env, tgSend, kvGet, esc, nf, true) : await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf));
       case 'test': return test(env, url);
@@ -1131,6 +1133,7 @@ export default {
       try { await mktClose(env, { scanRaw }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'kapanış özeti: ' + String(e && e.message || e).slice(0, 150), 'mktClose'); }   // v10.8: karne mesajının piyasa bölümü
       try { await tavanScan(env, { scanRaw, sigAdd, tgSend, kvGet, esc, pushSend }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'tavan takibi: ' + String(e && e.message || e).slice(0, 150), 'tavanScan'); }
       try { await tavanOpen(env, { scanRaw, sigAdd, tgSend, kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'tavan sakin açılış: ' + String(e && e.message || e).slice(0, 150), 'tavanOpen'); }   // v11.4
+      try { const gr = await geceStep(env, { scanRaw, tgSend, kvGet, esc }); if (gr) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('gece_st', ?)").bind(new Date().toISOString() + ' ' + JSON.stringify(gr)).run(); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'gece kuşu: ' + String(e && e.message || e).slice(0, 150), 'geceStep'); }   // v14.23
       try { await posWatch(env, { scanRaw, kvGet, tgSend, esc, pushSend }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'pozisyon asistanı: ' + String(e && e.message || e).slice(0, 150), 'posWatch'); }
       await hb('3-KAP bitti');
       if (!sigAlive) { await sigJob(); await hb('4-karne bitti'); }

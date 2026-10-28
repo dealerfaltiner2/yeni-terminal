@@ -365,6 +365,16 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
 - Güçlü ALICILI desteğe %1,5 yakın gelen Algı: 12–16.10 −0,26 / 19–26.10 +0,10 (stop −1, yoksa gün sonu) — 'destek yok' −0,21 / +0,13 → FARK YOK. Güçlü SATICILI direncin altında gelen: −0,03 / +0,07, direnç yok: −0,28 / +0,14 → tutarsız.
 - Geri çekilme + destek birlikte: −0,35 / −0,20 (17 + 32) → geri çekilme tek başına daha iyi (−0,04 / +0,19). SONUÇ: göstergenin mantığı Algı'ya üstünlük katmıyor; eklenmedi.
 
+## 7a. 28.10 gece 'TERMİNALİ UÇUR' ARAŞTIRMASI (GELİŞTİRİCİ; canlı karne 29.09–27.10 + feat 13 ay)
+- Canlı karne (AL, +3/−1 yoksa gün sonu): hiçbir kaynak başabaşı güvenilir geçmiyor — Algı A −0,21 / B +0,05 (isabet %18), kap-geri +0,37 / −0,24, Fırsat B −0,11 / −0,37, Momentum +0,03 / −0,18, tavan6 −0,13; günlük sonuç piyasanın yönünü izliyor (XU100 Ekim'de −%22).
+  Ertesi gün tutma (sig ng/nc) de eksi. Endeks kovası × kovalayan/geri çekilme: gün sayısı çok az, tutarlı değil.
+- feat (92 büyük hisse, 2025-08-22…2026-09-25, 276 gün), günlük eşit ağırlıklı ortalama: gece (kapanış→açılış) +0,12 (t 2,8, %70 artı gün), kapanış→10:30 +0,15 (t 3,0, %63), 10:30→kapanış −0,13 (t −1,9).
+  Kümülatif: kapanışta al 10:30 sat +%49 (maliyetsiz; %0,05 maliyetle +%30), en derin düşüş −%13, 14 ayın 12'si artı (Mart −4,6, Eylül −12,3); 10:30 al kapanışta sat −%31; endeks +%14.
+  Ekim 2026 endeks düzeyinde: gece toplamı −%0,4, gün içi ~−%11 (çöküşte bile gece çok daha iyi).
+- Hisse kırılımı (kapanış→10:30, A <15.03 / B): dün <−%3 düşen −0,35/−0,96 (alma), normal +0,23/+0,20, 20g zirvesinde ~0, tavan kapanan +1,6…+2,5 (kapanışta alım gerçekleşmeyebilir), gün: Çarşamba→Perşembe en iyi (+0,46/+0,37), Cuma→Pazartesi en zayıf (+0,19/+0,13).
+  Gün başı endeks bilgisiyle (ilk 30 dk, dünkü endeks, genişlik) 10:30→kapanış TAHMİN EDİLEMİYOR (korelasyon 0,03–0,10).
+- KARAR (Fatih 'kur, yayınla'): v14.23 GECE KUŞU — 17:40 sepet (8 likit BIST 100 hissesi), kapanış seansında al, ertesi 10:25–10:30 sat; karne src 'gece'. 2–4 hafta canlı sonuç izlenecek; zirve eleme (20g yüksek alanı taramada yok) ve Çarşamba ağırlığı sonraki adım adayı.
+
 ## 6x. 25.10 (Pazar) TRADINGVIEW HESAP RİSKİ (Fatih: 'TradingView beni engellemesin') — KARAR BEKLİYOR, kod değişmedi
 - Durum: onaylı her cihaz (dev.ok=1) /tv-token + ?direct=1 ile TradingView'a FATİH'İN oturumuyla bağlanıyor → aynı anda 4–5 bağlantı (Fatih, Nihat/Almanya, adsız İstanbul iPhone, Ankara Android, Ana sunucu).
 - A (önerildi): arkadaş cihazları oturumsuz (eski üye yolu, 15 dk gecikmeli fiyat); sinyaller sunucudan canlı ve aynı kalır.

@@ -41,6 +41,7 @@ function install(page, opt = {}) {
     if (u.includes('/aiyorum')) { let b = {}; try { b = JSON.parse(r.request().postData() || '{}'); } catch (e) {} globalThis.__AI_REQ = b;
       return r.fulfill({ contentType: 'application/json', body: JSON.stringify(b.f && b.f.px > 0 ? { ok: true, txt: b.s + ' yükseliş düzeninde, fiyat günün ortalamasının üstünde. Direnç aşılırsa hareket hızlanabilir.', at: Date.now() } : { ok: false, err: 'yorum için yeterli veri yok' }) }); }
     if (u.includes('/aisec-set')) { globalThis.__AISEC_SET = (globalThis.__AISEC_SET || 0) + 1; return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, n: 2, yeni: 0, ai: 0 }) }); }
+    if (u.includes('/gece')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, g: { d: '2026-10-30', st: 'alindi', list: [{ s: 'ZZGEC', c: 10, ch: 1, p0: 10.1 }, { s: 'ZZGE2', c: 20, ch: 0.5, p0: 19.9 }], hist: [{ d: '2026-10-28', s: '2026-10-29', ort: 0.6, n: 8, w: 5 }] } }) });   // v14.23
     if (u.includes('/haber')) { const now = Date.now();   // v14.19 Haber Merkezi
       return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, at: now, st: { at: now, err: { aa: 'HTTP 403' } }, list: [
         { id: 'ppk:1', t: now - 600e3, src: 'ppk', ad: 'TCMB · faiz kararı', title: 'Faiz Oranlarına İlişkin Basın Duyurusu', txt: '', syms: '', yon: 0, onem: 3, url: 'https://www.tcmb.gov.tr/x' },

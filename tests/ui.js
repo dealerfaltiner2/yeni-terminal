@@ -82,6 +82,10 @@ async function page(b, opt) {
             cikan: /listeden çıkanlar \(1\)/.test(body.innerText), uyari: /sinyal değildir/.test(body.innerText), baslik: !!document.querySelector('#t-aisec .sechd'), geri: !!document.querySelector('#t-aisec .bkb'),
             sigar: b && b.scrollWidth <= b.clientWidth + 2, e20: body.querySelectorAll('.aic .ae').length === 2, q: q.ZZTST && q.ZZTST[0] === 100 && q.ZZTST[3] === 5e7 }; });
         ok('AI Seçtikleri: alt menüden açılır, kartlar + etiketler + çıkanlar, yazı sığıyor, anlık veri paketi', a && Object.values(a).every(Boolean), JSON.stringify(a)); }
+      // v14.23: Gece Kuşu kartı (Şimdi, katlanır)
+      { const gc = await T(async () => { GECE.at = 0; geceLoad(); await new Promise(r => setTimeout(r, 1200)); NOWF.f_gece = 1; showTab('now'); renderNow(); const t = document.getElementById('t-now').innerText;
+          const r = { kart: /Gece Kuşu/.test(t), hisse: /ZZGEC/.test(t) && /ZZGE2/.test(t), ozet: /yarın 10:25–10:30 sat/.test(t), gecmis: /Son 1 gece/.test(t), uyari: /tavsiyesi değildir/.test(t) }; NOWF.f_gece = 0; return r; });
+        ok('Gece Kuşu: Şimdi\'de sepet kartı (hisse, giriş, sat saati, geçmiş, uyarı)', gc && Object.values(gc).every(Boolean), JSON.stringify(gc)); }
       // v14.19: Haber Merkezi (menüden) + Algı için haber notu
       { await T(() => { HAB.list = null; HAB.at = 0; showTab('haber'); }); await p.waitForTimeout(1800); await T(() => renderHaber()); await p.screenshot({ path: path.join(OUT, 'haber-merkezi.png') });
         const hb = await T(() => { const body = document.getElementById('haberbody'), t = body.innerText;
