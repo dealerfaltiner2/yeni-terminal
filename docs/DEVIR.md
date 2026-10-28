@@ -373,6 +373,9 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
   Ekim 2026 endeks düzeyinde: gece toplamı −%0,4, gün içi ~−%11 (çöküşte bile gece çok daha iyi).
 - Hisse kırılımı (kapanış→10:30, A <15.03 / B): dün <−%3 düşen −0,35/−0,96 (alma), normal +0,23/+0,20, 20g zirvesinde ~0, tavan kapanan +1,6…+2,5 (kapanışta alım gerçekleşmeyebilir), gün: Çarşamba→Perşembe en iyi (+0,46/+0,37), Cuma→Pazartesi en zayıf (+0,19/+0,13).
   Gün başı endeks bilgisiyle (ilk 30 dk, dünkü endeks, genişlik) 10:30→kapanış TAHMİN EDİLEMİYOR (korelasyon 0,03–0,10).
+- 28.10 23:10 GERİYE DÖNÜK SEPET TESTİ (Fatih: 'geçmişe dönük test ettin mi'): feat, 274 gün, o gün −%3…+%9,5 arası kapanan hisseler (yayındaki eleme), her gün RASTGELE 8 hisse (3.000 deneme; gerçek kural 'en likit 8' — feat'te işlem hacmi yok, birebir test EDİLEMEDİ):
+  maliyetsiz toplam medyan +%78 (en kötü %5: +%56), işlem başı %0,05 maliyetle +%55 (+%36), %0,1 ile +%35 (+%19); zarar eden deneme yok; en derin düşüş medyan −%8 (kötü %5: −%11); 14 ayın 11–12'si artı.
+  Eleme önemli: elemesiz tüm hisseler +%49 / Eylül −12,3; elemeli Eylül +0,5. Ekim 2026 hisse verisi yok (feat 25.09'da bitiyor; BORSA servisi o an yanıt vermedi) → Ekim için yalnız endeks düzeyi (gece −%0,4 / gün içi −%11).
 - KARAR (Fatih 'kur, yayınla'): v14.23 GECE KUŞU — 17:40 sepet (8 likit BIST 100 hissesi), kapanış seansında al, ertesi 10:25–10:30 sat; karne src 'gece'. 2–4 hafta canlı sonuç izlenecek; zirve eleme (20g yüksek alanı taramada yok) ve Çarşamba ağırlığı sonraki adım adayı.
 
 ## 6x. 25.10 (Pazar) TRADINGVIEW HESAP RİSKİ (Fatih: 'TradingView beni engellemesin') — KARAR BEKLİYOR, kod değişmedi
