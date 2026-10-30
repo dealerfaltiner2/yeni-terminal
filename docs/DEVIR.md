@@ -389,6 +389,10 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
   Piyasa günü filtresi (o gün ortalama ±) iki dönemde tutarlı değil → eklenmez. İlk canlı deneme sepeti (28.10 → 30.10, tatil arası 2 gece): −%1,62 (8/8 eksi; ASELS +5,2 kapanmıştı → −5,1).
   Öneri: Gece Kuşu v2 = sabah güçlü/öğleden sonra zayıf ilk 8 + açılışta sat + Cuma ve tatil öncesi alım yok. ONAY BEKLİYOR.
 
+- 31.10 02:00 EMİR AKIŞI (flow, 13 gün 12–30.10, 1,2M hisse-dakika, günlük ciro ≥100 Mn 234 hisse; ilk 7 gün / son 6 gün): son 5/15/30 dk alıcılı−satıcılı dengesi sonraki 15/30/60 dk getiriyi
+  YÖNLÜ tahmin etmiyor (beşte birlikler U şekli, farklar ≤%0,1 < ortanca alış-satış farkı %0,1). Endeks gecikmesi (endeks 5 dk'da gitti, hisse geride kaldı → yetişir mi): yok, iki yarıda ters. → EMİR AKIŞINDA KENAR YOK (bu süre ve bu veriyle).
+  Fatih Gece Kuşu'nu reddetti ('işe yaramaz'); kalan tek yeni bilgi adayı: aracı kurum dağılımı (AKD) / takas — lisanslı veri gerekir.
+
 ## 6x. 25.10 (Pazar) TRADINGVIEW HESAP RİSKİ (Fatih: 'TradingView beni engellemesin') — KARAR BEKLİYOR, kod değişmedi
 - Durum: onaylı her cihaz (dev.ok=1) /tv-token + ?direct=1 ile TradingView'a FATİH'İN oturumuyla bağlanıyor → aynı anda 4–5 bağlantı (Fatih, Nihat/Almanya, adsız İstanbul iPhone, Ankara Android, Ana sunucu).
 - A (önerildi): arkadaş cihazları oturumsuz (eski üye yolu, 15 dk gecikmeli fiyat); sinyaller sunucudan canlı ve aynı kalır.
