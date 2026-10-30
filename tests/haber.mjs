@@ -89,7 +89,8 @@ ok('SPK bülteni: özet (uydurma madde atılır) + Telegram; Borsa duyurusu hiss
 // /haber
 E2.kap.push({ idx: 99, t: T0, syms: 'ASELS', title: 'ASELSAN', subj: 'Yeni İş İlişkisi', summ: 'Sözleşme', tip: 'is', yon: 1, onem: 3 }, { idx: 98, t: T0, syms: 'USAK', title: 'BORSA İSTANBUL A.Ş.', subj: 'Borsa duyurusu', summ: '', tip: 'kisit', yon: -1, onem: 2 });
 const json = (o, st) => ({ o, st: st || 200 });
-const L = (await haberRoute(E2.env, json, false)).o;
+const _now = Date.now; Date.now = () => T0 + 3600e3;   // 31.10: rota son 3 günü verir → test saati sabit (eskiden tarih ilerleyince düşüyordu)
+const L = (await haberRoute(E2.env, json, false)).o; Date.now = _now;
 ok('/haber: haber + KAP birleşik, Borsa duyurusu iki kez çıkmaz, yeniden eskiye', L.ok && L.list.length === 3 && L.list.some(x => x.id === 'kap:99' && x.ad === 'KAP') && !L.list.some(x => x.id === 'kap:98'), L.list.map(x => x.id));
 ok('/haber: üyeye boş', (await haberRoute(E2.env, json, true)).o.list.length === 0);
 if (bad) { console.log('HABER MERKEZİ: ' + bad + ' HATA'); process.exit(1); } else console.log('HABER MERKEZİ: hepsi geçti');

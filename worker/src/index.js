@@ -30,6 +30,7 @@ import { kapPoll, kapMorning, kapList } from './kap.js';
 import { kesifData } from './kesif.js';
 import { haberPoll, haberFromKap, haberRoute } from './haber.js';
 import { geceStep, geceRoute } from './gece.js';
+import { gunlukStep } from './gunluk.js';
 import { tgBotUpdate, tgHookEnsure } from './tgbot.js';
 import { kanalAm, kanalPm, kanalOnce, kanalKap, kanalWeek, kanalLinks } from './kanal.js';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
@@ -1145,6 +1146,7 @@ export default {
       try { await kaphStep(env, UA); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'KAP geçmişi: ' + String(e && e.message || e).slice(0, 150), 'kaphStep'); }
       // v14.3: EMA hedef merdiveni araştırması (bir kerelik, seans dışında, meta 'emar_on'='1' iken dakikada 1 hisse)
       if (!inSess && !(T.wd >= 1 && T.wd <= 5 && T.m >= 560 && T.m < 1100)) { try { const er = await emarStep(env, fetchBarsTV); if (er) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('emar_last', ?)").bind(JSON.stringify({ at: Date.now(), ...er })).run(); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'EMA araştırması: ' + String(e && e.message || e).slice(0, 150), 'emarStep'); }
+        try { const g1 = await gunlukStep(env, fetchBarsTV); if (g1) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('gunluk_last', ?)").bind(JSON.stringify({ at: Date.now(), ...g1 })).run(); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'günlük arşiv: ' + String(e && e.message || e).slice(0, 150), 'gunlukStep'); }   // v14.26
         try { const e2 = await emar2Step(env, fetchBarsTV); if (e2) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('emar2_last', ?)").bind(JSON.stringify({ at: Date.now(), ...e2 })).run(); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'EMA 20 araştırması: ' + String(e && e.message || e).slice(0, 150), 'emar2Step'); }   // v14.9
       }
       await hb('5-tamam');
