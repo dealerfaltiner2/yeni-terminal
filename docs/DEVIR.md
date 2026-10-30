@@ -385,6 +385,10 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
   en derin düşüş −%5,9, artı gün %78, 14/14 ay artı; en sık 10 hisse hariç +0,26. 10:30 çıkışı ort +0,33 ama düşüş −%8,4, artı gün %66. Rastgele 8 / 10:30: +%90 (ortanca).
   Öneri Fatih'e: Gece Kuşu v2 (seçim kuralı + açılış seansında satış) — ONAY BEKLİYOR. Canlıda 10:30 anlık fiyatı kaydetmek gerekir (meta). Ekim 2026 hisse verisi yok.
 
+- 31.10 01:45 v2 EK TEST (feat): haftanın günü — Cuma akşamı alımı en zayıf (+0,09, 8/14 ay; en kötü gün 27.02 Cuma −5,9). CUMA HARİÇ ilk 8 / açılış çıkışı: +0,33/gece, 13 ay +%109 (maliyet %0,1 ile +%67), en derin düşüş −%2,0, artı gün %80, 14/14 ay, en kötü gece −1,9.
+  Piyasa günü filtresi (o gün ortalama ±) iki dönemde tutarlı değil → eklenmez. İlk canlı deneme sepeti (28.10 → 30.10, tatil arası 2 gece): −%1,62 (8/8 eksi; ASELS +5,2 kapanmıştı → −5,1).
+  Öneri: Gece Kuşu v2 = sabah güçlü/öğleden sonra zayıf ilk 8 + açılışta sat + Cuma ve tatil öncesi alım yok. ONAY BEKLİYOR.
+
 ## 6x. 25.10 (Pazar) TRADINGVIEW HESAP RİSKİ (Fatih: 'TradingView beni engellemesin') — KARAR BEKLİYOR, kod değişmedi
 - Durum: onaylı her cihaz (dev.ok=1) /tv-token + ?direct=1 ile TradingView'a FATİH'İN oturumuyla bağlanıyor → aynı anda 4–5 bağlantı (Fatih, Nihat/Almanya, adsız İstanbul iPhone, Ankara Android, Ana sunucu).
 - A (önerildi): arkadaş cihazları oturumsuz (eski üye yolu, 15 dk gecikmeli fiyat); sinyaller sunucudan canlı ve aynı kalır.
