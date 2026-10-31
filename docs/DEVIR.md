@@ -401,6 +401,9 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
 - 31.10 06:25 DERİNLİK PLANI (Fatih onayıyla, yeni oturumda bilgisayara bağlı yapılacak): Telegram 'Ücretsiz Derinlik' botunun 10 hisseyi aynı anda gösteren penceresi ana sunucu bilgisayarında tam ekran açık kalır;
   bilgisayarda küçük bir okuyucu birkaç saniyede bir ekran görüntüsünden kademeleri okur (OCR), yalnız ÖZET (alış/satış ağırlığı, büyük duvar fiyatı/lotu) Pusula sunucusuna gider. En likit 10 hisse, 4 hafta yalnız kayıt (sinyal yok),
   sonra test: alış tarafı ağırken sonraki 5–15 dk getiri. İlk adım: 10'lu pencerenin ekran görüntüsü (yerleşimi görmek için). Fatih'e söylendi: bot tek tek hisse değiştirerek otomatik gezilmeyecek; tutmazsa kapatılır.
+  31.10 07:00 ilk bakış (iş bilgisayarı DESKTOP-7RKA7LE, ekran okuma ile): Derinlik botu Telegram masaüstü değil, Chrome'da açık WEB mini uygulaması (Favorilerim listesi: fiyat, %, hacim, saat; alt menü Anasayfa/Kurumsal/Portföy/Diğer). 10'lu kademe ekranı henüz açılmadı (Cumartesi, piyasa kapalı).
+  → Sayfa web olduğu için kademeler ekran OCR'ı yerine sayfanın içinden (DOM) okunabilir — daha doğru ve hafif; botun kullanım koşulları açısından Fatih'le konuşulacak. Bu bilgisayarda Claude Chrome eklentisi kurulmaya başlandı, giriş yapılmadı.
+  Sıradaki (EV bilgisayarı = ana sunucu): Claude masaüstünde Computer use açık + Chrome'a Claude eklentisi (aynı hesap) → Fatih 10'lu derinlik ekranını açar → yerleşime bakılır → okuyucu (Node, pusula klasörü) + sunucuda derin tablosu (yalnız kayıt).
 
 ## 6x. 25.10 (Pazar) TRADINGVIEW HESAP RİSKİ (Fatih: 'TradingView beni engellemesin') — KARAR BEKLİYOR, kod değişmedi
 - Durum: onaylı her cihaz (dev.ok=1) /tv-token + ?direct=1 ile TradingView'a FATİH'İN oturumuyla bağlanıyor → aynı anda 4–5 bağlantı (Fatih, Nihat/Almanya, adsız İstanbul iPhone, Ankara Android, Ana sunucu).
