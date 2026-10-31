@@ -393,6 +393,10 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
   YÖNLÜ tahmin etmiyor (beşte birlikler U şekli, farklar ≤%0,1 < ortanca alış-satış farkı %0,1). Endeks gecikmesi (endeks 5 dk'da gitti, hisse geride kaldı → yetişir mi): yok, iki yarıda ters. → EMİR AKIŞINDA KENAR YOK (bu süre ve bu veriyle).
   Fatih Gece Kuşu'nu reddetti ('işe yaramaz'); kalan tek yeni bilgi adayı: aracı kurum dağılımı (AKD) / takas — lisanslı veri gerekir.
 
+- 31.10 04:20 ÇOK YILLIK GÜNLÜK TEST (v14.26 gunluk tablosu, 132 kod, 2016-07..2026-10, %0,2 maliyet; scratchpad sw/bt.py): BIST 100 al-tut TL %29/yıl ($ −%1); en likit 60 eşit ağırlık %26,7; mevduat (yaklaşık) %22.
+  52 hafta zirvesine en yakın 10 (haftalık) %41 / 7 yıl/11 — AMA hayatta kalma yanlılığı: 2016'da zaten büyük olan 40 hissede %33 vs eşit ağırlık %31,7 (fark yok). Momentum 12-1 eski 40'ta %39 vs %32 (7/11, 2. yarıda fark ~2 puan) → zayıf.
+  Haftalık geri dönüş (en çok düşeni al) −%6/yıl. Endeks SMA200 zamanlaması getiriyi artırmıyor, yalnız düşüşü −%45 → −%25'e indiriyor. → Günlük/haftalık tutmada da sağlam kenar YOK.
+
 ## 6x. 25.10 (Pazar) TRADINGVIEW HESAP RİSKİ (Fatih: 'TradingView beni engellemesin') — KARAR BEKLİYOR, kod değişmedi
 - Durum: onaylı her cihaz (dev.ok=1) /tv-token + ?direct=1 ile TradingView'a FATİH'İN oturumuyla bağlanıyor → aynı anda 4–5 bağlantı (Fatih, Nihat/Almanya, adsız İstanbul iPhone, Ankara Android, Ana sunucu).
 - A (önerildi): arkadaş cihazları oturumsuz (eski üye yolu, 15 dk gecikmeli fiyat); sinyaller sunucudan canlı ve aynı kalır.
