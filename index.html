@@ -3529,7 +3529,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.25";window.APPV=APP_VER;
+  const APP_VER="14.27";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4339,7 +4339,7 @@ document.getElementById('infosheet').addEventListener('click',e=>{if(e.target.cl
 </style>
 <script>
 /* ================= v6.9 SUNUCU KARNESİ ================= */
-const KSRC=[['firsat-A','🅰️ Fırsat A'],['firsat-B','🅱️ Fırsat B'],['algi','⚡ Algı'],['momentum','🧪 Momentum (deneme)'],['sessiz','🤫 Sessiz trend (sessiz kayıt)'],['dunguclu','💪 Dün güçlü kapanış (sessiz kayıt)'],['oglen','🕛 Öğle trend günü (sessiz kayıt)'],['radar','📡 Sunucu radarı']];
+const KSRC=[['firsat-A','🅰️ Fırsat A'],['firsat-B','🅱️ Fırsat B'],['algi','⚡ Algı'],['momentum','🧪 Momentum (deneme)'],['sessiz','🤫 Sessiz trend (sessiz kayıt)'],['dunguclu','💪 Dün güçlü kapanış (sessiz kayıt)'],['oglen','🕛 Öğle trend günü (sessiz kayıt)'],['vdpm','🎯 Delta destek dönüşü (sessiz kayıt)'],['radar','📡 Sunucu radarı']];
 const KAPTR={is:'Yeni iş/sözleşme',ihale:'İhale',geri:'Geri alım',bedelsiz:'Bedelsiz',bedelli:'Bedelli',tahsisli:'Sermaye artırımı',teklif:'Pay alım teklifi',birlesme:'Birleşme/devir',tesvik:'Teşvik',temettu:'Temettü',bilanco:'Bilanço',not:'Kredi notu',icerden:'İçeriden alım-satım',yatirim:'Yatırım',varlik:'Varlık alım/satım',ozel:'Özel durum',risk:'Risk',kisit:'İşlem kısıtı',ceza:'Ceza/dava'};
 let KST_LOADING=null,KST_TRY=0;
 // hata mesajını bir kez göstermek için tek seferlik yeniden çizim (kstatLoad 60 sn kısıtlı olduğundan döngü olmaz)
@@ -5377,6 +5377,7 @@ function flowTick(name,v,t){
  const r=M[name]=M[name]||[n.m,0,0,0,0,0,0,0];
  if(dir>0)r[1]+=dv;else if(dir<0)r[2]+=dv;else r[3]+=dv;
  r[4]++;r[5]=px;r[6]=F.b||0;r[7]=F.a||0;
+ try{vdpTick(name,n,px,dv,dir)}catch(e){}
 }
 async function flowFlush(){
  if(!BOTMODE||FLOW.sending)return;
@@ -5400,6 +5401,61 @@ async function flowFlush(){
  FLOW.sending=false;
 }
 if(BOTMODE)setInterval(()=>{try{flowFlush()}catch(e){}},20000);
+/* ================= v14.27 (27.10, Fatih onayıyla, DEVIR 6z; yayın 31.10) DELTA DESTEK DÖNÜŞÜ — SESSİZ KAYIT (yalnız motor) =================
+   'Volume Delta Pivot Matrix' fikrinin canlı ölçümü. Motorun emir akışından (flowTick) 5 dk mumlar + her mumun deltası (alıcılı − satıcılı lot).
+   Dip pivotu (±3 mum; 10:00 mumu sayılmaz, açılış seansı) deltası artıysa ALICILI DESTEK; kapanış altına inerse silinir.
+   Güç = deltası ÷ aktif desteklerin en büyük deltası. Sinyal: yeni kapanan mum güçlü (≥%80, net alıcılı ≥1 Mn TL) desteğe değdi (dip ≤ seviye +%0,3),
+   önceki mum değmemişti, kapanış seviyenin ≥%0,2 üstünde → src 'vdpm' (10:30–17:30, hisseye günde bir, günde en çok 20, işlem ≥20 Mn TL).
+   Telegram/ekranda sinyal YOK; karne +%3/−%1 (o31) + bot yarışı. */
+const VDP={b:{},day:'',done:{},n:0,last:null};
+function vdpTick(name,n,px,dv,dir){
+ if(!BOTMODE)return;
+ if(VDP.day!==n.day){VDP.day=n.day;VDP.b={};VDP.done=LS.get('vdpDone',{})||{};if(VDP.done.d!==n.day)VDP.done={d:n.day,s:{}};VDP.n=Object.keys(VDP.done.s).length}
+ const k=Math.floor(n.m/5),B=VDP.b[name]=VDP.b[name]||[];let x=B[B.length-1];
+ if(!x||x.k!==k){x={k,o:px,h:px,l:px,c:px,d:0};B.push(x);if(B.length>120)B.shift()}
+ if(px>x.h)x.h=px;if(px<x.l)x.l=px;x.c=px;
+ if(dir>0)x.d+=dv;else if(dir<0)x.d-=dv;
+}
+// saf: tamamlanmış 5 dk mumlar → son mumda sinyal var mı
+function vdpCalc(B,o){
+ o=o||{};const P=o.p||3,MIN=o.min!=null?o.min:0.8,TL=o.tl!=null?o.tl:1e6,n=B.length;if(n<P*2+3)return null;
+ const act=[];
+ for(let j=0;j<n;j++){
+  const i=j-P-1;   // j. mum başlarken i. mumun pivotu belli (sağında P mum kapandı)
+  if(i>=P&&B[i].k>120&&B[i].d>0){let lo=true;for(let q=i-P;q<=i+P;q++)if(q!==i&&B[q].l<B[i].l){lo=false;break}if(lo)act.push({lv:B[i].l,d:B[i].d,k:B[i].k,j:i})}
+  if(j===n-1)break;
+  for(let a=act.length-1;a>=0;a--)if(B[j].c<act[a].lv)act.splice(a,1);
+ }
+ if(!act.length)return null;
+ const mx=Math.max(...act.map(a=>a.d)),c=B[n-1],pr=B[n-2];
+ for(const a of act.sort((x,y)=>y.d-x.d)){
+  const st=a.d/mx;if(st<MIN||a.d*a.lv<TL)continue;
+  if(c.l<=a.lv*1.003&&c.c>=a.lv*1.002&&pr.l>a.lv*1.003)return{lv:a.lv,st,dl:a.d*a.lv,pk:a.k,nact:act.length};
+ }
+ return null;
+}
+function vdpScan(){
+ if(!BOTMODE||!VDP.day)return;
+ const t=flowNow();if(t.day!==VDP.day||t.wd<1||t.wd>5)return;
+ const kc=Math.floor(t.m/5);if(kc*5<630||kc*5>1050)return;   // son kapanan mum 10:25–17:30
+ if(VDP.n>=20)return;
+ const vol={};(S.uni||[]).forEach(o=>{if(o&&o.close>0)vol[o.name]=o.close*(o.volume||0)});
+ for(const s in VDP.b){
+  if(VDP.done.s[s])continue;const B=VDP.b[s];if(!B.length)continue;
+  const C=B[B.length-1].k<kc?B:B.slice(0,-1);if(!C.length||C[C.length-1].k!==kc-1||C[C.length-1].ck)continue;
+  C[C.length-1].ck=1;
+  if(!((vol[s]||0)>=2e7))continue;
+  const u=(S.uni||[]).find(o=>o.name===s);if(u&&u.change!=null&&Math.abs(u.change)>=9)continue;
+  const r=vdpCalc(C);if(!r)continue;
+  const px=(FLOW.st[s]&&FLOW.st[s].p)||C[C.length-1].c;
+  VDP.done.s[s]=1;VDP.n++;LS.set('vdpDone',VDP.done);
+  const hm=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+  VDP.last={at:Date.now(),s,lv:r.lv,st:r.st};
+  sigPost({src:'vdpm',sym:s,t:Date.now(),px,sc:Math.round(r.st*100),dir:'AL',meta:{lv:r.lv,st:Math.round(r.st*100),dl:+(r.dl/1e6).toFixed(1),pv:hm(r.pk*5),na:r.nact}});
+  if(VDP.n>=20)break;
+ }
+}
+if(BOTMODE)setInterval(()=>{try{vdpScan()}catch(e){}},20000);
 /* ================= v7.4 İŞ BİLGİSAYARI SİNYAL MOTORU =================
    Motor (Windows'ta başsız tarayıcı) bu sayfayı ?bot=1 ile açar: Algı seans boyunca çalışır, otomatik Fırsat taraması 15 dk'da bir
    yapılır, sinyaller Telegram'a ve karneye gider. Telefon, motor canlıyken aynı sinyalleri Telegram'a göndermez.
@@ -5685,7 +5741,7 @@ async function vpRun(){
    Gerçek para yok, emir yok. Sunucu (/paper) karnedeki sinyalleri "bot alsaydı ne olurdu?" diye hesaplar:
    seçili kaynaklar, işlem başına sabit tutar, Momentum ±%1,5 / diğerleri ±%1, gelmezse gün sonu kapanışı, %0,1 kayma payı, günde en çok N işlem. */
 const PAPER={at:0,v:null,err:null,busy:false};
-const PSRC={'firsat-A':'🅰️ Fırsat A','firsat-B':'🅱️ Fırsat B',algi:'⚡ Algı',momentum:'🧪 Momentum',radar:'📡 Radar',sessiz:'🤫 Sessiz trend',dunguclu:'💪 Dün güçlü kapanış',oglen:'🕛 Öğle trend günü',oglen:'🕛 Öğle trend günü'};
+const PSRC={'firsat-A':'🅰️ Fırsat A','firsat-B':'🅱️ Fırsat B',algi:'⚡ Algı',momentum:'🧪 Momentum',radar:'📡 Radar',sessiz:'🤫 Sessiz trend',dunguclu:'💪 Dün güçlü kapanış',oglen:'🕛 Öğle trend günü',vdpm:'🎯 Delta destek dönüşü'};
 function paperLoad(force){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||PAPER.busy)return;if(!force&&Date.now()-PAPER.at<120e3)return;
  PAPER.busy=true;PAPER.at=Date.now();
  fetch(dq(b+'/paper')).then(r=>r.json()).then(j=>{if(j&&j.ok){PAPER.v=j;PAPER.err=null}else PAPER.err=(j&&j.error)||'alınamadı'}).catch(()=>{PAPER.err='sunucuya ulaşılamadı'})
@@ -5834,7 +5890,7 @@ function xrayRender(){const body=document.getElementById('xr_body');if(!body)ret
  try{(NOWK.list||[]).filter(k=>String(k.syms||'').split(',').includes(sym)).slice(0,2).forEach(k=>wn.push([k.yon<0?'w':'ok','KAP '+new Date(k.t).toLocaleDateString('tr-TR',{day:'numeric',month:'short'})+': '+htmlEsc(k.ad||k.tip||'')+(k.subj?' — '+htmlEsc(String(k.subj).slice(0,60)):'')]))}catch(e){}
  if(wn.length)h+='<div class="dsub">Dikkat</div><div class="warns">'+wn.map(x=>'<div class="'+(x[0]==='ok'?'ok':'')+'">'+(x[0]==='ok'?'✓ ':'⚠ ')+x[1]+'</div>').join('')+'</div>';
  // hissenin karnesi
- const ks=XR.ks,SN={algi:'⚡ Algı','firsat-A':'🅰️ Fırsat A','firsat-B':'🅱️ Fırsat B',momentum:'🧪 Momentum',radar:'📡 Radar',tavan:'🚀 Tavan',sessiz:'🤫 Sessiz trend',dunguclu:'💪 Dün güçlü kapanış'};
+ const ks=XR.ks,SN={algi:'⚡ Algı','firsat-A':'🅰️ Fırsat A','firsat-B':'🅱️ Fırsat B',momentum:'🧪 Momentum',radar:'📡 Radar',tavan:'🚀 Tavan',sessiz:'🤫 Sessiz trend',dunguclu:'💪 Dün güçlü kapanış',vdpm:'🎯 Delta destek dönüşü'};
  h+='<div class="dsub">Sistemin bu hissedeki karnesi (60 gün)</div>';
  if(!ks)h+='<div class="xnote sm">Yükleniyor…</div>';
  else if(!(ks.src||[]).length)h+='<div class="xnote sm">Sistem son 60 günde bu hisseye sinyal vermedi.</div>';

@@ -36,7 +36,7 @@ ok('ayar sınırları', c.amt === 1000 && c.max === 30 && c.srcs.join() === 'alg
     { ...R('2026-10-02', T('14:00'), 'firsat-B', 'C1', 10, 2, 2, -2), tx: -1, pbn: 1, pb: -1 },
     { ...R('2026-10-02', T('15:00'), 'firsat-B', 'D1', 10, 1, 1, 2), tx: 0.5, pbn: null, pb: null } ];
   const v = paperSim(rr, { amt: 10000, max: 5, slip: 0 }, '2026-10-02'), B = Object.fromEntries(v.bots.map(b => [b.k, b]));
-  ok('yarış: 17 bot, en çok kazanan en üstte', v.bots.length === 17 && v.bots[0].pl >= v.bots[16].pl);
+  ok('yarış: 18 bot, en çok kazanan en üstte', v.bots.length === 18 && v.bots[0].pl >= v.bots[17].pl);
   ok('mevcut bot = ana bot', B.mevcut.pl === v.tot.pl && B.mevcut.n === 4, B.mevcut.pl + ' / ' + v.tot.pl);
   ok('güçlüler: zayıf Algı alınmaz', B.guclu.n === 3);
   ok('öğle arası: 11:30 sinyali alınmaz', B.saat.n === 3 && B.saat.pl === -100, B.saat.pl);

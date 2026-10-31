@@ -364,6 +364,7 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
 ## 6z. 27.10 'VOLUME DELTA PIVOT MATRIX' (BigBeluga) FİKRİ — GERÇEK EMİR AKIŞIYLA TEST (flow tablosu, 12–26.10, 981 Algı sinyali, 5 dk mum, pivot ±3 mum, delta = alıcılı − satıcılı, güçlü = en güçlü aktif seviyenin ≥%30'u, kırılan seviye silinir)
 - Güçlü ALICILI desteğe %1,5 yakın gelen Algı: 12–16.10 −0,26 / 19–26.10 +0,10 (stop −1, yoksa gün sonu) — 'destek yok' −0,21 / +0,13 → FARK YOK. Güçlü SATICILI direncin altında gelen: −0,03 / +0,07, direnç yok: −0,28 / +0,14 → tutarsız.
 - Geri çekilme + destek birlikte: −0,35 / −0,20 (17 + 32) → geri çekilme tek başına daha iyi (−0,04 / +0,19). SONUÇ: göstergenin mantığı Algı'ya üstünlük katmıyor; eklenmedi.
+- 27.10 akşam (Fatih HUBVC ekran görüntüsü: güçlü yeşil 1,97'ye değip +%8,6) → 'canlıda ölçelim': v14.27 sessiz kayıt src 'vdpm' (motor, 5 dk mum, güç ≥%80, net alıcılı ≥1 Mn TL, değ-dön). ~2–3 hafta sonra bot yarışında '🎯 Delta destek dönüşü' satırına bak (+%3/−%1, o31). Başabaş %25.
 
 ## 7a. 28.10 gece 'TERMİNALİ UÇUR' ARAŞTIRMASI (GELİŞTİRİCİ; canlı karne 29.09–27.10 + feat 13 ay)
 - Canlı karne (AL, +3/−1 yoksa gün sonu): hiçbir kaynak başabaşı güvenilir geçmiyor — Algı A −0,21 / B +0,05 (isabet %18), kap-geri +0,37 / −0,24, Fırsat B −0,11 / −0,37, Momentum +0,03 / −0,18, tavan6 −0,13; günlük sonuç piyasanın yönünü izliyor (XU100 Ekim'de −%22).

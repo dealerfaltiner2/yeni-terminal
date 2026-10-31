@@ -103,6 +103,11 @@ async function page(b, opt) {
       // v14.18: Algı satırları blok dışından görülebiliyor (eskiden 'AL is not defined' sessizce yutuluyordu → motor radar listesini hiç yollamadı)
       ok('canlı liste ve sunucu radarı Algı satırlarını görüyor', await T(() => { const o = S.algi.rows; S.algi.rows = [{ s: 'ZZALG', sc: 80, stage: 'ates', f: {}, o: {} }];
         let k; try { k = tvKeep(); } finally { S.algi.rows = o; } return k.includes('ZZALG'); }));
+      ok('Delta destek dönüşü (vdpCalc): güçlü alıcılı dibe değip dönen bulunur, zayıf/kırılan/dönmeyen bulunmaz', await T(() => {
+        const L = [10.5, 10.4, 10.3, 10.0, 10.2, 10.4, 10.5, 10.3, 10.01], mk = (ls, d3, lastC) => ls.map((l, i) => ({ k: 121 + i, o: l + .1, h: l + .2, l, c: i === ls.length - 1 ? lastC : l + .1, d: i === 3 ? d3 : 1000 }));
+        const a = vdpCalc(mk(L, 5e5, 10.1)), b = vdpCalc(mk(L, 5e5, 10.01)), c = vdpCalc(mk(L, 5e4, 10.1));
+        const br = mk(L, 5e5, 10.1); br[7].c = 9.9; const d = vdpCalc(br);
+        return a && a.lv === 10 && a.st === 1 && !b && !c && !d && typeof vdpScan === 'function'; }));
       // v14.12: canlı liste yenileme seçimi (saf fonksiyon)
       ok('canlı liste: yer yoksa korunmayan en düşük hacimliler çıkar, korunanlar kalır', await T(() => {
         const cur = ['A', 'B', 'C', 'D', 'E'], vol = x => ({ A: 50, B: 1, C: 5, D: 2, E: 9 })[x];

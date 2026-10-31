@@ -8,10 +8,10 @@
 const TRMS = 3 * 3600e3;
 import { sigEnsure } from './sig.js';
 const trDay = ms => new Date(ms + TRMS).toISOString().slice(0, 10);
-export const PAPER_SRCS = ['firsat-A', 'firsat-B', 'algi', 'momentum', 'radar', 'sessiz', 'dunguclu', 'oglen', 'aisec'];
+export const PAPER_SRCS = ['firsat-A', 'firsat-B', 'algi', 'momentum', 'radar', 'sessiz', 'dunguclu', 'oglen', 'aisec', 'vdpm'];
 const K15 = new Set(['momentum', 'sessiz', 'dunguclu']);
 // Sessiz kayıt botları: Telegram'daki yarış satırlarında gösterilmez (yalnız Karne ekranı)
-export const QUIET_BOTS = new Set(['sessiz', 'dunguclu', 'momgk', 'mom4', 'momh', 'mom315', 'oglen', 'alg31', 'alg21', 'alg2b', 'aisec']);
+export const QUIET_BOTS = new Set(['sessiz', 'dunguclu', 'momgk', 'mom4', 'momh', 'mom315', 'oglen', 'alg31', 'alg21', 'alg2b', 'aisec', 'vdpm']);
 const metaOf = r => { try { return (typeof r.meta === 'string' ? JSON.parse(r.meta) : r.meta) || {}; } catch (e) { return {}; } };   // ±%1,5 ile ölçülen kaynaklar
 export const PAPER_DEF = { amt: 20000, cap: 100000, max: 5, srcs: ['firsat-A', 'firsat-B', 'algi', 'momentum'], algiG: false, slip: 0.1, start: '2026-09-29' };
 const r2 = v => Math.round(v * 100) / 100;
@@ -95,6 +95,7 @@ export const BOTS = [
   { k: 'alg21', ad: '⚡ Algı · +%2\'de kâr al', not: 'Aynı Algı sinyalleri. Hedef +%2, stop −%1; ikisi de gelmezse gün sonu. 3 Kasım kararı için ölçülüyor.' },
   { k: 'alg2b', ad: '⚡ Algı · +%2\'de stopu girişe çek', not: 'Aynı Algı sinyalleri. Stop −%1; +%2 görülünce stop girişe çekilir (geri gelirse sıfırla çık), gelmezse gün sonu. 3 Kasım kararı için ölçülüyor.' },
   { k: 'aisec', ad: '🤖 Yapay zekâ seçtikleri (deneme)', not: 'Sessiz kayıt: AI Seçtikleri sekmesine giren hisseler, girdiği andaki fiyattan. Hedef +%3, stop −%1; ikisi de gelmezse gün sonu.' },
+  { k: 'vdpm', ad: '🎯 Delta destek dönüşü (deneme)', not: 'Sessiz kayıt: fiyat, alıcıların güçlü olduğu bir dip seviyesine değip döndüğünde (Volume Delta Pivot Matrix fikri). Hedef +%3, stop −%1; ikisi de gelmezse gün sonu.' },
   { k: 'momh', ad: '🧪 Momentum · hedefsiz, −%1 stop', not: 'Yalnız Momentum. Hedef yok, stop −%1; stop gelmezse gün sonunda satar — kazananı koşturur. (Geçmiş testte işlem başı +%0,69.)' }
 ];
 export function botRace(rows, c, today) {
@@ -107,7 +108,7 @@ export function botRace(rows, c, today) {
       else if (b.k === 'momgk') { if (r.src !== 'momentum' || !(+metaOf(r).yc >= 0.7)) continue; }
       else if (b.k === 'mom4' || b.k === 'momh' || b.k === 'mom315') { if (r.src !== 'momentum') continue; }
       else if (b.k === 'oglen') { if (r.src !== 'oglen') continue; }
-      else if (b.k === 'aisec') { if (r.src !== 'aisec') continue; }
+      else if (b.k === 'aisec' || b.k === 'vdpm') { if (r.src !== b.k) continue; }
       else if (b.k === 'alg31' || b.k === 'alg21' || b.k === 'alg2b') { const m = metaOf(r); if (r.src !== 'algi' || !(fcOf(r) >= 0.8) || !(+m.rv >= 2)) continue; }
       else if (!c.srcs.includes(r.src)) continue;
       if (r.src === 'algi' && (c.algiG || b.k === 'guclu') && !(fcOf(r) >= 0.8)) continue;
@@ -130,7 +131,7 @@ export function botRace(rows, c, today) {
       } else if (b.k === 'mom315') {
         if (r.o315 == null || r.o315 < 0 || (r.o315 === 0 && r.rc == null)) { eksik++; continue; }
         p = r.o315 === 1 ? 3 : r.o315 === 2 ? -1.5 : +r.rc; res = r.o315 === 1 ? 'hedef' : r.o315 === 2 ? 'stop' : 'süre';
-      } else if (b.k === 'alg31' || b.k === 'aisec') {
+      } else if (b.k === 'alg31' || b.k === 'aisec' || b.k === 'vdpm') {
         if (r.o31 == null || r.o31 < 0 || (r.o31 === 0 && r.rc == null)) { eksik++; continue; }
         p = r.o31 === 1 ? 3 : r.o31 === 2 ? -1 : +r.rc; res = r.o31 === 1 ? 'hedef' : r.o31 === 2 ? 'stop' : 'süre';
       } else if (b.k === 'alg21') {
@@ -171,7 +172,7 @@ export async function paperCalc(env, fresh) {
   const c = paperCfg(raw);
   let rows = [];
   try { await sigEnsure(env); } catch (e) {}
-  try { rows = (await env.BT.prepare("SELECT d, t, src, sym, dir, px, done, o10, o15, o31, o41, o315, o21, b2, h1, rc, tx, pb, pbn, meta FROM sig WHERE d >= ? AND err IS NULL AND src IN ('firsat-A','firsat-B','algi','momentum','radar','sessiz','dunguclu','oglen','aisec')").bind(c.start).all()).results || []; } catch (e) { if (!/no such table/i.test(String(e && e.message))) throw e; }
+  try { rows = (await env.BT.prepare("SELECT d, t, src, sym, dir, px, done, o10, o15, o31, o41, o315, o21, b2, h1, rc, tx, pb, pbn, meta FROM sig WHERE d >= ? AND err IS NULL AND src IN ('firsat-A','firsat-B','algi','momentum','radar','sessiz','dunguclu','oglen','aisec','vdpm')").bind(c.start).all()).results || []; } catch (e) { if (!/no such table/i.test(String(e && e.message))) throw e; }
   const v = { ok: true, at: Date.now(), ...paperSim(rows, c, trDay(Date.now())) };
   cache = { at: Date.now(), v };
   try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('paper_v', ?)").bind(JSON.stringify(v)).run(); } catch (e) {}
