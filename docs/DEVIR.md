@@ -397,6 +397,10 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
   52 hafta zirvesine en yakın 10 (haftalık) %41 / 7 yıl/11 — AMA hayatta kalma yanlılığı: 2016'da zaten büyük olan 40 hissede %33 vs eşit ağırlık %31,7 (fark yok). Momentum 12-1 eski 40'ta %39 vs %32 (7/11, 2. yarıda fark ~2 puan) → zayıf.
   Haftalık geri dönüş (en çok düşeni al) −%6/yıl. Endeks SMA200 zamanlaması getiriyi artırmıyor, yalnız düşüşü −%45 → −%25'e indiriyor. → Günlük/haftalık tutmada da sağlam kenar YOK.
 
+- 31.10 06:25 DERİNLİK PLANI (Fatih onayıyla, yeni oturumda bilgisayara bağlı yapılacak): Telegram 'Ücretsiz Derinlik' botunun 10 hisseyi aynı anda gösteren penceresi ana sunucu bilgisayarında tam ekran açık kalır;
+  bilgisayarda küçük bir okuyucu birkaç saniyede bir ekran görüntüsünden kademeleri okur (OCR), yalnız ÖZET (alış/satış ağırlığı, büyük duvar fiyatı/lotu) Pusula sunucusuna gider. En likit 10 hisse, 4 hafta yalnız kayıt (sinyal yok),
+  sonra test: alış tarafı ağırken sonraki 5–15 dk getiri. İlk adım: 10'lu pencerenin ekran görüntüsü (yerleşimi görmek için). Fatih'e söylendi: bot tek tek hisse değiştirerek otomatik gezilmeyecek; tutmazsa kapatılır.
+
 ## 6x. 25.10 (Pazar) TRADINGVIEW HESAP RİSKİ (Fatih: 'TradingView beni engellemesin') — KARAR BEKLİYOR, kod değişmedi
 - Durum: onaylı her cihaz (dev.ok=1) /tv-token + ?direct=1 ile TradingView'a FATİH'İN oturumuyla bağlanıyor → aynı anda 4–5 bağlantı (Fatih, Nihat/Almanya, adsız İstanbul iPhone, Ankara Android, Ana sunucu).
 - A (önerildi): arkadaş cihazları oturumsuz (eski üye yolu, 15 dk gecikmeli fiyat); sinyaller sunucudan canlı ve aynı kalır.
