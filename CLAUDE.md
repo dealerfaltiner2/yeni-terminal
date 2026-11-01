@@ -421,3 +421,8 @@ Fatih her yeni oturumun ilk mesajında rolü söyler: "Rolün: GELİŞTİRİCİ"
 - v14.28 (01.11, Fatih onayıyla 'evet geçir'; DEVIR 31.10 v2 testi) GECE KUŞU v2 (gece.js): 10:30–10:50 BIST 100 fiyat kaydı → meta 'gece_1030' {d, p}; 17:40 seçim gecePick2 = elemeden geçenler içinde
   sabah sırası (önceki kapanış→10:30) − öğleden sonra sırası (10:30→şimdi), ilk 8 (kayıt yoksa eski 'en likit 8', meta gece.v 1/2). CUMA akşamı ve TATIL_MD öncesi (tatilOncesi) sepet YOK.
   Satış ölçümü ertesi iş günü 10:01–10:20 AÇILIŞ fiyatıyla (tarama 'open' alanı — doğrulanmadı; hata/boşsa anlık fiyat, res.list[].ac 1/0 hangisi kullanıldı). Mesajlar: 10 yıllık gece etkisi, açılış seansında sat. tests/gece.mjs.
+- v14.29 (01.11 gece, Fatih: 'katmanlı EMA sistemini ayrı sistem olarak terminale koy, kendi simgesi olsun; POC sonra') EMA KATMAN — yalnız bilgi + sessiz kayıt, mevcut sinyal/Telegram DEĞİŞMEDİ:
+  Menüde 'EMA Katman' (t-katman, renderKatman, SİNYAL VE HABER grubu, üç katman SVG simgesi; üyede gizli). Katmanlar KTM_L: 30 dk 8/13/21 · 15 dk 8/13/21 · 5 dk 5/8/13 · 1 dk 3/5/8 (tvBars k30/k15/k5/k1 = 120 mum, TVTF'de).
+  ktmCalc (saf): katman st 1/−1/0 (EMA sırası), ago, gs (aralık açılıyor); durum donus (30+15+5 yukarı, 1 dk ≤4 mum önce yukarı döndü) / tam / geri / karisik / zayif / asagi. Liste BIST 30 (ENDX.x30) ya da İzleme listem (LS ktmset), seansta 60 sn'de bir.
+  Röntgende 'EMA katmanları' satırı (xrayKatman, 3 dk taze). Motor (BOTMODE) 10:30–17:30 3 dk'da bir BIST 30 → 'donus' → sigPost src 'katman' (hisseye günde bir, günde ≤20, |değişim|<9; LS ktmDone; meta k/ago/gs).
+  Karne +%3/−%1 (o31), bot yarışı '🪜 EMA katman dönüşü' (paper.js PAPER_SRCS/QUIET_BOTS); karne mesajı ve sigToday'de YOK. POC katmanı sonra eklenecek. ui.js 1 kontrol, paper.mjs 19 bot.

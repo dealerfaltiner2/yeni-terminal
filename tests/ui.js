@@ -90,6 +90,14 @@ async function page(b, opt) {
       { const gt = await T(async () => { document.querySelector('#tabs [data-t=gece]').click(); await new Promise(r => setTimeout(r, 300)); const t = document.getElementById('t-gece').innerText;
           const r = { tab: S.tab === 'gece', hisse: /ZZGEC/.test(t), baslik: !!document.querySelector('#t-gece .sechd'), izlemeYok: !document.querySelector('#tabs [data-t=watch]'), menude: !!document.querySelector('#more .mgrid [data-t=watch]') }; showTab('now'); return r; });
         ok('Gece sekmesi: alt çubukta, sepet görünür; İzleme Menü\'de', gt && Object.values(gt).every(Boolean), JSON.stringify(gt)); }
+      // v14.29: EMA Katman sistemi (ayrı sekme, menüde kendi simgesi)
+      { const kt = await T(async () => { const up = n => Array.from({ length: 120 }, (_, i) => 100 + i * 0.1), B = { k30: up(), k15: up(), k5: up(), k1: up().map((v, i) => i < 116 ? 120 - i * 0.1 : 108.5 + (i - 115) * 0.6) };
+          const r1 = ktmCalc(B), r2 = ktmCalc({ k30: up(), k15: up(), k5: up(), k1: up() }), r3 = ktmCalc({ k30: up().reverse(), k15: up().reverse(), k5: up().reverse(), k1: up().reverse() });
+          const n = await ktmScan(['THYAO']); KTM.at = Date.now(); KTM.set = 'x30'; window.ENDX.x30 = ['THYAO']; showTab('katman'); renderKatman(); const t = document.getElementById('t-katman').innerText;
+          const r = { donus: r1 && r1.du === 'donus' && r1.L[3].ago <= 4, tam: r2 && r2.du === 'tam' && r2.pu === 4, asagi: r3 && r3.du === 'asagi' && r3.pu === -4, tara: n === 1 && !!KTM.m.THYAO,
+            ekran: /THYAO/.test(t) && /30dk/.test(t) && /1dk/.test(t) && /Dönüş anı/.test(t), baslik: !!document.querySelector('#t-katman .sechd'), menu: !!document.querySelector('#more .mgrid [data-t=katman] svg') };
+          showTab('now'); return r; });
+        ok('EMA Katman: hesap (dönüş/tam/aşağı), tarama, sekme, menüde simge', kt && Object.values(kt).every(Boolean), JSON.stringify(kt)); }
       // v14.19: Haber Merkezi (menüden) + Algı için haber notu
       { await T(() => { HAB.list = null; HAB.at = 0; showTab('haber'); }); await p.waitForTimeout(1800); await T(() => renderHaber()); await p.screenshot({ path: path.join(OUT, 'haber-merkezi.png') });
         const hb = await T(() => { const body = document.getElementById('haberbody'), t = body.innerText;
