@@ -411,6 +411,10 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
   (2) Matriks Data: derinlik/emir defteri MQTT-WebSocket servisi, bireye de satılıyor, fiyat formla; QStream geçmiş yeniden oynatma. (3) Borsa İstanbul DataStore PP_GUNICIEMIR (tam emir defteri, üye kodu YOK) — bireyler alıyor (GitHub ResulCan-KESKIN 13 ay), fiyat DataStore sitesinde (erişemedik), vyk-marketing@'e e-posta gitti 01.11.
   (4) Aracı kurum paketleri (Osmanlı listesi): 25 kademe 1.545–3.395 TL/ay, AKD anlık 485 TL; ~50k TL portföy/komisyonla ücret siliniyor. AlgoLab (Deniz) 31.12.2025'te kapandı. İdeal'e e-posta yazilim@idealdata.com.tr 31.10.
 
+- 01.11 22:40 YENİ FİKİRLER (gunluk 10 yıl, XU100 ve sektör grupları; eski <2021-08 / yeni): ay dönümü (son+ilk 3 gün) +0,18 vs +0,10 (eski farkı çok küçük); Perşembe/Pazartesi iyi Çarşamba kötü yalnız yeni dönemde; tatil öncesi gün −0,35;
+  endeks dün <−%3 → ertesi +0,55 (eski +0,07, yeni +0,86 → tutarsız). SEKTÖR İÇİ GERİDE KALAN (9 grup, 20 gün geride kalanı al, 20 gün tut, gruba göre): ort +0,36/ay (eski +0,55, yeni +0,19), 6/9 grup iki dönemde artı;
+  Banka +0,42/+0,97, Holding +1,62/+1,17, Otomotiv +0,92/+0,73, Demir-çelik +1,25/+0,38; Kimya −0,32/−1,30. 1 ve 5 günlük sürümler ~0. → zayıf ama en tutarlı yeni aday; anlamlılık sınırda (t≈2).
+
 ## 6x. 25.10 (Pazar) TRADINGVIEW HESAP RİSKİ (Fatih: 'TradingView beni engellemesin') — KARAR BEKLİYOR, kod değişmedi
 - Durum: onaylı her cihaz (dev.ok=1) /tv-token + ?direct=1 ile TradingView'a FATİH'İN oturumuyla bağlanıyor → aynı anda 4–5 bağlantı (Fatih, Nihat/Almanya, adsız İstanbul iPhone, Ankara Android, Ana sunucu).
 - A (önerildi): arkadaş cihazları oturumsuz (eski üye yolu, 15 dk gecikmeli fiyat); sinyaller sunucudan canlı ve aynı kalır.
