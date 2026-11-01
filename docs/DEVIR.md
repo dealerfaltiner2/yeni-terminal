@@ -415,6 +415,10 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
   endeks dün <−%3 → ertesi +0,55 (eski +0,07, yeni +0,86 → tutarsız). SEKTÖR İÇİ GERİDE KALAN (9 grup, 20 gün geride kalanı al, 20 gün tut, gruba göre): ort +0,36/ay (eski +0,55, yeni +0,19), 6/9 grup iki dönemde artı;
   Banka +0,42/+0,97, Holding +1,62/+1,17, Otomotiv +0,92/+0,73, Demir-çelik +1,25/+0,38; Kimya −0,32/−1,30. 1 ve 5 günlük sürümler ~0. → zayıf ama en tutarlı yeni aday; anlamlılık sınırda (t≈2).
 
+- 01.11 23:00 GECE ETKİSİ 10 YILDA DOĞRULANDI (gunluk açılış/kapanış, en likit 60, o gün −%3…+%9,5): kapanış→ertesi AÇILIŞ ort +0,238/gün, ertesi gün içi (açılış→kapanış) −0,106. 11 YILIN 11'İNDE gece artı (yıllık toplam +18…+94 puan), gün içi 11 yılın 10'unda eksi; gece artı gün oranı yıllara göre %71–84.
+  Dünya literatürü aynı: Lou-Polk-Skouras (JFE 2019, ABD) momentum kazancının neredeyse tamamı gece; bireyler açılışta, kurumlar kapanışa yakın işlem yapıyor. Momentum (12-1) BIST'te gece etkisini ARTIRMIYOR (en güçlü %20 +0,22, en zayıf %20 +0,27).
+  Dünya: Brezilya gün içi vadeli işlemciler 300+ gün devam edenlerin %97'si zararda (Chague vd. 2019); ABD büyük şirket fonlarının %89'u 5 yılda endeksin gerisinde (SPIVA); yayımlanan anomaliler yayın sonrası ~%32 zayıflıyor (McLean-Pontiff).
+
 ## 6x. 25.10 (Pazar) TRADINGVIEW HESAP RİSKİ (Fatih: 'TradingView beni engellemesin') — KARAR BEKLİYOR, kod değişmedi
 - Durum: onaylı her cihaz (dev.ok=1) /tv-token + ?direct=1 ile TradingView'a FATİH'İN oturumuyla bağlanıyor → aynı anda 4–5 bağlantı (Fatih, Nihat/Almanya, adsız İstanbul iPhone, Ankara Android, Ana sunucu).
 - A (önerildi): arkadaş cihazları oturumsuz (eski üye yolu, 15 dk gecikmeli fiyat); sinyaller sunucudan canlı ve aynı kalır.
