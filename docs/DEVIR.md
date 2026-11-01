@@ -407,6 +407,10 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
   31.10 09:52 DÜZELTME: ev Chrome'undaki Telegram Web ESKİ hesapla açık — o hesap bot tarafından ÖNCEDEN yasaklanmış ('Hesap Yasaklandı', bugünle ilgisi yok). Yeni hesap ev bilgisayarında Telegram MASAÜSTÜ uygulamasında açık, mini uygulama çalışıyor.
   DİKKAT: bot kötüye kullanım/otomasyonu tespit edip yasaklıyor → okuyucu tarayıcı otomasyonu kullanmamalı, botun sunucusuna istek atmamalı; yalnız ekranda görüneni seyrek okumalı. Telegram masaüstü penceresini görmek için Claude MASAÜSTÜ uygulaması + Computer use gerekir (claude.ai Chrome sekmesi yetmez).
 
+- 01.11 DERİNLİK/AKD KAYNAK ARAŞTIRMASI: (1) iDeal terminalinin kendi 'Sistem Sorguları' betikleri C# ve System.Net.WebRequest çalıştırabiliyor (GitHub asmeril/iDeaLQuant örnekleri Telegram'a istek atıyor) → Sistem.DerinlikVerisiOku / KademeAnalizOku / AKDHesapla / TakasHesapla verisi ek modülsüz (USERDLL gerekmeden) Pusula'ya POST edilebilir; maliyet terminal 1.099 + Düzey 2+ 625 + İşlem Tarafı 290 + MKK 65 TL/ay (KDV hariç).
+  (2) Matriks Data: derinlik/emir defteri MQTT-WebSocket servisi, bireye de satılıyor, fiyat formla; QStream geçmiş yeniden oynatma. (3) Borsa İstanbul DataStore PP_GUNICIEMIR (tam emir defteri, üye kodu YOK) — bireyler alıyor (GitHub ResulCan-KESKIN 13 ay), fiyat DataStore sitesinde (erişemedik), vyk-marketing@'e e-posta gitti 01.11.
+  (4) Aracı kurum paketleri (Osmanlı listesi): 25 kademe 1.545–3.395 TL/ay, AKD anlık 485 TL; ~50k TL portföy/komisyonla ücret siliniyor. AlgoLab (Deniz) 31.12.2025'te kapandı. İdeal'e e-posta yazilim@idealdata.com.tr 31.10.
+
 ## 6x. 25.10 (Pazar) TRADINGVIEW HESAP RİSKİ (Fatih: 'TradingView beni engellemesin') — KARAR BEKLİYOR, kod değişmedi
 - Durum: onaylı her cihaz (dev.ok=1) /tv-token + ?direct=1 ile TradingView'a FATİH'İN oturumuyla bağlanıyor → aynı anda 4–5 bağlantı (Fatih, Nihat/Almanya, adsız İstanbul iPhone, Ankara Android, Ana sunucu).
 - A (önerildi): arkadaş cihazları oturumsuz (eski üye yolu, 15 dk gecikmeli fiyat); sinyaller sunucudan canlı ve aynı kalır.
