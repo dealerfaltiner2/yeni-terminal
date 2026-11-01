@@ -3530,7 +3530,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.29";window.APPV=APP_VER;
+  const APP_VER="14.30";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4196,7 +4196,7 @@ const IC={
  katman:{ic:'🪜',c:'#34d399',t:'EMA Katman',s:'4 zaman dilimi · EMA dizilimi',sec:[
   ['NEDİR?','Her hissede dört zaman dilimine ayrı ayrı bakar ve hızlı EMA\'ların sırasını ölçer: <b>1 dk</b> 3/5/8 · <b>5 dk</b> 5/8/13 · <b>15 dk</b> 8/13/21 · <b>30 dk</b> 8/13/21. Kısa ortalama ortadakinin, ortadaki uzunun üstündeyse o katman <b>yukarı ↑</b>, tersi <b>aşağı ↓</b>, karışıksa <b>·</b>.'],
   ['DURUMLAR',['<b>🎯 Dönüş anı</b>: 30, 15 ve 5 dakikalık yukarı; 1 dakikalık son 5 dakikada yeniden yukarı döndü. Büyük yön yukarıyken küçük geri çekilme bitmiş olabilir.','<b>🟢 Tam uyum</b>: dört katman da yukarı (hareket sürüyor, geç kalmış olabilirsin).','<b>⏸ Geri çekiliyor</b>: büyük yön yukarı, 1 dakikalık henüz dönmedi.','<b>🔴 Aşağı</b>: katmanların çoğu aşağı.','<b>Karışık</b>: net yön yok.']],
-  ['ÖLÇÜM','Ana sunucu seansta (10:30–17:30) BIST 30\'u 3 dakikada bir tarar; <b>Dönüş anı</b> görülen hisseyi karneye sessizce yazar (+%3 hedef / −%1 stop). Telegram\'a gitmez. Birkaç hafta sonra karnede işe yarıyor mu bakılacak.'],
+  ['TELEGRAM','Ana sunucu seansta (10:30–17:30) BIST 30\'u 3 dakikada bir tarar. <b>Dönüş anı</b> görülen hisse karneye yazılır (+%3 hedef / −%1 stop); <b>BIST 100 o an artıdaysa</b> Telegram\'a da gider (günde en çok 8). Deneme: 12–30 Ekim testinde borsa artıyken işlem başı +%0,27, ekside −%0,26 çıktı; katmanların endeksten bağımsız ek katkısı görülmedi.'],
   ['DİKKAT','Bu bir sinyal değil, ölçülen bir dizilim bilgisidir. Gün içi EMA dizilimleri geçmiş testlerde tek başına kazandırmadı. Yatırım tavsiyesi değildir.',1]]},
  gece:{ic:'🌙',c:'#a5b4fc',t:'Gece Kuşu',s:'Akşam al, sabah sat',sec:[
   ['NEDİR?','Pazartesi–Perşembe 17:40\'ta BIST 100\'den sabahı güçlü (dünkü kapanıştan 10:30\'a yükselen) ama öğleden sonra geri çekilen 8 hisse seçilir. Kapanış seansında (18:00–18:10) her birine eşit tutarla alınır, ertesi iş günü açılış seansında (09:40–09:55) satılır. Cuma akşamı ve tatil öncesi sepet kurulmaz. Seçim ve satış Telegram\'a da gelir.'],
@@ -7107,7 +7107,11 @@ function ktmMotor(){if(!BOTMODE)return;const d=new Date(Date.now()+3*3600e3),m=d
  ktmScan(x30).then(()=>{let D=LS.get('ktmDone',null);if(!D||D.d!==day)D={d:day,s:{}};
   for(const s of x30){const r=KTM.m[s];if(!r||r.du!=='donus'||D.s[s]||Object.keys(D.s).length>=20||Date.now()-r.at>120e3)continue;const q=S.umap[s],px=q&&q.close>0?q.close:r.px;
    if(q&&q.change!=null&&Math.abs(q.change)>=9)continue;D.s[s]=1;
-   sigPost({src:'katman',sym:s,t:Date.now(),px,sc:r.pu,dir:'AL',meta:{k:r.L.map(x=>x.lab+(x.st>0?'+':x.st<0?'-':'0')).join(' '),ago:r.L[3].ago,gs:r.L.map(x=>x.gs).join('')}})}
+   // v14.30 (Fatih: 'sinyal olsun, Telegram'a gelsin'): yalnız BIST 100 o an artıdayken (test: ekside her durum zarar), günde en çok 8 mesaj
+   const tg=!!(S.tgTok&&S.tgChat&&tgIdxOk()&&(D.tg||0)<8);if(tg)D.tg=(D.tg||0)+1;
+   sigPost({src:'katman',sym:s,t:Date.now(),px,sc:r.pu,dir:'AL',meta:{k:r.L.map(x=>x.lab+(x.st>0?'+':x.st<0?'-':'0')).join(' '),ago:r.L[3].ago,gs:r.L.map(x=>x.gs).join(''),tg:tg?1:0}});
+   if(tg)try{tgSend(tgCard({ic:'🪜',dir:'AL',sym:s,src:'EMA Katman (deneme)',name:q&&q.description||'',px,ch:q?q.change:null,tp:px*1.03,sl:px*0.99,
+    why:['30 dk, 15 dk ve 5 dk EMA dizilimi yukarı','1 dk dizilim '+(r.L[3].ago?r.L[3].ago+' dk önce':'şimdi')+' yeniden yukarı döndü','BIST 100 şu an artıda'],note:sigNoteTxt(s)+'\n<i>Deneme: geçmiş test kısa (11 gün). Yatırım tavsiyesi değildir.</i>'}),tgKb(s)).catch(()=>{})}catch(e){}}
   LS.set('ktmDone',D)}).catch(()=>{}).finally(()=>{KTM.busy=0})}
 setInterval(()=>{try{ktmMotor()}catch(e){}},20000);
 </script>
