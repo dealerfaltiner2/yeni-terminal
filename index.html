@@ -3529,7 +3529,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.27";window.APPV=APP_VER;
+  const APP_VER="14.28";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4193,8 +4193,8 @@ const IC={
   ['SÜTUNLAR',['<b>VWAP</b>: günün hacim ağırlıklı ortalaması ve fiyatın ona uzaklığı','<b>Hız</b>: saniyede el değiştiren lot','<b>Spread</b>: alış ile satış kademesi arasındaki fark (%)']],
   ['DİKKAT','Bu ekran sinyal vermez, anlık tablodur. Momentum listesinin başındakiler çok hızlı hareket ediyor olabilir; kovalamadan önce Algı\'ya bak.',1]]},
  gece:{ic:'🌙',c:'#a5b4fc',t:'Gece Kuşu',s:'Akşam al, sabah sat',sec:[
-  ['NEDİR?','Hafta içi 17:40\'ta BIST 100\'den en çok işlem gören 8 hisse seçilir. Kapanış seansında (18:00–18:10) her birine eşit tutarla alınır, ertesi iş günü 10:25–10:30 arası satılır. Seçim ve satış Telegram\'a da gelir.'],
-  ['NEDEN?','13 ayda büyük hisseler kapanıştan ertesi sabah 10:30\'a ortalama +%0,15 kazandırdı (günlerin %63\'ü artı); aynı hisseler gün içinde kaybettirdi.'],
+  ['NEDİR?','Pazartesi–Perşembe 17:40\'ta BIST 100\'den sabahı güçlü (dünkü kapanıştan 10:30\'a yükselen) ama öğleden sonra geri çekilen 8 hisse seçilir. Kapanış seansında (18:00–18:10) her birine eşit tutarla alınır, ertesi iş günü açılış seansında (09:40–09:55) satılır. Cuma akşamı ve tatil öncesi sepet kurulmaz. Seçim ve satış Telegram\'a da gelir.'],
+  ['NEDEN?','Borsa İstanbul\'da 10 yılın her yılında hisseler kapanıştan ertesi sabah açılışa kadar kazandırdı, gün içinde ise kaybettirdi ("gece etkisi"). Bu seçimle 13 ayda gece başına ortalama +%0,33, gecelerin %80\'i artı (geçmiş test, komisyon hariç).'],
   ['ELENENLER',['O gün %3\'ten fazla düşenler','Tavandakiler (kapanışta alınamayabilir)','Günlük işlemi 100 milyon TL altı olanlar','Borsa tedbiri olanlar']],
   ['RİSK','Gece stop konamaz; kötü bir haberle sabah boşlukla düşüş olabilir. Çöküş aylarında bu strateji de kaybettirir. Yatırım tavsiyesi değildir.']]},
  watch:{ic:'⭐',c:'#fbbf24',t:'İzleme',s:'Kendi listen · 15 dk analiz',sec:[
@@ -4833,7 +4833,7 @@ function renderHaber(){
    (r.url&&/^https:\/\//.test(r.url)?'<div class="km"><a href="'+htmlEsc(r.url)+'" target="_blank" rel="noopener">Kaynağı aç ↗</a></div>':'')+'</div>'}).join('');
  el.innerHTML=h;
 }
-/* v14.23 GECE KUŞU (Fatih onayıyla; DEVIR 7a): sunucu 17:40'ta BIST 100'den 8 hisselik akşam sepeti seçer (Telegram), kapanışta alınır, ertesi sabah 10:25–10:30 satılır.
+/* v14.23 GECE KUŞU (Fatih onayıyla; DEVIR 7a): sunucu 17:40'ta BIST 100'den 8 hisselik akşam sepeti seçer (Telegram), kapanışta alınır, ertesi sabah açılışta satılır (v14.28 v2: sabah güçlü/öğleden sonra zayıf seçimi, Cuma/tatil öncesi yok).
    Terminal yalnız gösterir: GET /gece → meta 'gece' {d, st: secildi|alindi|satildi, list, res, hist}. */
 var GECE={at:0,g:null};
 function geceLoad(){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||Date.now()-GECE.at<120000)return;GECE.at=Date.now();
@@ -4845,7 +4845,7 @@ function renderGece(){const el=document.getElementById('gecebody');if(!el)return
  el.innerHTML=h}
 setInterval(()=>{if(!document.hidden&&!BOTMODE)geceLoad()},60000);setTimeout(()=>{if(!BOTMODE)geceLoad()},5000);
 function geceSum(g){const H=g.hist||[],tot=H.reduce((a,x)=>a+x.ort,0);
- const st=g.st==='secildi'?'Bu akşamın sepeti hazır — kapanışta al':g.st==='alindi'?'Sepet elde · yarın 10:25–10:30 sat':g.res?'Son sonuç '+pct(g.res.ort):'Sepet bekleniyor';
+ const st=g.st==='secildi'?'Bu akşamın sepeti hazır — kapanışta al':g.st==='alindi'?'Sepet elde · yarın açılışta sat':g.res?'Son sonuç '+pct(g.res.ort):'Sepet bekleniyor';
  return st+(H.length?' · '+H.length+' gece toplam '+pct(tot):'')}
 function geceTick(p){return p<20?.01:p<50?.02:p<100?.05:p<250?.1:p<500?.25:p<1000?.5:p<2500?1:2.5}
 function geceSellPx(p0){const v=p0*.98,t=geceTick(v);return Math.round(Math.floor(v/t+1e-9)*t*100)/100}   // v14.25 worker/src/gece.js ile aynı
@@ -4854,7 +4854,7 @@ function geceCard(g){const f=v=>nf(v);let h='';
   g.list.map(x=>{const p0=x.p0||x.c,q=S.umap[x.s],nw=q&&q.close?q.close:null,r=nw&&p0?(nw/p0-1)*100:null;return '<tr class="row" onclick="xrayOpen(\''+htmlEsc(x.s)+'\')"><td class="sym">'+htmlEsc(x.s)+'</td><td>'+f(p0)+'</td><td>'+(g.st==='alindi'?'<b>'+f(geceSellPx(p0))+'</b>':'-')+'</td><td>'+(nw?f(nw):'-')+'</td><td class="'+cls(r)+'">'+(r!=null?pct(r):'-')+'</td></tr>'}).join('')+'</table>'}
  else if(g.res){h+='<div class="note" style="padding:4px 2px"><b>Son gece</b> ('+htmlEsc(g.d)+' → '+htmlEsc(g.res.d)+'): sepet '+pct(g.res.ort)+'</div><table><tr><th>Hisse</th><th>Giriş</th><th>Satış</th><th>Sonuç</th></tr>'+g.res.list.map(x=>'<tr><td class="sym">'+htmlEsc(x.s)+'</td><td>'+f(x.p0)+'</td><td>'+f(x.p1)+'</td><td class="'+cls(x.r)+'">'+pct(x.r)+'</td></tr>').join('')+'</table>'}
  const H=(g.hist||[]).slice(-10);if(H.length)h+='<div class="note" style="padding:6px 2px 0">Son '+H.length+' gece: '+H.map(x=>'<span class="'+cls(x.ort)+'">'+pct(x.ort)+'</span>').join(' · ')+'</div>';
- h+='<div class="note" style="padding:6px 2px 0;color:var(--dim)">13 ayda büyük hisseler kapanıştan ertesi sabah 10:30\'a ortalama +%0,15 kazandırdı (günlerin %63\'ü artı); gün içinde kaybettirdi. Gece stop konamaz, çöküş aylarında kaybettirir. Yatırım tavsiyesi değildir.</div>';
+ h+='<div class="note" style="padding:6px 2px 0;color:var(--dim)">10 yılın her yılında hisseler kapanıştan ertesi açılışa kazandırdı, gün içinde kaybettirdi. Sepet sabahı güçlü, öğleden sonra geri çekilen hisselerden seçilir; Cuma akşamı ve tatil öncesi kurulmaz. Gece stop konamaz, geçmiş sonuç garanti değildir. Yatırım tavsiyesi değildir.</div>';
  return h}
 function sigNoteTxt(sym){const a=sigNotes(sym);return a.length?'\n⚠️ '+a.join(' · '):''}
 /* ================= v7.1 ŞİMDİ ================= */

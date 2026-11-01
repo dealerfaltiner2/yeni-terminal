@@ -389,6 +389,7 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
 - 31.10 01:45 v2 EK TEST (feat): haftanın günü — Cuma akşamı alımı en zayıf (+0,09, 8/14 ay; en kötü gün 27.02 Cuma −5,9). CUMA HARİÇ ilk 8 / açılış çıkışı: +0,33/gece, 13 ay +%109 (maliyet %0,1 ile +%67), en derin düşüş −%2,0, artı gün %80, 14/14 ay, en kötü gece −1,9.
   Piyasa günü filtresi (o gün ortalama ±) iki dönemde tutarlı değil → eklenmez. İlk canlı deneme sepeti (28.10 → 30.10, tatil arası 2 gece): −%1,62 (8/8 eksi; ASELS +5,2 kapanmıştı → −5,1).
   Öneri: Gece Kuşu v2 = sabah güçlü/öğleden sonra zayıf ilk 8 + açılışta sat + Cuma ve tatil öncesi alım yok. ONAY BEKLİYOR.
+- 01.11 KARAR (Fatih 'evet geçir'): v14.28 Gece Kuşu v2 yayında. Canlı 10:30 kaydı meta 'gece_1030'. Açılış fiyatı için tarama 'open' alanı ilk kez kullanılıyor → ilk satışta meta gece.res.list[].ac=1 mi bak (0 ise anlık fiyatla ölçüldü). Cuma 30.10 sepeti (eski kural) Pazartesi 10:01'de açılışla ölçülür.
 
 - 31.10 02:00 EMİR AKIŞI (flow, 13 gün 12–30.10, 1,2M hisse-dakika, günlük ciro ≥100 Mn 234 hisse; ilk 7 gün / son 6 gün): son 5/15/30 dk alıcılı−satıcılı dengesi sonraki 15/30/60 dk getiriyi
   YÖNLÜ tahmin etmiyor (beşte birlikler U şekli, farklar ≤%0,1 < ortanca alış-satış farkı %0,1). Endeks gecikmesi (endeks 5 dk'da gitti, hisse geride kaldı → yetişir mi): yok, iki yarıda ters. → EMİR AKIŞINDA KENAR YOK (bu süre ve bu veriyle).

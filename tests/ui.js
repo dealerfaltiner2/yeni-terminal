@@ -84,7 +84,7 @@ async function page(b, opt) {
         ok('AI Seçtikleri: alt menüden açılır, kartlar + etiketler + çıkanlar, yazı sığıyor, anlık veri paketi', a && Object.values(a).every(Boolean), JSON.stringify(a)); }
       // v14.23: Gece Kuşu kartı (Şimdi, katlanır)
       { const gc = await T(async () => { GECE.at = 0; geceLoad(); await new Promise(r => setTimeout(r, 1200)); NOWF.f_gece = 1; showTab('now'); renderNow(); const t = document.getElementById('t-now').innerText;
-          const r = { kart: /Gece Kuşu/.test(t), hisse: /ZZGEC/.test(t) && /ZZGE2/.test(t), ozet: /yarın 10:25–10:30 sat/.test(t), gecmis: /Son 1 gece/.test(t), uyari: /tavsiyesi değildir/.test(t) }; NOWF.f_gece = 0; return r; });
+          const r = { kart: /Gece Kuşu/.test(t), hisse: /ZZGEC/.test(t) && /ZZGE2/.test(t), ozet: /yarın açılışta sat/.test(t), gecmis: /Son 1 gece/.test(t), uyari: /tavsiyesi değildir/.test(t) }; NOWF.f_gece = 0; return r; });
         ok('Gece Kuşu: Şimdi\'de sepet kartı (hisse, giriş, sat saati, geçmiş, uyarı)', gc && Object.values(gc).every(Boolean), JSON.stringify(gc)); }
       // v14.24: alt çubukta Gece sekmesi (İzleme'nin yerinde), İzleme Menü'de
       { const gt = await T(async () => { document.querySelector('#tabs [data-t=gece]').click(); await new Promise(r => setTimeout(r, 300)); const t = document.getElementById('t-gece').innerText;

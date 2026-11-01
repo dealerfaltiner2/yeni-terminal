@@ -4,14 +4,22 @@
 // Akış (ana iş, dakikada bir; pencere dışında tek meta okuması yok — saat kontrolü önce):
 //   17:40–17:55  geceSec  : BIST 100 (meta idx_list.x100) taraması → eleme → en likit 8 → meta 'gece' {st:'secildi'} + Telegram sepet mesajı
 //   18:12–18:40  geceKapa : aynı 8 hissenin RESMÎ kapanış fiyatı → giriş fiyatı (st:'alindi')
-//   ertesi iş günü 10:25–10:45 geceSat : anlık fiyat → hisse başına sonuç, sepet ortalaması → Telegram + karne (sig src 'gece', done=1, rc = sonuç %, o31 = 0)
+//   ertesi iş günü 10:01–10:20 geceSat : AÇILIŞ fiyatı (v2; eskiden 10:25 anlık) → hisse başına sonuç, sepet ortalaması → Telegram + karne (sig src 'gece', done=1, rc = sonuç %, o31 = 0)
 // Tatil: XU100 kapanışı bir önceki seçimdekiyle AYNIYSA o gün işlem yok sayılır (seçim yapılmaz; satış ertesi açık güne kalır).
 // AL/SAT tavsiyesi değil; mesajda risk yazılı. cfg.opt.gece === 0 → Telegram kapalı (karne yine yazılır).
+// v14.28 (01.11, Fatih onayıyla 'evet geçir'; DEVIR 31.10 v2 testi) GECE KUŞU v2:
+//   10:30–10:50 gece1030 : BIST 100'ün 10:30 fiyatı → meta 'gece_1030' {d, p:{SYM: fiyat}} (günde bir)
+//   seçim: elemeden geçenler içinde skor = (sabah sırası) − (öğleden sonra sırası); sabah = önceki kapanış→10:30, öğleden sonra = 10:30→şimdi. İlk 8.
+//          (13 ay geriye dönük, Cuma hariç, açılışta çıkış: +%0,33/gece, artı gün %80, 14/14 ay, en derin düşüş −%2). 10:30 kaydı yoksa eski kural (en likit 8).
+//   CUMA ve TATİL ÖNCESİ akşam sepet YOK (Cuma→Pazartesi en zayıf gece; tatil öncesi gün −%0,35).
+//   SATIŞ ölçümü ertesi iş günü 10:01–10:20, AÇILIŞ fiyatıyla (tarama 'open'; alan gelmezse anlık fiyat).
 const TRMS = 3 * 3600e3;
 export const GECE_N = 8, GECE_MIN_TL = 100e6;
 // Resmî tatiller (sabit tarihli; dinî bayramlar endeks kontrolüyle yakalanır): bu günlerde seçim/satış yapılmaz
 export const TATIL_MD = new Set(['01-01', '04-23', '05-01', '05-19', '07-15', '08-30', '10-29']);
 const trT = ms => { const d = new Date(ms + TRMS); return { wd: d.getUTCDay(), m: d.getUTCHours() * 60 + d.getUTCMinutes(), day: d.toISOString().slice(0, 10) }; };
+// yarın (takvim) sabit tarihli resmî tatil mi? (dinî bayram arifeleri bilinmez — endeks kontrolü satışı bekletir)
+export function tatilOncesi(day) { const t = new Date(Date.parse(day + 'T12:00:00Z') + 86400e3).toISOString().slice(5, 10); return TATIL_MD.has(t); }
 const f2 = v => Number(v).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const pc = v => (v >= 0 ? '+' : '−') + '%' + f2(Math.abs(v));
 const metaGet = async (env, k) => { try { const r = await env.BT.prepare('SELECT v FROM meta WHERE k = ?').bind(k).first(); return r ? JSON.parse(r.v) : null; } catch (e) { return null; } };
@@ -23,6 +31,16 @@ export function gecePick(Q, bad = new Set(), n = GECE_N) {
     .map(x => ({ s: x.s, c: x.c, ch: Math.round(x.ch * 100) / 100, tl: x.c * (x.v || 0) }))
     .filter(x => x.ch > -3 && x.ch < 9.5 && x.tl >= GECE_MIN_TL && !bad.has(x.s))
     .sort((a, b) => b.tl - a.tl).slice(0, n);
+}
+// v2 seçim: Q tarama satırları, P = {SYM: 10:30 fiyatı}. Skor = sabah yüzdelik sırası − öğleden sonra yüzdelik sırası (ikisi de elemeden geçenler içinde).
+export function gecePick2(Q, P, bad = new Set(), n = GECE_N) {
+  const L = gecePick(Q, bad, 1e9).map(x => { const p30 = P && P[x.s], pc = x.c / (1 + x.ch / 100); return Object.assign(x, p30 > 0 ? { r30: (p30 / pc - 1) * 100, rest: (x.c / p30 - 1) * 100 } : {}); })
+    .filter(x => x.r30 != null && isFinite(x.r30) && isFinite(x.rest));
+  if (L.length < n) return null;
+  const rk = k => { const a = L.slice().sort((p, q) => p[k] - q[k]); a.forEach((x, i) => { x['k' + k] = a.length > 1 ? i / (a.length - 1) : 0.5; }); };
+  rk('r30'); rk('rest');
+  return L.map(x => Object.assign(x, { sk: x.kr30 - x.krest })).sort((a, b) => b.sk - a.sk || b.tl - a.tl).slice(0, n)
+    .map(x => ({ s: x.s, c: x.c, ch: x.ch, tl: x.tl, r30: Math.round(x.r30 * 100) / 100, rest: Math.round(x.rest * 100) / 100 }));
 }
 // v14.25 (28.10, Fatih: 'emir fiyatlarını Telegram'a at, nereden alıp satacağımı bileyim'): BIST fiyat adımına yuvarlanmış limit fiyatlar
 export function tickOf(p) { return p < 20 ? 0.01 : p < 50 ? 0.02 : p < 100 ? 0.05 : p < 250 ? 0.1 : p < 500 ? 0.25 : p < 1000 ? 0.5 : p < 2500 ? 1 : 2.5; }
@@ -39,23 +57,30 @@ export function geceFixMsg(L, esc, deneme) {
 }
 export function geceBuyMsg(L, esc) {
   return '🌙 <b>GECE KUŞU · akşam sepeti</b>   <i>' + L.length + ' hisse</i>\n<blockquote>' +
-    L.map(x => '<b>' + esc(x.s) + '</b>   şimdi ' + f2(x.c) + ' (' + pc(x.ch) + ')  →  AL <code>' + f2(geceBuyPx(x.c, x.ch)) + '</code>   (' + lot100(x.c) + ' lot)').join('\n') + '</blockquote>' +
-    '🕕 <b>Kapanış seansında (18:00–18:05)</b> bu fiyatlarla <b>limit AL</b> emri gir — herkes tek kapanış fiyatından alır, yazdığın fiyat sadece emrin dışarıda kalmaması için. Lot = 100.000 TL ÷ 8 örneği.\n☀️ 18:15 civarı <b>satış emri fiyatları</b> gelir; yarın sabah açılış seansında satılır.\n' +
-    '<blockquote expandable>Neden: 13 ayda büyük hisseler kapanıştan ertesi sabah 10:30\'a ortalama +%0,15 kazandırdı (günlerin %63\'ü artı); gün içinde ise kaybettirdi. ' +
-    'O gün %3\'ten fazla düşenler, tavandakiler ve Borsa tedbirliler sepete alınmaz.\n' +
-    'Risk: gece stop konamaz; kötü bir haberle sabah boşlukla düşüş olabilir (13 ayın en kötü sabahı sepet ort. −%4). Çöküş aylarında bu strateji de kaybettirir. ' +
-    'Hisse başına beklenen kazanç küçüktür (~%0,2); kazanç çok günün toplamından gelir.</blockquote>Yatırım tavsiyesi değildir.';
+    L.map(x => '<b>' + esc(x.s) + '</b>   şimdi ' + f2(x.c) + ' (' + pc(x.ch) + ')  →  AL <code>' + f2(geceBuyPx(x.c, x.ch)) + '</code>   (' + lot100(x.c) + ' lot)' +
+      (x.r30 != null ? '\n      <i>sabah ' + pc(x.r30) + ', öğleden sonra ' + pc(x.rest) + '</i>' : '')).join('\n') + '</blockquote>' +
+    '🕕 <b>Kapanış seansında (18:00–18:05)</b> bu fiyatlarla <b>limit AL</b> emri gir — herkes tek kapanış fiyatından alır, yazdığın fiyat sadece emrin dışarıda kalmaması için. Lot = 100.000 TL ÷ 8 örneği.\n☀️ 18:15 civarı <b>satış emri fiyatları</b> gelir; yarın sabah <b>açılış seansında (09:40–09:55)</b> satılır.\n' +
+    '<blockquote expandable>Neden: Borsa İstanbul\'da 10 yılın her yılında hisseler kapanıştan ertesi sabah açılışa kadar kazandırdı, gün içinde ise kaybettirdi (dünya borsalarında da bilinen "gece etkisi"). ' +
+    'Sepet, sabahı güçlü ama öğleden sonra geri çekilen hisselerden seçilir: 13 ayda gece başına ortalama +%0,33, gecelerin %80\'i artı, 14 ayın hepsi artı. Cuma akşamı ve tatil öncesi sepet kurulmaz.\n' +
+    'O gün %3\'ten fazla düşenler, tavandakiler, günlük işlemi 100 milyon TL altı olanlar ve Borsa tedbirliler sepete alınmaz.\n' +
+    'Risk: gece stop konamaz; kötü bir haberle sabah boşlukla düşüş olabilir. Geçmiş sonuç geleceği garanti etmez; komisyon kazancın bir kısmını yer. ' +
+    'Hisse başına beklenen kazanç küçüktür (~%0,3); kazanç çok günün toplamından gelir.</blockquote>Yatırım tavsiyesi değildir.';
 }
 export function geceSellMsg(R, avg, esc, deneme) {
   const w = R.filter(x => x.r > 0).length;
   return '☀️ <b>GECE KUŞU · satış zamanı</b>   <i>sepet ' + pc(avg) + '</i>' + (deneme ? '\n<i>Deneme sepeti: ' + esc(deneme) + ' kapanış fiyatlarıyla kuruldu.</i>' : '') + '\n<blockquote>' +
     R.map(x => (x.r >= 0 ? '🟢' : '🔴') + ' <b>' + esc(x.s) + '</b>   ' + f2(x.p0) + ' → <code>' + f2(x.p1) + '</code>   ' + pc(x.r)).join('\n') + '</blockquote>' +
-    w + ' artı · ' + (R.length - w) + ' eksi · <b>10:30\'a kadar sat.</b> Sonuç karnede "Gece Kuşu" olarak ölçülüyor.';
+    w + ' artı · ' + (R.length - w) + ' eksi · açılış fiyatıyla ölçüldü. Açılışta satmadıysan şimdi sat. Sonuç karnede "Gece Kuşu" olarak ölçülüyor.';
 }
-async function scanQ(h, env, syms) {
-  const r = await h.scanRaw(env, JSON.stringify({ symbols: { tickers: syms.map(s => 'BIST:' + s) }, columns: ['name', 'close', 'change', 'volume'] }));
+async function scanQ(h, env, syms, open) {
+  const r = await h.scanRaw(env, JSON.stringify({ symbols: { tickers: syms.map(s => 'BIST:' + s) }, columns: ['name', 'close', 'change', 'volume'].concat(open ? ['open'] : []) }));
   const j = await r.json();
-  return (j.data || []).map(x => ({ s: String(x.s).split(':').pop(), c: x.d[1], ch: x.d[2], v: x.d[3] }));
+  return (j.data || []).map(x => ({ s: String(x.s).split(':').pop(), c: x.d[1], ch: x.d[2], v: x.d[3], o: open ? x.d[4] : null }));
+}
+// açılış fiyatı ('open' alanı doğrulanmadı → hata/boşsa anlık fiyat)
+async function scanOpen(h, env, syms) {
+  try { const q = await scanQ(h, env, syms, true); if (q.length && q.some(x => x.o > 0)) return q.map(x => Object.assign(x, { c1: x.o > 0 ? x.o : x.c, ac: x.o > 0 ? 1 : 0 })); } catch (e) {}
+  return (await scanQ(h, env, syms)).map(x => Object.assign(x, { c1: x.c, ac: 0 }));
 }
 async function ixClose(h, env) { const q = await scanQ(h, env, ['XU100']); return q[0] && q[0].c > 0 ? q[0].c : null; }
 
@@ -64,21 +89,32 @@ export async function geceStep(env, h, now = Date.now()) {
   const T = trT(now);
   if (T.wd < 1 || T.wd > 5) return null;
   if (TATIL_MD.has(T.day.slice(5))) return null;
-  const inSel = T.m >= 1060 && T.m < 1076, inFix = T.m >= 1092 && T.m < 1121, inSell = T.m >= 625 && T.m < 646;
-  if (!inSel && !inFix && !inSell) return null;
+  const inSel = T.m >= 1060 && T.m < 1076, inFix = T.m >= 1092 && T.m < 1121, inSell = T.m >= 601 && T.m < 621, in30 = T.m >= 630 && T.m < 651;
+  if (!inSel && !inFix && !inSell && !in30) return null;
+  // 0) 10:30 FİYAT KAYDI (v2 seçimi için)
+  if (in30) {
+    const K = await metaGet(env, 'gece_1030');
+    if (K && K.d === T.day) return null;
+    const L100 = await metaGet(env, 'idx_list'), syms = ((L100 && L100.x100) || []).slice(0, 120);
+    if (!syms.length) return null;
+    const p = {}; (await scanQ(h, env, syms)).forEach(x => { if (x.c > 0) p[x.s] = x.c; });
+    if (!Object.keys(p).length) return null;
+    await metaSet(env, 'gece_1030', { d: T.day, t: now, p });
+    return { k1030: Object.keys(p).length };
+  }
   const G = await metaGet(env, 'gece') || {};
   // 1) SATIŞ (ertesi iş günü sabahı)
   if (inSell && (G.st === 'alindi' || G.st === 'secildi') && G.d && G.d < T.day) {
     const ix = await ixClose(h, env);
     if (!ix) return null;
     if (G.ix && Math.abs(ix - G.ix) < 1e-9) return { bekle: 'piyasa kapalı (tatil?)' };   // endeks hiç kıpırdamadıysa bugün işlem yok
-    const Q = await scanQ(h, env, G.list.map(x => x.s)), M = {}; Q.forEach(x => { M[x.s] = x; });
-    const R = G.list.map(x => Object.assign({}, x, { p0: x.p0 > 0 ? x.p0 : x.c })).filter(x => x.p0 > 0 && M[x.s] && M[x.s].c > 0).map(x => ({ s: x.s, p0: x.p0, p1: M[x.s].c, r: Math.round((M[x.s].c / x.p0 - 1) * 10000) / 100 }));
+    const Q = await scanOpen(h, env, G.list.map(x => x.s)), M = {}; Q.forEach(x => { M[x.s] = x; });
+    const R = G.list.map(x => Object.assign({}, x, { p0: x.p0 > 0 ? x.p0 : x.c })).filter(x => x.p0 > 0 && M[x.s] && M[x.s].c1 > 0).map(x => ({ s: x.s, p0: x.p0, p1: M[x.s].c1, ac: M[x.s].ac, r: Math.round((M[x.s].c1 / x.p0 - 1) * 10000) / 100 }));
     if (!R.length) return null;
     const avg = Math.round(R.reduce((a, x) => a + x.r, 0) / R.length * 100) / 100;
     for (const x of R) {
       try { await env.BT.prepare('INSERT INTO sig (d,t,src,sym,dir,px,sc,dev,meta,done,o31,rc,nx) VALUES (?,?,?,?,?,?,?,?,?,1,0,?,1)')
-        .bind(G.d, G.t || now, 'gece', x.s, 'AL', x.p0, null, '', JSON.stringify({ cikis: x.p1, sat: T.day }), x.r).run(); } catch (e) {}
+        .bind(G.d, G.t || now, 'gece', x.s, 'AL', x.p0, null, '', JSON.stringify({ cikis: x.p1, sat: T.day, acilis: x.ac, v: G.v || 1 }), x.r).run(); } catch (e) {}
     }
     const hist = (G.hist || []).concat([{ d: G.d, s: T.day, ort: avg, n: R.length, w: R.filter(x => x.r > 0).length }]).slice(-30);
     await metaSet(env, 'gece', Object.assign({}, G, { deneme: 0, st: 'satildi', res: { d: T.day, ort: avg, list: R }, hist }));
@@ -88,6 +124,7 @@ export async function geceStep(env, h, now = Date.now()) {
   }
   // 2) SEÇİM (17:40–17:55)
   if (inSel && G.d !== T.day) {
+    if (T.wd === 5 || tatilOncesi(T.day)) return null;   // v2: Cuma akşamı ve tatil öncesi sepet yok
     const L100 = await metaGet(env, 'idx_list');
     const syms = ((L100 && L100.x100) || []).slice(0, 120);
     if (!syms.length) return null;
@@ -96,12 +133,13 @@ export async function geceStep(env, h, now = Date.now()) {
     if (G.ix && Math.abs(ix - G.ix) < 1e-9 && G.d) { await metaSet(env, 'gece', Object.assign({}, G, { tatil: T.day })); return { tatil: 1 }; }
     if (G.st === 'alindi') return { bekle: 'önceki sepet henüz satılmadı' };   // (sabah satışı kaçtıysa yeni sepet açılmaz, ertesi sabah satılır)
     const tb = await metaGet(env, 'tedbir') || {};
-    const L = gecePick(await scanQ(h, env, syms), new Set(Object.keys(tb)));
+    const Q = await scanQ(h, env, syms), bad = new Set(Object.keys(tb)), K = await metaGet(env, 'gece_1030');
+    const L2 = K && K.d === T.day ? gecePick2(Q, K.p, bad) : null, L = L2 || gecePick(Q, bad);
     if (!L.length) return null;
-    await metaSet(env, 'gece', { d: T.day, t: now, ix, st: 'secildi', list: L.map(x => ({ s: x.s, c: x.c, ch: x.ch })), hist: G.hist || [], res: G.res || null });
+    await metaSet(env, 'gece', { d: T.day, t: now, ix, st: 'secildi', v: L2 ? 2 : 1, list: L.map(x => Object.assign({ s: x.s, c: x.c, ch: x.ch }, x.r30 != null ? { r30: x.r30, rest: x.rest } : {})), hist: G.hist || [], res: G.res || null });
     const cfg = await h.kvGet(env, 'cfg', null);
     let tg = null; if (cfg && !(cfg.opt && cfg.opt.gece === 0)) tg = await h.tgSend(cfg, geceBuyMsg(L, h.esc));
-    return { sec: L.length, tg: !!(tg && tg.ok) };
+    return { sec: L.length, v: L2 ? 2 : 1, tg: !!(tg && tg.ok) };
   }
   // 3) KAPANIŞ FİYATI (18:12–18:40) — giriş fiyatı = resmî kapanış
   if (inFix && G.d === T.day && G.st === 'secildi') {
@@ -116,7 +154,7 @@ export async function geceStep(env, h, now = Date.now()) {
   return null;
 }
 // v14.24 (28.10 gece, Fatih: 'sepeti kapanış verilerine göre oluştur'): TEK SEFERLİK deneme sepeti — probe 'gece_now' çağırır.
-// Seans kapandıktan sonra tarama = günün kapanışı → giriş fiyatı p0 = kapanış, st 'alindi'. Telegram'a alış mesajı GİTMEZ; satış her zamanki gibi ertesi iş günü 10:25.
+// Seans kapandıktan sonra tarama = günün kapanışı → giriş fiyatı p0 = kapanış, st 'alindi'. Telegram'a alış mesajı GİTMEZ; satış her zamanki gibi ertesi iş günü açılıştan sonra (10:01–10:20).
 export async function geceNow(env, scanRaw, now = Date.now()) {
   const T = trT(now), G = await metaGet(env, 'gece') || {};
   if (G.d === T.day && (G.st === 'secildi' || G.st === 'alindi')) return 'zaten sepet var';
