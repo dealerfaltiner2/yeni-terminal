@@ -3530,7 +3530,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.30";window.APPV=APP_VER;
+  const APP_VER="14.31";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -7079,13 +7079,36 @@ function ktmSyms(){if(KTM.set==='wl')return W().slice(0,30);
  const x30=(window.ENDX&&ENDX.x30&&ENDX.x30.length)?ENDX.x30:(S.uni||[]).filter(o=>o&&o.name&&o.voltl>0).sort((a,b)=>b.voltl-a.voltl).slice(0,30).map(o=>o.name);return x30.slice(0,30)}
 async function ktmRun(){if(KTM.busy)return;KTM.busy=1;KTM.err='';try{const n=await ktmScan(ktmSyms());KTM.at=Date.now();if(!n)KTM.err=tvBarsBase()?'Mum verisi gelmedi.':'Veri bağlantısı yok.'}catch(e){KTM.err=String(e.message||e)}finally{KTM.busy=0}
  if(S.tab==='katman')try{renderKatman()}catch(e){}}
+// v14.31 (03.11, Fatih'in arkadaşı: 'Algı'daki gibi gün içi gelenlerin saati, fiyatı, listesi kalsın, başarısını günlük göreyim'): sunucu karnesindeki 'katman' sinyalleri (/sigtoday?src=katman[&d=])
+var KTMS={day:'',list:null,hist:{},at:0};
+function ktmSrvLoad(force){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b))return;const d=KTMS.day;
+ if(d){if(KTMS.hist[d]&&!force)return;fetch(dq(b+'/sigtoday?src=katman&d='+d)).then(r=>r.json()).then(j=>{KTMS.hist[d]=j&&j.ok?(j.list||[]):[];if(S.tab==='katman')renderKatman()}).catch(()=>{KTMS.hist[d]=[]});return}
+ if(!force&&Date.now()-KTMS.at<20e3)return;KTMS.at=Date.now();
+ fetch(dq(b+'/sigtoday?src=katman')).then(r=>r.json()).then(j=>{if(j&&j.ok){KTMS.list=j.list||[];if(S.tab==='katman')renderKatman()}}).catch(()=>{})}
+function ktmDay(d){d=String(d||'');if(d&&d>=alPrevDay(0))d='';KTMS.day=d;ktmSrvLoad(true);renderKatman()}
+function ktmGelen(){const d=KTMS.day,L=d?KTMS.hist[d]:KTMS.list,p1=alPrevDay(1);
+ const db=(v,t)=>'<button class="'+(KTMS.day===v?'on':'')+'" onclick="ktmDay(\''+v+'\')">'+t+'</button>';
+ let h='<div class="ktmg"><div class="ktmgh"><b>🎯 '+(d?alDayTxt(d):'Bugün')+' gelenler</b><span class="seg">'+db('','Bugün')+db(p1,alDayTxt(p1).split(' ').slice(0,2).join(' '))+
+  '<label class="ktmcal">📅<input type="date" value="'+(d||'')+'" max="'+alPrevDay(0)+'" onchange="ktmDay(this.value)"></label></span></div>';
+ if(!L){h+='<div class="note" style="padding:8px 2px">⏳ Yükleniyor…</div></div>';return h}
+ const R=L.slice().sort((a,b)=>a.t-b.t);
+ if(!R.length)return h+'<div class="note" style="padding:8px 2px">'+(d?'Bu gün Dönüş anı sinyali yok.':'Bugün henüz Dönüş anı sinyali gelmedi. Ana sunucu 10:30–17:30 arası BIST 30\'u 3 dakikada bir tarar.')+'</div></div>';
+ let hh=0,ss=0;
+ const rows=R.map(e=>{const m=e.meta||{},q=S.umap[e.sym],nw=!d&&q&&q.close?q.close:null,cur=nw&&e.px?(nw/e.px-1)*100:null,tm=new Date(e.t+3*3600e3).toISOString().slice(11,16);
+  if(e.o31===1)hh++;else if(e.o31===2)ss++;
+  const sn=e.o31===1?'<b class="up">✅ +%3</b>':e.o31===2?'<b class="dn">❌ stop</b>':e.done&&e.rc!=null?'<span class="'+cls(e.rc)+'">Gün sonu '+pct(e.rc)+'</span>':cur!=null?'<span class="'+cls(cur)+'">Şimdi '+pct(cur)+'</span>':'açık';
+  return '<tr class="row" onclick="xrayOpen(\''+htmlEsc(e.sym)+'\')"><td>'+tm+'</td><td class="sym">'+htmlEsc(e.sym)+(m.tg===1?' <span title="Telegram\'a gitti">📨</span>':'')+'</td><td>'+nf(e.px)+'</td><td>'+sn+'</td></tr>'}).join('');
+ h+='<div class="note" style="padding:2px 2px 6px">'+R.length+' sinyal'+(hh+ss?' · ✅ '+hh+' hedef · ❌ '+ss+' stop · isabet %'+Math.round(hh/(hh+ss)*100):'')+' · 📨 = Telegram\'a gitti (BIST 100 artıyken)</div>'+
+  '<table class="ktmgt"><tr><th>Saat</th><th>Hisse</th><th>Giriş</th><th>Sonuç</th></tr>'+rows+'</table></div>';
+ return h}
+setInterval(()=>{try{if(BOTMODE||S.tab!=='katman'||document.hidden||KTMS.day)return;if(Date.now()-KTMS.at>=(mktSt()==='open'?20e3:5*60e3))ktmSrvLoad(true)}catch(e){}},5000);
 function ktmSet(v){KTM.set=v;LS.set('ktmset',v);KTM.at=0;renderKatman();ktmRun()}
 function renderKatman(){const el=document.getElementById('ktmbody');if(!el)return;
- if(!KTM.at&&!KTM.busy)setTimeout(ktmRun,0);
+ if(!KTM.at&&!KTM.busy)setTimeout(ktmRun,0);if(!KTMS.day&&!KTMS.list)ktmSrvLoad();
  const syms=ktmSyms(),R=syms.map(s=>[s,KTM.m[s]]).filter(x=>x[1]),cnt={};R.forEach(x=>cnt[x[1].du]=(cnt[x[1].du]||0)+1);
  R.sort((a,b)=>KTM_D[a[1].du][2]-KTM_D[b[1].du][2]||b[1].pu-a[1].pu||(a[1].du==='donus'?a[1].L[3].ago-b[1].L[3].ago:0));
  const sb=(v,t)=>'<button class="'+(KTM.set===v?'on':'')+'" onclick="ktmSet(\''+v+'\')">'+t+'</button>';
- let h='<div class="ktmtop"><div class="seg">'+sb('x30','BIST 30')+sb('wl','İzleme listem')+'</div><button class="ktmrf" onclick="KTM.at=0;ktmRun()">'+(KTM.busy?'⏳':'🔄')+' Yenile</button></div>';
+ let h=ktmGelen()+'<div class="ktmsub">Şu an · katman durumu</div><div class="ktmtop"><div class="seg">'+sb('x30','BIST 30')+sb('wl','İzleme listem')+'</div><button class="ktmrf" onclick="KTM.at=0;ktmRun()">'+(KTM.busy?'⏳':'🔄')+' Yenile</button></div>';
  h+='<div class="ktmsum">'+['donus','tam','geri','zayif','asagi'].map(k=>'<span class="ks-'+k+'">'+KTM_D[k][0]+' '+KTM_D[k][1]+' <b>'+(cnt[k]||0)+'</b></span>').join('')+'</div>';
  if(!R.length)h+='<div class="note" style="margin:12px;padding:14px;text-align:center">'+(KTM.busy||!KTM.at?'⏳ Dört zaman diliminin mumları yükleniyor…':KTM.set==='wl'&&!syms.length?'İzleme listen boş.':htmlEsc(KTM.err||'Veri yok.'))+'</div>';
  else h+=R.map(([s,r])=>{const q=S.umap[s],px=q&&q.close?q.close:r.px;
@@ -7125,6 +7148,12 @@ setInterval(()=>{try{ktmMotor()}catch(e){}},20000);
 .kbs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:7px 0 5px}.kbx{text-align:center;font-size:12px;font-weight:700;padding:5px 0;border-radius:8px;background:rgba(255,255,255,.05);color:var(--dim)}
 .kbx.u{background:rgba(52,211,153,.16);color:#34d399}.kbx.d{background:rgba(239,83,80,.15);color:#f87171}
 .ktmrow .kt{font-size:12.5px;color:var(--dim);line-height:1.35}
+.ktmg{margin:8px 12px 4px;padding:10px 12px;border-radius:14px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.3)}
+.ktmgh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}.ktmgh .seg{margin-left:auto;display:flex;gap:5px;align-items:center}
+.ktmgh .seg button,.ktmcal{border:1px solid var(--line2);background:rgba(255,255,255,.04);color:var(--txt);border-radius:99px;padding:4px 10px;font:600 12px var(--sans);position:relative}
+.ktmgh .seg button.on{border-color:#34d399;color:#34d399}.ktmcal input{position:absolute;inset:0;opacity:0;width:100%}
+.ktmgt{width:100%;font-size:13px}.ktmgt td,.ktmgt th{padding:5px 4px;text-align:left}
+.ktmsub{padding:10px 14px 0;font-size:12px;font-weight:700;color:var(--dim);letter-spacing:.3px}
 </style>
 <script>
 </script>

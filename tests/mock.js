@@ -77,6 +77,10 @@ function install(page, opt = {}) {
     if (u.includes('/algirows')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, at: Date.now() - 5000, rows: [
       { s: 'SRVAL', sc: 88, stage: 'ates', g: 1, f: { fa: 3.2, rv: 2.4, fc: 0.84, mv5: 0.6, ch: 1.2, fd: true }, o: { voltl: 9e7 } },
       { s: 'SRVHZ', sc: 72, stage: 'hazir', g: 0, f: { fa: 2.6, rv: 1.8, fc: 0.7, ch: 0.5 }, o: { voltl: 5e7 } }] }) });
+    if (u.includes('/sigtoday') && /[?&]src=katman/.test(u)) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, at: Date.now(), list: /[?&]d=\d{4}-/.test(u) ? [
+      { t: Date.now() - 864e5, sym: 'KTDUN', px: 50, sc: 4, meta: { tg: 0 }, done: 1, o31: 2, rc: -1.2 }] : [
+      { t: Date.now() - 120000, sym: 'KTBUG', px: 40, sc: 4, meta: { tg: 1 }, done: 0, o31: null },
+      { t: Date.now() - 7200e3, sym: 'KTHDF', px: 30, sc: 4, meta: { tg: 0 }, done: 1, o31: 1, rc: 2.5 }] }) });
     if (u.includes('/sigtoday') && /[?&]src=oto/.test(u)) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, at: Date.now(), list: [
       { t: Date.now() - 60000, src: 'algi', sym: 'JANTS', dir: 'AL', px: 12.38, meta: { fc: 0.83, rv: 7.6 }, done: 0, o31: null, mfe: 1.2 },
       { t: Date.now() - 3600e3, src: 'firsat-A', sym: 'ASELS', dir: 'AL', px: 100, meta: {}, done: 1, o31: 2, mfe: 0.4 }] }) });

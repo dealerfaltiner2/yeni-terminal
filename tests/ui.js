@@ -98,6 +98,12 @@ async function page(b, opt) {
             ekran: /THYAO/.test(t) && /30dk/.test(t) && /1dk/.test(t) && /Dönüş anı/.test(t), baslik: !!document.querySelector('#t-katman .sechd'), menu: !!document.querySelector('#more .mgrid [data-t=katman] svg') };
           showTab('now'); return r; });
         ok('EMA Katman: hesap (dönüş/tam/aşağı), tarama, sekme, menüde simge', kt && Object.values(kt).every(Boolean), JSON.stringify(kt)); }
+      // v14.31: EMA Katman 'gelenler' listesi (saat, giriş, sonuç, gün seçici)
+      { const kg = await T(async () => { KTMS.list = null; KTMS.day = ''; KTMS.at = 0; showTab('katman'); await new Promise(r => setTimeout(r, 1200)); let t = document.getElementById('t-katman').innerText;
+          const r = { bugun: /Bugün gelenler/.test(t) && /KTBUG/.test(t) && /KTHDF/.test(t) && /\+%3/.test(t) && /isabet %100/.test(t) };
+          ktmDay(alPrevDay(1)); await new Promise(r => setTimeout(r, 1000)); t = document.getElementById('t-katman').innerText; r.dun = /KTDUN/.test(t) && /stop/.test(t) && !/KTBUG/.test(t);
+          ktmDay(''); showTab('now'); return r; });
+        ok('EMA Katman: gün içi gelenler listesi ve gün seçici', kg && Object.values(kg).every(Boolean), JSON.stringify(kg)); }
       // v14.19: Haber Merkezi (menüden) + Algı için haber notu
       { await T(() => { HAB.list = null; HAB.at = 0; showTab('haber'); }); await p.waitForTimeout(1800); await T(() => renderHaber()); await p.screenshot({ path: path.join(OUT, 'haber-merkezi.png') });
         const hb = await T(() => { const body = document.getElementById('haberbody'), t = body.innerText;
