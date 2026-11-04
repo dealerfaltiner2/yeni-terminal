@@ -104,6 +104,11 @@ async function page(b, opt) {
           ktmDay(alPrevDay(1)); await new Promise(r => setTimeout(r, 1000)); t = document.getElementById('t-katman').innerText; r.dun = /KTDUN/.test(t) && /stop/.test(t) && !/KTBUG/.test(t);
           ktmDay(''); showTab('now'); return r; });
         ok('EMA Katman: gün içi gelenler listesi ve gün seçici', kg && Object.values(kg).every(Boolean), JSON.stringify(kg)); }
+      // v14.32: her sinyal kartında sinyal saati + fiyatı (sigStampHtml)
+      { const st = await T(async () => { const t = Date.now() - 600e3; SIGT.list = [{ t, src: 'firsat-A', sym: 'ZZSTA', dir: 'AL', px: 50 }, { t: t + 60e3, src: 'algi', sym: 'ZZSTA', dir: 'AL', px: 51 }];
+          const h1 = sigStampHtml('ZZSTA', ['algi']), h2 = sigStampHtml('ZZSTA'), h3 = sigStampHtml('ZZYOK'), hm = new Date(t + 3 * 3600e3).toISOString().slice(11, 16);
+          return { tercih: /Algı sinyali/.test(h1) && /51/.test(h1), ilk: /Fırsat A sinyali/.test(h2) && h2.includes(hm) && /50/.test(h2), yok: h3 === '' }; });
+        ok('Sinyal saati + fiyatı kartta (kaynağa göre, ilk sinyal)', st && Object.values(st).every(Boolean), JSON.stringify(st)); }
       // v14.19: Haber Merkezi (menüden) + Algı için haber notu
       { await T(() => { HAB.list = null; HAB.at = 0; showTab('haber'); }); await p.waitForTimeout(1800); await T(() => renderHaber()); await p.screenshot({ path: path.join(OUT, 'haber-merkezi.png') });
         const hb = await T(() => { const body = document.getElementById('haberbody'), t = body.innerText;

@@ -1707,7 +1707,7 @@ function cardHtml(o,ix){const dir=S.dir,tf=S.stf;
    '<div class="crow"><div class="cl"><div class="cn"><span class="cname">'+o.name+'</span>'+badge+alb+(isNew?'<span class="newtag">YENİ</span>':'')+(rise?'<span class="rise">▲ güçleniyor</span>':'')+'</div>'+
    '<div class="cdesc">'+htmlEsc((o.description||'').slice(0,30))+'</div></div>'+
    (typeof sparkFor==='function'?sparkFor(o.name,64,26):'')+'<div class="cprice"><b>'+nf(o.close)+'</b><i class="'+cls(o.change)+'">'+pct(o.change)+'</i><i class="vol">'+big(o.voltl)+' ₺</i></div></div>'+
-   '<div class="tags">'+tags+'</div>'+mtfStrip(o)+meters+whyChips(o,dir,al,m,pr)+w0+detail+'</div>';
+   (typeof sigStampHtml==='function'?sigStampHtml(o.name,['firsat-A','firsat-B']):'')+'<div class="tags">'+tags+'</div>'+mtfStrip(o)+meters+whyChips(o,dir,al,m,pr)+w0+detail+'</div>';
 }
 // v6.9: "Neden listede?" — puanı en çok etkileyen bulgular düz Türkçe (✓ lehte / ○ eksik)
 function whyChips(o,dir,al,m,pr){try{
@@ -3530,7 +3530,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.31";window.APPV=APP_VER;
+  const APP_VER="14.32";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4024,7 +4024,7 @@ function tvReconnectReport(){
   return '<div class="alc st-'+(x.stage||'yok')+'" onclick="algiGo(\''+x.s+'\')">'+
    '<div class="alh"><b class="als">'+x.s+'</b><span class="alt" style="color:'+LBL[1]+';border-color:'+LBL[1]+'">'+LBL[0]+'</span>'+(typeof sparkFor==='function'?sparkFor(x.s,56,20):'')+'<span class="alg '+cls(f.ch)+'">Gün '+sp(f.ch)+'</span></div>'+
    '<div class="alb"><div class="alf" style="width:'+Math.max(3,Math.min(100,sc))+'%;background:'+col+'"></div><div class="alm" style="left:'+min+'%"></div><span>'+sc+'</span></div>'+
-   chipH+
+   (typeof sigStampHtml==='function'?sigStampHtml(x.s,['algi']):'')+chipH+
    '<div class="alw">💬 '+why+'</div></div>';
  }
  function vKayit(){
@@ -5870,6 +5870,7 @@ function xrayRender(){const body=document.getElementById('xr_body');if(!body)ret
  let h='<div class="xhd"><div><b>'+htmlEsc(sym)+'</b> '+wStar(sym)+'<small>'+htmlEsc(String(o&&o.description||'').slice(0,34))+(o&&o.sector?' · '+htmlEsc(secTr(o.sector)||o.sector):'')+'</small></div>'+
   (o?'<div class="xpx"><b class="'+pxFl('x:'+sym,o.close).trim()+'">'+nf(o.close)+'</b><i class="'+cls(o.change)+'">'+pct(o.change)+'</i></div>':'')+'</div>';
  if(XR.err)h+='<div class="xnote">'+htmlEsc(XR.err)+'</div>';
+ try{if(typeof sigStampHtml==='function'&&!(typeof isUye==='function'&&isUye()))h+=sigStampHtml(sym)}catch(e){}
  try{if(typeof xrayRange==='function')h+=xrayRange(sym,o)}catch(e){}
  try{if(typeof xrayKatman==='function')h+=xrayKatman(sym)}catch(e){}
  try{if(typeof xrayTech==='function')h+=xrayTech(sym,o)}catch(e){}
@@ -7073,8 +7074,8 @@ function ktmTxt(r){const l1=r.L[3];
 function ktmBox(x){const c=x.st===1?'u':x.st===-1?'d':'';return '<span class="kbx '+c+'" title="EMA '+x.p.join('/')+(x.st?' · '+(x.ago+1)+' mumdur böyle':'')+'">'+x.lab+' '+(x.st===1?'↑':x.st===-1?'↓':'·')+'</span>'}
 async function ktmScan(syms){syms=[...new Set((syms||[]).filter(Boolean))];if(!syms.length||!tvBarsBase())return 0;let n=0;
  await Promise.all(syms.map(async s=>{const B={};
-  await Promise.all(KTM_L.map(x=>tvBars(s,x.k,true).then(cs=>{B[x.k]=cs.map(c=>c.close)}).catch(()=>{})));
-  const r=ktmCalc(B);if(r){r.at=Date.now();KTM.m[s]=r;n++}}));return n}
+  await Promise.all(KTM_L.map(x=>tvBars(s,x.k,true).then(cs=>{B[x.k]=cs.map(c=>c.close);if(x.k==='k1')B.t1=cs.map(c=>c.time)}).catch(()=>{})));
+  const r=ktmCalc(B);if(r){r.at=Date.now();try{const i=B.k1.length-1-r.L[3].ago;if(r.L[3].st===1&&i>=0&&B.t1){r.tt=B.t1[i]*1000;r.tp=B.k1[i]}}catch(e){}KTM.m[s]=r;n++}}));return n}
 function ktmSyms(){if(KTM.set==='wl')return W().slice(0,30);
  const x30=(window.ENDX&&ENDX.x30&&ENDX.x30.length)?ENDX.x30:(S.uni||[]).filter(o=>o&&o.name&&o.voltl>0).sort((a,b)=>b.voltl-a.voltl).slice(0,30).map(o=>o.name);return x30.slice(0,30)}
 async function ktmRun(){if(KTM.busy)return;KTM.busy=1;KTM.err='';try{const n=await ktmScan(ktmSyms());KTM.at=Date.now();if(!n)KTM.err=tvBarsBase()?'Mum verisi gelmedi.':'Veri bağlantısı yok.'}catch(e){KTM.err=String(e.message||e)}finally{KTM.busy=0}
@@ -7113,11 +7114,22 @@ function renderKatman(){const el=document.getElementById('ktmbody');if(!el)retur
  if(!R.length)h+='<div class="note" style="margin:12px;padding:14px;text-align:center">'+(KTM.busy||!KTM.at?'⏳ Dört zaman diliminin mumları yükleniyor…':KTM.set==='wl'&&!syms.length?'İzleme listen boş.':htmlEsc(KTM.err||'Veri yok.'))+'</div>';
  else h+=R.map(([s,r])=>{const q=S.umap[s],px=q&&q.close?q.close:r.px;
   return '<div class="ktmrow ktm-'+r.du+'" onclick="xrayOpen(\''+htmlEsc(s)+'\')"><div class="kh"><b>'+htmlEsc(s)+'</b><span>'+nf(px)+(q&&q.change!=null?' <i class="'+cls(q.change)+'">'+pct(q.change)+'</i>':'')+'</span><em>'+KTM_D[r.du][0]+' '+KTM_D[r.du][1]+'</em></div>'+
+   (sigStampHtml(s,['katman'])||(r.tt&&(r.du==='donus'||r.du==='tam')?'<div class="sstamp">⏱ 1 dk dönüşü <b>'+new Date(r.tt+3*3600e3).toISOString().slice(11,16)+'</b> · fiyat <b>'+nf(r.tp)+'</b></div>':''))+
    '<div class="kbs">'+r.L.map(ktmBox).join('')+'</div><div class="kt">'+ktmTxt(r)+'</div></div>'}).join('');
  h+='<div class="note" style="padding:8px 14px 14px;color:var(--dim)">'+(KTM.at?'Son tarama '+new Date(KTM.at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})+(mktSt&&mktSt()==='open'?' · seansta dakikada bir yenilenir':' · seans kapalı, son seansın verisi')+'. ':'')+
   'EMA\'lar: 30 dk ve 15 dk 8/13/21 · 5 dk 5/8/13 · 1 dk 3/5/8. Sinyal değildir; yatırım tavsiyesi değildir.</div>';
  el.innerHTML=h}
 setInterval(()=>{try{if(BOTMODE||S.tab!=='katman'||document.hidden||KTM.busy)return;if(Date.now()-KTM.at>=(mktSt()==='open'?60e3:30*60e3))ktmRun()}catch(e){}},5000);
+/* v14.32 (04.11, gruptan @zarifmelodi: 'bütün sinyallerde hissenin altında sinyalin geldiği saat ve sinyal fiyatı yazsın'): sigStampOf/sigStampHtml —
+   bugünün sunucu karnesinden (SIGT genel liste + ALS Algı + KTMS Katman) o hissenin İLK sinyali: kaynak, saat, fiyat, şimdiki fark. Fırsat kartı, Algı radar kartı, EMA Katman kartı, röntgen başlığı. Yalnız görünüm. */
+const SST_N={algi:'Algı','firsat-A':'Fırsat A','firsat-B':'Fırsat B',momentum:'Momentum',katman:'EMA Katman',radar:'Radar',tavan6:'Tavan',aisec:'AI Seçtikleri','kap-geri':'Geri alım',gece:'Gece Kuşu'};
+function sigStampOf(sym,pref){if(!sym)return null;const t0=Date.parse(new Date(Date.now()+3*3600e3).toISOString().slice(0,10)+'T00:00:00Z')-3*3600e3,A=[];
+ try{[(typeof SIGT!=='undefined'&&SIGT.list)||[],(window.ALS&&ALS.list)||[],(window.KTMS&&KTMS.list)||[]].forEach((L,i)=>L.forEach(e=>{if(e&&e.sym===sym&&e.t>=t0&&e.px>0&&(!e.dir||e.dir==='AL'))A.push(Object.assign({src:i===1?'algi':i===2?'katman':e.src},e))}))}catch(e){}
+ if(!A.length)return null;const P=pref?A.filter(e=>pref.indexOf(e.src)>=0):[];return (P.length?P:A).sort((a,b)=>a.t-b.t)[0]}
+function sigStampHtml(sym,pref,cur){const e=sigStampOf(sym,pref);if(!e)return '';const q=S.umap[sym],nw=cur||(q&&q.close)||null,d=nw?(nw/e.px-1)*100:null;
+ return '<div class="sstamp">⏱ '+htmlEsc(SST_N[e.src]||e.src||'Sinyal')+' sinyali <b>'+new Date(e.t+3*3600e3).toISOString().slice(11,16)+'</b> · fiyat <b>'+nf(e.px)+'</b>'+(d!=null?' · şimdi <span class="'+cls(d)+'">'+pct(d)+'</span>':'')+'</div>'}
+setInterval(()=>{try{const t=S.tab;if(BOTMODE||document.hidden||!(t==='op'||t==='algi'||t==='katman'||(window.XR&&XR.sym)))return;const s=nowSess();if(s.wk&&s.m>=595&&s.m<=1100&&typeof sigTodayLoad==='function')sigTodayLoad()}catch(e){}},15000);
+setTimeout(()=>{try{if(!BOTMODE&&typeof sigTodayLoad==='function')sigTodayLoad()}catch(e){}},6000);
 // Röntgen satırı
 function xrayKatman(sym){const r=KTM.m[sym];
  if(!r||Date.now()-r.at>180e3){if(!KTM['x:'+sym]||Date.now()-KTM['x:'+sym]>60e3){KTM['x:'+sym]=Date.now();ktmScan([sym]).then(n=>{if(n&&XR.sym===sym&&!XR.busy)try{xrayRender()}catch(e){}})}
@@ -7153,6 +7165,7 @@ setInterval(()=>{try{ktmMotor()}catch(e){}},20000);
 .ktmgh .seg button,.ktmcal{border:1px solid var(--line2);background:rgba(255,255,255,.04);color:var(--txt);border-radius:99px;padding:4px 10px;font:600 12px var(--sans);position:relative}
 .ktmgh .seg button.on{border-color:#34d399;color:#34d399}.ktmcal input{position:absolute;inset:0;opacity:0;width:100%}
 .ktmgt{width:100%;font-size:13px}.ktmgt td,.ktmgt th{padding:5px 4px;text-align:left}
+.sstamp{margin:6px 0 2px;padding:5px 9px;border-radius:9px;background:rgba(251,191,36,.10);border:1px solid rgba(251,191,36,.28);font-size:12.5px;color:var(--txt);line-height:1.35}.sstamp b{font-weight:800}
 .ktmsub{padding:10px 14px 0;font-size:12px;font-weight:700;color:var(--dim);letter-spacing:.3px}
 </style>
 <script>
