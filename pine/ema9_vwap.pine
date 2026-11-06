@@ -1,5 +1,5 @@
 //@version=6
-// Pusula · EMA 9 / VWAP Kesişimi (v1, 07.11.2026)
+// Pusula · EMA 9 / VWAP Kesişimi (v2, 07.11.2026 — 'dipten dönüş GİRİŞ' işareti eklendi)
 // EMA 9, günün VWAP'ını yukarı keserse AL, aşağı keserse SAT işareti.
 // Sinyal yalnız MUM KAPANINCA verilir (sonradan kaybolmaz). Tablo: şu anki durum, son kesişim (saat, fiyat, ne kadar oldu)
 // ve grafikte yüklü geçmişte AL kesişimlerinden sonra +%3 hedef / −%1 stop sonucu (aynı gün içinde).
@@ -23,6 +23,11 @@ tpPct   = input.float(3.0, "Hedef %", minval = 0.1, step = 0.1, group = grpT)
 slPct   = input.float(1.0, "Stop %",  minval = 0.1, step = 0.1, group = grpT)
 showLbl = input.bool(true, "Kesişimde saat ve fiyat etiketi", group = grpT)
 
+grpD = "Dipten dönüş (GİRİŞ)"
+dipBars = input.int(12, "Önce en az kaç mum VWAP altında kalmış", minval = 1, group = grpD)
+dipGap  = input.float(0.6, "EMA 9 ile VWAP arası en az % açılmış", minval = 0.0, step = 0.1, group = grpD)
+onlyDip = input.bool(false, "Yalnız dipten dönüş GİRİŞ'lerini göster (sıradan AL üçgenlerini gizle)", group = grpD)
+
 // ───────── Hesap ─────────
 newDay = timeframe.change("D")
 e9 = ta.ema(close, emaLen)
@@ -36,6 +41,27 @@ volPass = volOk ? volume > vAvg : true
 xUp = ta.crossover(e9, vw)  and barstate.isconfirmed and sessOk and volPass
 xDn = ta.crossunder(e9, vw) and barstate.isconfirmed and sessOk and volPass and showSell
 above = e9 > vw
+gapNow = (e9 / vw - 1) * 100
+
+// Dipten dönüş: kesişimden önce EMA 9 en az dipBars mum VWAP altında kalmış, fark en az dipGap açılmış; kesişim mumu yeşil ve VWAP üstünde kapanmış
+var int   bN = 0
+var float mG = 0.0
+if newDay
+    bN := 0
+    mG := 0.0
+isDip = xUp and bN >= dipBars and mG <= -dipGap and close > vw and close > open
+if e9 < vw
+    bN += 1
+    mG := math.min(mG, gapNow)
+else
+    bN := 0
+    mG := 0.0
+var bool dipOn = false
+xDnRaw = ta.crossunder(e9, vw)
+if newDay or xDnRaw
+    dipOn := false
+if isDip
+    dipOn := true
 
 // ───────── Çizim ─────────
 pE = plot(e9, "EMA 9", color = color.new(#f59e0b, 0), linewidth = 2)
@@ -44,13 +70,18 @@ fill(pE, pV, color = above ? color.new(#22c55e, 85) : color.new(#ef4444, 85), ti
 plot(showBand ? vUp : na, "VWAP üst bant", color = color.new(#38bdf8, 65), style = plot.style_linebr)
 plot(showBand ? vDn : na, "VWAP alt bant", color = color.new(#38bdf8, 65), style = plot.style_linebr)
 
-plotshape(xUp, "AL kesişimi",  shape.triangleup,   location.belowbar, color.new(#22c55e, 0), size = size.small)
+pC = plot(close, "Fiyat (dolgu için)", color = color.new(color.white, 100), editable = false, display = display.none)
+fill(pC, pV, color = dipOn and close > vw ? color.new(#22c55e, 80) : na, title = "Dipten dönüş sonrası bölge")
+plotshape(xUp and not isDip and not onlyDip, "AL kesişimi",  shape.triangleup,   location.belowbar, color.new(#22c55e, 0), size = size.small)
+plotshape(isDip ? vw : na, "Dipten dönüş GİRİŞ", shape.circle, location.absolute, color.new(#22c55e, 0), size = size.normal)
 plotshape(xDn, "SAT kesişimi", shape.triangledown, location.abovebar, color.new(#ef4444, 0), size = size.small)
 bgcolor(xUp ? color.new(#22c55e, 88) : xDn ? color.new(#ef4444, 88) : na, title = "Kesişim mumu")
 
 hhmm(t) => str.format_time(t, "HH:mm", "Europe/Istanbul")
-if showLbl and xUp
-    label.new(bar_index, low, "AL " + hhmm(time_close) + "\n" + str.tostring(close, format.mintick), style = label.style_label_up, yloc = yloc.belowbar, color = color.new(#16a34a, 10), textcolor = color.white, size = size.small)
+if showLbl and isDip
+    label.new(bar_index, low, "GİRİŞ " + hhmm(time_close) + "\n" + str.tostring(close, format.mintick), style = label.style_label_up, yloc = yloc.belowbar, color = color.new(#22c55e, 0), textcolor = color.black, size = size.normal)
+else if showLbl and xUp and not onlyDip
+    label.new(bar_index, low, "AL " + hhmm(time_close) + "\n" + str.tostring(close, format.mintick), style = label.style_label_up, yloc = yloc.belowbar, color = color.new(#16a34a, 40), textcolor = color.white, size = size.tiny)
 if showLbl and xDn
     label.new(bar_index, high, "SAT " + hhmm(time_close) + "\n" + str.tostring(close, format.mintick), style = label.style_label_down, yloc = yloc.abovebar, color = color.new(#dc2626, 10), textcolor = color.white, size = size.small)
 
@@ -100,9 +131,33 @@ if xUp and na(ent)
     ent  := close
     entB := bar_index
 
+// Aynı ölçüm yalnız dipten dönüş GİRİŞ'leri için
+var float dEnt  = na
+var int   dEntB = na
+var int   dHit  = 0
+var int   dStop = 0
+var int   dEod  = 0
+var float dSum  = 0.0
+if newDay and not na(dEnt)
+    dEod += 1
+    dSum += (close[1] / dEnt - 1) * 100
+    dEnt := na
+if not na(dEnt) and bar_index > dEntB
+    if low <= dEnt * (1 - slPct / 100)
+        dStop += 1
+        dSum -= slPct
+        dEnt := na
+    else if high >= dEnt * (1 + tpPct / 100)
+        dHit += 1
+        dSum += tpPct
+        dEnt := na
+if isDip and na(dEnt)
+    dEnt  := close
+    dEntB := bar_index
+
 // ───────── Tablo ─────────
 tPos = tblPos == "Sol üst" ? position.top_left : tblPos == "Sağ alt" ? position.bottom_right : tblPos == "Sol alt" ? position.bottom_left : position.top_right
-var table tb = table.new(tPos, 2, 9, bgcolor = color.new(#0b1220, 8), border_color = color.new(#334155, 0), border_width = 1, frame_color = color.new(#f59e0b, 30), frame_width = 1)
+var table tb = table.new(tPos, 2, 11, bgcolor = color.new(#0b1220, 8), border_color = color.new(#334155, 0), border_width = 1, frame_color = color.new(#f59e0b, 30), frame_width = 1)
 cell(r, a, b, col) =>
     table.cell(tb, 0, r, a, text_color = color.new(#cbd5e1, 0), text_size = size.small, text_halign = text.align_left)
     table.cell(tb, 1, r, b, text_color = col, text_size = size.small, text_halign = text.align_right)
@@ -123,9 +178,15 @@ if showTbl and barstate.islast
     cell(6, "Bugün kesişim", str.tostring(todUp) + " AL · " + str.tostring(todDn) + " SAT", color.white)
     cell(7, "AL sonrası +" + str.tostring(tpPct) + "% / -" + str.tostring(slPct) + "%", str.tostring(nHit) + " hedef · " + str.tostring(nStop) + " stop · " + str.tostring(nEod) + " gün sonu", color.white)
     cell(8, "İsabet · işlem başı", (na(hitR) ? "-" : "%" + str.tostring(hitR, "#")) + " · " + (nAll > 0 ? str.tostring(sumR / nAll, "+#.##;-#.##") + " %" : "-"), na(hitR) ? #94a3b8 : hitR >= 25 ? #22c55e : #ef4444)
+    dRes = dHit + dStop
+    dR   = dRes > 0 ? dHit * 100.0 / dRes : na
+    dAll = dHit + dStop + dEod
+    cell(9, "Dipten dönüş GİRİŞ sonrası", str.tostring(dHit) + " hedef · " + str.tostring(dStop) + " stop · " + str.tostring(dEod) + " gün sonu", color.white)
+    cell(10, "GİRİŞ isabet · işlem başı", (na(dR) ? "-" : "%" + str.tostring(dR, "#")) + " · " + (dAll > 0 ? str.tostring(dSum / dAll, "+#.##;-#.##") + " %" : "-"), na(dR) ? #94a3b8 : dR >= 25 ? #22c55e : #ef4444)
 
 // ───────── Alarmlar ─────────
 alertcondition(xUp, "EMA 9 VWAP'ı yukarı kesti (AL)", "{{ticker}} · EMA 9, VWAP'ı yukarı kesti · fiyat {{close}}")
+alertcondition(isDip, "Dipten dönüş GİRİŞ", "{{ticker}} · Dipten dönüş: EMA 9 VWAP'ı yukarı kesti · GİRİŞ {{close}}")
 alertcondition(xDn, "EMA 9 VWAP'ı aşağı kesti (SAT)", "{{ticker}} · EMA 9, VWAP'ı aşağı kesti · fiyat {{close}}")
 if xUp
     alert(syminfo.ticker + " · EMA 9 VWAP'ı yukarı kesti (AL) · " + str.tostring(close, format.mintick), alert.freq_once_per_bar_close)
