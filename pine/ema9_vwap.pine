@@ -1,0 +1,133 @@
+//@version=6
+// Pusula · EMA 9 / VWAP Kesişimi (v1, 07.11.2026)
+// EMA 9, günün VWAP'ını yukarı keserse AL, aşağı keserse SAT işareti.
+// Sinyal yalnız MUM KAPANINCA verilir (sonradan kaybolmaz). Tablo: şu anki durum, son kesişim (saat, fiyat, ne kadar oldu)
+// ve grafikte yüklü geçmişte AL kesişimlerinden sonra +%3 hedef / −%1 stop sonucu (aynı gün içinde).
+// Yatırım tavsiyesi değildir.
+indicator("Pusula EMA 9 - VWAP Kesişim", overlay = true, max_labels_count = 300)
+
+// ───────── Ayarlar ─────────
+grpA = "Hesap"
+emaLen   = input.int(9, "EMA uzunluğu", minval = 2, group = grpA)
+showBand = input.bool(true, "VWAP bantlarını göster (±1 standart sapma)", group = grpA)
+
+grpF = "Süzgeçler"
+onlySess = input.bool(true,  "Yalnız seans içi (10:00–17:30)", group = grpF)
+volOk    = input.bool(false, "Hacim onayı (kesişim mumu hacmi 20 mum ortalamasının üstünde)", group = grpF)
+showSell = input.bool(true,  "SAT kesişimlerini de göster", group = grpF)
+
+grpT = "Tablo ve sonuç ölçümü"
+showTbl = input.bool(true, "Tabloyu göster", group = grpT)
+tblPos  = input.string("Sağ üst", "Tablo yeri", options = ["Sağ üst", "Sol üst", "Sağ alt", "Sol alt"], group = grpT)
+tpPct   = input.float(3.0, "Hedef %", minval = 0.1, step = 0.1, group = grpT)
+slPct   = input.float(1.0, "Stop %",  minval = 0.1, step = 0.1, group = grpT)
+showLbl = input.bool(true, "Kesişimde saat ve fiyat etiketi", group = grpT)
+
+// ───────── Hesap ─────────
+newDay = timeframe.change("D")
+e9 = ta.ema(close, emaLen)
+[vw, vUp, vDn] = ta.vwap(hlc3, newDay, 1.0)
+
+inSess  = not timeframe.isintraday or not na(time(timeframe.period, "1000-1730", "Europe/Istanbul"))
+sessOk  = onlySess ? inSess : true
+vAvg    = ta.sma(volume, 20)
+volPass = volOk ? volume > vAvg : true
+
+xUp = ta.crossover(e9, vw)  and barstate.isconfirmed and sessOk and volPass
+xDn = ta.crossunder(e9, vw) and barstate.isconfirmed and sessOk and volPass and showSell
+above = e9 > vw
+
+// ───────── Çizim ─────────
+pE = plot(e9, "EMA 9", color = color.new(#f59e0b, 0), linewidth = 2)
+pV = plot(vw, "VWAP",  color = color.new(#38bdf8, 0), linewidth = 2)
+fill(pE, pV, color = above ? color.new(#22c55e, 85) : color.new(#ef4444, 85), title = "EMA 9 / VWAP arası")
+plot(showBand ? vUp : na, "VWAP üst bant", color = color.new(#38bdf8, 65), style = plot.style_linebr)
+plot(showBand ? vDn : na, "VWAP alt bant", color = color.new(#38bdf8, 65), style = plot.style_linebr)
+
+plotshape(xUp, "AL kesişimi",  shape.triangleup,   location.belowbar, color.new(#22c55e, 0), size = size.small)
+plotshape(xDn, "SAT kesişimi", shape.triangledown, location.abovebar, color.new(#ef4444, 0), size = size.small)
+bgcolor(xUp ? color.new(#22c55e, 88) : xDn ? color.new(#ef4444, 88) : na, title = "Kesişim mumu")
+
+hhmm(t) => str.format_time(t, "HH:mm", "Europe/Istanbul")
+if showLbl and xUp
+    label.new(bar_index, low, "AL " + hhmm(time_close) + "\n" + str.tostring(close, format.mintick), style = label.style_label_up, yloc = yloc.belowbar, color = color.new(#16a34a, 10), textcolor = color.white, size = size.small)
+if showLbl and xDn
+    label.new(bar_index, high, "SAT " + hhmm(time_close) + "\n" + str.tostring(close, format.mintick), style = label.style_label_down, yloc = yloc.abovebar, color = color.new(#dc2626, 10), textcolor = color.white, size = size.small)
+
+// ───────── Son kesişim ─────────
+var float lastPx  = na
+var int   lastT   = na
+var int   lastBar = na
+var int   lastDir = 0
+if xUp or xDn
+    lastPx  := close
+    lastT   := time_close
+    lastBar := bar_index
+    lastDir := xUp ? 1 : -1
+
+// Bugünkü kesişim sayısı
+var int todUp = 0
+var int todDn = 0
+if newDay
+    todUp := 0
+    todDn := 0
+if xUp
+    todUp += 1
+if xDn
+    todDn += 1
+
+// ───────── AL sonrası sonuç: +hedef / −stop, aynı gün (ikisi aynı mumda → stop sayılır) ─────────
+var float ent   = na
+var int   entB  = na
+var int   nHit  = 0
+var int   nStop = 0
+var int   nEod  = 0
+var float sumR  = 0.0
+if newDay and not na(ent)
+    nEod += 1
+    sumR += (close[1] / ent - 1) * 100
+    ent := na
+if not na(ent) and bar_index > entB
+    if low <= ent * (1 - slPct / 100)
+        nStop += 1
+        sumR -= slPct
+        ent := na
+    else if high >= ent * (1 + tpPct / 100)
+        nHit += 1
+        sumR += tpPct
+        ent := na
+if xUp and na(ent)
+    ent  := close
+    entB := bar_index
+
+// ───────── Tablo ─────────
+tPos = tblPos == "Sol üst" ? position.top_left : tblPos == "Sağ alt" ? position.bottom_right : tblPos == "Sol alt" ? position.bottom_left : position.top_right
+var table tb = table.new(tPos, 2, 9, bgcolor = color.new(#0b1220, 8), border_color = color.new(#334155, 0), border_width = 1, frame_color = color.new(#f59e0b, 30), frame_width = 1)
+cell(r, a, b, col) =>
+    table.cell(tb, 0, r, a, text_color = color.new(#cbd5e1, 0), text_size = size.small, text_halign = text.align_left)
+    table.cell(tb, 1, r, b, text_color = col, text_size = size.small, text_halign = text.align_right)
+
+if showTbl and barstate.islast
+    gap   = (e9 / vw - 1) * 100
+    since = na(lastPx) ? na : (close / lastPx - 1) * 100
+    nRes  = nHit + nStop
+    hitR  = nRes > 0 ? nHit * 100.0 / nRes : na
+    nAll  = nHit + nStop + nEod
+    table.cell(tb, 0, 0, "EMA " + str.tostring(emaLen) + " / VWAP", text_color = color.new(#f59e0b, 0), text_size = size.normal, text_halign = text.align_left)
+    table.cell(tb, 1, 0, syminfo.ticker, text_color = color.white, text_size = size.normal, text_halign = text.align_right)
+    cell(1, "Durum", above ? "EMA 9, VWAP üstünde ▲" : "EMA 9, VWAP altında ▼", above ? #22c55e : #ef4444)
+    cell(2, "Aradaki fark", str.tostring(gap, "#.##") + " %", gap >= 0 ? #22c55e : #ef4444)
+    cell(3, "Son kesişim", lastDir == 0 ? "yok" : (lastDir == 1 ? "AL " : "SAT ") + str.format_time(lastT, "dd.MM HH:mm", "Europe/Istanbul"), lastDir == 1 ? #22c55e : lastDir == -1 ? #ef4444 : #94a3b8)
+    cell(4, "Kesişim fiyatı", na(lastPx) ? "-" : str.tostring(lastPx, format.mintick), color.white)
+    cell(5, "O andan beri", na(since) ? "-" : str.tostring(since, "+#.##;-#.##") + " %  (" + str.tostring(bar_index - lastBar) + " mum)", na(since) ? #94a3b8 : since >= 0 ? #22c55e : #ef4444)
+    cell(6, "Bugün kesişim", str.tostring(todUp) + " AL · " + str.tostring(todDn) + " SAT", color.white)
+    cell(7, "AL sonrası +" + str.tostring(tpPct) + "% / -" + str.tostring(slPct) + "%", str.tostring(nHit) + " hedef · " + str.tostring(nStop) + " stop · " + str.tostring(nEod) + " gün sonu", color.white)
+    cell(8, "İsabet · işlem başı", (na(hitR) ? "-" : "%" + str.tostring(hitR, "#")) + " · " + (nAll > 0 ? str.tostring(sumR / nAll, "+#.##;-#.##") + " %" : "-"), na(hitR) ? #94a3b8 : hitR >= 25 ? #22c55e : #ef4444)
+
+// ───────── Alarmlar ─────────
+alertcondition(xUp, "EMA 9 VWAP'ı yukarı kesti (AL)", "{{ticker}} · EMA 9, VWAP'ı yukarı kesti · fiyat {{close}}")
+alertcondition(xDn, "EMA 9 VWAP'ı aşağı kesti (SAT)", "{{ticker}} · EMA 9, VWAP'ı aşağı kesti · fiyat {{close}}")
+if xUp
+    alert(syminfo.ticker + " · EMA 9 VWAP'ı yukarı kesti (AL) · " + str.tostring(close, format.mintick), alert.freq_once_per_bar_close)
+if xDn
+    alert(syminfo.ticker + " · EMA 9 VWAP'ı aşağı kesti (SAT) · " + str.tostring(close, format.mintick), alert.freq_once_per_bar_close)

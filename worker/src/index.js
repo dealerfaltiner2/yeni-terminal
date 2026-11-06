@@ -683,6 +683,8 @@ async function pineSync(env, force) {
     if (o.ok) { seen[f.path] = f.sha; delete seen['x:' + f.path]; } else seen['x:' + f.path] = f.sha;
   }
   if (res.length) await kvPut(env, 'pine_sha', seen);
+  // v14.33: son senkron sonucu D1'de görünsün (yükleme doğrulaması için; yalnız iş olduğunda yazılır)
+  if (res.length && env.BT) try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('pine_res', ?)").bind(JSON.stringify({ at: Date.now(), res: res.map(o => ({ dosya: o.dosya, name: o.name, ok: o.ok, derleme: o.derleme, yol: o.yol })) })).run(); } catch (e) {}
   return { ok: true, dosya: files.length, islenen: res };
 }
 /* ---------- v5.5: NABIZ geçmiş testi — dakikada bir hisse, sonuç D1 'bt' tablosuna ---------- */
