@@ -428,7 +428,7 @@ async function cron(env, force = false) {
         const c0 = await kvGet(env, 'cfg', null);
         for (const o of ps.islenen) if (!o.ok) await tgSend(c0, '⚠️ <b>Pine yüklenemedi</b> · ' + esc(o.name) + '\n' + esc(String(o.derleme !== 'ok' ? o.derleme : o.yanit).slice(0, 300))); // basarida mesaj yok
       }
-    } catch (e) {}
+    } catch (e) { if (env.BT) try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('pine_err', ?)").bind(JSON.stringify({ at: Date.now(), err: String(e && e.message || e).slice(0, 300) })).run(); } catch (e2) {} }
   }
   if (!session && !newsWin) return { skip: true };
   const cfg = await kvGet(env, 'cfg', null);
@@ -613,6 +613,8 @@ async function prefs(request, env) {
 /* ---------- v5.4: PINE — GitHub'daki pine/ klasoru → TradingView hesabindaki "Gostergelerim" ---------- */
 const PF = 'https://pine-facade.tradingview.com/pine-facade';
 const GH = 'https://api.github.com/repos/dealerfaltiner2/yeni-terminal/contents/pine';
+const PINE_RAW = 'https://raw.githubusercontent.com/dealerfaltiner2/yeni-terminal/main/pine/';
+const PINE_FILES = ['ema9_vwap.pine'];   // GitHub API sınırına takılınca indirilecek dosyalar (pine/ klasörüne yeni dosya eklersen buraya da yaz)
 async function pf(env, method, path, fields) {
   const init = { method, headers: { Cookie: cookieStr(env), Origin: 'https://www.tradingview.com', Referer: 'https://www.tradingview.com/', 'User-Agent': UA } };
   if (fields) { const fd = new FormData(); for (const k in fields) fd.append(k, fields[k]); init.body = fd; }
@@ -668,14 +670,28 @@ async function pineTest(env) {
 async function pineSync(env, force) {
   const r = await fetch(GH, { headers: { 'User-Agent': 'bist-tv', Accept: 'application/vnd.github+json' } });
   if (r.status === 404) return { ok: true, dosya: 0, not: 'pine klasörü yok' };
-  if (!r.ok) return { ok: false, err: 'GitHub HTTP ' + r.status };
-  const files = (await r.json()).filter(f => f.type === 'file' && /\.pine$/i.test(f.name));
+  let files;
+  if (r.ok) files = (await r.json()).filter(f => f.type === 'file' && /\.pine$/i.test(f.name));
+  else {
+    // v14.33 (07.11): GitHub API Cloudflare'in paylaşılan IP'lerine saatlik sınır uyguluyor (403/429) → bilinen dosyaları ham adresten indir, içerik özetiyle değişikliği anla
+    files = [];
+    for (const name of PINE_FILES) {
+      try {
+        const rr = await fetch(PINE_RAW + name + '?t=' + Date.now(), { headers: { 'User-Agent': 'bist-tv' } });
+        if (!rr.ok) continue;
+        const src = await rr.text();
+        const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(src));
+        files.push({ name, path: 'pine/' + name, sha: 'raw:' + [...new Uint8Array(h)].slice(0, 12).map(x => x.toString(16).padStart(2, '0')).join(''), src });
+      } catch (e) {}
+    }
+    if (!files.length) { if (env.BT) try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('pine_res', ?)").bind(JSON.stringify({ at: Date.now(), err: 'GitHub HTTP ' + r.status + ', ham dosya da alınamadı' })).run(); } catch (e) {} return { ok: false, err: 'GitHub HTTP ' + r.status }; }
+  }
   const seen = await kvGet(env, 'pine_sha', {});
   const res = [];
   let user = null;
   for (const f of files.slice(0, 10)) {
     if (!force && (seen[f.path] === f.sha || seen['x:' + f.path] === f.sha)) continue; // basarili ya da ayni surumde zaten hata verdi
-    const src = await (await fetch(f.download_url, { headers: { 'User-Agent': 'bist-tv' } })).text();
+    const src = f.src != null ? f.src : await (await fetch(f.download_url, { headers: { 'User-Agent': 'bist-tv' } })).text();
     const name = pineTitle(src) || f.name.replace(/\.pine$/i, '');
     if (user == null) user = await pineUser(env) || '';
     const o = await pineSave(env, name, src, user);
