@@ -24,8 +24,8 @@ slPct   = input.float(1.0, "Stop %",  minval = 0.1, step = 0.1, group = grpT)
 showLbl = input.bool(true, "Kesişimde saat ve fiyat etiketi", group = grpT)
 
 grpD = "Dipten dönüş (GİRİŞ)"
-dipBars = input.int(12, "Önce en az kaç mum VWAP altında kalmış", minval = 1, group = grpD)
-dipGap  = input.float(0.6, "EMA 9 ile VWAP arası en az % açılmış", minval = 0.0, step = 0.1, group = grpD)
+dipBars = input.int(6, "Önce en az kaç mum VWAP altında kalmış", minval = 1, group = grpD)
+dipGap  = input.float(0.3, "EMA 9 ile VWAP arası en az % açılmış", minval = 0.0, step = 0.1, group = grpD)
 onlyDip = input.bool(true, "Yalnız dipten dönüş GİRİŞ'lerini göster (sıradan AL kesişimlerini gizle)", group = grpD)
 
 // ───────── Hesap ─────────
@@ -182,7 +182,11 @@ if showTbl and barstate.islast
     since  = na(lastPx) ? na : (close / lastPx - 1) * 100
     table.cell(tb, 0, 0, "EMA " + str.tostring(emaLen) + " / VWAP", text_color = color.new(#f59e0b, 0), text_size = size.normal, text_halign = text.align_left)
     table.cell(tb, 1, 0, syminfo.ticker, text_color = color.white, text_size = size.normal, text_halign = text.align_right)
-    cell(1, "Durum", above ? "EMA 9, VWAP üstünde ▲" : "EMA 9, VWAP altında ▼", above ? #22c55e : #ef4444)
+    if not timeframe.isintraday
+        table.cell(tb, 0, 1, "Bu gösterge gün içi grafik içindir", text_color = #fbbf24, text_size = size.small, text_halign = text.align_left)
+        table.cell(tb, 1, 1, "1 / 5 / 15 dk seç", text_color = #fbbf24, text_size = size.small, text_halign = text.align_right)
+    else
+        cell(1, "Durum", above ? "EMA 9, VWAP üstünde ▲" : "EMA 9, VWAP altında ▼", above ? #22c55e : #ef4444)
     cell(2, "Aradaki fark", str.tostring(gap, "#.##") + " %", gap >= 0 ? #22c55e : #ef4444)
     cell(3, "Son GİRİŞ", na(gT) ? "yok" : str.format_time(gT, "dd.MM HH:mm", "Europe/Istanbul") + " · " + str.tostring(gPx, format.mintick), na(gT) ? #94a3b8 : #22c55e)
     cell(4, "GİRİŞten beri", na(gSince) ? "-" : str.tostring(gSince, "+#.##;-#.##") + " %  (" + str.tostring(bar_index - gBar) + " mum)", na(gSince) ? #94a3b8 : gSince >= 0 ? #22c55e : #ef4444)
