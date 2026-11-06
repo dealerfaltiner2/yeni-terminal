@@ -14,7 +14,7 @@ showBand = input.bool(true, "VWAP bantlarını göster (±1 standart sapma)", gr
 grpF = "Süzgeçler"
 onlySess = input.bool(true,  "Yalnız seans içi (10:00–17:30)", group = grpF)
 volOk    = input.bool(false, "Hacim onayı (kesişim mumu hacmi 20 mum ortalamasının üstünde)", group = grpF)
-showSell = input.bool(true,  "SAT kesişimlerini de göster", group = grpF)
+showSell = input.bool(false, "SAT kesişimlerini de göster", group = grpF)
 
 grpT = "Tablo ve sonuç ölçümü"
 showTbl = input.bool(true, "Tabloyu göster", group = grpT)
@@ -26,7 +26,7 @@ showLbl = input.bool(true, "Kesişimde saat ve fiyat etiketi", group = grpT)
 grpD = "Dipten dönüş (GİRİŞ)"
 dipBars = input.int(12, "Önce en az kaç mum VWAP altında kalmış", minval = 1, group = grpD)
 dipGap  = input.float(0.6, "EMA 9 ile VWAP arası en az % açılmış", minval = 0.0, step = 0.1, group = grpD)
-onlyDip = input.bool(false, "Yalnız dipten dönüş GİRİŞ'lerini göster (sıradan AL üçgenlerini gizle)", group = grpD)
+onlyDip = input.bool(true, "Yalnız dipten dönüş GİRİŞ'lerini göster (sıradan AL kesişimlerini gizle)", group = grpD)
 
 // ───────── Hesap ─────────
 newDay = timeframe.change("D")
@@ -56,6 +56,13 @@ if e9 < vw
 else
     bN := 0
     mG := 0.0
+var float gPx  = na
+var int   gT   = na
+var int   gBar = na
+if isDip
+    gPx  := close
+    gT   := time_close
+    gBar := bar_index
 var bool dipOn = false
 xDnRaw = ta.crossunder(e9, vw)
 if newDay or xDnRaw
@@ -163,26 +170,29 @@ cell(r, a, b, col) =>
     table.cell(tb, 1, r, b, text_color = col, text_size = size.small, text_halign = text.align_right)
 
 if showTbl and barstate.islast
-    gap   = (e9 / vw - 1) * 100
-    since = na(lastPx) ? na : (close / lastPx - 1) * 100
-    nRes  = nHit + nStop
-    hitR  = nRes > 0 ? nHit * 100.0 / nRes : na
-    nAll  = nHit + nStop + nEod
+    table.clear(tb, 0, 0, 1, 10)
+    gap  = (e9 / vw - 1) * 100
+    nRes = nHit + nStop
+    hitR = nRes > 0 ? nHit * 100.0 / nRes : na
+    nAll = nHit + nStop + nEod
+    dRes = dHit + dStop
+    dR   = dRes > 0 ? dHit * 100.0 / dRes : na
+    dAll = dHit + dStop + dEod
+    gSince = na(gPx) ? na : (close / gPx - 1) * 100
+    since  = na(lastPx) ? na : (close / lastPx - 1) * 100
     table.cell(tb, 0, 0, "EMA " + str.tostring(emaLen) + " / VWAP", text_color = color.new(#f59e0b, 0), text_size = size.normal, text_halign = text.align_left)
     table.cell(tb, 1, 0, syminfo.ticker, text_color = color.white, text_size = size.normal, text_halign = text.align_right)
     cell(1, "Durum", above ? "EMA 9, VWAP üstünde ▲" : "EMA 9, VWAP altında ▼", above ? #22c55e : #ef4444)
     cell(2, "Aradaki fark", str.tostring(gap, "#.##") + " %", gap >= 0 ? #22c55e : #ef4444)
-    cell(3, "Son kesişim", lastDir == 0 ? "yok" : (lastDir == 1 ? "AL " : "SAT ") + str.format_time(lastT, "dd.MM HH:mm", "Europe/Istanbul"), lastDir == 1 ? #22c55e : lastDir == -1 ? #ef4444 : #94a3b8)
-    cell(4, "Kesişim fiyatı", na(lastPx) ? "-" : str.tostring(lastPx, format.mintick), color.white)
-    cell(5, "O andan beri", na(since) ? "-" : str.tostring(since, "+#.##;-#.##") + " %  (" + str.tostring(bar_index - lastBar) + " mum)", na(since) ? #94a3b8 : since >= 0 ? #22c55e : #ef4444)
-    cell(6, "Bugün kesişim", str.tostring(todUp) + " AL · " + str.tostring(todDn) + " SAT", color.white)
-    cell(7, "AL sonrası +" + str.tostring(tpPct) + "% / -" + str.tostring(slPct) + "%", str.tostring(nHit) + " hedef · " + str.tostring(nStop) + " stop · " + str.tostring(nEod) + " gün sonu", color.white)
-    cell(8, "İsabet · işlem başı", (na(hitR) ? "-" : "%" + str.tostring(hitR, "#")) + " · " + (nAll > 0 ? str.tostring(sumR / nAll, "+#.##;-#.##") + " %" : "-"), na(hitR) ? #94a3b8 : hitR >= 25 ? #22c55e : #ef4444)
-    dRes = dHit + dStop
-    dR   = dRes > 0 ? dHit * 100.0 / dRes : na
-    dAll = dHit + dStop + dEod
-    cell(9, "Dipten dönüş GİRİŞ sonrası", str.tostring(dHit) + " hedef · " + str.tostring(dStop) + " stop · " + str.tostring(dEod) + " gün sonu", color.white)
-    cell(10, "GİRİŞ isabet · işlem başı", (na(dR) ? "-" : "%" + str.tostring(dR, "#")) + " · " + (dAll > 0 ? str.tostring(dSum / dAll, "+#.##;-#.##") + " %" : "-"), na(dR) ? #94a3b8 : dR >= 25 ? #22c55e : #ef4444)
+    cell(3, "Son GİRİŞ", na(gT) ? "yok" : str.format_time(gT, "dd.MM HH:mm", "Europe/Istanbul") + " · " + str.tostring(gPx, format.mintick), na(gT) ? #94a3b8 : #22c55e)
+    cell(4, "GİRİŞten beri", na(gSince) ? "-" : str.tostring(gSince, "+#.##;-#.##") + " %  (" + str.tostring(bar_index - gBar) + " mum)", na(gSince) ? #94a3b8 : gSince >= 0 ? #22c55e : #ef4444)
+    cell(5, "GİRİŞ sonrası +" + str.tostring(tpPct) + "% / -" + str.tostring(slPct) + "%", str.tostring(dHit) + " hedef · " + str.tostring(dStop) + " stop · " + str.tostring(dEod) + " gün sonu", color.white)
+    cell(6, "İsabet · işlem başı", (na(dR) ? "-" : "%" + str.tostring(dR, "#")) + " · " + (dAll > 0 ? str.tostring(dSum / dAll, "+#.##;-#.##") + " %" : "-"), na(dR) ? #94a3b8 : dR >= 25 ? #22c55e : #ef4444)
+    if not onlyDip
+        cell(7, "Son kesişim", lastDir == 0 ? "yok" : (lastDir == 1 ? "AL " : "SAT ") + str.format_time(lastT, "dd.MM HH:mm", "Europe/Istanbul") + " · " + str.tostring(lastPx, format.mintick), lastDir == 1 ? #22c55e : lastDir == -1 ? #ef4444 : #94a3b8)
+        cell(8, "Bugün kesişim", str.tostring(todUp) + " AL · " + str.tostring(todDn) + " SAT", color.white)
+        cell(9, "Her AL sonrası", str.tostring(nHit) + " hedef · " + str.tostring(nStop) + " stop · " + str.tostring(nEod) + " gün sonu", color.white)
+        cell(10, "AL isabet · işlem başı", (na(hitR) ? "-" : "%" + str.tostring(hitR, "#")) + " · " + (nAll > 0 ? str.tostring(sumR / nAll, "+#.##;-#.##") + " %" : "-"), na(hitR) ? #94a3b8 : hitR >= 25 ? #22c55e : #ef4444)
 
 // ───────── Alarmlar ─────────
 alertcondition(xUp, "EMA 9 VWAP'ı yukarı kesti (AL)", "{{ticker}} · EMA 9, VWAP'ı yukarı kesti · fiyat {{close}}")
