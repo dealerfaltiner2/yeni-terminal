@@ -1,5 +1,5 @@
 //@version=6
-// Pusula · EMA 9 / VWAP Kesişimi (v2, 07.11.2026 — 'dipten dönüş GİRİŞ' işareti eklendi)
+// Pusula · EMA 9 / VWAP Kesişimi (v3, 07.11.2026 — GİRİŞ + ÇIKIŞ işaretleri)
 // EMA 9, günün VWAP'ını yukarı keserse AL, aşağı keserse SAT işareti.
 // Sinyal yalnız MUM KAPANINCA verilir (sonradan kaybolmaz). Tablo: şu anki durum, son kesişim (saat, fiyat, ne kadar oldu)
 // ve grafikte yüklü geçmişte AL kesişimlerinden sonra +%3 hedef / −%1 stop sonucu (aynı gün içinde).
@@ -26,6 +26,7 @@ showLbl = input.bool(true, "Kesişimde saat ve fiyat etiketi", group = grpT)
 grpD = "Dipten dönüş (GİRİŞ)"
 dipBars = input.int(6, "Önce en az kaç mum VWAP altında kalmış", minval = 1, group = grpD)
 dipGap  = input.float(0.3, "EMA 9 ile VWAP arası en az % açılmış", minval = 0.0, step = 0.1, group = grpD)
+exitMode = input.string("Hangisi önce gelirse", "ÇIKIŞ kuralı", options = ["Hangisi önce gelirse", "Yalnız hedef / stop", "Yalnız EMA 9 VWAP altına inince"], group = grpD, tooltip = "Hangisi önce gelirse: hedef, stop, EMA 9'un VWAP altına inmesi ya da gün sonu.")
 onlyDip = input.bool(true, "Yalnız dipten dönüş GİRİŞ'lerini göster (sıradan AL kesişimlerini gizle)", group = grpD)
 
 // ───────── Hesap ─────────
@@ -138,26 +139,59 @@ if xUp and na(ent)
     ent  := close
     entB := bar_index
 
-// Aynı ölçüm yalnız dipten dönüş GİRİŞ'leri için
+// GİRİŞ → ÇIKIŞ (v3): hangisi önce gelirse — hedef, stop, EMA 9'un VWAP altına inmesi ya da gün sonu (ayarlardan seçilir)
+useTS = exitMode != "Yalnız EMA 9 VWAP altına inince"
+useX  = exitMode != "Yalnız hedef / stop"
 var float dEnt  = na
 var int   dEntB = na
 var int   dHit  = 0
 var int   dStop = 0
+var int   dXc   = 0
 var int   dEod  = 0
+var int   dWin  = 0
+var int   dLoss = 0
 var float dSum  = 0.0
+float exR   = na
+string exWhy = ""
+int   exBar = na
+float exPx  = na
+float exY   = na
 if newDay and not na(dEnt)
+    exR := (close[1] / dEnt - 1) * 100
+    exWhy := "gün sonu"
+    exBar := bar_index - 1
+    exPx := close[1]
+    exY := high[1]
     dEod += 1
-    dSum += (close[1] / dEnt - 1) * 100
-    dEnt := na
-if not na(dEnt) and bar_index > dEntB
-    if low <= dEnt * (1 - slPct / 100)
+else if not na(dEnt) and bar_index > dEntB
+    if useTS and low <= dEnt * (1 - slPct / 100)
+        exR := -slPct
+        exWhy := "stop"
         dStop += 1
-        dSum -= slPct
-        dEnt := na
-    else if high >= dEnt * (1 + tpPct / 100)
+    else if useTS and high >= dEnt * (1 + tpPct / 100)
+        exR := tpPct
+        exWhy := "hedef"
         dHit += 1
-        dSum += tpPct
-        dEnt := na
+    else if useX and xDnRaw and barstate.isconfirmed
+        exR := (close / dEnt - 1) * 100
+        exWhy := "EMA 9 VWAP altına indi"
+        dXc += 1
+    if not na(exR)
+        exBar := bar_index
+        exPx := dEnt * (1 + exR / 100)
+        exY := high
+if not na(exR)
+    dSum += exR
+    if exR > 0
+        dWin += 1
+    else
+        dLoss += 1
+    dEnt := na
+    dipOn := false
+    if showLbl
+        label.new(exBar, exY, "ÇIKIŞ " + hhmm(exBar == bar_index ? time_close : time_close[1]) + " · " + exWhy + "\n" + str.tostring(exPx, format.mintick) + "  " + str.tostring(exR, "+#.##;-#.##") + " %", style = label.style_label_down, yloc = yloc.abovebar, color = exR > 0 ? color.new(#22c55e, 0) : color.new(#ef4444, 0), textcolor = exR > 0 ? color.black : color.white, size = size.normal)
+exitNow = not na(exR) and exBar == bar_index
+plotshape(exitNow, "ÇIKIŞ", shape.xcross, location.abovebar, exR > 0 ? color.new(#22c55e, 0) : color.new(#ef4444, 0), size = size.small)
 if isDip and na(dEnt)
     dEnt  := close
     dEntB := bar_index
@@ -177,7 +211,7 @@ if showTbl and barstate.islast
     nAll = nHit + nStop + nEod
     dRes = dHit + dStop
     dR   = dRes > 0 ? dHit * 100.0 / dRes : na
-    dAll = dHit + dStop + dEod
+    dAll = dWin + dLoss
     gSince = na(gPx) ? na : (close / gPx - 1) * 100
     since  = na(lastPx) ? na : (close / lastPx - 1) * 100
     table.cell(tb, 0, 0, "EMA " + str.tostring(emaLen) + " / VWAP", text_color = color.new(#f59e0b, 0), text_size = size.normal, text_halign = text.align_left)
@@ -189,9 +223,9 @@ if showTbl and barstate.islast
         cell(1, "Durum", above ? "EMA 9, VWAP üstünde ▲" : "EMA 9, VWAP altında ▼", above ? #22c55e : #ef4444)
     cell(2, "Aradaki fark", str.tostring(gap, "#.##") + " %", gap >= 0 ? #22c55e : #ef4444)
     cell(3, "Son GİRİŞ", na(gT) ? "yok" : str.format_time(gT, "dd.MM HH:mm", "Europe/Istanbul") + " · " + str.tostring(gPx, format.mintick), na(gT) ? #94a3b8 : #22c55e)
-    cell(4, "GİRİŞten beri", na(gSince) ? "-" : str.tostring(gSince, "+#.##;-#.##") + " %  (" + str.tostring(bar_index - gBar) + " mum)", na(gSince) ? #94a3b8 : gSince >= 0 ? #22c55e : #ef4444)
-    cell(5, "GİRİŞ sonrası +" + str.tostring(tpPct) + "% / -" + str.tostring(slPct) + "%", str.tostring(dHit) + " hedef · " + str.tostring(dStop) + " stop · " + str.tostring(dEod) + " gün sonu", color.white)
-    cell(6, "İsabet · işlem başı", (na(dR) ? "-" : "%" + str.tostring(dR, "#")) + " · " + (dAll > 0 ? str.tostring(dSum / dAll, "+#.##;-#.##") + " %" : "-"), na(dR) ? #94a3b8 : dR >= 25 ? #22c55e : #ef4444)
+    cell(4, na(dEnt) ? "Son GİRİŞten beri" : "AÇIK İŞLEM · GİRİŞten beri", na(gSince) ? "-" : str.tostring(gSince, "+#.##;-#.##") + " %  (" + str.tostring(bar_index - gBar) + " mum)", na(gSince) ? #94a3b8 : gSince >= 0 ? #22c55e : #ef4444)
+    cell(5, "ÇIKIŞ nedenleri", str.tostring(dHit) + " hedef · " + str.tostring(dStop) + " stop · " + str.tostring(dXc) + " EMA · " + str.tostring(dEod) + " gün sonu", color.white)
+    cell(6, "Sonuç · işlem başı", str.tostring(dWin) + " kazandı · " + str.tostring(dLoss) + " kaybetti · " + (dAll > 0 ? str.tostring(dSum / dAll, "+#.##;-#.##") + " %" : "-"), dAll == 0 ? #94a3b8 : dSum > 0 ? #22c55e : #ef4444)
     if not onlyDip
         cell(7, "Son kesişim", lastDir == 0 ? "yok" : (lastDir == 1 ? "AL " : "SAT ") + str.format_time(lastT, "dd.MM HH:mm", "Europe/Istanbul") + " · " + str.tostring(lastPx, format.mintick), lastDir == 1 ? #22c55e : lastDir == -1 ? #ef4444 : #94a3b8)
         cell(8, "Bugün kesişim", str.tostring(todUp) + " AL · " + str.tostring(todDn) + " SAT", color.white)
