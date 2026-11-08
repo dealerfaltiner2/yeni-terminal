@@ -806,7 +806,7 @@ var FIRSAT_TG=true;   // v14.34 (08.11, Fatih: "Fırsat A ve B Telegram'a gitsin
 /* v14.35 (08.11, Fatih: 'Algıyla kodun ortak noktası yıldızlı olsun, Telegram'a yıldızlı gelsin') ERKEN AL 21 — Fatih'in TradingView göstergesi
    'ARSLAN ERKEN AL 21 + Merdiven' içindeki 21 şart sayısının birebir JS karşılığı (5 dk mum). ERKEN AL = şart sayısı ≥ ERKEN_MIN (14) ve yeşil mum.
    Algı ateşlediğinde son 2 kapanmış 5 dk mumdan biri ya da oluşan mum ERKEN AL ise sinyal ⭐ YILDIZLI. Algı kuralı DEĞİŞMEDİ. */
-var ERKEN_MIN=14,ERKEN_TF='e5';
+var ERKEN_MIN=16,ERKEN_TF='e5';
 function erkenCalc(cs){
  const n=cs.length;if(n<60)return null;
  const O=cs.map(c=>c.open),H=cs.map(c=>c.high),L=cs.map(c=>c.low),C=cs.map(c=>c.close),V=cs.map(c=>c.volume||0);
@@ -3597,7 +3597,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.35";window.APPV=APP_VER;
+  const APP_VER="14.36";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
