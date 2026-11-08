@@ -803,6 +803,73 @@ function sigKey(sym,dir){return sym+'|'+dir+'|'+new Date().toISOString().slice(0
 /* v14.8 (23.10, sinyal grubu anketi: 3 oyun 2'si 'öneri') TELEGRAM SİNYAL KURALI (DEVIR 6v): Telegram'a yalnız seans içi geri alım (sunucu), Momentum,
    ve güçlü Algı (fc≥0,8, hacim ≥2 kat) YALNIZ BIST 100 o an artıdayken. Fırsat A/B ve tavan sakin açılış Telegram'a gitmez; hepsi karneye yazılmaya devam eder. */
 var FIRSAT_TG=true;   // v14.34 (08.11, Fatih: "Fırsat A ve B Telegram'a gitsin") — B notu endeks ekside iken yine gitmez (v11.4)
+/* v14.35 (08.11, Fatih: 'Algıyla kodun ortak noktası yıldızlı olsun, Telegram'a yıldızlı gelsin') ERKEN AL 21 — Fatih'in TradingView göstergesi
+   'ARSLAN ERKEN AL 21 + Merdiven' içindeki 21 şart sayısının birebir JS karşılığı (5 dk mum). ERKEN AL = şart sayısı ≥ ERKEN_MIN (14) ve yeşil mum.
+   Algı ateşlediğinde son 2 kapanmış 5 dk mumdan biri ya da oluşan mum ERKEN AL ise sinyal ⭐ YILDIZLI. Algı kuralı DEĞİŞMEDİ. */
+var ERKEN_MIN=14,ERKEN_TF='e5';
+function erkenCalc(cs){
+ const n=cs.length;if(n<60)return null;
+ const O=cs.map(c=>c.open),H=cs.map(c=>c.high),L=cs.map(c=>c.low),C=cs.map(c=>c.close),V=cs.map(c=>c.volume||0);
+ const emaA=(a,p)=>{const k=2/(p+1);let e=null;return a.map(v=>e=(e==null?v:v*k+e*(1-k)))};
+ const smaA=(a,p)=>a.map((_,i)=>{if(i<p-1)return NaN;let s=0;for(let j=i-p+1;j<=i;j++)s+=a[j];return s/p});
+ const rmaA=(a,p)=>{let r=NaN,out=[];for(let i=0;i<a.length;i++){if(i<p-1){out.push(NaN);continue}if(isNaN(r)){let s=0;for(let j=i-p+1;j<=i;j++)s+=a[j];r=s/p}else r=(r*(p-1)+a[i])/p;out.push(r)}return out};
+ const stdA=(a,p)=>a.map((_,i)=>{if(i<p-1)return NaN;let m=0;for(let j=i-p+1;j<=i;j++)m+=a[j];m/=p;let s=0;for(let j=i-p+1;j<=i;j++)s+=(a[j]-m)*(a[j]-m);return Math.sqrt(s/p)});
+ const TR=C.map((c,i)=>i?Math.max(H[i]-L[i],Math.abs(H[i]-C[i-1]),Math.abs(L[i]-C[i-1])):H[i]-L[i]);
+ const atr=p=>rmaA(TR,p);
+ const atr14=atr(14),atr20=atr(20),atr10=atr(10);
+ const e5=emaA(C,5),e8=emaA(C,8),e13=emaA(C,13),e20=emaA(C,20);
+ const sd20=stdA(C,20),volAvg=smaA(V,20);
+ const m1=emaA(C,8),m2=emaA(C,17),macd=m1.map((v,i)=>v-m2[i]),sig=emaA(macd,9),hist=macd.map((v,i)=>v-sig[i]);
+ // VWMA, VWAP (gün başında sıfırlanır, hlc3)
+ const vwma=C.map((_,i)=>{if(i<19)return NaN;let a=0,b=0;for(let j=i-19;j<=i;j++){a+=C[j]*V[j];b+=V[j]}return b>0?a/b:C[i]});
+ const dk=t=>Math.floor((t+10800)/86400);let pv=0,vv=0,pd=null;const vwap=C.map((_,i)=>{const d=dk(cs[i].time);if(d!==pd){pv=0;vv=0;pd=d}const tp=(H[i]+L[i]+C[i])/3;pv+=tp*V[i];vv+=V[i];return vv>0?pv/vv:tp});
+ // ADX (14)
+ const pdm=H.map((h,i)=>{if(!i)return 0;const u=h-H[i-1],d=L[i-1]-L[i];return u>d&&u>0?u:0}),mdm=H.map((h,i)=>{if(!i)return 0;const u=h-H[i-1],d=L[i-1]-L[i];return d>u&&d>0?d:0});
+ const trR=rmaA(TR,14),pR=rmaA(pdm,14),mR=rmaA(mdm,14);
+ const dx=trR.map((t,i)=>{const p=100*pR[i]/t,m=100*mR[i]/t,s=p+m;return s>0?100*Math.abs(p-m)/s:0});
+ const adx=rmaA(dx.map(x=>isNaN(x)?0:x),14);
+ // Supertrend (3, 10)
+ const stDir=new Array(n).fill(1);{let lb=NaN,ub=NaN,stv=NaN;for(let i=0;i<n;i++){const a=atr10[i];if(isNaN(a)){stDir[i]=1;continue}const hl=(H[i]+L[i])/2;let up=hl-3*a,dn=hl+3*a;const plb=lb,pub=ub;
+   lb=(!isNaN(plb)&&!(up>plb||C[i-1]<plb))?plb:up;ub=(!isNaN(pub)&&!(dn<pub||C[i-1]>pub))?pub:dn;
+   let d;if(isNaN(atr10[i-1]))d=1;else if(stv===pub)d=C[i]>ub?-1:1;else d=C[i]<lb?1:-1;stDir[i]=d;stv=d===-1?lb:ub}}
+ // Parabolic SAR (0,02 / 0,02 / 0,2)
+ const sar=new Array(n).fill(NaN);{let up=C[1]>=C[0],af=.02,ep=up?H[1]:L[1],s=up?L[0]:H[0];sar[1]=s;for(let i=2;i<n;i++){s=s+af*(ep-s);
+   if(up){s=Math.min(s,L[i-1],L[i-2]);if(L[i]<s){up=false;s=ep;ep=L[i];af=.02}else if(H[i]>ep){ep=H[i];af=Math.min(af+.02,.2)}}
+   else{s=Math.max(s,H[i-1],H[i-2]);if(H[i]>s){up=true;s=ep;ep=H[i];af=.02}else if(L[i]<ep){ep=L[i];af=Math.min(af+.02,.2)}}sar[i]=s}}
+ // CCI (20, hlc3)
+ const tp=C.map((c,i)=>(H[i]+L[i]+c)/3),tpS=smaA(tp,20);const cci=tp.map((v,i)=>{if(i<19)return NaN;let md=0;for(let j=i-19;j<=i;j++)md+=Math.abs(tp[j]-tpS[i]);md/=20;return md>0?(v-tpS[i])/(0.015*md):0});
+ const atrS=smaA(atr14.map(x=>isNaN(x)?0:x),20);
+ const sma20=smaA(C,20),bbW=sd20.map((s,i)=>4*s/Math.max(sma20[i],1e-9));
+ const med=(a,i,p)=>{if(i<p-1)return NaN;const w=a.slice(i-p+1,i+1).filter(x=>!isNaN(x)).sort((x,y)=>x-y);if(!w.length)return NaN;const m=w.length>>1;return w.length%2?w[m]:(w[m-1]+w[m])/2};
+ let ob=0;const obv=C.map((c,i)=>{if(i)ob+=c>C[i-1]?V[i]:c<C[i-1]?-V[i]:0;return ob}),obvE=emaA(obv,20);
+ const mfv=C.map((c,i)=>H[i]!==L[i]?((c-L[i])-(H[i]-c))/(H[i]-L[i])*V[i]:0);
+ const fi=emaA(C.map((c,i)=>i?(c-C[i-1])*V[i]:0),13);
+ // RSI (RMA) → Stoch RSI 14/14/3/3
+ const ch=C.map((c,i)=>i?c-C[i-1]:0),g=rmaA(ch.map(x=>Math.max(x,0)),14),lo=rmaA(ch.map(x=>Math.max(-x,0)),14);
+ const rsi=g.map((v,i)=>lo[i]===0?100:v===0?0:100-100/(1+v/lo[i]));
+ const sto=rsi.map((v,i)=>{if(i<13+13)return NaN;let a=Infinity,b=-Infinity;for(let j=i-13;j<=i;j++){a=Math.min(a,rsi[j]);b=Math.max(b,rsi[j])}return b>a?100*(v-a)/(b-a):0});
+ const kS=smaA(sto.map(x=>isNaN(x)?0:x),3),dS=smaA(kS,3);
+ const ttm=i=>2*sd20[i]<1.5*atr20[i],rib=i=>(Math.max(e5[i],e8[i],e13[i],e20[i])-Math.min(e5[i],e8[i],e13[i],e20[i]))<0.5*atr14[i];
+ const xUp=i=>i>0&&macd[i]>sig[i]&&macd[i-1]<=sig[i-1];
+ function at(i){
+  if(i<55)return null;
+  let sq=false;for(let j=i;j>=Math.max(0,i-12);j--)if(ttm(j)||rib(j)){sq=true;break}
+  let hp=-Infinity;for(let j=i-12;j<i;j++)hp=Math.max(hp,H[j]);
+  const rng=Math.max(H[i]-L[i],1e-9),cp=H[i]>L[i]?(C[i]-L[i])/(H[i]-L[i]):.5,rv=volAvg[i]>0?V[i]/volAvg[i]:0;
+  let mx=false;for(let j=i;j>=Math.max(1,i-3);j--)if(xUp(j)){mx=true;break}
+  let cmfA=0,cmfB=0;for(let j=i-19;j<=i;j++){cmfA+=mfv[j];cmfB+=V[j]}
+  const ok=[sq,C[i]>hp,cp>=.5,rv>=1.5,C[i]>e5[i]&&C[i]>e13[i]&&C[i]>e20[i],macd[i]>sig[i],true,
+   C[i]>vwma[i],C[i]>vwap[i],adx[i]>=20,mx,hist[i]>hist[i-1],
+   stDir[i]<0,C[i]>sar[i],cci[i]>0,atr14[i]>atrS[i]&&atr14[i]>atr14[i-1],bbW[i]>bbW[i-1]&&bbW[i]>med(bbW,i,50),obv[i]>obvE[i],cmfA/Math.max(cmfB,1)>0,fi[i]>0,
+   kS[i]>dS[i]&&kS[i-1]<=dS[i-1]];
+  const k=ok.filter(Boolean).length;
+  return {n:k,green:C[i]>O[i],buy:k>=ERKEN_MIN&&C[i]>O[i],t:cs[i].time,px:C[i]};
+ }
+ return {at,last:n-1};
+}
+// Son 2 kapanmış mum + oluşan mum içinde ERKEN AL var mı (Algı ile 'ortak nokta')
+function erkenStarOf(cs){const E=erkenCalc(cs);if(!E)return null;let best=null;for(let i=E.last;i>=Math.max(0,E.last-2);i--){const r=E.at(i);if(!r)continue;if(r.buy)return Object.assign({ok:1},r);if(!best||r.n>best.n)best=r}return best?Object.assign({ok:0},best):null}
+async function erkenStar(sym){try{const cs=await getBars(sym,ERKEN_TF,true);return erkenStarOf(cs)}catch(e){return null}}
 function tgIdxOk(){try{const v=S.mkt&&S.mkt.XU100&&S.mkt.XU100.ch;const x=v!=null&&isFinite(v)?v:S.idxCh;return !(x!=null&&isFinite(x)&&x<0)}catch(e){return true}}
 async function autoRun(manual){
  const m=$('#tgmsg');
@@ -1987,7 +2054,7 @@ async function tdBars(sym,tf,n){
  return j.values.map(v=>{const d=v.datetime.split(' ')[0],tt=v.datetime.split(' ')[1];let time;if(isDaily(tf))time=d;else{const a=d.split('-').map(Number),b=tt.split(':').map(Number);time=Date.UTC(a[0],a[1]-1,a[2],b[0],b[1])/1000}return{time,open:+v.open,high:+v.high,low:+v.low,close:+v.close,volume:+v.volume||0}});
 }
 /* ================= TradingView mum verisi (bist-tv Worker /bars) ================= */
-const TVTF={'1min':['1',800,2500],'5min':['5',800,2500],'15min':['15',700,2000],'1h':['60',800,3000],'4h':['240',400,1500],'1day':['1D',300,1300],'1week':['1W',160,520],'1month':['1M',100,240],'k1':['1',120,120],'k5':['5',120,120],'k15':['15',120,120],'k30':['30',120,120]};   // v14.29 EMA Katman (kısa çekim)
+const TVTF={'1min':['1',800,2500],'5min':['5',800,2500],'15min':['15',700,2000],'1h':['60',800,3000],'4h':['240',400,1500],'1day':['1D',300,1300],'1week':['1W',160,520],'1month':['1M',100,240],'k1':['1',120,120],'k5':['5',120,120],'k15':['15',120,120],'k30':['30',120,120],'e5':['5',300,300]};   // v14.29 EMA Katman (kısa çekim)
 const TVB={q:[],t:null,n:0,err:''};
 const istDate=t=>new Date((t+10800)*1000).toISOString().slice(0,10);
 function tvBarsBase(){return S.tvproxy&&/^wss?:\/\//.test(S.tvproxy)?S.tvproxy.replace(/^ws/,'http').replace(/\/+$/,''):''}
@@ -3530,7 +3597,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.34";window.APPV=APP_VER;
+  const APP_VER="14.35";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3810,7 +3877,8 @@ function tvReconnectReport(){
  function msgFire(e,f,o){
   const fl=[];if(e.f.D)fl.push('alış emirleri yükseliyor');if(f.brk)fl.push(f.abv?'VWAP üstünde kırılım':'kırılım');if(e.f.G)fl.push('sektör birlikte yükseliyor: '+htmlEsc((o.sector?secTr(o.sector):'-').slice(0,22))+' ('+e.g+' hisse)');
   const w1=['Alıcılar %'+nf((f.fc||0)*100,0)];if(f.rv!=null)w1.push('hacim normalin '+P(f.rv,1)+' katı');
-  return tgCard({ic:'⚡',dir:'AL',sym:e.s,src:'Algı'+(f.fc>=.8?' · 💪 güçlü':''),px:e.p0,ch:f.ch||0,tp:e.p0*1.03,sl:e.p0*0.99,   // v9.0: hedef +%3, stop −%1
+  if(e.star)w1.unshift('⭐ ERKEN AL '+e.en+'/21 (5 dk) ile aynı anda');
+  return tgCard({ic:e.star?'⭐':'⚡',dir:'AL',sym:e.s,src:(e.star?'⭐ YILDIZLI · ':'')+'Algı'+(f.fc>=.8?' · 💪 güçlü':''),px:e.p0,ch:f.ch||0,tp:e.p0*1.03,sl:e.p0*0.99,   // v9.0: hedef +%3, stop −%1
    why:[w1.join(' · '),fl.join(' · '),'Para girişi '+P(f.fa,1)+' kat hızlandı · skor '+e.sc+'/100'],
    note:(e.f.sh?'\n⚠️ Az işlem gören hisse — fiyatı kolay oynatılabilir':'')+sigNoteTxt(e.s)+(function(){const hn=typeof haberNote==='function'?haberNote(e.s):'';return hn?'\n'+htmlEsc(hn):''})()});   // v14.19: haber notu (Algı kuralı değişmez)
  }
@@ -3873,8 +3941,16 @@ function tvReconnectReport(){
      e.mute=muted(sc);
      AL.log.push(e);AL.dirty=true;saveLog(true);
      st.cnt=0;st.cool=now+30*60000;stage='ates';
-     if(!e.mute&&f.fc>=.8&&f.rv!=null&&f.rv>=2&&tgIdxOk()&&!(f.abv&&f.brk)){e.tg=1;tg(msgFire(e,f,o),tgKb(sym))}   // v14.22 (27.10, Fatih: 'hemen uygula', DEVIR 6y): kovalayan (VWAP üstü + kırılım) Telegram'a GİTMEZ, karneye yazılır   // v14.8 (23.10, grup anketi 2/3): yalnız BIST 100 artıdayken (DEVIR 6v)   // v10.9 (15.10, Fatih: 'sıkılaştır, 30 fazla'): güçlü + hacim normalin ≥2 katı (karnede 10 gün: %12,6 → %24, günde ~24 → ~4)   // v8.8: Telegram'a yalnız 💪 GÜÇLÜ (karnede %60'a karşı %43); hepsi karneye yazılmaya devam eder
-     sigPost({src:'algi',sym:sym,t:now,px:p0,sc:sc,dir:'AL',meta:{tg:e.tg?1:0,fa:f.fa!=null?+(+f.fa).toFixed(1):null,rv:f.rv!=null?+(+f.rv).toFixed(1):null,fc:f.fc!=null?+(+f.fc).toFixed(2):null,ch:f.ch!=null?+(+f.ch).toFixed(2):null,brk:!!f.brk,abv:!!f.abv,bid:!!f.fd,tema:!!gOk,endeks:!!hOk,sig:!(o.voltl>=1e7),sessiz:!!e.mute}});
+     const gate=!e.mute&&f.fc>=.8&&f.rv!=null&&f.rv>=2&&tgIdxOk()&&!(f.abv&&f.brk);   // v14.22 kovalayan gitmez · v14.8 BIST 100 artı · v10.9 güçlü + hacim ≥2 kat
+     (async()=>{   // v14.35 (08.11, Fatih): ERKEN AL 21 (5 dk) ile ortak → ⭐ YILDIZLI; yıldızlı her Algı Telegram'a gider (günde en çok 10), diğerleri eski kapıyla
+      let es=null;try{es=await Promise.race([erkenStar(sym),sleep(9000).then(()=>null)])}catch(x){}
+      e.star=es&&es.ok?1:0;e.en=es?es.n:null;
+      const SD=AL.starDay&&AL.starDay.d===e.d?AL.starDay:(AL.starDay={d:e.d,n:0});
+      const st1=e.star&&!e.mute&&SD.n<10;if(st1)SD.n++;
+      if(gate||st1){e.tg=1;tg(msgFire(e,f,o),tgKb(sym))}
+     sigPost({src:'algi',sym:sym,t:now,px:p0,sc:sc,dir:'AL',meta:{tg:e.tg?1:0,fa:f.fa!=null?+(+f.fa).toFixed(1):null,rv:f.rv!=null?+(+f.rv).toFixed(1):null,fc:f.fc!=null?+(+f.fc).toFixed(2):null,ch:f.ch!=null?+(+f.ch).toFixed(2):null,brk:!!f.brk,abv:!!f.abv,bid:!!f.fd,tema:!!gOk,endeks:!!hOk,sig:!(o.voltl>=1e7),sessiz:!!e.mute,star:e.star,en:e.en}});
+      if(S.tab==='algi')try{renderAlgi()}catch(x){}
+     })();
      try{notify('⚡ Algı: '+sym,'Skor '+sc+' · '+nf(f.p))}catch(x){}
      try{if(window.sigToast){const w=[];if(f.fa>=2.5)w.push('Hacim normalin '+nf(f.fa,1)+' katı');else if(f.rv!=null&&f.rv>=2)w.push('Günlük hacim '+nf(f.rv,1)+' kat');if(f.fc!=null)w.push('Alıcı oranı %'+nf(f.fc*100,0));if(f.fe)w.push('30 dk zirvesini VWAP üstünde kırdı');else if(f.fd)w.push('Alış kademesi yükseliyor');if(gOk)w.push('Sektörde hareket var');
       sigToast({src:'algi',sym:sym,dir:'AL',label:'⚡ ALGI · AL · '+sc+(f.fc>=.8?' · 💪 GÜÇLÜ':''),why:w,entry:p0,stop:e.sp,tgt:e.tp})}}catch(x){}
@@ -3958,11 +4034,11 @@ function tvReconnectReport(){
   if(past&&!SL)h+='<div class="note">Yükleniyor…</div>';
   else if(SL&&(past||S.botAlive||SL.length)){   // v14.1: ana sunucunun Algı ateşlemeleri (karnedekiyle birebir)
    if(!SL.length)h+='<div class="note">'+(past?'O gün Algı ateşlemesi yok (hafta sonu ya da tatil olabilir).':'Bugün henüz ateşleme yok.')+'</div>';
-   else h+='<div class="note" style="padding:2px 12px 6px">'+SL.length+' ateşleme'+(past?' · +%3: '+SL.filter(e=>e.o31===1).length+' · stop: '+SL.filter(e=>e.o31===2).length:'')+' · 📨 = Telegram\'a gitti · 📰 = o sırada hisseyle ilgili haber vardı<br><span style="color:#22c55e">●</span> geri çekilmede geldi · <span style="color:#22c55e">●●</span> ayrıca 15 dk EMA 20\'nin %2+ altında (karnede en iyi grup) · <span style="color:#8b93a1">●</span> kovalayan (VWAP üstü + kırılım; karnede zayıf)</div><table><tr><th>Sembol</th><th>Saat</th><th>Giriş</th><th>'+(past?'Gün sonu':'Şimdi')+'</th><th>Zirve</th><th>Güç</th><th>Sonuç</th></tr>'+SL.map(e=>{
+   else h+='<div class="note" style="padding:2px 12px 6px">'+SL.length+' ateşleme'+(past?' · +%3: '+SL.filter(e=>e.o31===1).length+' · stop: '+SL.filter(e=>e.o31===2).length:'')+' · ⭐ = ERKEN AL 21 ile aynı anda (yıldızlı) · 📨 = Telegram\'a gitti · 📰 = o sırada hisseyle ilgili haber vardı<br><span style="color:#22c55e">●</span> geri çekilmede geldi · <span style="color:#22c55e">●●</span> ayrıca 15 dk EMA 20\'nin %2+ altında (karnede en iyi grup) · <span style="color:#8b93a1">●</span> kovalayan (VWAP üstü + kırılım; karnede zayıf)</div><table><tr><th>Sembol</th><th>Saat</th><th>Giriş</th><th>'+(past?'Gün sonu':'Şimdi')+'</th><th>Zirve</th><th>Güç</th><th>Sonuç</th></tr>'+SL.map(e=>{
     const m=e.meta||{},q=S.umap[e.sym],now=past?e.rc:(q&&q.close&&e.px?(q.close/e.px-1)*100:null),tg=m.tg!=null?m.tg===1:(m.fc>=.8&&m.rv>=2);
     const res=e.o31===1?'<b class="up">+%3 ✅</b>':e.o31===2?'<b class="dn">−%1 ❌</b>':e.done?'<span style="color:var(--dim)">sonuçsuz</span>':'<span class="wrn">⏳ açık</span>';
     const hn=typeof haberNote==='function'?haberNote(e.sym,e.t+30*60e3):'';
-    return '<tr class="row" onclick="algiGo(\''+e.sym+'\')"><td class="sym"'+(hn?' title="'+htmlEsc(hn)+'"':'')+'>'+htmlEsc(e.sym)+(typeof alDot==='function'?alDot(e):'')+(tg?' 📨':'')+(hn?' 📰':'')+'</td><td>'+hm(e.t)+'</td><td>'+(e.px?nf(e.px):'-')+'</td><td class="'+cls(now)+'">'+(now!=null?pct(now):'-')+'</td><td class="up">'+(e.mfe!=null?pct(e.mfe):'-')+'</td><td>'+(m.fc!=null?'%'+nf(m.fc*100,0)+(m.fc>=.8?' 💪':''):'-')+'</td><td>'+res+'</td></tr>'}).join('')+'</table>';
+    return '<tr class="row" onclick="algiGo(\''+e.sym+'\')"><td class="sym"'+(hn?' title="'+htmlEsc(hn)+'"':'')+'>'+htmlEsc(e.sym)+(typeof alDot==='function'?alDot(e):'')+(m.star?' ⭐':'')+(tg?' 📨':'')+(hn?' 📰':'')+'</td><td>'+hm(e.t)+'</td><td>'+(e.px?nf(e.px):'-')+'</td><td class="'+cls(now)+'">'+(now!=null?pct(now):'-')+'</td><td class="up">'+(e.mfe!=null?pct(e.mfe):'-')+'</td><td>'+(m.fc!=null?'%'+nf(m.fc*100,0)+(m.fc>=.8?' 💪':''):'-')+'</td><td>'+res+'</td></tr>'}).join('')+'</table>';
   }
   else if(!ev.length)h+='<div class="note">Bugün henüz ateşleme yok.</div>';
   else h+='<table><tr><th>Sembol</th><th>Saat</th><th>Giriş</th><th>Şimdi</th><th>Zirve</th><th>Durum</th><th>Skor</th></tr>'+ev.map(e=>{
