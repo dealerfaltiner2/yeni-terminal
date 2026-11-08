@@ -87,9 +87,9 @@ async function page(b, opt) {
           const r = { kart: /Gece Kuşu/.test(t), hisse: /ZZGEC/.test(t) && /ZZGE2/.test(t), ozet: /yarın açılışta sat/.test(t), gecmis: /Son 1 gece/.test(t), uyari: /tavsiyesi değildir/.test(t) }; NOWF.f_gece = 0; return r; });
         ok('Gece Kuşu: Şimdi\'de sepet kartı (hisse, giriş, sat saati, geçmiş, uyarı)', gc && Object.values(gc).every(Boolean), JSON.stringify(gc)); }
       // v14.24: alt çubukta Gece sekmesi (İzleme'nin yerinde), İzleme Menü'de
-      { const gt = await T(async () => { document.querySelector('#tabs [data-t=gece]').click(); await new Promise(r => setTimeout(r, 300)); const t = document.getElementById('t-gece').innerText;
-          const r = { tab: S.tab === 'gece', hisse: /ZZGEC/.test(t), baslik: !!document.querySelector('#t-gece .sechd'), izlemeYok: !document.querySelector('#tabs [data-t=watch]'), menude: !!document.querySelector('#more .mgrid [data-t=watch]') }; showTab('now'); return r; });
-        ok('Gece sekmesi: alt çubukta, sepet görünür; İzleme Menü\'de', gt && Object.values(gt).every(Boolean), JSON.stringify(gt)); }
+      { const gt = await T(async () => { document.querySelector('#more .mgrid [data-t=gece]').click(); await new Promise(r => setTimeout(r, 300)); const t = document.getElementById('t-gece').innerText;
+          const r = { tab: S.tab === 'gece', hisse: /ZZGEC/.test(t), baslik: !!document.querySelector('#t-gece .sechd'), geceAltta: !document.querySelector('#tabs [data-t=gece]'), karneAltta: !!document.querySelector('#tabs [data-t=lab]'), menude: !!document.querySelector('#more .mgrid [data-t=watch]') }; showTab('now'); return r; });
+        ok('Gece sekmesi Menü\'den açılıyor, sepet görünür; alt çubukta Karne', gt && Object.values(gt).every(Boolean), JSON.stringify(gt)); }
       // v14.29: EMA Katman sistemi (ayrı sekme, menüde kendi simgesi)
       { const kt = await T(async () => { const up = n => Array.from({ length: 120 }, (_, i) => 100 + i * 0.1), B = { k30: up(), k15: up(), k5: up(), k1: up().map((v, i) => i < 116 ? 120 - i * 0.1 : 108.5 + (i - 115) * 0.6) };
           const r1 = ktmCalc(B), r2 = ktmCalc({ k30: up(), k15: up(), k5: up(), k1: up() }), r3 = ktmCalc({ k30: up().reverse(), k15: up().reverse(), k5: up().reverse(), k1: up().reverse() });
@@ -105,7 +105,7 @@ async function page(b, opt) {
           ktmDay(''); showTab('now'); return r; });
         ok('EMA Katman: gün içi gelenler listesi ve gün seçici', kg && Object.values(kg).every(Boolean), JSON.stringify(kg)); }
       // v14.32: her sinyal kartında sinyal saati + fiyatı (sigStampHtml)
-      { const st = await T(async () => { const t = Date.now() - 600e3; SIGT.list = [{ t, src: 'firsat-A', sym: 'ZZSTA', dir: 'AL', px: 50 }, { t: t + 60e3, src: 'algi', sym: 'ZZSTA', dir: 'AL', px: 51 }];
+      { const st = await T(async () => { const t0 = Date.parse(new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10) + 'T00:00:00Z') - 3 * 3600e3, t = Math.max(t0 + 60e3, Date.now() - 600e3); SIGT.list = [{ t, src: 'firsat-A', sym: 'ZZSTA', dir: 'AL', px: 50 }, { t: t + 60e3, src: 'algi', sym: 'ZZSTA', dir: 'AL', px: 51 }];
           const h1 = sigStampHtml('ZZSTA', ['algi']), h2 = sigStampHtml('ZZSTA'), h3 = sigStampHtml('ZZYOK'), hm = new Date(t + 3 * 3600e3).toISOString().slice(11, 16);
           return { tercih: /Algı sinyali/.test(h1) && /51/.test(h1), ilk: /Fırsat A sinyali/.test(h2) && h2.includes(hm) && /50/.test(h2), yok: h3 === '' }; });
         ok('Sinyal saati + fiyatı kartta (kaynağa göre, ilk sinyal)', st && Object.values(st).every(Boolean), JSON.stringify(st)); }
@@ -206,8 +206,8 @@ async function page(b, opt) {
       ok('Otomatik taramada derin kurulumlar (geri çekilme, Keskin VWAP, POC) karneye yazılır', dfx.al.join() === 'pull,kvw,poc' && dfx.sat.length === 0, JSON.stringify(dfx));
       const tgx = await T(() => ({ c: tgCard({ ic: '🟢', dir: 'AL', sym: 'THYAO', src: 'Fırsat · A notu', name: 'Türk <Hava>', px: 312.5, ch: 1.41, tp: 312.5 * 1.03, sl: 312.5 * 0.99, why: ['VWAP dönüşü'], more: 'Hacim profili' }), k: tgKb('THYAO', 123), p: tgPlain('<b>A</b>\n<blockquote>x &amp; y</blockquote>z') }));
       ok('Telegram kart düzeni: fiyat kutusu, kopyalanır rakam, katlanır ayrıntı, düğmeler, düz metin yedeği', /<blockquote>Giriş   <code>312,50<\/code>/.test(tgx.c) && /Hedef   <code>321,88<\/code>   \+%3\n/.test(tgx.c) && /−%1<\/blockquote>/.test(tgx.c) && /Türk &lt;Hava&gt;/.test(tgx.c) && /<blockquote expandable>/.test(tgx.c) && tgx.k.inline_keyboard[1].length === 2 && /BIST%3ATHYAO/.test(tgx.k.inline_keyboard[1][1].url) && /t\.me\/BistPusulaBot\?startapp=THYAO$/.test(tgx.k.inline_keyboard[0][0].url) && tgx.p === 'A\nx & y\nz', JSON.stringify(tgx));
-      const pus = await T(() => { renderNow(); return { d: nDial(), now: document.getElementById('nowbody').innerHTML.slice(0, 4000), tab: !!document.querySelector('#tabs button[data-t="aisec"]') && !document.querySelector('#tabs button[data-t="lab"]') && !!document.querySelector('#more [data-t="lab"]'), chart: !!document.querySelector('#more [data-t="chart"]') }; });
-      ok('Pusula ana sayfa: kadran, alt menüde AI Seçtikleri, Karne ve Grafik menüde', /class="pcomp"/.test(pus.d) && /class="phero"/.test(pus.now) && pus.tab && pus.chart, JSON.stringify({ tab: pus.tab, chart: pus.chart }));
+      const pus = await T(() => { renderNow(); return { d: nDial(), now: document.getElementById('nowbody').innerHTML.slice(0, 4000), tab: !!document.querySelector('#tabs button[data-t="aisec"]') && !!document.querySelector('#tabs button[data-t="lab"]') && !!document.querySelector('#more [data-t="gece"]'), chart: !!document.querySelector('#more [data-t="chart"]') }; });
+      ok('Pusula ana sayfa: kadran, alt menüde AI Seçtikleri ve Karne, Gece ve Grafik menüde', /class="pcomp"/.test(pus.d) && /class="phero"/.test(pus.now) && pus.tab && pus.chart, JSON.stringify({ tab: pus.tab, chart: pus.chart }));
       const ak = await T(() => { const oK = window.KSTAT, oJ = S.jr, oM = S.mkt; const td = todayStr();
         window.KSTAT = { _t: Date.now(), gun: 10, src: { tavan: { n: 134, h: 45, s: 81, r0: 2 }, 'firsat-B': { n: 600, h: 56, s: 350, r0: 120 } }, up: { tavan: { n: 98, h: 32, s: 59, r0: 0 }, 'firsat-B': { n: 247, h: 24, s: 145, r0: 44 } }, dn: { 'kap-geri': { n: 86, h: 13, s: 59, r0: 5.6 }, tavan: { n: 36, h: 10, s: 22, r0: 1.7 }, 'firsat-B': { n: 361, h: 32, s: 211, r0: 75 }, sessiz: { n: 9, h: 0, s: 6, r0: 1 } } };
         S.mkt = Object.assign({}, oM, { XU100: { c: 10000, ch: -1.2 } });
@@ -446,6 +446,11 @@ async function page(b, opt) {
       await p.screenshot({ path: require('path').join(OUT, 'algi-yildiz.png') });
       await p.evaluate(() => { document.documentElement.className = window.__ycls; });
       ok('Algı ⭐ yıldızlı sinyaller ayrı kartlarda (Algı saati/fiyatı + giriş saati/fiyatı + şart; sonradan gelen giriş de) + kişisel ayar', Object.values(ys).every(Boolean), JSON.stringify(ys));
+      { const ks = await p.evaluate(async () => { showTab('algi'); renderAlgi(); await new Promise(r => setTimeout(r, 400)); const d = document.querySelector('#t-algi details[data-k="mystar"]'); if (!d) return { panel: false };
+          d.open = true; const inp = document.getElementById('my_band'); inp.value = '0,9'; renderAlgi(); const d2 = document.querySelector('#t-algi details[data-k="mystar"]');
+          const r = { panel: true, acik: !!(d2 && d2.open), deger: (document.getElementById('my_band') || {}).value === '0,9' };
+          const i2 = document.getElementById('my_band'); i2.blur(); d2.open = false; showTab('now'); return r; });
+        ok('Algı: yıldız ayar kutusu yenilemede kapanmıyor, yazarken ekran yenilenmiyor', ks && Object.values(ks).every(Boolean), JSON.stringify(ks)); }
       ok('Algı radarı tek kaynak: sunucu listesi herkeste aynı; telefonun kendi hesabı AL sinyali demez; Menü\'de sürüm + güncelleme düğmesi', Object.values(ar).every(Boolean), JSON.stringify(ar));
       await p.evaluate(() => selectSym('THYAO', 'bist')); await p.waitForTimeout(2500);
       const cn = await p.evaluate(() => { const el = document.getElementById('cnote'), t = el ? el.textContent : ''; const w = S.wsig.THYAO;
