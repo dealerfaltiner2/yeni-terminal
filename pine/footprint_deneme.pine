@@ -1,0 +1,34 @@
+//@version=6
+// Pusula Footprint Deneme — her mumun alıcılı / satıcılı işlem miktarı ve farkı (TradingView footprint verisi, Premium gerekir).
+// Amaç: footprint BIST hisselerinde çalışıyor mu, Pusula'nın kendi alıcı/satıcı tahminiyle uyuşuyor mu, karşılaştırmak.
+indicator("Pusula Footprint Deneme", overlay = false, format = format.volume)
+
+tpr = input.int(100, "Satır başına fiyat adımı", minval = 1)
+footprint fp = request.footprint(tpr)
+
+float buyV  = na(fp) ? na : fp.buy_volume()
+float sellV = na(fp) ? na : fp.sell_volume()
+float dlt   = na(fp) ? na : fp.delta()
+float tot   = nz(buyV) + nz(sellV)
+float buyP  = tot > 0 ? buyV / tot * 100 : na
+
+plot(buyV, "Alıcılı", color = color.new(color.green, 40), style = plot.style_columns)
+plot(na(sellV) ? na : -sellV, "Satıcılı", color = color.new(color.red, 40), style = plot.style_columns)
+plot(dlt, "Fark (alıcılı - satıcılı)", color = dlt >= 0 ? color.lime : color.orange, linewidth = 2)
+hline(0, "Sıfır", color = color.gray)
+
+var table t = table.new(position.top_right, 4, 8, bgcolor = color.new(color.black, 15), border_width = 1)
+if barstate.islast
+    table.cell(t, 0, 0, "Saat", text_color = color.white)
+    table.cell(t, 1, 0, "Alıcılı", text_color = color.white)
+    table.cell(t, 2, 0, "Satıcılı", text_color = color.white)
+    table.cell(t, 3, 0, "Alıcı %", text_color = color.white)
+    for i = 0 to 6
+        string hm = str.format_time(time[i], "HH:mm", syminfo.timezone)
+        float b = buyV[i]
+        float s = sellV[i]
+        float p = buyP[i]
+        table.cell(t, 0, i + 1, hm, text_color = color.silver)
+        table.cell(t, 1, i + 1, na(b) ? "yok" : str.tostring(b, format.volume), text_color = color.green)
+        table.cell(t, 2, i + 1, na(s) ? "yok" : str.tostring(s, format.volume), text_color = color.red)
+        table.cell(t, 3, i + 1, na(p) ? "-" : str.tostring(p, "#") + "%", text_color = na(p) ? color.gray : p >= 50 ? color.lime : color.orange)

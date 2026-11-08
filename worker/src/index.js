@@ -615,7 +615,7 @@ async function prefs(request, env) {
 const PF = 'https://pine-facade.tradingview.com/pine-facade';
 const GH = 'https://api.github.com/repos/dealerfaltiner2/yeni-terminal/contents/pine';
 const PINE_RAW = 'https://raw.githubusercontent.com/dealerfaltiner2/yeni-terminal/main/pine/';
-const PINE_FILES = ['ema9_vwap.pine'];   // GitHub API sınırına takılınca indirilecek dosyalar (pine/ klasörüne yeni dosya eklersen buraya da yaz)
+const PINE_FILES = ['ema9_vwap.pine', 'footprint_deneme.pine'];   // GitHub API sınırına takılınca indirilecek dosyalar (pine/ klasörüne yeni dosya eklersen buraya da yaz)
 async function pf(env, method, path, fields) {
   const init = { method, headers: { Cookie: cookieStr(env), Origin: 'https://www.tradingview.com', Referer: 'https://www.tradingview.com/', 'User-Agent': UA } };
   if (fields) { const fd = new FormData(); for (const k in fields) fd.append(k, fields[k]); init.body = fd; }
