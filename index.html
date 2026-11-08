@@ -869,8 +869,12 @@ function erkenCalc(cs){
  return {at,last:n-1};
 }
 // Son 2 kapanmış mum + oluşan mum içinde ERKEN AL var mı (Algı ile 'ortak nokta')
-function erkenStarOf(cs){const E=erkenCalc(cs);if(!E)return null;let best=null;for(let i=E.last;i>=Math.max(0,E.last-2);i--){const r=E.at(i);if(!r)continue;if(r.buy)return Object.assign({ok:1},r);if(!best||r.n>best.n)best=r}return best?Object.assign({ok:0},best):null}
-async function erkenStar(sym){try{const cs=await getBars(sym,ERKEN_TF,true);return erkenStarOf(cs)}catch(e){return null}}
+/* v14.38 (08.11, Fatih: 'Algı'nın şartları değişmiyor; göstergenin GİRİŞ sinyali Algı fiyatının −%0,5…+%0,5 arasındaysa olumludur'):
+   ⭐ = ERKEN AL mumunun kapanışı (göstergenin giriş fiyatı) Algı sinyal fiyatının ±%0,5 içinde. Ateşleme anında son 3 mum (oluşan dahil), sonra 60 dk boyunca yeni mumlar izlenir. */
+var ERKEN_BAND=0.5,ERKEN_WAIT=60;
+function erkenStarOf(cs,p0,fromT){const E=erkenCalc(cs);if(!E)return null;let best=null;for(let i=E.last;i>=0;i--){const r=E.at(i);if(!r)continue;if(fromT!=null&&r.t<fromT)break;if(fromT==null&&i<E.last-2)break;
+ const inB=p0>0?Math.abs(r.px/p0-1)*100<=ERKEN_BAND:true;if(r.buy&&inB)return Object.assign({ok:1},r);if(!best||r.n>best.n)best=r}return best?Object.assign({ok:0},best):null}
+async function erkenStar(sym,p0,fromT){try{const cs=await getBars(sym,ERKEN_TF,true);return erkenStarOf(cs,p0,fromT)}catch(e){return null}}
 function tgIdxOk(){try{const v=S.mkt&&S.mkt.XU100&&S.mkt.XU100.ch;const x=v!=null&&isFinite(v)?v:S.idxCh;return !(x!=null&&isFinite(x)&&x<0)}catch(e){return true}}
 async function autoRun(manual){
  const m=$('#tgmsg');
@@ -3598,7 +3602,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.37";window.APPV=APP_VER;
+  const APP_VER="14.38";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3878,16 +3882,31 @@ function tvReconnectReport(){
  function msgFire(e,f,o){
   const fl=[];if(e.f.D)fl.push('alış emirleri yükseliyor');if(f.brk)fl.push(f.abv?'VWAP üstünde kırılım':'kırılım');if(e.f.G)fl.push('sektör birlikte yükseliyor: '+htmlEsc((o.sector?secTr(o.sector):'-').slice(0,22))+' ('+e.g+' hisse)');
   const w1=['Alıcılar %'+nf((f.fc||0)*100,0)];if(f.rv!=null)w1.push('hacim normalin '+P(f.rv,1)+' katı');
-  if(e.star)w1.unshift('⭐ ERKEN AL '+e.en+'/21 (5 dk) ile aynı anda');
+  if(e.star)w1.unshift('⭐ ERKEN AL girişi '+(e.epx?P(e.epx):'')+' · '+e.en+'/21 (5 dk) · Algı fiyatının ±%'+nf(ERKEN_BAND,1)+' içinde');
   return tgCard({ic:e.star?'⭐':'⚡',dir:'AL',sym:e.s,src:(e.star?'⭐ YILDIZLI · ':'')+'Algı'+(f.fc>=.8?' · 💪 güçlü':''),px:e.p0,ch:f.ch||0,tp:e.p0*1.03,sl:e.p0*0.99,   // v9.0: hedef +%3, stop −%1
    why:[w1.join(' · '),fl.join(' · '),'Para girişi '+P(f.fa,1)+' kat hızlandı · skor '+e.sc+'/100'],
    note:(e.f.sh?'\n⚠️ Az işlem gören hisse — fiyatı kolay oynatılabilir':'')+sigNoteTxt(e.s)+(function(){const hn=typeof haberNote==='function'?haberNote(e.s):'';return hn?'\n'+htmlEsc(hn):''})()});   // v14.19: haber notu (Algı kuralı değişmez)
  }
 
  /* ---------- ana dongu (5 sn) ---------- */
+ async function starWatch(now){   // v14.38: Algı'dan SONRA gelen ERKEN AL girişi (±%0,5) → ⭐ Telegram + karne src 'yildiz'
+  if(AL._swBusy||!AL.starW||!AL.starW.length)return;AL._swBusy=true;
+  try{for(const w of AL.starW.slice()){
+   if(now>w.until||w.e.star){AL.starW.splice(AL.starW.indexOf(w),1);continue}
+   if(now<w.next)continue;w.next=now+60000;
+   const es=await erkenStar(w.e.s,w.e.p0,Math.floor(w.e.t/1000)-60);if(!es||!es.ok)continue;
+   const e=w.e;e.star=1;e.en=es.n;e.epx=es.px;AL.starW.splice(AL.starW.indexOf(w),1);
+   const SD=AL.starDay&&AL.starDay.d===e.d?AL.starDay:(AL.starDay={d:e.d,n:0});
+   if(SD.n<10){SD.n++;
+    if(!e.tg){e.tg=1;tg(msgFire(e,w.f,w.o),tgKb(e.s))}
+    else tg('⭐ <b>'+e.s+'</b> · ERKEN AL girişi geldi\n<blockquote>Giriş <code>'+P(es.px)+'</code> · Algı sinyali '+P(e.p0)+' ('+hm(e.t)+') · '+es.n+'/21 şart (5 dk)</blockquote>',tgKb(e.s))}
+   sigPost({src:'yildiz',sym:e.s,t:Date.now(),px:es.px,sc:es.n,dir:'AL',meta:{algi:e.p0,at:e.t,en:es.n,tg:e.tg?1:0}});
+   AL.dirty=true}}catch(x){}
+  AL._swBusy=false}
  function run(){
   try{
    const now=Date.now();
+   if(AL.starW&&AL.starW.length&&(!AL._swAt||now-AL._swAt>=30000)){AL._swAt=now;starWatch(now)}
    if(!AL.cfg.on||document.hidden)return;
    const se=sess();
    checkAgree(now);
@@ -3944,8 +3963,9 @@ function tvReconnectReport(){
      st.cnt=0;st.cool=now+30*60000;stage='ates';
      const gate=!e.mute&&f.fc>=.8&&f.rv!=null&&f.rv>=2&&tgIdxOk()&&!(f.abv&&f.brk);   // v14.22 kovalayan gitmez · v14.8 BIST 100 artı · v10.9 güçlü + hacim ≥2 kat
      (async()=>{   // v14.35 (08.11, Fatih): ERKEN AL 21 (5 dk) ile ortak → ⭐ YILDIZLI; yıldızlı her Algı Telegram'a gider (günde en çok 10), diğerleri eski kapıyla
-      let es=null;try{es=await Promise.race([erkenStar(sym),sleep(9000).then(()=>null)])}catch(x){}
-      e.star=es&&es.ok?1:0;e.en=es?es.n:null;
+      let es=null;try{es=await Promise.race([erkenStar(sym,p0),sleep(9000).then(()=>null)])}catch(x){}
+      e.star=es&&es.ok?1:0;e.en=es?es.n:null;if(es&&es.ok)e.epx=es.px;
+      if(!e.star&&!e.mute)(AL.starW=AL.starW||[]).push({e,f,o,until:now+ERKEN_WAIT*60000,next:now+60000});   // sonradan gelecek ERKEN AL girişi için izle
       const SD=AL.starDay&&AL.starDay.d===e.d?AL.starDay:(AL.starDay={d:e.d,n:0});
       const st1=e.star&&!e.mute&&SD.n<10;if(st1)SD.n++;
       if(gate||st1){e.tg=1;tg(msgFire(e,f,o),tgKb(sym))}

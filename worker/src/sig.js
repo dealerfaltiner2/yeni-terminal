@@ -353,7 +353,7 @@ export async function sigNextDay(env, fetchBarsTV, now = Date.now()) {
   }
   return { ertesi: n, bekleyen: bekle, hisse: syms, kalan: rows.length - batch.length };
 }
-const SRC_AD = { radar: '📡 Sunucu radarı (mesajı kapalı)', algi: '⚡ Algı', 'firsat-A': '🅰️ Fırsat A', 'firsat-B': '🅱️ Fırsat B', momentum: '🧪 Momentum (deneme)', tavan6: '🚀 Tavan · sakin açılış (deneme)', katman: '🪜 EMA Katman (deneme)' };
+const SRC_AD = { radar: '📡 Sunucu radarı (mesajı kapalı)', algi: '⚡ Algı', 'firsat-A': '🅰️ Fırsat A', 'firsat-B': '🅱️ Fırsat B', momentum: '🧪 Momentum (deneme)', tavan6: '🚀 Tavan · sakin açılış (deneme)', katman: '🪜 EMA Katman (deneme)', yildiz: '⭐ Yıldızlı · ERKEN AL girişi (Algı ±%0,5)' };
 const KAP_TR = { is: 'Yeni iş/sözleşme', ihale: 'İhale', geri: 'Geri alım', bedelsiz: 'Bedelsiz', bedelli: 'Bedelli', tahsisli: 'Sermaye artırımı', teklif: 'Pay alım teklifi', birlesme: 'Birleşme/devir', tesvik: 'Teşvik', temettu: 'Temettü', bilanco: 'Bilanço', not: 'Kredi notu', icerden: 'İçeriden alım-satım', yatirim: 'Yatırım', varlik: 'Varlık alım/satım', ozel: 'Özel durum', risk: 'Risk (konkordato vb.)', kisit: 'İşlem kısıtı', ceza: 'Ceza/dava' };
 // v6.6 FİLTRE KONTROLÜ — araştırmada bulunan iki filtre kendi sinyallerimizde de tutuyor mu? (tüm günler, yalnız AL, KAP hariç)
 // Endeks: sinyal anında XU100 önceki kapanışa göre artıda mı (idx ≥ 0). Oynaklık: son 20 gün ortalama günlük aralık %5 ve üstü mü (adr).
@@ -417,7 +417,7 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
   let msg = '📊 <b>Sinyal karnesi</b>   <i>' + d[2] + '.' + d[1] + '</i>\n<i>Başarı: sinyalden sonra −%1\'e düşmeden +%3 geldi mi? (gün içinde ikisi de gelmeyen sayılmaz)</i>';
   // v10.8: en üstte kısa piyasa özeti (18:12'de tavan.js mktClose → meta 'mkt_close'; yoksa bölüm çıkmaz)
   try { const mk = await env.BT.prepare("SELECT v FROM meta WHERE k = 'mkt_close'").first(); const mv = mk ? JSON.parse(mk.v) : null; if (mv && mv.d === today) msg += mktBlock(mv, esc); } catch (e) {}
-  const ORD = ['firsat-A', 'firsat-B', 'algi', 'momentum', 'katman', 'radar'], rk = x => { const i = ORD.indexOf(x); return i < 0 ? 99 : i; };
+  const ORD = ['firsat-A', 'firsat-B', 'algi', 'yildiz', 'momentum', 'katman', 'radar'], rk = x => { const i = ORD.indexOf(x); return i < 0 ? 99 : i; };
   for (const r of R.filter(r => !String(r.src).startsWith('kap-') && r.src !== 'tavan' && r.src !== 'sessiz' && r.src !== 'dunguclu' && r.src !== 'oglen' && r.src !== 'aisec' && r.src !== 'vdpm').sort((a, b) => rk(a.src) - rk(b.src))) {
     msg += '\n\n<b>' + esc(SRC_AD[r.src] || r.src) + '</b> — ' + r.n + ' sinyal\n   ' + line(r.h, r.s);
     const a = A.find(x => x.src === r.src);
@@ -587,7 +587,7 @@ export async function weeklySummary(env, tgSend, kvGet, esc, pushSend) {
   const T = await env.BT.prepare("SELECT count(*) n, avg(pre) g, sum(pre > 0) up FROM sig WHERE src = 'tavan' AND d >= ? AND done = 1 AND err IS NULL AND pre IS NOT NULL").bind(from).first();
   const pc = (a, b) => b ? Math.round(a / b * 100) : 0;
   const AD = { 'firsat-A': '🅰️ Fırsat A', 'firsat-B': '🅱️ Fırsat B', algi: '⚡ Algı', momentum: '🧪 Momentum (deneme)', radar: '📡 Radar (mesajı kapalı)', tavan6: '🚀 Tavan · sakin açılış', katman: '🪜 EMA Katman' };
-  const ORD = ['firsat-A', 'firsat-B', 'algi', 'momentum', 'katman', 'radar'];
+  const ORD = ['firsat-A', 'firsat-B', 'algi', 'yildiz', 'momentum', 'katman', 'radar'];
   let msg = '🗓 <b>Haftalık karne</b> · ' + from.slice(8) + '.' + from.slice(5, 7) + ' – ' + today.slice(8) + '.' + today.slice(5, 7) + '\n<i>Başarı: −%1\'e düşmeden +%3 geldi mi?</i>';
   const oner = [];
   for (const k of ORD) {
