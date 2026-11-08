@@ -80,6 +80,8 @@ KAP = [geri(1001, 'KCHOL')]; await kapPoll(env, h3);
 ok('seans içi geri alım Telegram\'a gitti (AL kartı, hedef/stop)', sent.length === 1 && /AL · KCHOL/.test(sent[0]) && /206,00/.test(sent[0]) && /198,00/.test(sent[0]), sent[0]);
 at('2026-10-13', '13:00'); sent.length = 0; KAP.push(geri(1002, 'KCHOL')); await kapPoll(env, h3);
 ok('aynı gün ikinci geri alım gitmez', sent.length === 0, sent[0]);
+globalThis.__KAP_TG = false; sent.length = 0; KAP.push(geri(1009, 'EREGL')); await kapPoll(env, h3);
+ok('KAP Telegram kapalıyken de seans içi geri alım kartı gider', sent.length === 1 && /EREGL/.test(sent[0]), sent[0]); globalThis.__KAP_TG = true;
 at('2026-10-13', '14:00'); sent.length = 0; QQ.TABAN = { c: 5, ch: -9.9 }; KAP.push(geri(1003, 'TABAN')); await kapPoll(env, h3);
 ok('tabandaki hissenin geri alımı gitmez', sent.length === 0, sent[0]);
 for (const [d, i] of [['2026-10-14', 1010], ['2026-10-15', 1020], ['2026-10-16', 1030]]) { at(d, '11:00'); KAP.push(geri(i, 'DCTTR')); await kapPoll(env, h3); }

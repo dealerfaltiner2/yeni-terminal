@@ -207,7 +207,8 @@ export async function kapPoll(env, h) {
   }
   let sent = 0;
   let pn = 0;
-  if (kapTgOn()) for (const r0 of toSend.filter(x => isNew.has(x.idx)).slice(0, 8)) { const q = Q[r0.syms.split(',')[0]];
+  // 09.11 (Fatih: 'önerdiklerini ekle'): KAP Telegram'ı kapalıyken de SEANS İÇİ GERİ ALIM kartı gider (araştırmada tek sağlam gün içi sinyal)
+  for (const r0 of toSend.filter(x => isNew.has(x.idx) && (kapTgOn() || x.geri)).slice(0, 8)) { const q = Q[r0.syms.split(',')[0]];
     if (r0.geri && !watch.has(r0.syms.split(',')[0]) && q && q.change != null && q.change <= -9) continue;   // tabandaki geri alım gönderilmez
     const t = await h.tgSend(cfg, kapMsg(r0, h.esc, q), tgKb(r0.syms.split(',')[0], r0.idx)); if (t && t.ok) sent++;
     // v8.2: iPhone bildirimi (çalışma başına en çok 2 — işlemci sınırı)
