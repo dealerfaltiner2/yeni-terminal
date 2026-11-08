@@ -474,7 +474,7 @@ export async function sigToday(env, src, day) {
   if (!env.BT) return { ok: false, error: 'D1 yok' };
   // v14.11 (24.10, Fatih: 'dünkü sinyaller nerede'): src=algi&d=YYYY-MM-DD → o günün Algı ateşlemeleri (sig_d indeksi, son 60 gün, 5 dk önbellek)
   // v14.31 (03.10, Fatih'in arkadaşı: 'EMA Katman'da da Algı gibi gelenlerin saati ve listesi kalsın'): src=katman da aynı yoldan (bugün + geçmiş gün)
-  const ONE = src === 'algi' || src === 'katman';
+  const ONE = src === 'algi' || src === 'katman' || src === 'yildiz';   // v14.41 yıldızlılar da
   if (ONE && day && /^\d{4}-\d{2}-\d{2}$/.test(day) && day !== trDay(Date.now())) {
     const lo = trDay(Date.now() - 60 * 86400e3);
     if (day < lo || day > trDay(Date.now())) return { ok: true, at: Date.now(), d: day, list: [] };

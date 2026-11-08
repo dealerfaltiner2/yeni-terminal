@@ -439,6 +439,13 @@ async function page(b, opt) {
       await p.screenshot({ path: require('path').join(OUT, 'algi-gun.png') });
       await p.evaluate(() => { document.documentElement.className = window.__uyeOld; alDay(''); });
       ok('Algı gün seçici: önceki günün ateşlemeleri sunucudan, gün sonu ve sayılarla; Bugün\'e dönüş', Object.values(dy).every(Boolean), JSON.stringify(dy));
+      const ys = await p.evaluate(async () => { const old = S.botAlive; S.botAlive = true; showTab('algi'); alDay(''); ALS.at = 0; alSrvLoad(); await new Promise(r => setTimeout(r, 900)); renderAlgi();
+        const c = [...document.querySelectorAll('#t-algi .ysc')].map(x => x.textContent); const t = document.getElementById('t-algi').textContent;
+        const r = { head: /YILDIZLI SİNYALLER/.test(t), n: c.length === 2, jants: c.some(x => /JANTS/.test(x) && /17\/21/.test(x)), late: c.some(x => /TUPRS/.test(x) && /171,9/.test(x) && /172,4/.test(x)), my: !!document.getElementById('my_band') };
+        document.querySelectorAll('.sigtoast,#sigtoast,#wtoast').forEach(e => e.remove()); window.__ycls = document.documentElement.className; document.documentElement.classList.remove('uye'); showTab('algi'); renderAlgi(); const box = document.querySelector('#t-algi .ysh'); if (box) box.scrollIntoView(); S.botAlive = old; return r; });
+      await p.screenshot({ path: require('path').join(OUT, 'algi-yildiz.png') });
+      await p.evaluate(() => { document.documentElement.className = window.__ycls; });
+      ok('Algı ⭐ yıldızlı sinyaller ayrı kartlarda (Algı saati/fiyatı + giriş saati/fiyatı + şart; sonradan gelen giriş de) + kişisel ayar', Object.values(ys).every(Boolean), JSON.stringify(ys));
       ok('Algı radarı tek kaynak: sunucu listesi herkeste aynı; telefonun kendi hesabı AL sinyali demez; Menü\'de sürüm + güncelleme düğmesi', Object.values(ar).every(Boolean), JSON.stringify(ar));
       await p.evaluate(() => selectSym('THYAO', 'bist')); await p.waitForTimeout(2500);
       const cn = await p.evaluate(() => { const el = document.getElementById('cnote'), t = el ? el.textContent : ''; const w = S.wsig.THYAO;

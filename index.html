@@ -888,7 +888,7 @@ async function myStarScan(list){const c=myStarCfg();if(!c||MYST.busy||!list||!li
    const cs=await getBars(e.sym,ERKEN_TF,true).catch(()=>null);if(!cs||!cs.length){MYST.r[k]={done:0,next:now+120000};continue}
    const from=Math.floor(e.t/1000)-15*60,to=Math.floor(e.t/1000)+c.wait*60;const E=erkenCalc(cs,c.min);let hit=null;
    if(E)for(let i=0;i<=E.last;i++){const t=cs[i].time;if(t<from||t>to)continue;const r=E.at(i);if(r&&r.buy&&Math.abs(r.px/e.px-1)*100<=c.band){hit=r;break}}
-   const end=now/1000>to||cs[cs.length-1].time>to;MYST.r[k]=hit?{done:1,ok:1,px:hit.px,n:hit.n}:{done:end?1:0,ok:0,next:now+120000};ch++}}catch(x){}
+   const end=now/1000>to||cs[cs.length-1].time>to;MYST.r[k]=hit?{done:1,ok:1,px:hit.px,n:hit.n,t:hit.t*1000}:{done:end?1:0,ok:0,next:now+120000};ch++}}catch(x){}
  MYST.busy=0;if(ch)try{if(S.tab==='algi')renderAlgi()}catch(x){}}
 function myStarOf(e){const c=myStarCfg();if(!c)return null;const o=MYST.r[myStarKey(e)];return o?o:{pend:1}}
 function myStarSave(){const g=id=>+String((document.getElementById(id)||{}).value||'').replace(',','.');
@@ -903,6 +903,26 @@ function myStarPanel(){const c=myStarCfg(),n=x=>String(x).replace('.',','),v=c||
   '<label>İzleme süresi (dk)<input id="my_wait" inputmode="numeric" value="'+v.wait+'"></label></div>'+
   '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0">'+[0.5,0.7,1].map(x=>'<button class="g" onclick="document.getElementById(\'my_band\').value=\''+n(x)+'\'">±%'+n(x)+'</button>').join('')+'</div>'+
   '<button class="g pri" onclick="myStarSave()">Kaydet</button>'+(c?' <button class="g" onclick="myStarOff()">Ortak ayara dön</button>':'')+'<div class="pp-n">Fiyat aralığı %0,1–3 · şart 10–21 · süre 5–240 dk. Hesap birkaç dakika sürebilir; listede ⏳ görünür.</div></details>'}
+/* v14.41 (08.11, Fatih: 'yıldızlı sinyaller ateşlenenler listesinden ayrı listelensin, güzel olsun') — ⭐ YILDIZLI SİNYALLER kartları (Algı sekmesi, listenin üstünde).
+   Kaynak: kişisel ayar varsa bu cihazın hesabı (MYST), yoksa sunucu (Algı meta.star + /sigtoday?src=yildiz = sonradan gelen girişler). */
+function starItems(SL,YL){const out=[],seen=new Set(),my=myStarCfg();
+ (SL||[]).forEach(e=>{const m=e.meta||{};let ent=null;
+  if(my){const o=MYST.r[myStarKey(e)];if(o&&o.ok)ent={px:o.px,t:o.t||e.t,n:o.n}}
+  else if(m.star)ent={px:e.px,t:e.t,n:m.en};
+  if(ent&&!seen.has(e.sym)){seen.add(e.sym);out.push({sym:e.sym,at:e.t,apx:e.px,t:ent.t,px:ent.px,n:ent.n,o31:e.o31,rcE:e.rc!=null&&e.px&&ent.px?((1+e.rc/100)*e.px/ent.px-1)*100:null,done:e.done,tg:m.tg===1})}});
+ if(!my)(YL||[]).forEach(y=>{if(seen.has(y.sym))return;const m=y.meta||{};seen.add(y.sym);out.push({sym:y.sym,at:m.at||y.t,apx:m.algi,t:y.t,px:y.px,n:m.en||y.sc,o31:y.o31,rcE:y.rc,done:y.done,tg:m.tg===1})});
+ return out.sort((a,b)=>b.t-a.t)}
+function starBox(SL,YL,past){const L=starItems(SL,YL),my=myStarCfg(),hm=t=>new Date(t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+ const pend=my&&(SL||[]).some(e=>{const o=MYST.r[myStarKey(e)];return !o||!o.done});
+ let h='<div class="ysh"><b>⭐ YILDIZLI SİNYALLER</b><span>'+L.length+(my?' · kendi ayarınla (±%'+String(my.band).replace('.',',')+')':' · Algı + ERKEN AL girişi')+(pend?' · ⏳ hesaplanıyor':'')+'</span></div>';
+ if(!L.length)return h+'<div class="note" style="padding:2px 12px 8px">'+(past?'O gün yıldızlı sinyal yok.':'Bugün henüz yıldızlı sinyal yok. Algı ateşlendikten sonra göstergenin ERKEN AL girişi fiyata yakın gelirse burada belirir.')+'</div>';
+ return h+'<div class="ysg">'+L.map(x=>{const q=S.umap[x.sym],cur=q&&q.close&&x.px?(q.close/x.px-1)*100:null,v=past?x.rcE:cur;
+  const res=x.o31===1?'<b class="up">+%3 ✅</b>':x.o31===2?'<b class="dn">−%1 ❌</b>':x.done?'<span style="color:var(--dim)">sonuçsuz</span>':'<span class="wrn">⏳ açık</span>';
+  const df=x.apx&&x.px?(x.px/x.apx-1)*100:null;
+  return '<div class="ysc" onclick="algiGo(\''+x.sym+'\')"><div class="ysc1"><b>⭐ '+htmlEsc(x.sym)+'</b>'+(x.tg?'<span title="Telegram\'a gitti">📨</span>':'')+'<span class="'+cls(v)+'" style="margin-left:auto;font-weight:700">'+(v!=null?pct(v):'–')+'</span></div>'+
+   '<div class="ysc2"><span>⚡ Algı</span><b>'+hm(x.at)+'</b><b>'+(x.apx?nf(x.apx):'–')+'</b></div>'+
+   '<div class="ysc2"><span>🎯 Giriş</span><b>'+hm(x.t)+'</b><b>'+nf(x.px)+'</b>'+(df!=null?'<i>'+(df>=0?'+':'')+nf(df,2)+'%</i>':'')+'</div>'+
+   '<div class="ysc3"><span>'+(x.n?x.n+'/21 şart':'')+'</span><span>Stop '+nf(x.px*0.99)+' · Hedef '+nf(x.px*1.03)+'</span><span>'+res+'</span></div></div>'}).join('')+'</div>'}
 function starPanel(){const own=!!LS.get('ownTok',''),n=x=>String(x).replace('.',',');
  const info='Algı sinyal verdikten sonra göstergenin <b>ERKEN AL</b> girişi (5 dk grafik, en az <b>'+ERKEN_MIN+'/21</b> şart) Algı fiyatının <b>−%'+n(ERKEN_BAND)+' … +%'+n(ERKEN_BAND)+'</b> arasında gelirse ⭐. Algı\'dan sonra <b>'+ERKEN_WAIT+' dk</b> izlenir · günde en çok <b>'+ERKEN_MAX+'</b> yıldızlı mesaj.';
  if(!own)return '<div class="note" style="padding:2px 12px 6px">⭐ Telegram grubu ayarı: '+info+'</div>'+myStarPanel();
@@ -3649,7 +3669,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.40";window.APPV=APP_VER;
+  const APP_VER="14.41";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4099,7 +4119,8 @@ function tvReconnectReport(){
   const dsel=ALS.day||'',past=!!dsel,pd=alPrevDay();
   let h='<div class="note" style="padding:6px 12px 2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><b style="color:#ffb020">⚡ '+(past?alDayTxt(dsel).toUpperCase()+' ATEŞLENENLER':'BUGÜN ATEŞLENENLER')+'</b>'+
    (isUye()?'':'<span class="aldays"><button class="'+(past?'':'on')+'" onclick="alDay(\'\')">Bugün</button><button class="'+(dsel===pd?'on':'')+'" onclick="alDay(\''+pd+'\')">'+alDayTxt(pd)+'</button><label class="'+(past&&dsel!==pd?'on':'')+'">📅<input type="date" value="'+(dsel||'')+'" max="'+alPrevDay(0)+'" onchange="alDay(this.value)"></label></span>')+'</div>';
-  if(!isUye())h+=starPanel();
+  const SLx=()=>past?(ALS.hist[dsel]||null):(!BOTMODE&&window.ALS&&ALS.list)?ALS.list:null;
+  if(!isUye()){h+=starBox(SLx(),past?(ALS.yhist[dsel]||[]):(ALS.ylist||[]),past);h+=starPanel()}
   const SL=past?(ALS.hist[dsel]||null):(!BOTMODE&&window.ALS&&ALS.list)?ALS.list:null;
   if(past&&!SL)h+='<div class="note">Yükleniyor…</div>';
   if(SL&&SL.length&&myStarCfg())try{myStarScan(SL)}catch(x){}   // v14.40 kişisel ⭐
@@ -5123,10 +5144,10 @@ function nHero(){
  return h+nowSessLine()+'</div>'}
 /* v14.1 (21.10, Fatih: 'Algı bana gelmemiş, arkadaşlara farklı gelmiş'): her telefon Algı'yı kendi hesaplıyordu → herkeste farklı sinyal.
    Artık ana sunucu çalışırken telefon kendi sinyalini vermez; Algı ateşlemeleri sunucudan (/sigtoday?src=algi, 30 sn) gelir: Algı sekmesi listesi + üstten kayan kart herkeste AYNI. */
-var ALS={at:0,list:null,seen:null,day:'',hist:{}};
+var ALS={at:0,list:null,seen:null,day:'',hist:{},ylist:null,yhist:{}};
 function alPrevDay(n){const d=new Date(Date.now()+3*3600e3);if(n===0)return d.toISOString().slice(0,10);do{d.setUTCDate(d.getUTCDate()-1)}while(d.getUTCDay()===0||d.getUTCDay()===6);return d.toISOString().slice(0,10)}
 function alDayTxt(d){try{const t=new Date(d+'T12:00:00Z'),G=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];return t.getUTCDate()+' '+['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'][t.getUTCMonth()]+' '+G[t.getUTCDay()]}catch(e){return d}}
-function alDay(d){d=String(d||'');if(d&&d>=alPrevDay(0))d='';ALS.day=d;if(d&&!ALS.hist[d]){const b=srvBase(S.tvproxy);if(/^https:\/\//.test(b))fetch(dq(b+'/sigtoday?src=algi&d='+d)).then(r=>r.json()).then(j=>{ALS.hist[d]=j&&j.ok?(j.list||[]):[];if(S.tab==='algi')renderAlgi()}).catch(()=>{ALS.hist[d]=[];if(S.tab==='algi')renderAlgi()})}
+function alDay(d){d=String(d||'');if(d&&d>=alPrevDay(0))d='';ALS.day=d;if(d&&!ALS.hist[d]){const b=srvBase(S.tvproxy);if(/^https:\/\//.test(b)){fetch(dq(b+'/sigtoday?src=yildiz&d='+d)).then(r=>r.json()).then(j=>{ALS.yhist[d]=j&&j.ok?(j.list||[]):[];if(S.tab==='algi')renderAlgi()}).catch(()=>{});fetch(dq(b+'/sigtoday?src=algi&d='+d)).then(r=>r.json()).then(j=>{ALS.hist[d]=j&&j.ok?(j.list||[]):[];if(S.tab==='algi')renderAlgi()}).catch(()=>{ALS.hist[d]=[];if(S.tab==='algi')renderAlgi()})}}
  if(S.tab==='algi'&&typeof renderAlgi==='function')renderAlgi()}
 /* v14.10 (24.10, Fatih: 'bütün Algı sinyalleri herkeste aynı olsun') ALGI RADARI TEK KAYNAK: motor 20 sn'de bir radar satırlarını /algirows-set'e yollar;
    telefon (Ana sunucu canlıyken) /algirows'tan okur. Sunucu listesi 90 sn'den eskiyse telefon kendi hesabını gösterir (o zaman 'AL sinyali' yazmaz). */
@@ -5145,7 +5166,8 @@ function alSrvLoad(){if(BOTMODE||isUye())return;const b=srvBase(S.tvproxy);if(!/
    const m=e.meta||{},w=[];if(m.rv!=null)w.push('Günlük hacim normalin '+nf(m.rv,1)+' katı');if(m.fc!=null)w.push('Alıcı oranı %'+nf(m.fc*100,0));if(m.brk)w.push('Zirveyi kırdı');else if(m.bid)w.push('Alış kademesi yükseliyor');
    try{sigToast({src:'algi',sym:e.sym,dir:'AL',label:'⚡ ALGI · AL · '+(e.sc||'')+(m.fc>=.8?' · 💪 GÜÇLÜ':''),why:w,entry:e.px,stop:e.px?e.px*0.99:null,tgt:e.px?e.px*1.03:null})/* v9.1: hedef +%3, stop −%1 */}catch(x){}
    try{notify('⚡ Algı: '+e.sym,'Ana sunucu sinyali · '+nf(e.px))}catch(x){}});
-  ALS.list=L;if(S.tab==='algi'&&typeof renderAlgi==='function')try{renderAlgi()}catch(x){}}).catch(()=>{})}
+  ALS.list=L;if(S.tab==='algi'&&typeof renderAlgi==='function')try{renderAlgi()}catch(x){}}).catch(()=>{});
+ fetch(dq(b+'/sigtoday?src=yildiz')).then(r=>r.json()).then(j=>{if(j&&j.ok){ALS.ylist=j.list||[];if(S.tab==='algi')try{renderAlgi()}catch(x){}}}).catch(()=>{})}   // v14.41 yıldızlılar (sonradan gelen ERKEN AL girişleri)
 setInterval(()=>{try{const s=nowSess();if(s.wk&&s.m>=595&&s.m<=1090&&!document.hidden)alSrvLoad()}catch(e){}},10000);
 setTimeout(()=>{try{alSrvLoad()}catch(e){}},4000);
 /* ---- canlı takip: bugünün sinyalleri (sunucu + bu cihaz), hedef/stop arasındaki yolculuk ---- */
@@ -7181,7 +7203,7 @@ function renderAisec(){const el=$('#aisecbody');if(!el)return;aisecLoad();const 
  h+='<div class="aint">Deneme listesi, <b>sinyal değildir</b>. Seçimi sistemin kendi verisi yapar (bugünün sinyalleri + o anki hacim); yapay zekâ yalnız nedenini yazar. Listeye girenler karneye sessizce yazılır. Yatırım tavsiyesi değildir.</div>';
  el.innerHTML=h}
 </script>
-<style>.ald{font-style:normal;font-size:10px;margin-left:3px;letter-spacing:-1px;vertical-align:1px}.ald.ok{color:#22c55e}.ald.gr{color:#8b93a1}</style>
+<style>.ysh{display:flex;align-items:baseline;gap:8px;padding:8px 12px 4px}.ysh b{color:#f5c542;font-size:13px;letter-spacing:.3px}.ysh span{color:var(--dim);font-size:11px}.ysg{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;padding:2px 12px 10px}.ysc{border:1px solid rgba(245,197,66,.55);border-radius:12px;padding:9px 11px;background:linear-gradient(135deg,rgba(245,197,66,.13),rgba(245,197,66,.03));cursor:pointer;box-shadow:0 0 0 1px rgba(245,197,66,.08) inset}.ysc1{display:flex;align-items:center;gap:6px;font-size:15px;margin-bottom:5px}.ysc1 b{color:#f5c542}.ysc2{display:grid;grid-template-columns:62px 48px 1fr auto;gap:6px;font-size:12px;padding:1px 0}.ysc2 span{color:var(--dim)}.ysc2 i{font-style:normal;color:var(--dim);font-size:11px}.ysc3{display:flex;justify-content:space-between;gap:6px;font-size:11px;color:var(--dim);margin-top:5px;border-top:1px dashed rgba(245,197,66,.25);padding-top:5px;flex-wrap:wrap}.ald{font-style:normal;font-size:10px;margin-left:3px;letter-spacing:-1px;vertical-align:1px}.ald.ok{color:#22c55e}.ald.gr{color:#8b93a1}</style>
 <script>
 /* v14.21 (27.10, Fatih: 'ateşlenenler listesinde iyi/kötü grubu nokta ile göster'; araştırma DEVIR 6y) — YALNIZ GÖSTERGE, sinyal kuralı/Telegram DEĞİŞMEDİ.
    Kovalayan = sinyal anında fiyat VWAP üstünde VE kırılım (meta.abv && meta.brk) → gri nokta. Diğerleri (geri çekilmede) → yeşil.
