@@ -11,6 +11,7 @@ import { pushRoute, pushSend } from './push.js';
 import { ecalPoll, ecalRoute } from './ecal.js';
 import { tedbirRoute } from './tedbir.js';
 import { probe } from './probe.js';
+import { tvAlertHook } from './tvalert.js';
 import { endeksRoute } from './endeks.js';
 import { aiYorumRoute } from './aiyorum.js';
 import { aisecSet, aisecGet } from './aisec.js';
@@ -997,6 +998,7 @@ export default {
       case 'yorum': { try { await env.BT.prepare('CREATE TABLE IF NOT EXISTS yorum (id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER, slot TEXT, txt TEXT)').run(); const r = await env.BT.prepare('SELECT t, slot, txt FROM yorum ORDER BY t DESC LIMIT 8').all(); return json({ ok: true, list: r.results || [] }); } catch (e) { return json({ ok: false, error: String(e.message || e).slice(0, 100) }); } }
       case 'pos': return posRoute(request, env, json);
       case 'paper': case 'paper-set': return paperRoute(route, request, env, json);
+      case 'tvalert': return tvAlertHook(request, env, json);   // 09.11 TradingView alarm webhook'u
       case 'yildiz': case 'yildiz-set': return yildizRoute(route, request, env, json);   // v14.39 ⭐ yıldız ayarları
       case 'push-key': case 'push-sub': case 'push-off': case 'push-send': return pushRoute(route, request, env, url, json);
       case 'errlog': if (request.method === 'POST') return errLogRoute(request, env, url, json); break;
