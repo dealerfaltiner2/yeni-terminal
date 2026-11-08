@@ -433,6 +433,10 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
 - 08.11 EMA KATMAN GEÇMİŞ TESTİ (Fatih: 'eski verilerle test et'; flow dakika fiyatları 12.10–06.11, 17 gün, EMA ısınması için ilk 2 gün atıldı = 15 gün; canlıdaki kural: 30/15/5 dk yukarı + 1 dk ≤4 mum önce döndü, 10:30–17:30, hisse başına günde ilk, |değişim|<9; sonraki dakikadan giriş, +3/−1 yoksa gün sonu, −0,1 maliyet; scratchpad ktm/bt2.py + ev6.py):
   BIST 30 (en likit 30): Dönüş 198 sinyal %18 isabet +0,06 (6/15 gün artı), endeks artıyken 145 %19 +0,15; KARŞILAŞTIRMA = aynı hisselerde günün ilk 'diğer' anı (rastgele giriş gibi) 440 %25 +0,07, endeks artıyken 269 %30 +0,37.
   En likit 100: Dönüş 600 %19 −0,05; diğer 1.407 %24 −0,01. İlk yarı (12–23.10) Dönüş −0,02…−0,28, ikinci yarı (26.10–06.11) +0,08…+0,11 → piyasa yönü. SONUÇ: EMA katman dönüşü rastgele girişten İYİ DEĞİL; canlıdaki +0,39 (02–06.11) yükselen haftanın etkisi.
+- 08.11 POC KATMAN TESTİ (Fatih: 'POC'a göre katmanlı test et'; aynı flow verisi; dakika fiyat+hacim, %0,2'lik fiyat kutuları, kayan POC pencereleri 480/240/120/30 dk ≈ 30/15/5/1 dk katmanları; 'üstünde' = fiyat > POC×1,001; ktm/poc.py):
+  Dönüş (480/240/120 POC üstü + 30 dk POC'un üstüne ≤4 dk önce geçti): likit 100 1.199 sinyal %26 +0,09 (rastgele giriş −0,01); BIST 100 artıyken 645 %30 +0,30 (rastgele +0,22). BIST 30 artıyken 212 %29 +0,34 (rastgele +0,27).
+  Yarılar: ilk (düşüş) −0,04 vs rastgele −0,24 (iyi), ikinci (yükseliş) +0,23 vs +0,27 (aynı/kötü); artıyken ilk +0,51 vs 0,00, ikinci +0,23 vs +0,36 → TUTARSIZ. 'Tam' (dördü de üstte) ve 'POC'a değip dönme' rastgeleden farksız.
+  SONUÇ: EMA katmanından biraz iyi (+0,1/işlem), ama 15 günde iki yarıda aynı yönde değil; kanıt sayılmaz. Öneri: Telegram'a koyma, istenirse motorda 2–3 hafta sessiz kayıt.
 
 ## 6x. 25.10 (Pazar) TRADINGVIEW HESAP RİSKİ (Fatih: 'TradingView beni engellemesin') — KARAR BEKLİYOR, kod değişmedi
 - Durum: onaylı her cihaz (dev.ok=1) /tv-token + ?direct=1 ile TradingView'a FATİH'İN oturumuyla bağlanıyor → aynı anda 4–5 bağlantı (Fatih, Nihat/Almanya, adsız İstanbul iPhone, Ankara Android, Ana sunucu).
