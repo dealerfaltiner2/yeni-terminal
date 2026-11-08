@@ -871,7 +871,28 @@ function erkenCalc(cs){
 // Son 2 kapanmış mum + oluşan mum içinde ERKEN AL var mı (Algı ile 'ortak nokta')
 /* v14.38 (08.11, Fatih: 'Algı'nın şartları değişmiyor; göstergenin GİRİŞ sinyali Algı fiyatının −%0,5…+%0,5 arasındaysa olumludur'):
    ⭐ = ERKEN AL mumunun kapanışı (göstergenin giriş fiyatı) Algı sinyal fiyatının ±%0,5 içinde. Ateşleme anında son 3 mum (oluşan dahil), sonra 60 dk boyunca yeni mumlar izlenir. */
-var ERKEN_BAND=0.5,ERKEN_WAIT=60;
+var ERKEN_BAND=0.5,ERKEN_WAIT=60,ERKEN_MAX=10;
+/* v14.39 (08.11, Fatih: 'yıldızın ayarlarını elle değiştirebilelim'): ayarlar sunucuda (D1 meta 'yildiz_cfg', GET /yildiz, POST /yildiz-set yalnız sahip) — ana sunucu ve telefonlar 5 dk'da bir okur, herkeste aynı. */
+var STARC={at:0,busy:0};
+function starApply(c){if(!c)return;if(c.band>0)ERKEN_BAND=+c.band;if(c.min>0)ERKEN_MIN=+c.min;if(c.wait>0)ERKEN_WAIT=+c.wait;if(c.max>0)ERKEN_MAX=+c.max}
+async function starCfgLoad(force){if(STARC.busy||(!force&&Date.now()-STARC.at<300000))return;const b=srvBase(S.tvproxy);if(!/^https?:\/\//.test(b))return;STARC.busy=1;
+ try{const j=await fetch(dq(b+'/yildiz')).then(r=>r.json());if(j&&j.ok){starApply(j.cfg);STARC.at=Date.now()}}catch(e){}STARC.busy=0}
+function starPanel(){const own=!!LS.get('ownTok',''),n=x=>String(x).replace('.',',');
+ const info='Algı sinyal verdikten sonra göstergenin <b>ERKEN AL</b> girişi (5 dk grafik, en az <b>'+ERKEN_MIN+'/21</b> şart) Algı fiyatının <b>−%'+n(ERKEN_BAND)+' … +%'+n(ERKEN_BAND)+'</b> arasında gelirse ⭐. Algı\'dan sonra <b>'+ERKEN_WAIT+' dk</b> izlenir · günde en çok <b>'+ERKEN_MAX+'</b> yıldızlı mesaj.';
+ if(!own)return '<div class="note" style="padding:2px 12px 6px">⭐ '+info+'</div>';
+ return '<details class="ppset" style="margin:4px 12px 6px"><summary>⭐ Yıldız ayarları · ±%'+n(ERKEN_BAND)+' · '+ERKEN_MIN+'/21</summary><div class="note" style="padding:6px 0">'+info+'</div><div class="adg" style="margin-top:4px">'+
+  '<label>Fiyat aralığı (± %)<input id="st_band" inputmode="decimal" value="'+n(ERKEN_BAND)+'"></label>'+
+  '<label>En az şart (/21)<input id="st_min" inputmode="numeric" value="'+ERKEN_MIN+'"></label>'+
+  '<label>İzleme süresi (dk)<input id="st_wait" inputmode="numeric" value="'+ERKEN_WAIT+'"></label>'+
+  '<label>Günde en çok mesaj<input id="st_max" inputmode="numeric" value="'+ERKEN_MAX+'"></label></div>'+
+  '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0">'+[0.5,0.7,1].map(v=>'<button class="g" onclick="document.getElementById(\'st_band\').value=\''+n(v)+'\'">±%'+n(v)+'</button>').join('')+'</div>'+
+  '<button class="g pri" onclick="starSave()">Kaydet</button><div class="pp-n">Fiyat aralığı %0,1–3 · şart 10–21 · süre 5–240 dk · günde 1–30. Kaydedince ana sunucu en geç 5 dakikada yeni ayarla çalışır.</div></details>'}
+async function starSave(){const b=srvBase(S.tvproxy),g=id=>+String((document.getElementById(id)||{}).value||'').replace(',','.');
+ const body={band:g('st_band'),min:g('st_min'),wait:g('st_wait'),max:g('st_max')};
+ if(!(body.band>0))return alert('Fiyat aralığını yaz (örnek 0,7).');
+ try{const j=await fetch(qAdd(dq(b+'/yildiz-set'),ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)}).then(r=>r.json());
+  if(j&&j.ok){starApply(j.cfg);STARC.at=Date.now();try{if(S.tab==='algi')renderAlgi()}catch(e){}alert('✓ Yıldız ayarları kaydedildi: ±%'+String(j.cfg.band).replace('.',',')+' · '+j.cfg.min+'/21 · '+j.cfg.wait+' dk · günde '+j.cfg.max)}
+  else alert('Kaydedilemedi: '+((j&&j.error)||'bilinmeyen'))}catch(e){alert('Sunucuya ulaşılamadı.')}}
 function erkenStarOf(cs,p0,fromT){const E=erkenCalc(cs);if(!E)return null;let best=null;for(let i=E.last;i>=0;i--){const r=E.at(i);if(!r)continue;if(fromT!=null&&r.t<fromT)break;if(fromT==null&&i<E.last-2)break;
  const inB=p0>0?Math.abs(r.px/p0-1)*100<=ERKEN_BAND:true;if(r.buy&&inB)return Object.assign({ok:1},r);if(!best||r.n>best.n)best=r}return best?Object.assign({ok:0},best):null}
 async function erkenStar(sym,p0,fromT){try{const cs=await getBars(sym,ERKEN_TF,true);return erkenStarOf(cs,p0,fromT)}catch(e){return null}}
@@ -3602,7 +3623,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.38";window.APPV=APP_VER;
+  const APP_VER="14.39";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3897,7 +3918,7 @@ function tvReconnectReport(){
    const es=await erkenStar(w.e.s,w.e.p0,Math.floor(w.e.t/1000)-60);if(!es||!es.ok)continue;
    const e=w.e;e.star=1;e.en=es.n;e.epx=es.px;AL.starW.splice(AL.starW.indexOf(w),1);
    const SD=AL.starDay&&AL.starDay.d===e.d?AL.starDay:(AL.starDay={d:e.d,n:0});
-   if(SD.n<10){SD.n++;
+   if(SD.n<ERKEN_MAX){SD.n++;
     if(!e.tg){e.tg=1;tg(msgFire(e,w.f,w.o),tgKb(e.s))}
     else tg('⭐ <b>'+e.s+'</b> · ERKEN AL girişi geldi\n<blockquote>Giriş <code>'+P(es.px)+'</code> · Algı sinyali '+P(e.p0)+' ('+hm(e.t)+') · '+es.n+'/21 şart (5 dk)</blockquote>',tgKb(e.s))}
    sigPost({src:'yildiz',sym:e.s,t:Date.now(),px:es.px,sc:es.n,dir:'AL',meta:{algi:e.p0,at:e.t,en:es.n,tg:e.tg?1:0}});
@@ -3906,6 +3927,7 @@ function tvReconnectReport(){
  function run(){
   try{
    const now=Date.now();
+   try{starCfgLoad()}catch(x){}
    if(AL.starW&&AL.starW.length&&(!AL._swAt||now-AL._swAt>=30000)){AL._swAt=now;starWatch(now)}
    if(!AL.cfg.on||document.hidden)return;
    const se=sess();
@@ -3967,7 +3989,7 @@ function tvReconnectReport(){
       e.star=es&&es.ok?1:0;e.en=es?es.n:null;if(es&&es.ok)e.epx=es.px;
       if(!e.star&&!e.mute)(AL.starW=AL.starW||[]).push({e,f,o,until:now+ERKEN_WAIT*60000,next:now+60000});   // sonradan gelecek ERKEN AL girişi için izle
       const SD=AL.starDay&&AL.starDay.d===e.d?AL.starDay:(AL.starDay={d:e.d,n:0});
-      const st1=e.star&&!e.mute&&SD.n<10;if(st1)SD.n++;
+      const st1=e.star&&!e.mute&&SD.n<ERKEN_MAX;if(st1)SD.n++;
       if(gate||st1){e.tg=1;tg(msgFire(e,f,o),tgKb(sym))}
      sigPost({src:'algi',sym:sym,t:now,px:p0,sc:sc,dir:'AL',meta:{tg:e.tg?1:0,fa:f.fa!=null?+(+f.fa).toFixed(1):null,rv:f.rv!=null?+(+f.rv).toFixed(1):null,fc:f.fc!=null?+(+f.fc).toFixed(2):null,ch:f.ch!=null?+(+f.ch).toFixed(2):null,brk:!!f.brk,abv:!!f.abv,bid:!!f.fd,tema:!!gOk,endeks:!!hOk,sig:!(o.voltl>=1e7),sessiz:!!e.mute,star:e.star,en:e.en}});
       if(S.tab==='algi')try{renderAlgi()}catch(x){}
@@ -4051,11 +4073,12 @@ function tvReconnectReport(){
   const dsel=ALS.day||'',past=!!dsel,pd=alPrevDay();
   let h='<div class="note" style="padding:6px 12px 2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><b style="color:#ffb020">⚡ '+(past?alDayTxt(dsel).toUpperCase()+' ATEŞLENENLER':'BUGÜN ATEŞLENENLER')+'</b>'+
    (isUye()?'':'<span class="aldays"><button class="'+(past?'':'on')+'" onclick="alDay(\'\')">Bugün</button><button class="'+(dsel===pd?'on':'')+'" onclick="alDay(\''+pd+'\')">'+alDayTxt(pd)+'</button><label class="'+(past&&dsel!==pd?'on':'')+'">📅<input type="date" value="'+(dsel||'')+'" max="'+alPrevDay(0)+'" onchange="alDay(this.value)"></label></span>')+'</div>';
+  if(!isUye())h+=starPanel();
   const SL=past?(ALS.hist[dsel]||null):(!BOTMODE&&window.ALS&&ALS.list)?ALS.list:null;
   if(past&&!SL)h+='<div class="note">Yükleniyor…</div>';
   else if(SL&&(past||S.botAlive||SL.length)){   // v14.1: ana sunucunun Algı ateşlemeleri (karnedekiyle birebir)
    if(!SL.length)h+='<div class="note">'+(past?'O gün Algı ateşlemesi yok (hafta sonu ya da tatil olabilir).':'Bugün henüz ateşleme yok.')+'</div>';
-   else h+='<div class="note" style="padding:2px 12px 6px">'+SL.length+' ateşleme'+(past?' · +%3: '+SL.filter(e=>e.o31===1).length+' · stop: '+SL.filter(e=>e.o31===2).length:'')+' · ⭐ = ERKEN AL 21 ile aynı anda (yıldızlı) · 📨 = Telegram\'a gitti · 📰 = o sırada hisseyle ilgili haber vardı<br><span style="color:#22c55e">●</span> geri çekilmede geldi · <span style="color:#22c55e">●●</span> ayrıca 15 dk EMA 20\'nin %2+ altında (karnede en iyi grup) · <span style="color:#8b93a1">●</span> kovalayan (VWAP üstü + kırılım; karnede zayıf)</div><table><tr><th>Sembol</th><th>Saat</th><th>Giriş</th><th>'+(past?'Gün sonu':'Şimdi')+'</th><th>Zirve</th><th>Güç</th><th>Sonuç</th></tr>'+SL.map(e=>{
+   else h+='<div class="note" style="padding:2px 12px 6px">'+SL.length+' ateşleme'+(past?' · +%3: '+SL.filter(e=>e.o31===1).length+' · stop: '+SL.filter(e=>e.o31===2).length:'')+' · ⭐ = göstergenin ERKEN AL girişi Algı fiyatına yakın (yıldızlı) · 📨 = Telegram\'a gitti · 📰 = o sırada hisseyle ilgili haber vardı<br><span style="color:#22c55e">●</span> geri çekilmede geldi · <span style="color:#22c55e">●●</span> ayrıca 15 dk EMA 20\'nin %2+ altında (karnede en iyi grup) · <span style="color:#8b93a1">●</span> kovalayan (VWAP üstü + kırılım; karnede zayıf)</div><table><tr><th>Sembol</th><th>Saat</th><th>Giriş</th><th>'+(past?'Gün sonu':'Şimdi')+'</th><th>Zirve</th><th>Güç</th><th>Sonuç</th></tr>'+SL.map(e=>{
     const m=e.meta||{},q=S.umap[e.sym],now=past?e.rc:(q&&q.close&&e.px?(q.close/e.px-1)*100:null),tg=m.tg!=null?m.tg===1:(m.fc>=.8&&m.rv>=2);
     const res=e.o31===1?'<b class="up">+%3 ✅</b>':e.o31===2?'<b class="dn">−%1 ❌</b>':e.done?'<span style="color:var(--dim)">sonuçsuz</span>':'<span class="wrn">⏳ açık</span>';
     const hn=typeof haberNote==='function'?haberNote(e.sym,e.t+30*60e3):'';

@@ -1,3 +1,4 @@
+import { yildizRoute } from './yildiz.js';
 import { tgPlain } from './tgfmt.js';
 import { flowRoute } from './flow.js';
 import { kaphStep } from './kaph.js';
@@ -739,12 +740,12 @@ async function btStep(env) {
 }
 /* ---------- v5.6: ana cihaz (sahip) kilidi + bağlı cihazlar (D1: meta 'owner', tablo dev) ---------- */
 // Sahip kodu D1'de durur → gerekirse Claude D1'den sıfırlayabilir. Kod yokken (ilk kurulum) eski davranış sürer.
-const OWN_ROUTES = new Set(['aisec-set', 'algirows-set', 'uyeler', 'sync', 'prefs', 'cron-test', 'pine-sync', 'pine-test', 'devices', 'dev-block', 'dev-ok', 'siglog', 'sig-eval', 'pair-create', 'push-sub', 'push-off', 'push-send', 'pos', 'paper-set', 'flow']);
+const OWN_ROUTES = new Set(['yildiz-set', 'aisec-set', 'algirows-set', 'uyeler', 'sync', 'prefs', 'cron-test', 'pine-sync', 'pine-test', 'devices', 'dev-block', 'dev-ok', 'siglog', 'sig-eval', 'pair-create', 'push-sub', 'push-off', 'push-send', 'pos', 'paper-set', 'flow']);
 // v6.8 YENİ CİHAZ ONAYI: ana cihaz belirlenmişse, onaylanmamış (ok=0) cihaz canlı veri / tarama / mum alamaz.
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
 const DEV_GRACE = Date.UTC(2026, 9, 6); // 6 Ekim 2026
-const DATA_ROUTES = new Set(['algirows', 'bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key', 'paper', 'sigsym', 'yorum', 'tedbir', 'kesif', 'endeks', 'aiyorum', 'aisec', 'haber', 'gece']);
+const DATA_ROUTES = new Set(['yildiz', 'algirows', 'bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key', 'paper', 'sigsym', 'yorum', 'tedbir', 'kesif', 'endeks', 'aiyorum', 'aisec', 'haber', 'gece']);
 const devCache = new Map();
 let ownerCache = { v: undefined, at: 0 }, devReady = false;
 async function ownerTok(env) {
@@ -996,6 +997,7 @@ export default {
       case 'yorum': { try { await env.BT.prepare('CREATE TABLE IF NOT EXISTS yorum (id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER, slot TEXT, txt TEXT)').run(); const r = await env.BT.prepare('SELECT t, slot, txt FROM yorum ORDER BY t DESC LIMIT 8').all(); return json({ ok: true, list: r.results || [] }); } catch (e) { return json({ ok: false, error: String(e.message || e).slice(0, 100) }); } }
       case 'pos': return posRoute(request, env, json);
       case 'paper': case 'paper-set': return paperRoute(route, request, env, json);
+      case 'yildiz': case 'yildiz-set': return yildizRoute(route, request, env, json);   // v14.39 ⭐ yıldız ayarları
       case 'push-key': case 'push-sub': case 'push-off': case 'push-send': return pushRoute(route, request, env, url, json);
       case 'errlog': if (request.method === 'POST') return errLogRoute(request, env, url, json); break;
       case 'devices': return devices(env);

@@ -19,6 +19,7 @@ echo "== Borsa tedbirleri"; node tedbir.mjs 2>/dev/null || fail=1
 echo "== Ertesi gün ölçümü"; node ertesi.mjs 2>/dev/null || fail=1
 echo "== Pozisyon asistanı + bildirim"; node pos.mjs || fail=1
 echo "== Kâğıt üzerinde bot"; node paper.mjs || fail=1
+echo "== ⭐ Yıldız ayarları"; node yildiz.mjs || fail=1
 echo "== Telegram mini uygulaması"; node tgapp.mjs || fail=1
 echo "== Bot karşılama"; node tgbot.mjs || fail=1
 echo "== Kanal + davet"; node kanal.mjs || fail=1
