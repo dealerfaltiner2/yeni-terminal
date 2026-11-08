@@ -808,7 +808,7 @@ var FIRSAT_TG=true;   // v14.34 (08.11, Fatih: "Fırsat A ve B Telegram'a gitsin
    'ARSLAN ERKEN AL 21 + Merdiven' içindeki 21 şart sayısının birebir JS karşılığı (5 dk mum). ERKEN AL = şart sayısı ≥ ERKEN_MIN (14) ve yeşil mum.
    Algı ateşlediğinde son 2 kapanmış 5 dk mumdan biri ya da oluşan mum ERKEN AL ise sinyal ⭐ YILDIZLI. Algı kuralı DEĞİŞMEDİ. */
 var ERKEN_MIN=16,ERKEN_TF='e5';
-function erkenCalc(cs){
+function erkenCalc(cs,mn){
  const n=cs.length;if(n<60)return null;
  const O=cs.map(c=>c.open),H=cs.map(c=>c.high),L=cs.map(c=>c.low),C=cs.map(c=>c.close),V=cs.map(c=>c.volume||0);
  const emaA=(a,p)=>{const k=2/(p+1);let e=null;return a.map(v=>e=(e==null?v:v*k+e*(1-k)))};
@@ -864,7 +864,7 @@ function erkenCalc(cs){
    stDir[i]<0,C[i]>sar[i],cci[i]>0,atr14[i]>atrS[i]&&atr14[i]>atr14[i-1],bbW[i]>bbW[i-1]&&bbW[i]>med(bbW,i,50),obv[i]>obvE[i],cmfA/Math.max(cmfB,1)>0,fi[i]>0,
    kS[i]>dS[i]&&kS[i-1]<=dS[i-1]];
   const k=ok.filter(Boolean).length;
-  return {n:k,green:C[i]>O[i],buy:k>=ERKEN_MIN&&C[i]>O[i],t:cs[i].time,px:C[i]};
+  return {n:k,green:C[i]>O[i],buy:k>=(mn||ERKEN_MIN)&&C[i]>O[i],t:cs[i].time,px:C[i]};
  }
  return {at,last:n-1};
 }
@@ -877,10 +877,36 @@ var STARC={at:0,busy:0};
 function starApply(c){if(!c)return;if(c.band>0)ERKEN_BAND=+c.band;if(c.min>0)ERKEN_MIN=+c.min;if(c.wait>0)ERKEN_WAIT=+c.wait;if(c.max>0)ERKEN_MAX=+c.max}
 async function starCfgLoad(force){if(STARC.busy||(!force&&Date.now()-STARC.at<300000))return;const b=srvBase(S.tvproxy);if(!/^https?:\/\//.test(b))return;STARC.busy=1;
  try{const j=await fetch(dq(b+'/yildiz')).then(r=>r.json());if(j&&j.ok){starApply(j.cfg);STARC.at=Date.now()}}catch(e){}STARC.busy=0}
+/* v14.40 (08.11, Fatih: 'tüm cihazlarda ayarlar bölümü olsun' → '2': HERKESİN KENDİ AYARI) — LS 'starMy' {band,min,wait}: yalnız o cihazın Algı listesindeki ⭐'ı belirler.
+   Telegram grubuna giden ⭐ sunucudaki ortak ayarla kalır (yalnız sahip değiştirir). Hesap telefonda: ateşleme başına 5 dk mumlar (en çok 6 istek / 20 sn, Algı sekmesi açıkken). */
+var MYST={r:{},busy:0,at:0};
+function myStarCfg(){const c=LS.get('starMy',null);return c&&c.band>0?c:null}
+function myStarKey(e){return e.sym+'|'+e.t}
+async function myStarScan(list){const c=myStarCfg();if(!c||MYST.busy||!list||!list.length||Date.now()-MYST.at<20000)return;MYST.busy=1;MYST.at=Date.now();let n=0,ch=0;
+ try{for(const e of list){if(n>=6)break;if(!(e.px>0)||!e.t)continue;const k=myStarKey(e),o=MYST.r[k],now=Date.now();
+   if(o&&(o.done||now<o.next))continue;n++;
+   const cs=await getBars(e.sym,ERKEN_TF,true).catch(()=>null);if(!cs||!cs.length){MYST.r[k]={done:0,next:now+120000};continue}
+   const from=Math.floor(e.t/1000)-15*60,to=Math.floor(e.t/1000)+c.wait*60;const E=erkenCalc(cs,c.min);let hit=null;
+   if(E)for(let i=0;i<=E.last;i++){const t=cs[i].time;if(t<from||t>to)continue;const r=E.at(i);if(r&&r.buy&&Math.abs(r.px/e.px-1)*100<=c.band){hit=r;break}}
+   const end=now/1000>to||cs[cs.length-1].time>to;MYST.r[k]=hit?{done:1,ok:1,px:hit.px,n:hit.n}:{done:end?1:0,ok:0,next:now+120000};ch++}}catch(x){}
+ MYST.busy=0;if(ch)try{if(S.tab==='algi')renderAlgi()}catch(x){}}
+function myStarOf(e){const c=myStarCfg();if(!c)return null;const o=MYST.r[myStarKey(e)];return o?o:{pend:1}}
+function myStarSave(){const g=id=>+String((document.getElementById(id)||{}).value||'').replace(',','.');
+ const b=Math.min(3,Math.max(0.1,g('my_band')||0.5)),mn=Math.round(Math.min(21,Math.max(10,g('my_min')||16))),w=Math.round(Math.min(240,Math.max(5,g('my_wait')||60)));
+ LS.set('starMy',{band:b,min:mn,wait:w});MYST.r={};MYST.at=0;try{renderAlgi()}catch(e){}alert('✓ Kendi ayarın kaydedildi: ±%'+String(b).replace('.',',')+' · '+mn+'/21 · '+w+' dk. Yalnız bu cihazda geçerli.')}
+function myStarOff(){LS.set('starMy',null);MYST.r={};try{renderAlgi()}catch(e){}}
+function myStarPanel(){const c=myStarCfg(),n=x=>String(x).replace('.',','),v=c||{band:ERKEN_BAND,min:ERKEN_MIN,wait:ERKEN_WAIT};
+ return '<details class="ppset" style="margin:4px 12px 6px"><summary>⭐ Benim yıldız ayarım · '+(c?'±%'+n(c.band)+' · '+c.min+'/21':'ortak ayarı kullanıyorum')+'</summary>'+
+  '<div class="note" style="padding:6px 0">Bu ayar yalnız <b>senin ekranında</b> hangi Algı sinyallerinin ⭐ görüneceğini belirler. Telegram grubuna giden yıldızlar değişmez.</div><div class="adg" style="margin-top:4px">'+
+  '<label>Fiyat aralığı (± %)<input id="my_band" inputmode="decimal" value="'+n(v.band)+'"></label>'+
+  '<label>En az şart (/21)<input id="my_min" inputmode="numeric" value="'+v.min+'"></label>'+
+  '<label>İzleme süresi (dk)<input id="my_wait" inputmode="numeric" value="'+v.wait+'"></label></div>'+
+  '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0">'+[0.5,0.7,1].map(x=>'<button class="g" onclick="document.getElementById(\'my_band\').value=\''+n(x)+'\'">±%'+n(x)+'</button>').join('')+'</div>'+
+  '<button class="g pri" onclick="myStarSave()">Kaydet</button>'+(c?' <button class="g" onclick="myStarOff()">Ortak ayara dön</button>':'')+'<div class="pp-n">Fiyat aralığı %0,1–3 · şart 10–21 · süre 5–240 dk. Hesap birkaç dakika sürebilir; listede ⏳ görünür.</div></details>'}
 function starPanel(){const own=!!LS.get('ownTok',''),n=x=>String(x).replace('.',',');
  const info='Algı sinyal verdikten sonra göstergenin <b>ERKEN AL</b> girişi (5 dk grafik, en az <b>'+ERKEN_MIN+'/21</b> şart) Algı fiyatının <b>−%'+n(ERKEN_BAND)+' … +%'+n(ERKEN_BAND)+'</b> arasında gelirse ⭐. Algı\'dan sonra <b>'+ERKEN_WAIT+' dk</b> izlenir · günde en çok <b>'+ERKEN_MAX+'</b> yıldızlı mesaj.';
- if(!own)return '<div class="note" style="padding:2px 12px 6px">⭐ '+info+'</div>';
- return '<details class="ppset" style="margin:4px 12px 6px"><summary>⭐ Yıldız ayarları · ±%'+n(ERKEN_BAND)+' · '+ERKEN_MIN+'/21</summary><div class="note" style="padding:6px 0">'+info+'</div><div class="adg" style="margin-top:4px">'+
+ if(!own)return '<div class="note" style="padding:2px 12px 6px">⭐ Telegram grubu ayarı: '+info+'</div>'+myStarPanel();
+ return myStarPanel()+'<details class="ppset" style="margin:4px 12px 6px"><summary>📨 Telegram grubu yıldız ayarı · ±%'+n(ERKEN_BAND)+' · '+ERKEN_MIN+'/21</summary><div class="note" style="padding:6px 0">'+info+'</div><div class="adg" style="margin-top:4px">'+
   '<label>Fiyat aralığı (± %)<input id="st_band" inputmode="decimal" value="'+n(ERKEN_BAND)+'"></label>'+
   '<label>En az şart (/21)<input id="st_min" inputmode="numeric" value="'+ERKEN_MIN+'"></label>'+
   '<label>İzleme süresi (dk)<input id="st_wait" inputmode="numeric" value="'+ERKEN_WAIT+'"></label>'+
@@ -3623,7 +3649,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.39";window.APPV=APP_VER;
+  const APP_VER="14.40";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4076,13 +4102,14 @@ function tvReconnectReport(){
   if(!isUye())h+=starPanel();
   const SL=past?(ALS.hist[dsel]||null):(!BOTMODE&&window.ALS&&ALS.list)?ALS.list:null;
   if(past&&!SL)h+='<div class="note">Yükleniyor…</div>';
-  else if(SL&&(past||S.botAlive||SL.length)){   // v14.1: ana sunucunun Algı ateşlemeleri (karnedekiyle birebir)
+  if(SL&&SL.length&&myStarCfg())try{myStarScan(SL)}catch(x){}   // v14.40 kişisel ⭐
+  if(past&&!SL){}else if(SL&&(past||S.botAlive||SL.length)){   // v14.1: ana sunucunun Algı ateşlemeleri (karnedekiyle birebir)
    if(!SL.length)h+='<div class="note">'+(past?'O gün Algı ateşlemesi yok (hafta sonu ya da tatil olabilir).':'Bugün henüz ateşleme yok.')+'</div>';
    else h+='<div class="note" style="padding:2px 12px 6px">'+SL.length+' ateşleme'+(past?' · +%3: '+SL.filter(e=>e.o31===1).length+' · stop: '+SL.filter(e=>e.o31===2).length:'')+' · ⭐ = göstergenin ERKEN AL girişi Algı fiyatına yakın (yıldızlı) · 📨 = Telegram\'a gitti · 📰 = o sırada hisseyle ilgili haber vardı<br><span style="color:#22c55e">●</span> geri çekilmede geldi · <span style="color:#22c55e">●●</span> ayrıca 15 dk EMA 20\'nin %2+ altında (karnede en iyi grup) · <span style="color:#8b93a1">●</span> kovalayan (VWAP üstü + kırılım; karnede zayıf)</div><table><tr><th>Sembol</th><th>Saat</th><th>Giriş</th><th>'+(past?'Gün sonu':'Şimdi')+'</th><th>Zirve</th><th>Güç</th><th>Sonuç</th></tr>'+SL.map(e=>{
     const m=e.meta||{},q=S.umap[e.sym],now=past?e.rc:(q&&q.close&&e.px?(q.close/e.px-1)*100:null),tg=m.tg!=null?m.tg===1:(m.fc>=.8&&m.rv>=2);
     const res=e.o31===1?'<b class="up">+%3 ✅</b>':e.o31===2?'<b class="dn">−%1 ❌</b>':e.done?'<span style="color:var(--dim)">sonuçsuz</span>':'<span class="wrn">⏳ açık</span>';
     const hn=typeof haberNote==='function'?haberNote(e.sym,e.t+30*60e3):'';
-    return '<tr class="row" onclick="algiGo(\''+e.sym+'\')"><td class="sym"'+(hn?' title="'+htmlEsc(hn)+'"':'')+'>'+htmlEsc(e.sym)+(typeof alDot==='function'?alDot(e):'')+(m.star?' ⭐':'')+(tg?' 📨':'')+(hn?' 📰':'')+'</td><td>'+hm(e.t)+'</td><td>'+(e.px?nf(e.px):'-')+'</td><td class="'+cls(now)+'">'+(now!=null?pct(now):'-')+'</td><td class="up">'+(e.mfe!=null?pct(e.mfe):'-')+'</td><td>'+(m.fc!=null?'%'+nf(m.fc*100,0)+(m.fc>=.8?' 💪':''):'-')+'</td><td>'+res+'</td></tr>'}).join('')+'</table>';
+    return '<tr class="row" onclick="algiGo(\''+e.sym+'\')"><td class="sym"'+(hn?' title="'+htmlEsc(hn)+'"':'')+'>'+htmlEsc(e.sym)+(typeof alDot==='function'?alDot(e):'')+(function(){const my=myStarOf(e);return my?(my.ok?' ⭐':my.pend||!my.done?' <span title="yıldız hesaplanıyor" style="opacity:.5">⏳</span>':''):(m.star?' ⭐':'')})()+(tg?' 📨':'')+(hn?' 📰':'')+'</td><td>'+hm(e.t)+'</td><td>'+(e.px?nf(e.px):'-')+'</td><td class="'+cls(now)+'">'+(now!=null?pct(now):'-')+'</td><td class="up">'+(e.mfe!=null?pct(e.mfe):'-')+'</td><td>'+(m.fc!=null?'%'+nf(m.fc*100,0)+(m.fc>=.8?' 💪':''):'-')+'</td><td>'+res+'</td></tr>'}).join('')+'</table>';
   }
   else if(!ev.length)h+='<div class="note">Bugün henüz ateşleme yok.</div>';
   else h+='<table><tr><th>Sembol</th><th>Saat</th><th>Giriş</th><th>Şimdi</th><th>Zirve</th><th>Durum</th><th>Skor</th></tr>'+ev.map(e=>{
