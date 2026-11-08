@@ -17,14 +17,14 @@ plot(na(sellV) ? na : -sellV, "Satıcılı", color = color.new(color.red, 40), s
 plot(dlt, "Fark (alıcılı - satıcılı)", color = dlt >= 0 ? color.lime : color.orange, linewidth = 2)
 hline(0, "Sıfır", color = color.gray)
 
-var table t = table.new(position.top_right, 4, 8, bgcolor = color.new(color.black, 15), border_width = 1)
+var table t = table.new(position.top_left, 4, 6, bgcolor = color.new(color.black, 15), border_width = 1)
 if barstate.islast
     table.cell(t, 0, 0, "Saat", text_color = color.white)
     table.cell(t, 1, 0, "Alıcılı", text_color = color.white)
     table.cell(t, 2, 0, "Satıcılı", text_color = color.white)
     table.cell(t, 3, 0, "Alıcı %", text_color = color.white)
-    for i = 0 to 6
-        string hm = str.format_time(time[i], "HH:mm", syminfo.timezone)
+    for i = 0 to 4
+        string hm = (i == 0 ? "şimdi " : "") + str.format_time(time[i], "HH:mm", "Europe/Istanbul")
         float b = buyV[i]
         float s = sellV[i]
         float p = buyP[i]
