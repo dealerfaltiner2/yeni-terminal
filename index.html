@@ -802,7 +802,7 @@ function withinMarketHours(){
 function sigKey(sym,dir){return sym+'|'+dir+'|'+new Date().toISOString().slice(0,10)}
 /* v14.8 (23.10, sinyal grubu anketi: 3 oyun 2'si 'öneri') TELEGRAM SİNYAL KURALI (DEVIR 6v): Telegram'a yalnız seans içi geri alım (sunucu), Momentum,
    ve güçlü Algı (fc≥0,8, hacim ≥2 kat) YALNIZ BIST 100 o an artıdayken. Fırsat A/B ve tavan sakin açılış Telegram'a gitmez; hepsi karneye yazılmaya devam eder. */
-var FIRSAT_TG=false;
+var FIRSAT_TG=true;   // v14.34 (08.11, Fatih: "Fırsat A ve B Telegram'a gitsin") — B notu endeks ekside iken yine gitmez (v11.4)
 function tgIdxOk(){try{const v=S.mkt&&S.mkt.XU100&&S.mkt.XU100.ch;const x=v!=null&&isFinite(v)?v:S.idxCh;return !(x!=null&&isFinite(x)&&x<0)}catch(e){return true}}
 async function autoRun(manual){
  const m=$('#tgmsg');
@@ -3530,7 +3530,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.32";window.APPV=APP_VER;
+  const APP_VER="14.34";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
