@@ -420,6 +420,17 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
   Dünya literatürü aynı: Lou-Polk-Skouras (JFE 2019, ABD) momentum kazancının neredeyse tamamı gece; bireyler açılışta, kurumlar kapanışa yakın işlem yapıyor. Momentum (12-1) BIST'te gece etkisini ARTIRMIYOR (en güçlü %20 +0,22, en zayıf %20 +0,27).
   Dünya: Brezilya gün içi vadeli işlemciler 300+ gün devam edenlerin %97'si zararda (Chague vd. 2019); ABD büyük şirket fonlarının %89'u 5 yılda endeksin gerisinde (SPIVA); yayımlanan anomaliler yayın sonrası ~%32 zayıflıyor (McLean-Pontiff).
 
+## 7b. 08.11 (Pazar) 3 KASIM KARNE DEĞERLENDİRMESİ (GELİŞTİRİCİ; sig, 29.09–06.11, yalnız AL, done=1, hisse+kaynak+gün tek; sonuç +3 / −1 / ikisi de yoksa gün sonu, işlem başı −0,1 maliyet; A = 29.09–22.10, B = 23.10–06.11 = v14.8 Telegram kuralından sonra; ham veri scratchpad k3/rows.json, an.py)
+- Algı hepsi: 1.900 sinyal, isabet %20, −0,10/işlem (A −0,23 / B +0,04). Kovalayan −0,10, kovalamayan −0,10 → 27.10'daki ayrım B'de TUTMADI (ikisi de ~0).
+- Algı Telegram kuralı (güçlü + rv≥2 + endeks artı): A 25 sinyal %45 +0,86 → B 45 sinyal %16 −0,30. Gerçekten Telegram'a giden (meta.tg=1, B) 10 sinyal %12 −0,21. → %25 eşiğinin ALTINDA; kural örnek dışında tutmadı (A'daki sonuç eğitim etkisiydi).
+- Seans içi geri alım (10:00–17:30 yayın): 62 sinyal %53 +0,78 (t 2,1, 14/22 gün artı) — A 52 %55 +0,89 / B 10 %33 +0,20. Hâlâ en iyi kaynak ama B örneği küçük ve zayıfladı. Gece/sabah geri alım ~0 (−0,06, 886).
+- Momentum: 70 sinyal %23 −0,15, iki dönemde de −0,15 → başabaşın (%25) altında, kenar yok.
+- Fırsat B −0,27 (t −3,6) ve Radar −0,41 (t −2,4): iki dönemde de tutarlı eksi. Fırsat A az, −0,13.
+- Sessiz kayıtlar: Dün güçlü −0,88 (19), Sessiz trend −0,31 (14), AI Seçtikleri −0,23 (81, 8 gün), Öğle trend 6 sinyal (yorum yok), tavan6 +0,05 (118; B +0,15).
+- Yeni ve kısa (yalnız 02–06.11, piyasa yükselen hafta): EMA Katman 84 sinyal %27 +0,39 (4/5 gün; Telegram'a giden 38 %27 +0,33), Delta destek (vdpm) 93 %26 +0,15, Gece Kuşu 48 hisse-gece −0,30 (6 gece, v2 02.11'den). Hüküm için en az 2 hafta daha.
+- Genel: B döneminde neredeyse her kaynağın isabeti arttı (piyasa toparlandı) → sonuçları hâlâ piyasa yönü belirliyor; kaynak-özel kalıcı kenar yalnız seans içi geri alımda var (o da zayıflıyor).
+- ÖNERİ (Fatih onayı bekliyor): (1) Algı Telegram'ı kapat (karneye yazmaya devam), (2) Momentum Telegram'ı kapat, (3) Telegram'da kalsın: seans içi geri alım + EMA Katman (deneme, 2 hafta daha), (4) sessiz kayıtlardan Dün güçlü, Sessiz trend, Öğle trend, Radar kaydı kapatılsın (işlemci/okuma tasarrufu; karne ekranı sadeleşir), Fırsat B karnede kalsın (ekran listesi olarak kullanılıyor), (5) 23.11'de EMA Katman, Delta destek, Gece Kuşu v2, tavan6, AI Seçtikleri için yeniden bak.
+
 ## 6x. 25.10 (Pazar) TRADINGVIEW HESAP RİSKİ (Fatih: 'TradingView beni engellemesin') — KARAR BEKLİYOR, kod değişmedi
 - Durum: onaylı her cihaz (dev.ok=1) /tv-token + ?direct=1 ile TradingView'a FATİH'İN oturumuyla bağlanıyor → aynı anda 4–5 bağlantı (Fatih, Nihat/Almanya, adsız İstanbul iPhone, Ankara Android, Ana sunucu).
 - A (önerildi): arkadaş cihazları oturumsuz (eski üye yolu, 15 dk gecikmeli fiyat); sinyaller sunucudan canlı ve aynı kalır.
