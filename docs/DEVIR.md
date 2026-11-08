@@ -443,6 +443,8 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
   SONUÇ: oynaklığa göre stop HİÇBİR kaynakta sabit −1'i geçmiyor; geniş stop çoğunda kötüleştiriyor. Stop değişikliği önerilmez.
 - 08.11 ERKEN AL 21 × ALGI (Fatih'in göstergesi, v14.35 ⭐ yıldızlı; flow dakika fiyatından 5 dk mum, yalnız kapanmış mumlar, son 3 mumda ERKEN AL; erken/bt.mjs): Algı 1.470 → yıldızlı 706 (%48) %23 +0,01 (ilk +0,07 / ikinci −0,04), yıldızsız 764 %19 −0,12 (−0,22 / 0,00).
   ≥16 şart 505 %25 +0,07 (+0,10 / +0,05) en tutarlı; ≥18 ~0. BIST 100 artıyken yıldızlı 349 +0,05, yıldızsız 256 +0,25 → artı günde yıldız işe yaramıyor. Not: flow'da gerçek mum tepesi/dibi yok (dakika son fiyatı) → TradingView'dakiyle birebir değil.
+- 08.11 23:20 ⭐ v14.38 TANIMI DENEMESİ (ERKEN AL ≥16 girişi Algı fiyatının ±%0,5 içinde, ateşlemeden önceki mum + sonraki 60 dk; flow 5 dk mum; erken/bt2.mjs): 1.470 Algı'nın 651'i (%44) yıldızlı.
+  Yıldızlı, Algı fiyatından giriş +0,01; ERKEN AL fiyatından giriş +0,17 (ilk yarı +0,16 / ikinci +0,19), isabet %28; yıldızsız −0,11. → Algı + gösterge girişi şimdiye kadarki en tutarlı Algı alt grubu (küçük ama iki yarıda aynı). Karnede src 'yildiz' canlı ölçecek.
 
 ## 6x. 25.10 (Pazar) TRADINGVIEW HESAP RİSKİ (Fatih: 'TradingView beni engellemesin') — KARAR BEKLİYOR, kod değişmedi
 - Durum: onaylı her cihaz (dev.ok=1) /tv-token + ?direct=1 ile TradingView'a FATİH'İN oturumuyla bağlanıyor → aynı anda 4–5 bağlantı (Fatih, Nihat/Almanya, adsız İstanbul iPhone, Ankara Android, Ana sunucu).
