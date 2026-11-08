@@ -97,6 +97,7 @@ export function habMsg(r, esc) {
 const habKb = r => r.url && /^https:\/\//.test(r.url) ? { inline_keyboard: [[{ text: '🔗 Haberi aç', url: r.url }]] } : null;
 // Telegram'a gider mi? (saf) — önem 3, taze, pencere içinde, günlük sınır altında
 export function habWantTg(r, now, cnt) {
+  if (!globalThis.__HABER_TG) return false;   // v14.37 (08.11, Fatih): Haber Merkezi Telegram'a GİTMEZ (testler globalThis.__HABER_TG=true ile açar)
   if (!(r.onem >= 3) || r.first) return false;
   if (now - r.t > 30 * 60e3 || r.t - now > 10 * 60e3) return false;
   const p = trParts(now); if (p.m < 420 || p.m >= 1410) return false;

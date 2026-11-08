@@ -1,3 +1,4 @@
+globalThis.__KAP_TG = true; globalThis.__GECE_TG = true; globalThis.__HABER_TG = true;   // v14.37: Telegram kapalı varsayılan; testler gönderim yolunu sınar
 // KAP haber işlemi testi (node:sqlite ile D1 taklidi, sahte KAP yanıtı): aynı yanıtta ayrıştırma atlanır, yarıda kesilmede
 // çift kayıt olmaz, sabah özeti 4096 karakteri aşmadan parçalanır ve Telegram reddinde haberler 'gönderildi' sayılmaz.
 import { DatabaseSync } from 'node:sqlite';

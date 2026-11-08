@@ -1,3 +1,4 @@
+globalThis.__KAP_TG = true; globalThis.__GECE_TG = true; globalThis.__HABER_TG = true;   // v14.37: Telegram kapalı varsayılan; testler gönderim yolunu sınar
 // v14.19 Haber Merkezi: RSS okuma, tarih, TCMB kuralı, yapay zekâ doğrulaması, Telegram kuralı, uçtan uca (D1 taklidi)
 import { rssItems, rssTime, tcmbClass, habParse, habWantTg, habMsg, spkClean, haberPoll, haberFromKap, haberRoute, isSpkBulten, isBistDuyuru, itemId, HABER_TG_MAX } from '../worker/src/haber.js';
 let bad = 0; const ok = (n, c, x) => { console.log((c ? '✓ ' : '✗ ') + n + (c ? '' : ' — ' + JSON.stringify(x))); if (!c) bad++; };

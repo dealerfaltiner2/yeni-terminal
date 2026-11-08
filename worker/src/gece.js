@@ -43,6 +43,8 @@ export function gecePick2(Q, P, bad = new Set(), n = GECE_N) {
     .map(x => ({ s: x.s, c: x.c, ch: x.ch, tl: x.tl, r30: Math.round(x.r30 * 100) / 100, rest: Math.round(x.rest * 100) / 100 }));
 }
 // v14.25 (28.10, Fatih: 'emir fiyatlarını Telegram'a at, nereden alıp satacağımı bileyim'): BIST fiyat adımına yuvarlanmış limit fiyatlar
+// v14.37 (08.11, Fatih): Gece Kuşu Telegram'a GİTMEZ (seçim/ölçüm/karne aynı). Testler globalThis.__GECE_TG=true ile açar.
+export function geceTgOn() { return !!globalThis.__GECE_TG; }
 export function tickOf(p) { return p < 20 ? 0.01 : p < 50 ? 0.02 : p < 100 ? 0.05 : p < 250 ? 0.1 : p < 500 ? 0.25 : p < 1000 ? 0.5 : p < 2500 ? 1 : 2.5; }
 const rnd = (v, t, up) => { const k = v / t; return Math.round((up ? Math.ceil(k - 1e-9) : Math.floor(k + 1e-9)) * t * 100) / 100; };
 // alış limiti: son fiyatın %1 üstü (tavanı geçmez: dünkü kapanış ×1,10); satış limiti: alış fiyatının %2 altı
@@ -119,7 +121,7 @@ export async function geceStep(env, h, now = Date.now()) {
     const hist = (G.hist || []).concat([{ d: G.d, s: T.day, ort: avg, n: R.length, w: R.filter(x => x.r > 0).length }]).slice(-30);
     await metaSet(env, 'gece', Object.assign({}, G, { deneme: 0, st: 'satildi', res: { d: T.day, ort: avg, list: R }, hist }));
     const cfg = await h.kvGet(env, 'cfg', null);
-    let tg = null; if (cfg && !(cfg.opt && cfg.opt.gece === 0)) tg = await h.tgSend(cfg, geceSellMsg(R, avg, h.esc, G.deneme ? G.d.split('-').reverse().slice(0, 2).join('.') : ''));
+    let tg = null; if (cfg && geceTgOn() && !(cfg.opt && cfg.opt.gece === 0)) tg = await h.tgSend(cfg, geceSellMsg(R, avg, h.esc, G.deneme ? G.d.split('-').reverse().slice(0, 2).join('.') : ''));
     return { sat: R.length, ort: avg, tg: !!(tg && tg.ok) };
   }
   // 2) SEÇİM (17:40–17:55)
@@ -138,7 +140,7 @@ export async function geceStep(env, h, now = Date.now()) {
     if (!L.length) return null;
     await metaSet(env, 'gece', { d: T.day, t: now, ix, st: 'secildi', v: L2 ? 2 : 1, list: L.map(x => Object.assign({ s: x.s, c: x.c, ch: x.ch }, x.r30 != null ? { r30: x.r30, rest: x.rest } : {})), hist: G.hist || [], res: G.res || null });
     const cfg = await h.kvGet(env, 'cfg', null);
-    let tg = null; if (cfg && !(cfg.opt && cfg.opt.gece === 0)) tg = await h.tgSend(cfg, geceBuyMsg(L, h.esc));
+    let tg = null; if (cfg && geceTgOn() && !(cfg.opt && cfg.opt.gece === 0)) tg = await h.tgSend(cfg, geceBuyMsg(L, h.esc));
     return { sec: L.length, v: L2 ? 2 : 1, tg: !!(tg && tg.ok) };
   }
   // 3) KAPANIŞ FİYATI (18:12–18:40) — giriş fiyatı = resmî kapanış
@@ -148,7 +150,7 @@ export async function geceStep(env, h, now = Date.now()) {
     const ix = await ixClose(h, env);
     await metaSet(env, 'gece', Object.assign({}, G, { st: 'alindi', list, ix: ix || G.ix }));
     const cfg = await h.kvGet(env, 'cfg', null);
-    let tg = null; if (cfg && !(cfg.opt && cfg.opt.gece === 0)) tg = await h.tgSend(cfg, geceFixMsg(list, h.esc));
+    let tg = null; if (cfg && geceTgOn() && !(cfg.opt && cfg.opt.gece === 0)) tg = await h.tgSend(cfg, geceFixMsg(list, h.esc));
     return { kapa: list.length, tg: !!(tg && tg.ok) };
   }
   return null;

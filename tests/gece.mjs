@@ -1,3 +1,4 @@
+globalThis.__KAP_TG = true; globalThis.__GECE_TG = true; globalThis.__HABER_TG = true;   // v14.37: Telegram kapalı varsayılan; testler gönderim yolunu sınar
 // v14.23 Gece Kuşu: seçim, mesajlar, akşam→sabah akışı, tatil, karne kaydı (D1 + tarama taklidi)
 import { gecePick, geceBuyMsg, geceSellMsg, geceStep, geceRoute, geceNow, geceBuyPx, geceSellPx, geceFixMsg, gecePick2, tatilOncesi } from '../worker/src/gece.js';
 let bad = 0; const ok = (n, c, x) => { console.log((c ? '✓ ' : '✗ ') + n + (c ? '' : ' — ' + JSON.stringify(x))); if (!c) bad++; };

@@ -207,7 +207,7 @@ export async function kapPoll(env, h) {
   }
   let sent = 0;
   let pn = 0;
-  for (const r0 of toSend.filter(x => isNew.has(x.idx)).slice(0, 8)) { const q = Q[r0.syms.split(',')[0]];
+  if (kapTgOn()) for (const r0 of toSend.filter(x => isNew.has(x.idx)).slice(0, 8)) { const q = Q[r0.syms.split(',')[0]];
     if (r0.geri && !watch.has(r0.syms.split(',')[0]) && q && q.change != null && q.change <= -9) continue;   // tabandaki geri alım gönderilmez
     const t = await h.tgSend(cfg, kapMsg(r0, h.esc, q), tgKb(r0.syms.split(',')[0], r0.idx)); if (t && t.ok) sent++;
     // v8.2: iPhone bildirimi (çalışma başına en çok 2 — işlemci sınırı)
@@ -220,7 +220,10 @@ export async function kapPoll(env, h) {
   return { yeni: rows.length, telegram: sent, pub, hab };
 }
 // Sabah 09:30 (hafta içi): gece biriken önemli KAP'lar tek mesajda
+// v14.37 (08.11, Fatih: 'yalnız Algı + Fırsat A/B Telegram'a gitsin, diğer her şeyi kaldır'): KAP haberleri ve seans içi geri alım kartı Telegram'a GİTMEZ (karneye yazma aynı). Testler globalThis.__KAP_TG=true ile açar.
+export function kapTgOn() { return !!globalThis.__KAP_TG; }
 export async function kapMorning(env, h) {
+  if (!kapTgOn()) return { ok: 0, kapali: 1 };
   if (!env.BT) return null;
   await kapEnsure(env);
   const p = trParts(Date.now());
