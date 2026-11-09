@@ -23,6 +23,10 @@ namespace Matriks.Lean.Algotrader
 {
     public class PusulaDerinlik : MatriksAlgo
     {
+        // MatriksIQ sonuç ekranı ana sembol ister (yoksa NullReferenceException)
+        [SymbolParameter("GARAN")]
+        public string Symbol;
+
         [Parameter("AKBNK,ALARK,ASELS,ASTOR,BIMAS,DOAS,EKGYO,ENKAI,EREGL,FROTO,GARAN,GUBRF,HEKTS,ISCTR,KCHOL,KONTR,KOZAL,KRDMD,MGROS,OYAKC,PETKM,PGSUS,SAHOL,SASA,SISE,TAVHL,TCELL,THYAO,TOASO,TUPRS,YKBNK")]
         public string Semboller;
 
@@ -38,6 +42,7 @@ namespace Matriks.Lean.Algotrader
 
         public override void OnInit()
         {
+            AddSymbol(Symbol, SymbolPeriod.Min);
             foreach (var x in Semboller.Split(new[] { ',', ';', ' ' }, System.StringSplitOptions.RemoveEmptyEntries))
             {
                 var s = x.Trim().ToUpperInvariant();
@@ -45,7 +50,7 @@ namespace Matriks.Lean.Algotrader
             }
             foreach (var s in syms)
             {
-                AddSymbol(s, SymbolPeriod.Min);
+                if (s != Symbol) AddSymbol(s, SymbolPeriod.Min);
                 AddSymbolMarketDepth(s);
             }
             SetTimerInterval(Saniye);
