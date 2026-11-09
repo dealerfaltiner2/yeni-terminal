@@ -741,7 +741,7 @@ async function btStep(env) {
 }
 /* ---------- v5.6: ana cihaz (sahip) kilidi + bağlı cihazlar (D1: meta 'owner', tablo dev) ---------- */
 // Sahip kodu D1'de durur → gerekirse Claude D1'den sıfırlayabilir. Kod yokken (ilk kurulum) eski davranış sürer.
-const OWN_ROUTES = new Set(['yildiz-set', 'aisec-set', 'algirows-set', 'uyeler', 'sync', 'prefs', 'cron-test', 'pine-sync', 'pine-test', 'devices', 'dev-block', 'dev-ok', 'siglog', 'sig-eval', 'pair-create', 'push-sub', 'push-off', 'push-send', 'pos', 'paper-set', 'flow']);
+const OWN_ROUTES = new Set(['yildiz-set', 'aisec-set', 'algirows-set', 'uyeler', 'sync', 'prefs', 'cron-test', 'pine-sync', 'pine-test', 'devices', 'dev-block', 'dev-ok', 'siglog', 'sig-eval', 'pair-create', 'push-sub', 'push-off', 'push-send', 'pos', 'paper-set', 'flow', 'derin']);
 // v6.8 YENİ CİHAZ ONAYI: ana cihaz belirlenmişse, onaylanmamış (ok=0) cihaz canlı veri / tarama / mum alamaz.
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
@@ -1015,6 +1015,7 @@ export default {
       case 'haber': return haberRoute(env, json, anon);   // v14.19 Haber Merkezi
       case 'gece': return geceRoute(env, json, anon);   // v14.23 Gece Kuşu
       case 'flow': return flowRoute(request, env, url, json);
+      case 'derin': return flowRoute(request, env, url, json, 'derin');   // 09.11 MatriksIQ derinlik robotu
       case 'sig-eval': return json(url.searchParams.get('sum') === '1' ? await sigSummary(env, tgSend, kvGet, esc, nf, true) : await sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf));
       case 'test': return test(env, url);
       case 'bars': return bars(env, url, anon);
