@@ -1,24 +1,6 @@
-// Pusula Derinlik — MatriksIQ robotu (09.11)
-// Ne yapar: Seçilen hisselerin derinlik (kademe) verisini dakikada bir okur, Pusula sunucusuna (/derin) yollar.
-// Emir GÖNDERMEZ. Sunucu adresi ve sahip kodu bilgisayardaki BistMotor\ayar.json'dan okunur (kodda sır yok).
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Matriks;
-using Matriks.Data.Symbol;
-using Matriks.Engines;
-using Matriks.Symbols;
-using Matriks.AlgoTrader;
-using Matriks.Lean.Algotrader.AlgoBase;
-using Matriks.Lean.Algotrader.Models;
-using Matriks.Lean.Algotrader.Trading;
-
+// Pusula Derinlik — MatriksIQ robotu (09.11). Şablonun ÜSTTEKİ using satırları kalır; bu dosya 'namespace' satırından itibaren yapıştırılır.
+// Ne yapar: Seçilen hisselerin derinlik (kademe) verisini dakikada bir okur, Pusula sunucusuna (/derin) yollar. Emir GÖNDERMEZ.
+// Sunucu adresi ve sahip kodu bilgisayardaki BistMotor\ayar.json'dan okunur (kodda sır yok). Sistem türleri tam adla yazıldı (ek using gerekmez).
 namespace Matriks.Lean.Algotrader
 {
     public class PusulaDerinlik : MatriksAlgo
@@ -32,14 +14,17 @@ namespace Matriks.Lean.Algotrader
         [Parameter(60)]
         public int Saniye;
 
-        List<string> syms = new List<string>();
+        System.Collections.Generic.List<string> syms = new System.Collections.Generic.List<string>();
         string url = null;
         int hata = 0, gonderilen = 0;
 
         public override void OnInit()
         {
-            syms = Semboller.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries)
-                            .Select(x => x.Trim().ToUpperInvariant()).Distinct().ToList();
+            foreach (var x in Semboller.Split(new[] { ',', ';', ' ' }, System.StringSplitOptions.RemoveEmptyEntries))
+            {
+                var s = x.Trim().ToUpperInvariant();
+                if (s.Length > 0 && !syms.Contains(s)) syms.Add(s);
+            }
             foreach (var s in syms)
             {
                 AddSymbol(s, SymbolPeriod.Min);
@@ -57,33 +42,34 @@ namespace Matriks.Lean.Algotrader
         {
             try
             {
-                var yol = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BistMotor", "ayar.json");
-                var t = File.ReadAllText(yol).Replace("\\\"", "\"");
-                var p = Regex.Match(t, "\"tvproxy\"\\s*:\\s*\"+(wss?://[^\"]+)\"");
-                var o = Regex.Match(t, "\"ownTok\"\\s*:\\s*\"+([A-Za-z0-9_\\-]+)\"");
+                var yol = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData), "BistMotor", "ayar.json");
+                var t = System.IO.File.ReadAllText(yol).Replace("\\\"", "\"");
+                var p = System.Text.RegularExpressions.Regex.Match(t, "\"tvproxy\"\\s*:\\s*\"+(wss?://[^\"]+)\"");
+                var o = System.Text.RegularExpressions.Regex.Match(t, "\"ownTok\"\\s*:\\s*\"+([A-Za-z0-9_\\-]+)\"");
                 if (!p.Success || !o.Success) { Debug("ayar.json okunamadı (tvproxy/ownTok yok)"); return null; }
                 var b = p.Groups[1].Value.Replace("wss://", "https://").Replace("ws://", "http://").TrimEnd('/');
-                return b + "/derin?own=" + Uri.EscapeDataString(o.Groups[1].Value);
+                return b + "/derin?own=" + System.Uri.EscapeDataString(o.Groups[1].Value);
             }
-            catch (Exception e) { Debug("ayar.json hatası: " + e.Message); return null; }
+            catch (System.Exception e) { Debug("ayar.json hatası: " + e.Message); return null; }
         }
 
         static string N(object v)
         {
-            return Convert.ToDouble(v, CultureInfo.InvariantCulture).ToString("0.####", CultureInfo.InvariantCulture);
+            var ci = System.Globalization.CultureInfo.InvariantCulture;
+            return System.Convert.ToDouble(v, ci).ToString("0.####", ci);
         }
 
         public override void OnTimer()
         {
             try
             {
-                var tr = DateTime.UtcNow.AddHours(3);
+                var tr = System.DateTime.UtcNow.AddHours(3);
                 int m = tr.Hour * 60 + tr.Minute;
-                if (tr.DayOfWeek == DayOfWeek.Saturday || tr.DayOfWeek == DayOfWeek.Sunday || m < 600 || m > 1090) return;
+                if (tr.DayOfWeek == System.DayOfWeek.Saturday || tr.DayOfWeek == System.DayOfWeek.Sunday || m < 600 || m > 1090) return;
                 if (url == null) { url = AdresOku(); if (url == null) return; }
 
-                var sb = new StringBuilder();
-                sb.Append("{\"v\":1,\"src\":\"matriks\",\"t\":").Append(DateTimeOffset.UtcNow.ToUnixTimeSeconds()).Append(",\"s\":{");
+                var sb = new System.Text.StringBuilder();
+                sb.Append("{\"v\":1,\"src\":\"matriks\",\"t\":").Append(System.DateTimeOffset.UtcNow.ToUnixTimeSeconds()).Append(",\"s\":{");
                 int n = 0;
                 foreach (var s in syms)
                 {
@@ -104,23 +90,23 @@ namespace Matriks.Lean.Algotrader
 
                 var hedef = url + "&d=" + tr.ToString("yyyy-MM-dd") + "&m=" + m + "&n=" + n;
                 var govde = sb.ToString();
-                Task.Run(() =>
+                System.Threading.Tasks.Task.Run(() =>
                 {
                     try
                     {
-                        using (var wc = new WebClient())
+                        using (var wc = new System.Net.WebClient())
                         {
-                            wc.Encoding = Encoding.UTF8;
-                            wc.Headers[HttpRequestHeader.ContentType] = "application/json";
+                            wc.Encoding = System.Text.Encoding.UTF8;
+                            wc.Headers[System.Net.HttpRequestHeader.ContentType] = "application/json";
                             wc.UploadString(hedef, "POST", govde);
                         }
                         gonderilen++;
                         if (gonderilen == 1 || gonderilen % 30 == 0) Debug("Gönderildi: " + n + " hisse (" + gonderilen + ". kez)");
                     }
-                    catch (Exception e) { hata++; if (hata <= 3 || hata % 20 == 0) Debug("Gönderim hatası: " + e.Message); }
+                    catch (System.Exception e) { hata++; if (hata <= 3 || hata % 20 == 0) Debug("Gönderim hatası: " + e.Message); }
                 });
             }
-            catch (Exception e) { Debug("Derinlik okuma hatası: " + e.Message); }
+            catch (System.Exception e) { Debug("Derinlik okuma hatası: " + e.Message); }
         }
 
         public override void OnStopped() { Debug("Pusula Derinlik durdu. Gönderilen: " + gonderilen + ", hata: " + hata); }
