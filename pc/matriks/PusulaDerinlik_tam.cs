@@ -27,7 +27,7 @@ namespace Matriks.Lean.Algotrader
         [SymbolParameter("GARAN")]
         public string Symbol;
 
-        [Parameter("AKBNK,ALARK,ASELS,ASTOR,BIMAS,DOAS,EKGYO,ENKAI,EREGL,FROTO,GARAN,GUBRF,HEKTS,ISCTR,KCHOL,KONTR,KOZAL,KRDMD,MGROS,OYAKC,PETKM,PGSUS,SAHOL,SASA,SISE,TAVHL,TCELL,THYAO,TOASO,TUPRS,YKBNK")]
+        [Parameter("AEFES,AKBNK,ASELS,ASTOR,BIMAS,EKGYO,ENKAI,EREGL,FROTO,GARAN,GUBRF,ISCTR,KCHOL,KRDMD,MGROS,PETKM,PGSUS,SAHOL,SASA,SISE,TAVHL,TCELL,THYAO,TOASO,TRALT,TRMET,TTKOM,TUPRS,VAKBN,YKBNK")]
         public string Semboller;
 
         [Parameter(10)]
@@ -50,8 +50,12 @@ namespace Matriks.Lean.Algotrader
             }
             foreach (var s in syms)
             {
-                if (s != Symbol) AddSymbol(s, SymbolPeriod.Min);
-                AddSymbolMarketDepth(s);
+                try
+                {
+                    if (s != Symbol) AddSymbol(s, SymbolPeriod.Min);
+                    AddSymbolMarketDepth(s);
+                }
+                catch (System.Exception e) { Debug("Sembol eklenemedi: " + s + " (" + e.Message + ")"); }
             }
             SetTimerInterval(Saniye);
             url = AdresOku();
