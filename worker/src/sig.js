@@ -45,8 +45,8 @@ export async function sigEnsure(env) {
   // v13.5 (20.10, Fatih onayıyla, 3 Kasım Algı kararı için): o21 = +%2 hedef / −%1 stop yarışı (1 hedef, 2 stop, 0 ikisi de yok, −1 denendi/ölçülemedi);
   // b2 = '+%2 görülünce stopu girişe çek': önce −%1 gelirse −1; +%2 sonra fiyat girişe dönerse 0; dönmezse gün sonu % (hiç +%2 görmezse −1 ya da gün sonu). Yalnız ölçüm.
   for (const c of ['o21 INTEGER', 'b2 REAL']) { try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN ' + c).run(); } catch (e) {} }
-  // v14.47 (10.11, Fatih onayıyla): og = yıldızlı sinyalin GÖSTERGE STOPUYLA sonucu % (yalnız src 'yildiz', meta.gst): +%3 hedef → 3;
-  // 1 dk mum gösterge stopunun ALTINDA KAPANIRSA o kapanıştan çıkış (%); ikisi de yoksa gün sonu %. Aynı mumda hedef + stop altı kapanış → stop. Yalnız ölçüm.
+  // v14.47 (10.11, Fatih onayıyla): og = yıldızlı sinyalin GÖSTERGE STOPUYLA sonucu % (yalnız src 'yildiz', meta.gst): hedef yok (v14.48);
+  // 1 dk mum gösterge stopunun ALTINDA KAPANIRSA o kapanıştan çıkış (%); yoksa gün sonu %.
   try { await env.BT.prepare('ALTER TABLE sig ADD COLUMN og REAL').run(); } catch (e) {}
   try { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sig_schema', ?)").bind(SIG_SCHEMA).run(); } catch (e) {}
   ready = true;
@@ -149,11 +149,11 @@ export function sigOutcome(bars, r, ib) {
         pb = rr != null ? rr : (B[B.length - 1][4] / pe - 1) * 100;
       } }
   }
-  // v14.47: yıldızlı sinyal — gösterge stopuyla sonuç (og)
+  // v14.47/v14.48: yıldızlı sinyal — YALNIZ gösterge stopuyla sonuç (og; Fatih: '+%3/−%1 olmasın, göstergenin var'): hedef YOK,
+  // 1 dk mum gösterge stopunun ALTINDA kapanırsa o kapanıştan çıkış, kapanmazsa gün sonu. (Merdiven basamaklarıyla yükselen stop henüz modellenmedi.)
   let og = null;
   if (up && r.gst > 0 && r.gst < px) {
-    const tg = px * 1.03;
-    for (const b of B) { if (b[4] < r.gst) { og = (b[4] / px - 1) * 100; break; } if (b[2] >= tg) { og = 3; break; } }
+    for (const b of B) { if (b[4] < r.gst) { og = (b[4] / px - 1) * 100; break; } }
     if (og == null) og = (B[B.length - 1][4] / px - 1) * 100;
   }
   // v11.5: p30 — sinyalden 30 dk önceki kapanış (aynı gün; yoksa günün ilk açılışı) → giriş fiyatına göre %
@@ -363,7 +363,7 @@ export async function sigNextDay(env, fetchBarsTV, now = Date.now()) {
   }
   return { ertesi: n, bekleyen: bekle, hisse: syms, kalan: rows.length - batch.length };
 }
-const SRC_AD = { radar: '📡 Sunucu radarı (mesajı kapalı)', algi: '⚡ Algı', 'firsat-A': '🅰️ Fırsat A', 'firsat-B': '🅱️ Fırsat B', momentum: '🧪 Momentum (deneme)', katman: '🪜 EMA Katman (deneme)', yildiz: '⭐ Yıldızlı · ERKEN AL girişi (Algı ±%0,5)' };
+const SRC_AD = { radar: '📡 Sunucu radarı (mesajı kapalı)', algi: '⚡ Algı', 'firsat-A': '🅰️ Fırsat A', 'firsat-B': '🅱️ Fırsat B', momentum: '🧪 Momentum (deneme)', katman: '🪜 EMA Katman (deneme)', yildiz: '⭐ Yıldızlı · gösterge GİRİŞİ' };
 const KAP_TR = { is: 'Yeni iş/sözleşme', ihale: 'İhale', geri: 'Geri alım', bedelsiz: 'Bedelsiz', bedelli: 'Bedelli', tahsisli: 'Sermaye artırımı', teklif: 'Pay alım teklifi', birlesme: 'Birleşme/devir', tesvik: 'Teşvik', temettu: 'Temettü', bilanco: 'Bilanço', not: 'Kredi notu', icerden: 'İçeriden alım-satım', yatirim: 'Yatırım', varlik: 'Varlık alım/satım', ozel: 'Özel durum', risk: 'Risk (konkordato vb.)', kisit: 'İşlem kısıtı', ceza: 'Ceza/dava' };
 // v6.6 FİLTRE KONTROLÜ — araştırmada bulunan iki filtre kendi sinyallerimizde de tutuyor mu? (tüm günler, yalnız AL, KAP hariç)
 // Endeks: sinyal anında XU100 önceki kapanışa göre artıda mı (idx ≥ 0). Oynaklık: son 20 gün ortalama günlük aralık %5 ve üstü mü (adr).
@@ -400,7 +400,7 @@ async function momRepLine(env, today, pc) {
 export function tgSum(rows) {
   const by = {}, res = r => r.o31 === 1 ? 3 : r.o31 === 2 ? -1 : (r.rc != null && isFinite(r.rc) ? +r.rc : null);
   for (const r of rows) {
-    const v = res(r); if (v == null) continue;
+    const v = r.src === 'yildiz' && r.og != null && isFinite(r.og) ? +r.og : res(r); if (v == null) continue;   // v14.48: yıldızlı = gösterge stopuyla
     const x = by[r.src] = by[r.src] || { n: 0, h: 0, s: 0, pt: 0, gn: 0, gpt: 0 };
     x.n++; if (r.o31 === 1) x.h++; else if (r.o31 === 2) x.s++; x.pt += v;
     if (r.og != null && isFinite(r.og)) { x.gn++; x.gpt += +r.og; }
@@ -409,7 +409,7 @@ export function tgSum(rows) {
 }
 export function tlTxt(pt) { const v = Math.round(pt * 1000), a = String(Math.abs(v)).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); return (v > 0 ? '+' : v < 0 ? '−' : '') + a + ' TL'; }
 async function tgBlock(env, today, esc) {
-  const R = (await env.BT.prepare("SELECT src, o31, rc, og FROM sig INDEXED BY sig_d WHERE d = ? AND done = 1 AND err IS NULL AND dir = 'AL' AND (json_extract(meta, '$.tg') = 1 OR (src = 'kap-geri' AND json_extract(meta, '$.g') = 1))").bind(today).all()).results || [];
+  const R = (await env.BT.prepare("SELECT src, o31, rc, og FROM sig INDEXED BY sig_d WHERE d = ? AND done = 1 AND err IS NULL AND dir = 'AL' AND ((json_extract(meta, '$.tg') = 1 AND NOT (src = 'algi' AND json_extract(meta, '$.star') = 1)) OR (src = 'kap-geri' AND json_extract(meta, '$.g') = 1))").bind(today).all()).results || [];
   const by = tgSum(R), ks = Object.keys(by);
   if (!ks.length) return '\n\n📨 <b>Bugün Telegram\'a giden sinyal yok</b>';
   const AD = Object.assign({}, SRC_AD, { 'kap-geri': '🏢 Seans içi geri alım', yildiz: '⭐ Yıldızlı' });
@@ -417,8 +417,8 @@ async function tgBlock(env, today, esc) {
   let msg = '\n\n📨 <b>Bugün Telegram\'a gidenler</b> <i>(her sinyale 100.000 TL, kayma hariç)</i>', n = 0, pt = 0;
   for (const k of ks.sort((a, b) => rk(a) - rk(b))) {
     const x = by[k]; n += x.n; pt += x.pt;
-    msg += '\n   ' + esc(AD[k] || k) + ': ' + x.n + ' sinyal · ' + x.h + ' hedef, ' + x.s + ' stop → <b>' + tlTxt(x.pt) + '</b>';
-    if (x.gn) msg += '\n   ⭐ gösterge stopuyla (' + x.gn + ' sinyal): ' + tlTxt(x.gpt);
+    if (k === 'yildiz' && x.gn === x.n) msg += '\n   ' + esc(AD[k]) + ': ' + x.n + ' sinyal · gösterge stopuyla → <b>' + tlTxt(x.pt) + '</b>';
+    else msg += '\n   ' + esc(AD[k] || k) + ': ' + x.n + ' sinyal · ' + x.h + ' hedef, ' + x.s + ' stop → <b>' + tlTxt(x.pt) + '</b>';
   }
   if (ks.length > 1) msg += '\n   Toplam: ' + n + ' sinyal → <b>' + tlTxt(pt) + '</b>';
   return msg;
@@ -458,6 +458,11 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
   try { const mk = await env.BT.prepare("SELECT v FROM meta WHERE k = 'mkt_close'").first(); const mv = mk ? JSON.parse(mk.v) : null; if (mv && mv.d === today) msg += mktBlock(mv, esc); } catch (e) {}
   const ORD = ['firsat-A', 'firsat-B', 'algi', 'yildiz', 'momentum', 'katman', 'radar'], rk = x => { const i = ORD.indexOf(x); return i < 0 ? 99 : i; };
   for (const r of R.filter(r => !String(r.src).startsWith('kap-') && r.src !== 'tavan' && r.src !== 'sessiz' && r.src !== 'dunguclu' && r.src !== 'oglen' && r.src !== 'aisec' && r.src !== 'vdpm').sort((a, b) => rk(a.src) - rk(b.src))) {
+    if (r.src === 'yildiz') {   // v14.48: yıldızlı +%3/−%1 ile değil, gösterge stopuyla
+      try { const Y = (await env.BT.prepare("SELECT og FROM sig INDEXED BY sig_d WHERE d = ? AND src = 'yildiz' AND done = 1 AND err IS NULL AND og IS NOT NULL").bind(today).all()).results || [];
+        if (Y.length) { const t = Y.reduce((a, y) => a + y.og, 0), w = Y.filter(y => y.og > 0).length;
+          msg += '\n\n<b>' + esc(SRC_AD.yildiz) + '</b> — ' + r.n + ' sinyal\n   gösterge stopuyla: ' + w + ' artıda, ' + (Y.length - w) + ' ekside kapandı → <b>' + tlTxt(t) + '</b> <i>(100.000 TL/sinyal)</i>'; continue; } } catch (e) {}
+    }
     msg += '\n\n<b>' + esc(SRC_AD[r.src] || r.src) + '</b> — ' + r.n + ' sinyal\n   ' + line(r.h, r.s);
     const a = A.find(x => x.src === r.src);
     if (a && a.g > 1) msg += '\n   <i>tüm günler: ' + a.n + ' sinyal → %' + pc(a.h, a.h + a.s) + '</i>';
@@ -514,7 +519,7 @@ export async function sigToday(env, src, day) {
     if (day < lo || day > trDay(Date.now())) return { ok: true, at: Date.now(), d: day, list: [] };
     const c = algiDayCache.get(src + day); if (c && Date.now() - c.at < 5 * 60e3) return c.v;
     await sigEnsure(env);
-    const rs = (await env.BT.prepare("SELECT t, sym, px, sc, meta, done, o31, mfe, mae, rc FROM sig INDEXED BY sig_d WHERE d = ? AND src = ? ORDER BY t DESC LIMIT 200").bind(day, src).all()).results || [];
+    const rs = (await env.BT.prepare("SELECT t, sym, px, sc, meta, done, o31, mfe, mae, rc, og FROM sig INDEXED BY sig_d WHERE d = ? AND src = ? ORDER BY t DESC LIMIT 200").bind(day, src).all()).results || [];
     const v = { ok: true, at: Date.now(), d: day, list: rs.map(r => { let m = null; try { m = r.meta ? JSON.parse(r.meta) : null; } catch (e) {} return { ...r, meta: m }; }) };
     if (algiDayCache.size > 20) algiDayCache.clear();
     algiDayCache.set(src + day, { at: Date.now(), v });
@@ -524,7 +529,7 @@ export async function sigToday(env, src, day) {
     const ac = algiCache[src]; if (ac && Date.now() - ac.at < 20e3) return ac.v;
     await sigEnsure(env);
     const a0 = Date.parse(trDay(Date.now()) + 'T00:00:00Z') - TRMS;
-    const rs = (await env.BT.prepare("SELECT t, sym, px, sc, meta, done, o31, mfe, mae, rc FROM sig INDEXED BY sig_t WHERE t >= ? AND src = ? ORDER BY t DESC LIMIT 120").bind(a0, src).all()).results || [];
+    const rs = (await env.BT.prepare("SELECT t, sym, px, sc, meta, done, o31, mfe, mae, rc, og FROM sig INDEXED BY sig_t WHERE t >= ? AND src = ? ORDER BY t DESC LIMIT 120").bind(a0, src).all()).results || [];
     const v = { ok: true, at: Date.now(), list: rs.map(r => { let m = null; try { m = r.meta ? JSON.parse(r.meta) : null; } catch (e) {} return { ...r, meta: m }; }) };
     algiCache[src] = { at: Date.now(), v };
     return v;
