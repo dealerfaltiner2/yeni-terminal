@@ -88,6 +88,13 @@ ok('takılı kayıt kalmadı', !meta('sig_run') && db.prepare("SELECT count(*) n
   ok('+%3/−%1: −%0,5 geri çekilme sonra +%2 → sonuçsuz (0)', o.o31 === 0, 'o31=' + o.o31);
   ok('+%3/−%1: önce +%3 → kazandı', sigOutcome(mkb(i => i < 10 ? 100 : i < 50 ? 99.2 : 103.1), r, []).o31 === 1);
   ok('+%3/−%1: önce −%1 → kaybetti (sonra +%3 gelse de)', sigOutcome(mkb(i => i < 10 ? 100 : i < 50 ? 98.9 : 104), r, []).o31 === 2);
+  // v14.47: yıldızlı — gösterge stopuyla sonuç (og): stop altında KAPANIŞ → o kapanış; +%3 → 3; yoksa gün sonu; gst yoksa boş
+  { const ry = Object.assign({}, r, { src: 'yildiz', gst: 99.5 });
+    const q1 = sigOutcome(mkb(i => i < 10 ? 100 : i < 20 ? 99.4 : 104), ry, []);
+    const q2 = sigOutcome(mkb(i => i < 10 ? 100 : 103.1), ry, []);
+    const q3 = sigOutcome(mkb(i => i < 10 ? 100 : 101.2), ry, []);
+    ok('og: gösterge stopu altında kapanış → o kapanıştan çıkış; +%3 → 3; ikisi de yoksa gün sonu; gst yoksa boş',
+      q1.og === -0.6 && q2.og === 3 && q3.og === 1.2 && sigOutcome(mkb(() => 100), r, []).og == null, JSON.stringify([q1.og, q2.og, q3.og])); }
   { const q = sigOutcome(mkb(i => i < 10 ? 100 : i < 50 ? 103.2 : 104.1), r, []); ok('+%4/−%1: +%3 gelip +%4 de gelince kazandı; hedefsiz çıkış gün sonu', q.o31 === 1 && q.o41 === 1 && q.h1 === 4.1, JSON.stringify([q.o31, q.o41, q.h1])); }
   { const q = sigOutcome(mkb(i => i < 10 ? 100 : i < 50 ? 103.2 : 98.8), r, []); ok('+%4/−%1: +%3 sonra düşüş → +%4 kaybetti, hedefsiz −%1', q.o31 === 1 && q.o41 === 2 && q.h1 === -1, JSON.stringify([q.o31, q.o41, q.h1])); }
   { const q = sigOutcome(mkb(i => i < 10 ? 100 : i < 50 ? 98.8 : 103.1), r, []); ok('+%3/−%1,5: −%1,2 sonra +%3 → −%1 kaybetti ama −%1,5 kazandı', q.o31 === 2 && q.o315 === 1, JSON.stringify([q.o31, q.o315])); }
@@ -169,5 +176,10 @@ ok('takılı kayıt kalmadı', !meta('sig_run') && db.prepare("SELECT count(*) n
   const hb = Object.fromEntries(db.prepare("SELECT sym, hb FROM sig WHERE d='2026-10-14' AND sym IN ('NEWS','QUIET')").all().map(r => [r.sym, r.hb]));
   ok('sigNews: önceki akşamki KAP haberli, diğeri habersiz; gün bitti işareti', hb.NEWS === 960 && hb.QUIET === -1 && rn && rn.haberli >= 1 && db.prepare("SELECT v FROM meta WHERE k='hb_day'").get().v === '2026-10-14', JSON.stringify({ hb, rn }));
 }
+// v14.47: 'Bugün Telegram'a gidenler' toplamı
+{ const { tgSum, tlTxt } = await import(path.join(W, 'sig.js'));
+  const b = tgSum([{ src: 'algi', o31: 1 }, { src: 'algi', o31: 2 }, { src: 'algi', o31: 0, rc: -0.55 }, { src: 'algi', o31: 0, rc: null }, { src: 'yildiz', o31: 2, og: -0.4 }]);
+  ok('tgSum: hedef +3, stop −1, sonuçsuz gün sonu, ölçülemeyen sayılmaz; yıldızda gösterge stopu', b.algi.n === 3 && Math.abs(b.algi.pt - 1.45) < 1e-9 && b.yildiz.gn === 1 && b.yildiz.gpt === -0.4, JSON.stringify(b));
+  ok('tlTxt: 100.000 TL/sinyal, binlik nokta', tlTxt(1.45) === '+1.450 TL' && tlTxt(-6.79) === '−6.790 TL' && tlTxt(0) === '0 TL'); }
 console.log('\nKARNE: ' + res.filter(Boolean).length + '/' + res.length + ' geçti');
 process.exit(res.every(Boolean) ? 0 : 1);

@@ -803,6 +803,7 @@ function sigKey(sym,dir){return sym+'|'+dir+'|'+new Date().toISOString().slice(0
 /* v14.8 (23.10, sinyal grubu anketi: 3 oyun 2'si 'öneri') TELEGRAM SİNYAL KURALI (DEVIR 6v): Telegram'a yalnız seans içi geri alım (sunucu), Momentum,
    ve güçlü Algı (fc≥0,8, hacim ≥2 kat) YALNIZ BIST 100 o an artıdayken. Fırsat A/B ve tavan sakin açılış Telegram'a gitmez; hepsi karneye yazılmaya devam eder. */
 var MOM_TG=false,KTM_TG=false;   // v14.37 (08.11, Fatih: 'yalnız Algı + Fırsat A/B Telegram'a gitsin; EMA Katman kalsın ama Telegram'a gitmesin'): Momentum ve EMA Katman Telegram'ı KAPALI (karneye yazma aynı)
+var FIRSAT_B_TG=false;   // v14.47 (10.11, Fatih onayıyla): Fırsat B Telegram'a gitmez (karne aynı). Açmak: true.
 var FIRSAT_TG=true;   // v14.34 (08.11, Fatih: "Fırsat A ve B Telegram'a gitsin") — B notu endeks ekside iken yine gitmez (v11.4)
 /* v14.35 (08.11, Fatih: 'Algıyla kodun ortak noktası yıldızlı olsun, Telegram'a yıldızlı gelsin') ERKEN AL 21 — Fatih'in TradingView göstergesi
    'ARSLAN ERKEN AL 21 + Merdiven' içindeki 21 şart sayısının birebir JS karşılığı (5 dk mum). ERKEN AL = şart sayısı ≥ ERKEN_MIN (14) ve yeşil mum.
@@ -1035,11 +1036,13 @@ async function autoRun(manual){
      // v8.8 (Fatih: 'sadece önemli bildirimler'): SAT yalnız karneye yazılır. v9.2 (09.10, Fatih): B notlu AL da Telegram'a gider (hedef +%3 / stop −%1)
      // v11.4 (16.10, Fatih onayı, DEVIR 6n): endeks ekside iken B notu Telegram'a GİTMEZ (karnede −%0,55/işlem); karneye yazma sürer
      const ixc=(()=>{try{const v=S.mkt&&S.mkt.XU100&&S.mkt.XU100.ch;return v!=null&&isFinite(v)?v:S.idxCh}catch(e){return null}})();
-     if(FIRSAT_TG&&dir==='AL'&&(a.grade==='A'||(a.grade==='B'&&!(ixc!=null&&isFinite(ixc)&&ixc<0))))await tgSend(txt,tgKb(c.o.name));   // v14.8: Fırsat Telegram'a gitmez (karneye yazılır)
+     // v14.47 (10.11, Fatih onayıyla): Telegram'a YALNIZ A notu — B üç dönemde de eksi (29.09–10.11, 527 sinyal, işlem başı −0,18…−0,52); B karneye yazılmaya devam eder.
+     const fTg=!!(FIRSAT_TG&&dir==='AL'&&(a.grade==='A'||(FIRSAT_B_TG&&a.grade==='B'&&!(ixc!=null&&isFinite(ixc)&&ixc<0))));
+     if(fTg)await tgSend(txt,tgKb(c.o.name));
      S.sentSig.push(key);sent++;
      beep();notify('BIST · Sinyal gönderildi',c.o.name+' '+dir);
      seenAAdd(c.o.name,dir);
-     sigRecord(c.o.name,dir,a);
+     sigRecord(c.o.name,dir,a,fTg);
      openSignalTx(c.o.name,dir,a);
      await sleep(1200);
     }catch(e){console.warn('telegram '+c.o.name+': '+(e.message||e))}
@@ -2646,14 +2649,14 @@ function extBadges(n){
 function deepFlags(sym,dir,a){const dp=S.deep[sym];if(dp&&dp.dir===dir&&dp.fl&&Date.now()-(dp.t||0)<30*60e3&&Object.keys(dp.fl).length)return Object.keys(dp.fl);
  const f=[];if(!a)return f;if(a.vcp&&dir==='AL')f.push('vcp');if(a.pull&&dir==='AL')f.push('pull');if(a.kvw&&a.kvw.side===dir)f.push('kvw');
  if(a.ref&&a.pocD!=null){const near=dir==='AL'?Math.min(Math.abs(a.pocD),Math.abs(a.valD)):Math.min(Math.abs(a.pocD),Math.abs(a.vahD));if(near<=0.6)f.push('poc')}return f}
-function sigRecord(sym,dir,a){
+function sigRecord(sym,dir,a,tg){
  const key=sym+'|'+dir+'|'+new Date().toISOString().slice(0,10);
  if(S.sigHist.some(r=>r.k===key))return;
  const o=S.umap[sym]||{};
  S.sigHist.unshift({k:key,sym:sym,dir:dir,ts:Date.now(),close:o.close||null,atrP:(a&&a.atrPct!=null)?a.atrPct:null,setups:deepFlags(sym,dir,a),regime:S.reg?S.reg.mode:'-',grade:a?a.grade:null});
  if(S.sigHist.length>200)S.sigHist.length=200;
  LS.set('sigHist',S.sigHist);
- if(a&&a.side===dir&&(a.grade==='A'||a.grade==='B'))sigPost({src:'firsat-'+a.grade,sym:sym,dir:dir,px:o.close,sc:a.pts!=null?a.pts:null,meta:{atr:(a&&a.atrPct!=null)?+(+a.atrPct).toFixed(2):null,kurulum:deepFlags(sym,dir,a).slice(0,6),rejim:S.reg?S.reg.mode:'-'}});
+ if(a&&a.side===dir&&(a.grade==='A'||a.grade==='B'))sigPost({src:'firsat-'+a.grade,sym:sym,dir:dir,px:o.close,sc:a.pts!=null?a.pts:null,meta:Object.assign({atr:(a&&a.atrPct!=null)?+(+a.atrPct).toFixed(2):null,kurulum:deepFlags(sym,dir,a).slice(0,6),rejim:S.reg?S.reg.mode:'-'},typeof tg==='boolean'?{tg:tg?1:0}:{})});   // v14.47: tg = Telegram'a gitti mi (otomatik tarama)
 }
 /* ================= sinyal → işlem günlüğü bağlantısı ================= */
 function seenAAdd(sym,dir){
@@ -3718,7 +3721,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.46";window.APPV=APP_VER;
+  const APP_VER="14.47";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');

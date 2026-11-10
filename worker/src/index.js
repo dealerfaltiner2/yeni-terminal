@@ -4,7 +4,7 @@ import { flowRoute } from './flow.js';
 import { kaphStep } from './kaph.js';
 import { emarStep, emar2Step } from './emar.js';
 import { algiRowsSet, algiRowsGet } from './algirows.js';
-import { tavanScan, mktClose, tavanOpen } from './tavan.js';
+import { tavanScan, mktClose } from './tavan.js';
 import { tgAuth, pubOpen, KAPALI_MSG } from './tgapp.js';
 import { posRoute, posWatch } from './pos.js';
 import { pushRoute, pushSend } from './push.js';
@@ -1156,7 +1156,7 @@ export default {
       try { await botWatch(env, tgSend, kvGet); } catch (e) {}
       try { await mktClose(env, { scanRaw }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'kapanış özeti: ' + String(e && e.message || e).slice(0, 150), 'mktClose'); }   // v10.8: karne mesajının piyasa bölümü
       try { await tavanScan(env, { scanRaw, sigAdd, tgSend, kvGet, esc, pushSend }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'tavan takibi: ' + String(e && e.message || e).slice(0, 150), 'tavanScan'); }
-      try { await tavanOpen(env, { scanRaw, sigAdd, tgSend, kvGet, esc }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'tavan sakin açılış: ' + String(e && e.message || e).slice(0, 150), 'tavanOpen'); }   // v11.4
+      // v14.47 (10.11, Fatih: 'tavanı kaldır komple'): tavan sakin açılış (tavan6) KAPALI — tavanOpen çağrılmaz.
       try { const gr = await geceStep(env, { scanRaw, tgSend, kvGet, esc }); if (gr) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('gece_st', ?)").bind(new Date().toISOString() + ' ' + JSON.stringify(gr)).run(); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'gece kuşu: ' + String(e && e.message || e).slice(0, 150), 'geceStep'); }   // v14.23
       try { await posWatch(env, { scanRaw, kvGet, tgSend, esc, pushSend }); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'pozisyon asistanı: ' + String(e && e.message || e).slice(0, 150), 'posWatch'); }
       await hb('3-KAP bitti');
