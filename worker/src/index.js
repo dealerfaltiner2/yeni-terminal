@@ -25,7 +25,7 @@ import { paperRoute } from './paper.js';
 // v5: 7/24 sunucu — dakikada bir (Cron) alarm, radar, KAP/haber ve bağlantı sağlığı kontrolü, Telegram bildirimi.
 //     Gerekenler: KV bağlaması "DB" + Cron tetikleyici "* * * * *". Ayarlar terminalden /sync ile gelir.
 import { riseRows } from './rise.js';
-import { sigAdd, sigLog, sigEval, sigSummary, sigStats, sigToday, weeklySummary, sigSym } from './sig.js';
+import { sigAdd, sigLog, sigEval, sigSummary, sigStats, sigToday, weeklySummary, sigSym, sigExitSet } from './sig.js';
 import { errAdd, errLogRoute } from './err.js';
 import { botAlive, botBeat, botWatch, pairCreate, pairUse } from './bot.js';
 import { kapPoll, kapMorning, kapList } from './kap.js';
@@ -741,7 +741,7 @@ async function btStep(env) {
 }
 /* ---------- v5.6: ana cihaz (sahip) kilidi + bağlı cihazlar (D1: meta 'owner', tablo dev) ---------- */
 // Sahip kodu D1'de durur → gerekirse Claude D1'den sıfırlayabilir. Kod yokken (ilk kurulum) eski davranış sürer.
-const OWN_ROUTES = new Set(['yildiz-set', 'aisec-set', 'algirows-set', 'uyeler', 'sync', 'prefs', 'cron-test', 'pine-sync', 'pine-test', 'devices', 'dev-block', 'dev-ok', 'siglog', 'sig-eval', 'pair-create', 'push-sub', 'push-off', 'push-send', 'pos', 'paper-set', 'flow', 'derin']);
+const OWN_ROUTES = new Set(['sigexit', 'yildiz-set', 'aisec-set', 'algirows-set', 'uyeler', 'sync', 'prefs', 'cron-test', 'pine-sync', 'pine-test', 'devices', 'dev-block', 'dev-ok', 'siglog', 'sig-eval', 'pair-create', 'push-sub', 'push-off', 'push-send', 'pos', 'paper-set', 'flow', 'derin']);
 // v6.8 YENİ CİHAZ ONAYI: ana cihaz belirlenmişse, onaylanmamış (ok=0) cihaz canlı veri / tarama / mum alamaz.
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
@@ -1009,6 +1009,7 @@ export default {
       case 'pair-create': if (request.method === 'POST') return pairCreate(request, env, json); break;
       case 'siglog': if (request.method === 'POST') return sigLog(request, env, url, json); break;
       case 'algirows-set': if (request.method === 'POST') return algiRowsSet(request, env, json); break;   // v14.10
+      case 'sigexit': if (request.method === 'POST') return sigExitSet(request, env, json); break;   // v14.48b yıldızlı: göstergenin merdiven çıkışı
       case 'algirows': return algiRowsGet(env, json, anon);
       case 'aisec-set': if (request.method === 'POST') return aisecSet(request, env, json); break;   // v14.16 Yapay zekâ seçtikleri
       case 'aisec': return aisecGet(env, json, anon);

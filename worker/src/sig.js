@@ -249,7 +249,7 @@ export async function sigEval(env, fetchBarsTV, tgSend, kvGet, esc, nf) {
     if (!bars.length && /resolve error/.test(st.err || '')) badSym.add(r.sym);   // v12.1: işlem görmeyen kod (fon, aracı kurum, banka) → KAP karneye yazmasın
     const o = bars.length ? sigOutcome(bars, r, ib) : { err: st.err };
     const adr = adrOf(toBars(gd['BIST:' + r.sym]), r.d);
-    await env.BT.prepare('UPDATE sig SET done = 1, p30 = ?, px = coalesce(px, ?), pre = ?, o10 = ?, o15 = ?, o31 = ?, o41 = ?, o315 = ?, o21 = ?, b2 = ?, og = ?, h1 = ?, r15 = ?, r60 = ?, rc = ?, mfe = ?, mae = ?, idx = ?, adr = ?, tx = ?, pb = ?, pbn = ?, err = ? WHERE id = ?')
+    await env.BT.prepare('UPDATE sig SET done = 1, p30 = ?, px = coalesce(px, ?), pre = ?, o10 = ?, o15 = ?, o31 = ?, o41 = ?, o315 = ?, o21 = ?, b2 = ?, og = coalesce(og, ?), h1 = ?, r15 = ?, r60 = ?, rc = ?, mfe = ?, mae = ?, idx = ?, adr = ?, tx = ?, pb = ?, pbn = ?, err = ? WHERE id = ?')
       .bind(o.p30 ?? null, o.px ?? null, o.pre ?? null, o.o10 ?? null, o.o15 ?? null, o.o31 ?? null, o.o41 ?? null, o.o315 ?? null, o.o21 ?? null, o.b2 ?? null, o.og ?? null, o.h1 ?? null, o.r15 ?? null, o.r60 ?? null, o.rc ?? null, o.mfe ?? null, o.mae ?? null, o.idx ?? null, adr, o.tx ?? null, o.pb ?? null, o.pbn ?? null, o.err || null, r.id).run();
     n++;
   }
@@ -687,4 +687,20 @@ export async function sigNews(env, now = Date.now()) {
     return { haber_olcumu: d, sinyal: R.length, haberli: R.filter(x => x.hb >= 0).length };
   }
   return null;
+}
+// v14.48b (10.11 gece, Fatih: 'tam göstergedeki gibi yap'): ana sunucu yıldızlı sinyali göstergenin MERDİVENİYLE canlı izler
+// (stop basamaklarla yükselir: 15 sn → 1 dk → 5 dk → 15 dk → 1 sa → 2 sa → 4 sa) ve çıkışı POST /sigexit (sahip) ile yazar:
+// {sym, d, og (çıkış % girişe göre), xt (ms), xpx, st (basamak 0–6), why 'cikis' | 'gun' (gün sonunda hâlâ açık)} → o günün src 'yildiz' satırı.
+// og motordan gelince sigEval artık üzerine yazmaz (coalesce); motor yoksa sigEval ilk gösterge stopuyla yaklaşık hesaplar.
+export async function sigExitSet(request, env, json) {
+  if (!env.BT) return json({ ok: false, error: 'D1 yok' }, 500);
+  let b = null; try { b = JSON.parse((await request.text()).slice(0, 4000)); } catch (e) { return json({ ok: false, error: 'geçersiz' }, 400); }
+  const sym = String(b && b.sym || ''), d = String(b && b.d || ''), og = +b.og;
+  if (!/^[A-Z0-9.]{2,12}$/.test(sym) || !/^\d{4}-\d{2}-\d{2}$/.test(d) || !isFinite(og) || Math.abs(og) > 30) return json({ ok: false, error: 'eksik' }, 400);
+  await sigEnsure(env);
+  const r = await env.BT.prepare("SELECT id FROM sig INDEXED BY sig_d WHERE d = ? AND src = 'yildiz' AND sym = ? ORDER BY t LIMIT 1").bind(d, sym).first();
+  if (!r) return json({ ok: false, error: 'satır yok' }, 404);
+  const gx = { xt: +b.xt || null, xpx: +b.xpx || null, st: Math.max(0, Math.min(6, +b.st || 0)), why: b.why === 'gun' ? 'gun' : 'cikis' };
+  await env.BT.prepare("UPDATE sig SET og = ?, meta = json_set(coalesce(meta, '{}'), '$.gx', json(?)) WHERE id = ?").bind(Math.round(og * 100) / 100, JSON.stringify(gx), r.id).run();
+  return json({ ok: true, id: r.id });
 }

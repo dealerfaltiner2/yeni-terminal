@@ -181,5 +181,14 @@ ok('takılı kayıt kalmadı', !meta('sig_run') && db.prepare("SELECT count(*) n
   const b = tgSum([{ src: 'algi', o31: 1 }, { src: 'algi', o31: 2 }, { src: 'algi', o31: 0, rc: -0.55 }, { src: 'algi', o31: 0, rc: null }, { src: 'yildiz', o31: 2, og: -0.4 }, { src: 'yildiz', o31: 1, og: 1.2 }]);
   ok('tgSum: hedef +3, stop −1, sonuçsuz gün sonu, ölçülemeyen sayılmaz; yıldız +3/−1 değil gösterge stopuyla', b.algi.n === 3 && Math.abs(b.algi.pt - 1.45) < 1e-9 && b.yildiz.n === 2 && b.yildiz.gn === 2 && Math.abs(b.yildiz.pt - 0.8) < 1e-9, JSON.stringify(b));
   ok('tlTxt: 100.000 TL/sinyal, binlik nokta', tlTxt(1.45) === '+1.450 TL' && tlTxt(-6.79) === '−6.790 TL' && tlTxt(0) === '0 TL'); }
+// v14.48b: /sigexit — motorun merdiven çıkışı yıldızlı satıra yazılır, sigEval üzerine yazmaz
+{ const { sigExitSet } = await import(path.join(W, 'sig.js'));
+  const J = (o, c) => ({ o, c: c || 200 });
+  db.prepare("INSERT INTO sig (src,d,t,sym,dir,px,done,meta) VALUES ('yildiz','2026-10-02',?,'YLDZ','AL',10,0,?)").run(Date.parse('2026-10-02T11:00:00+03:00'), JSON.stringify({ gst: 9.9, tg: 1 }));
+  const rq = b => ({ text: async () => JSON.stringify(b) });
+  const r1 = await sigExitSet(rq({ sym: 'YLDZ', d: '2026-10-02', og: 1.234, xt: 1, xpx: 10.12, st: 3, why: 'cikis' }), env, J);
+  const row = db.prepare("SELECT og, meta FROM sig WHERE sym='YLDZ'").get();
+  ok('sigexit: og ve basamak/çıkış yazıldı', r1.o.ok && row.og === 1.23 && JSON.parse(row.meta).gx.st === 3 && JSON.parse(row.meta).tg === 1, JSON.stringify(row));
+  ok('sigexit: geçersiz istek reddedilir', (await sigExitSet(rq({ sym: 'x y', d: '2026-10-02', og: 1 }), env, J)).c === 400 && (await sigExitSet(rq({ sym: 'NOPE', d: '2026-10-02', og: 1 }), env, J)).c === 404); }
 console.log('\nKARNE: ' + res.filter(Boolean).length + '/' + res.length + ' geçti');
 process.exit(res.every(Boolean) ? 0 : 1);

@@ -981,6 +981,24 @@ function girisCalc(B,mn,drop){
  }
  return {ev,lAct,lStage,lStop,lEntry};
 }
+/* v14.48b (10.11, Fatih: 'tam göstergedeki gibi yap') MERDİVEN TAKİBİ — girisCalc'taki stop/basamak kuralının ARTIMLI hali (bir girişi izler).
+   st = {ct (sn, işlenen son saat), stage 0–6, stop, stf (stopu koyan basamak; 0 = 15 sn mumu)}. Saat: 15 sn kapanışları (yoksa 1 dk kapanışları).
+   Her saatte önce stop kontrolü (stf 0: 15 sn kapanışı stop altında; değilse o basamağın mumu stop altında KAPANDI mı), sonra sıradaki basamak
+   mumu ERKEN AL ile kapandıysa stop o mumun düşüğüne çıkar. Çıkış fiyatı = o kapanış. Sonuç {exit:{t,px}|null}; st yerinde güncellenir. */
+function merdStep(B,mn,st,now){mn=mn||ERKEN_MIN;now=now||Math.floor(Date.now()/1000);
+ const s=B.s15||[],g1=B.g1||[],sStart=s.length?s[0].time:Infinity;
+ const T=GTF.map(([k,sec])=>{const cs=B[k]||[],E=cs.length>=60?erkenCalc(cs,mn,sec):null,out=[];
+  for(let j=0;j<cs.length;j++){const nx=j+1<cs.length?cs[j+1].time:Infinity,end=Math.min(cs[j].time+sec,nx);if(end>now)break;if(end<=st.ct)continue;
+   const r=E?E.at(j):null;out.push({end,hit:!!(r&&r.buy),lo:cs[j].low,cl:cs[j].close})}
+  return {ev:out,p:0}});
+ const clk=[];g1.forEach(c=>{const e=c.time+60;if(e>st.ct&&e<=now&&e<=sStart)clk.push({ct:e,cl:c.close})});
+ s.forEach(b=>{const e=b.time+15;if(e>st.ct&&e<=now)clk.push({ct:e,cl:b.close})});clk.sort((a,b)=>a.ct-b.ct);
+ for(const k of clk){const nb=T.map(x=>{let e=null;while(x.p<x.ev.length&&x.ev[x.p].end<=k.ct){e=x.ev[x.p];x.p++}return e});
+  st.ct=k.ct;
+  const hit=st.stf===0?k.cl<st.stop:(nb[st.stf-1]&&nb[st.stf-1].cl<st.stop);
+  if(hit)return {exit:{t:k.ct*1000,px:st.stf===0?k.cl:nb[st.stf-1].cl}};
+  if(st.stage<6&&nb[st.stage]&&nb[st.stage].hit){st.stop=nb[st.stage].lo;st.stage++;st.stf=st.stage}}
+ return {exit:null}}
 const GBC={};
 async function girisBars(sym){const ttl={g15s:15000,g1:40000,e5:60000},out={};
  await Promise.all([['s15','g15s']].concat(GTF.map(x=>[x[0],x[0]])).map(async([k,tf])=>{const key=sym+'|'+tf,c=GBC[key],now=Date.now();
@@ -3721,7 +3739,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.48";window.APPV=APP_VER;
+  const APP_VER="14.49";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4014,7 +4032,7 @@ function tvReconnectReport(){
    if(now>w.until||w.e.star){AL.starW.splice(AL.starW.indexOf(w),1);continue}
    if(now<w.next)continue;w.next=now+60000;
    const es=await girisStar(w.e.s,w.e.p0,Math.floor(w.e.t/1000)-15*60);if(!es||!es.ok)continue;
-   const e=w.e;e.star=1;e.en=es.n;e.epx=es.px;e.est=es.stop;AL.starW.splice(AL.starW.indexOf(w),1);
+   const e=w.e;e.star=1;e.en=es.n;e.epx=es.px;e.est=es.stop;e.et=es.t;AL.starW.splice(AL.starW.indexOf(w),1);
    const SD=AL.starDay&&AL.starDay.d===e.d?AL.starDay:(AL.starDay={d:e.d,n:0});
    if(SD.n<ERKEN_MAX){SD.n++;
     if(!e.tg){e.tg=1;tg(msgFire(e,w.f,w.o),tgKb(e.s))}
@@ -4022,9 +4040,30 @@ function tvReconnectReport(){
    sigPost({src:'yildiz',sym:e.s,t:Date.now(),px:es.px,sc:es.n,dir:'AL',meta:{algi:e.p0,at:e.t,en:es.n,tg:e.tg?1:0,gt:es.t*1000,gst:es.stop,gv:2}});
    AL.dirty=true}}catch(x){}
   AL._swBusy=false}
+ /* v14.48b: yıldızlı sinyali göstergenin merdiveniyle izle (yalnız ana sunucu / motor yokken ana cihaz). Çıkışta Telegram (gruba gittiyse) + /sigexit.
+    Gün sonunda (18:10+) hâlâ açıksa son 1 dk kapanışıyla 'gün sonu' olarak yazılır (Telegram yok). Çalışmada en çok 3 hisse, hisse başına 60 sn'de bir. */
+ async function merdWatch(now){
+  if(AL._mwBusy||(!BOTMODE&&S.botAlive))return;const d0=new Date(now+3*3600e3),day=d0.toISOString().slice(0,10),m=d0.getUTCHours()*60+d0.getUTCMinutes();
+  const L=AL.log.filter(e=>e.d===day&&e.star&&e.et&&e.epx>0&&e.est>0&&!e.gx&&(!e.mwN||now>=e.mwN));if(!L.length)return;AL._mwBusy=true;
+  try{for(const e of L.slice(0,3)){e.mwN=now+60000;
+   const st=e.mw||(e.mw={ct:e.et+15,stage:0,stop:e.est,stf:0});
+   let B=null;try{B=await girisBars(e.s)}catch(x){}
+   if(!B||!(B.g1||[]).length)continue;
+   const r=merdStep(B,ERKEN_MIN,st,Math.floor(now/1000));
+   let fin=null;
+   if(r.exit)fin={og:(r.exit.px/e.epx-1)*100,xt:r.exit.t,xpx:r.exit.px,why:'cikis'};
+   else if(m>=1090){const g=B.g1[B.g1.length-1];fin={og:(g.close/e.epx-1)*100,xt:(g.time+60)*1000,xpx:g.close,why:'gun'}}
+   if(st.stop!==e.est){e.est=st.stop}
+   AL.dirty=true;if(!fin)continue;
+   e.gx=Object.assign({st:st.stage},fin);
+   if(fin.why==='cikis'&&e.tg&&AL.cfg.sFail)tg('🚪 <b>'+e.s+'</b> · gösterge çıkışı\n<blockquote>Çıkış <code>'+P(fin.xpx)+'</code> ('+hm(fin.xt)+') · girişe göre <b>'+sp(fin.og)+'</b> · basamak '+st.stage+'/6</blockquote>',tgKb(e.s));
+   try{const b=srvBase(S.tvproxy);if(/^https:\/\//.test(b)&&LS.get('ownTok',''))fetch(qAdd(dq(b+'/sigexit'),ownQ()),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({sym:e.s,d:day,og:+fin.og.toFixed(2),xt:fin.xt,xpx:fin.xpx,st:st.stage,why:fin.why})}).catch(()=>{})}catch(x){}
+  }}catch(x){}
+  AL._mwBusy=false}
  function run(){
   try{
    const now=Date.now();
+   if(!AL._mwAt||now-AL._mwAt>=30000){AL._mwAt=now;merdWatch(now)}
    try{starCfgLoad()}catch(x){}
    if(AL.starW&&AL.starW.length&&(!AL._swAt||now-AL._swAt>=30000)){AL._swAt=now;starWatch(now)}
    if(!AL.cfg.on||document.hidden)return;
@@ -4084,7 +4123,7 @@ function tvReconnectReport(){
      const gate=!e.mute&&f.fc>=.8&&f.rv!=null&&f.rv>=2&&tgIdxOk()&&!(f.abv&&f.brk);   // v14.22 kovalayan gitmez · v14.8 BIST 100 artı · v10.9 güçlü + hacim ≥2 kat
      (async()=>{   // v14.35 (08.11, Fatih): ERKEN AL 21 (5 dk) ile ortak → ⭐ YILDIZLI; yıldızlı her Algı Telegram'a gider (günde en çok 10), diğerleri eski kapıyla
       let es=null;try{es=await Promise.race([girisStar(sym,p0,Math.floor(now/1000)-15*60),sleep(12000).then(()=>null)])}catch(x){}   // v14.43: Merdiven GİRİŞİ (15 sn), Algı'dan en çok 15 dk önce
-      e.star=es&&es.ok?1:0;e.en=es&&es.ok?es.n:null;if(es&&es.ok){e.epx=es.px;e.est=es.stop}
+      e.star=es&&es.ok?1:0;e.en=es&&es.ok?es.n:null;if(es&&es.ok){e.epx=es.px;e.est=es.stop;e.et=es.t}
       if(!e.star&&!e.mute)(AL.starW=AL.starW||[]).push({e,f,o,until:now+ERKEN_WAIT*60000,next:now+60000});   // sonradan gelecek gösterge GİRİŞİ için izle
       const SD=AL.starDay&&AL.starDay.d===e.d?AL.starDay:(AL.starDay={d:e.d,n:0});
       const st1=e.star&&!e.mute&&SD.n<ERKEN_MAX;if(st1)SD.n++;
@@ -4130,7 +4169,6 @@ function tvReconnectReport(){
    // teyit: 5 dk icinde +1R ve akis suruyor (hedefe ayni anda degdiyse yalnizca hedef mesaji gider)
    if(!e.conf&&el<=5&&ret>=e.stp&&f.fa>=2){e.conf=true;AL.dirty=true;
     if(AL.cfg.sOk&&e.tg&&!e.star&&p<e.tp&&e.res==null)tg('✅ <b>'+e.s+'</b> · hareket geldi\n<blockquote>Sinyalden beri <b>'+sp(ret)+'</b> · '+nf(el,0)+' dakikada</blockquote>',tgKb(e.s))}
-   if(e.star&&e.tg&&e.est>0&&!e.gstop&&p<e.est){e.gstop=1;AL.dirty=true;if(AL.cfg.sFail)tg('❌ <b>'+e.s+'</b> · gösterge stopu kırıldı\n<blockquote>Fiyat <code>'+P(p)+'</code> · stop '+P(e.est)+' · girişe göre <b>'+sp((p/(e.epx||e.p0)-1)*100)+'</b></blockquote>')}   // v14.48
    if(e.res==null){
     if(e.gap){if(el>=15){e.res='eksik';AL.dirty=true}}
     else if(p<=e.sp){e.res='fail';e.resT=el;AL.dirty=true;
