@@ -808,7 +808,7 @@ var FIRSAT_TG=true;   // v14.34 (08.11, Fatih: "Fırsat A ve B Telegram'a gitsin
    'ARSLAN ERKEN AL 21 + Merdiven' içindeki 21 şart sayısının birebir JS karşılığı (5 dk mum). ERKEN AL = şart sayısı ≥ ERKEN_MIN (14) ve yeşil mum.
    Algı ateşlediğinde son 2 kapanmış 5 dk mumdan biri ya da oluşan mum ERKEN AL ise sinyal ⭐ YILDIZLI. Algı kuralı DEĞİŞMEDİ. */
 var ERKEN_MIN=14,ERKEN_TF='e5';   // v14.43: göstergenin varsayılanı 14 (GİRİŞ de bu eşikle)
-function erkenCalc(cs,mn,tfs){
+function erkenCalc(cs,mn,tfs,vs){   // vs = {d, pv, vv}: o günün pencereden önceki VWAP birikimi (15 sn mumları günün başını kapsamıyor)
  const n=cs.length;if(n<60)return null;
  tfs=tfs||300;const aN=tfs<=300?12:tfs<=900?16:tfs<=3600?8:tfs<=14400?10:20,mF=tfs<=900?8:12,mS=tfs<=900?17:26;   // göstergedeki autoN / MACD zaman dilimine göre
  const O=cs.map(c=>c.open),H=cs.map(c=>c.high),L=cs.map(c=>c.low),C=cs.map(c=>c.close),V=cs.map(c=>c.volume||0);
@@ -824,7 +824,7 @@ function erkenCalc(cs,mn,tfs){
  const m1=emaA(C,mF),m2=emaA(C,mS),macd=m1.map((v,i)=>v-m2[i]),sig=emaA(macd,9),hist=macd.map((v,i)=>v-sig[i]);
  // VWMA, VWAP (gün başında sıfırlanır, hlc3)
  const vwma=C.map((_,i)=>{if(i<19)return NaN;let a=0,b=0;for(let j=i-19;j<=i;j++){a+=C[j]*V[j];b+=V[j]}return b>0?a/b:C[i]});
- const dk=t=>Math.floor((t+10800)/86400);let pv=0,vv=0,pd=null;const vwap=C.map((_,i)=>{const d=dk(cs[i].time);if(d!==pd){pv=0;vv=0;pd=d}const tp=(H[i]+L[i]+C[i])/3;pv+=tp*V[i];vv+=V[i];return vv>0?pv/vv:tp});
+ const dk=t=>Math.floor((t+10800)/86400);let pv=0,vv=0,pd=null;const vwap=C.map((_,i)=>{const d=dk(cs[i].time);if(d!==pd){pv=0;vv=0;pd=d;if(vs&&vs.d===d){pv=vs.pv;vv=vs.vv}}const tp=(H[i]+L[i]+C[i])/3;pv+=tp*V[i];vv+=V[i];return vv>0?pv/vv:tp});
  // ADX (14)
  const pdm=H.map((h,i)=>{if(!i)return 0;const u=h-H[i-1],d=L[i-1]-L[i];return u>d&&u>0?u:0}),mdm=H.map((h,i)=>{if(!i)return 0;const u=h-H[i-1],d=L[i-1]-L[i];return d>u&&d>0?d:0});
  const trR=rmaA(TR,14),pR=rmaA(pdm,14),mR=rmaA(mdm,14);
@@ -953,8 +953,10 @@ var GIRIS_DROP=1.0;
 const GTF=[['g1',60],['e5',300],['g15',900],['g60',3600],['g120',7200],['g240',14400]];
 function girisCalc(B,mn,drop){
  const s=B.s15;if(!s||s.length<60)return null;mn=mn||ERKEN_MIN;drop=drop==null?GIRIS_DROP:drop;
- const E15=erkenCalc(s,mn,15);if(!E15)return null;
  const dk=t=>Math.floor((t+10800)/86400),last=s[s.length-1].time+15;
+ // v14.45: 800 adet 15 sn mumu günün başını kapsamıyor → gün VWAP'ı pencereden önceki 1 dk mumlarıyla başlatılır (gösterge ta.vwap'ı seans başından sayar)
+ const vd=dk(s[0].time),vs={d:vd,pv:0,vv:0};(B.g1||[]).forEach(c=>{if(dk(c.time)===vd&&c.time+60<=s[0].time){vs.pv+=(c.high+c.low+c.close)/3*(c.volume||0);vs.vv+=c.volume||0}});
+ const E15=erkenCalc(s,mn,15,vs);if(!E15)return null;
  // üst zaman dilimi mumlarının kapanış olayları: {end, hit, lo, cl}
  const T=GTF.map(([k,sec])=>{const cs=B[k]||[],E=cs.length>=60?erkenCalc(cs,mn,sec):null,out=[];
   for(let j=0;j<cs.length;j++){const nx=j+1<cs.length?cs[j+1].time:Infinity,end=Math.min(cs[j].time+sec,nx);if(end>last)break;
@@ -3716,7 +3718,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.44";window.APPV=APP_VER;
+  const APP_VER="14.45";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');

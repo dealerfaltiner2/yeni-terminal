@@ -21,4 +21,11 @@ const U = mk(0.0004, 0.0006), GU = girisCalc(U, 14, 1.0);
 ok(GU.ev.every(g => g.drop >= 1), 'hep yükselen günde gün tepesi şartı korunuyor (' + GU.ev.length + ')');
 ok(girisCalc({ s15: B.s15.slice(0, 30) }, 14) === null, 'az veriyle hesap yok');
 const e1 = erkenCalc(B.e5, 16), e2 = erkenCalc(B.e5, 16, 300); ok(e1.at(e1.last).n === e2.at(e2.last).n, '5 dk ERKEN AL hesabı değişmedi');
+// Gerçek veri (10.11 SDTTR): göstergenin grafiğinde GİRİŞ 15 sn · 11,79 · stop 11,78 (14:13:45). 15 sn penceresi günün başını kapsamıyor → VWAP 1 dk mumlarıyla başlatılmalı (v14.45)
+{ const T0 = 1794298155, rd = f => fs.readFileSync(new URL('./data/' + f, import.meta.url), 'utf8').split(';').map(r => r.split(' ').map(Number));
+  const s15 = rd('sdttr_15s_1011.txt').map(x => ({ time: T0 + x[0] * 15, open: x[1] / 100, high: x[2] / 100, low: x[3] / 100, close: x[4] / 100, volume: x[5] }));
+  const g1 = rd('sdttr_1m_1011.txt').map(x => ({ time: x[0], open: x[1] / 100, high: x[2] / 100, low: x[3] / 100, close: x[4] / 100, volume: x[5] }));
+  const ag = (src, sec) => { const m = new Map(); for (const x of src) { const k = Math.floor((x.time + 10800) / sec) * sec - 10800; const c = m.get(k); if (!c) m.set(k, { ...x, time: k }); else { c.high = Math.max(c.high, x.high); c.low = Math.min(c.low, x.low); c.close = x.close; c.volume += x.volume; } } return [...m.values()]; };
+  const R = girisCalc({ s15, g1, e5: ag(g1, 300), g15: ag(g1, 900) }, 14, 1), hit = R.ev.find(g => g.t === 1794312825 - 10800 + 0 || new Date((g.t + 10800) * 1000).toISOString().slice(11, 19) === '14:13:45');
+  ok(hit && hit.px === 11.79 && hit.stop === 11.78, 'gerçek veri SDTTR 10.11: göstergeyle aynı GİRİŞ 14:13:45 · 11,79 · stop 11,78'); }
 process.exit(fail ? 1 : 0);
