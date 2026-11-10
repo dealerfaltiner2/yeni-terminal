@@ -11,7 +11,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const trNow = () => { const d = new Date(Date.now() + 3 * 3600e3); return { hm: d.toISOString().slice(11, 16), day: d.toISOString().slice(0, 10), wd: d.getUTCDay() }; };
 function log(...a) {
   const l = new Date(Date.now() + 3 * 3600e3).toISOString().replace('T', ' ').slice(0, 19) + ' ' + a.join(' ');
-  console.log(l);
+  // 10.11: yazılar YALNIZ dosyaya — komut penceresine yazmak, pencere 'seçim' moduna geçince (tıklama/gizleme) motoru donduruyordu
   try { if (fs.existsSync(LOG) && fs.statSync(LOG).size > 2e6) fs.renameSync(LOG, LOG + '.eski'); fs.appendFileSync(LOG, l + '\n'); } catch (e) {}
 }
 function readCfg() {
@@ -60,9 +60,12 @@ async function session(cfg) {
     while (!dead) {
       await sleep(30e3);
       try {
-        const b = await page.evaluate(() => window.BOT ? { beat: BOT.beat, tv: BOT.tv, uni: BOT.uni, algi: BOT.algi, ver: BOT.ver } : null);
+        const b = await page.evaluate(() => window.BOT ? { beat: BOT.beat, tv: BOT.tv, uni: BOT.uni, algi: BOT.algi, ver: BOT.ver, srv: BOT.srv } : null);
         if (b && b.beat) { STATE.lastBeat = Date.now(); STATE.last = b; fails = 0; } else fails++;
         if (b && Date.now() - b.beat > 180e3) { log('nabız durdu → yeniden başlatılıyor'); break; }
+        // 10.11: sayfa canlı ama sunucuyla konuşamıyorsa (17:23 olayı) — seansta 5 dk sunucu teması yoksa yeniden başlat
+        { const n0 = trNow(), seans = n0.wd >= 1 && n0.wd <= 5 && n0.hm >= '10:00' && n0.hm <= '18:10';
+          if (b && seans && typeof b.srv === 'number' && Date.now() - Math.max(b.srv, t0) > 300e3) { log('sunucuya 5 dk ulaşılamadı → yeniden başlatılıyor'); break; } }
       } catch (e) { fails++; log('nabız okunamadı:', e.message); }
       if (fails >= 6) { log('sayfa 3 dk yanıt vermedi → yeniden başlatılıyor'); break; }
       const n = trNow(), key = n.day + n.hm;
@@ -88,7 +91,7 @@ if (!process.argv.includes('--isci')) {
     const start = () => {
       if (!fs.existsSync(__filename)) { log('bot.js bulunamadı (antivirüs silmiş olabilir) — kurulumu yeniden yap'); setTimeout(start, 60e3); return; }
       lastStart = Date.now();
-      child = spawn(process.execPath, [__filename, '--isci'], { cwd: DIR, stdio: 'inherit', windowsHide: true });
+      child = spawn(process.execPath, [__filename, '--isci'], { cwd: DIR, stdio: 'ignore', windowsHide: true });   // 10.11: 'inherit' değil — pencere donarsa motor da donuyordu
       child.on('exit', code => { log('motor kapandı (kod ' + code + ') → 10 sn sonra yeniden başlatılıyor'); child = null; setTimeout(start, 10e3); });
     };
     start();
