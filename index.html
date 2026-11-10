@@ -3716,7 +3716,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.43";window.APPV=APP_VER;
+  const APP_VER="14.44";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -5218,7 +5218,7 @@ function alSrvLoad(){if(BOTMODE||isUye())return;const b=srvBase(S.tvproxy);if(!/
   L.slice().reverse().forEach(e=>{const k=e.sym+'@'+e.t;if(ALS.seen.has(k))return;ALS.seen.add(k);
    if(!S.botAlive||(first&&Date.now()-e.t>6*60e3))return;   // ilk yüklemede yalnız son 6 dk'nın sinyali kart olur
    const m=e.meta||{},w=[];if(m.rv!=null)w.push('Günlük hacim normalin '+nf(m.rv,1)+' katı');if(m.fc!=null)w.push('Alıcı oranı %'+nf(m.fc*100,0));if(m.brk)w.push('Zirveyi kırdı');else if(m.bid)w.push('Alış kademesi yükseliyor');
-   try{sigToast({src:'algi',sym:e.sym,dir:'AL',label:'⚡ ALGI · AL · '+(e.sc||'')+(m.fc>=.8?' · 💪 GÜÇLÜ':''),why:w,entry:e.px,stop:e.px?e.px*0.99:null,tgt:e.px?e.px*1.03:null})/* v9.1: hedef +%3, stop −%1 */}catch(x){}
+   try{sigToast({t:e.t,src:'algi',sym:e.sym,dir:'AL',label:'⚡ ALGI · AL · '+(e.sc||'')+(m.fc>=.8?' · 💪 GÜÇLÜ':''),why:w,entry:e.px,stop:e.px?e.px*0.99:null,tgt:e.px?e.px*1.03:null})/* v9.1: hedef +%3, stop −%1 */}catch(x){}
    try{notify('⚡ Algı: '+e.sym,'Ana sunucu sinyali · '+nf(e.px))}catch(x){}});
   ALS.list=L;if(S.tab==='algi'&&typeof renderAlgi==='function')try{renderAlgi()}catch(x){}}).catch(()=>{});
  fetch(dq(b+'/sigtoday?src=yildiz')).then(r=>r.json()).then(j=>{if(j&&j.ok){ALS.ylist=j.list||[];if(S.tab==='algi')try{renderAlgi()}catch(x){}}}).catch(()=>{})}   // v14.41 yıldızlılar (sonradan gelen ERKEN AL girişleri)
@@ -5354,9 +5354,13 @@ function renderNow(){
 })();
 /* ================= v7.1 SİNYAL BİLDİRİM KARTI ================= */
 const STQ=[];let stTimer=null,stCur=null;
-function sigToast(o){try{if(!o||!o.sym)return;if(S.uye||TVL.uye)return;   /* v12.0: üyede veri gecikmeli → anlık sinyal kartı yok */if(STQ.some(x=>x.sym===o.sym&&x.src===o.src)||(stCur&&stCur.sym===o.sym&&stCur.src===o.src))return;STQ.push(o);if(!stCur)stNext()}catch(e){}}
+/* v14.44 (10.11, Fatih: 'telefonda terminali açınca eski sinyaller tek tek geliyor, ekranı kapatıyor'): uygulama arka plandan dönünce aradaki tüm sinyaller sıraya giriyordu.
+   Artık: 3 dk'dan eski sinyal kart olmaz (o.t), sırada en çok 1 kart bekler (en yenisi), ✕ sıradakileri de kapatır. Sinyaller Algı listesinde görünmeye devam eder. */
+function sigToast(o){try{if(!o||!o.sym)return;if(S.uye||TVL.uye)return;   /* v12.0: üyede veri gecikmeli → anlık sinyal kartı yok */
+ if(o.t&&Date.now()-o.t>3*60e3)return;
+ if(STQ.some(x=>x.sym===o.sym&&x.src===o.src)||(stCur&&stCur.sym===o.sym&&stCur.src===o.src))return;STQ.length=0;STQ.push(o);if(!stCur)stNext()}catch(e){}}
 function stNext(){const el=document.getElementById('sigtoast');stCur=STQ.shift()||null;if(!stCur){el.classList.remove('on');return}const o=stCur,sat=o.dir==='SAT';
- el.innerHTML='<div class="stc'+(sat?' sat':'')+'"><div class="st1"><span class="lb">'+htmlEsc(o.label||('YENİ SİNYAL · '+(o.dir||'AL')))+'</span><b>'+htmlEsc(o.sym)+'</b>'+sparkFor(o.sym,64,22)+'<button class="x" onclick="stClose()" aria-label="Kapat">✕</button></div>'+
+ el.innerHTML='<div class="stc'+(sat?' sat':'')+'"><div class="st1"><span class="lb">'+htmlEsc(o.label||('YENİ SİNYAL · '+(o.dir||'AL')))+'</span><b>'+htmlEsc(o.sym)+'</b>'+sparkFor(o.sym,64,22)+'<button class="x" onclick="stClose(1)" aria-label="Kapat">✕</button></div>'+
   (o.why&&o.why.length?'<div class="chips">'+o.why.map(t=>'<span class="chip ok">'+t+'</span>').join('')+'</div>':'')+
   (sigNotes(o.sym).length?'<div class="chips">'+sigNotes(o.sym).map(t=>'<span class="chip wn">'+htmlEsc(t)+'</span>').join('')+'</div>':'')+
   (o.entry?'<div class="stp"><div><small>Giriş</small><b>'+nf(o.entry)+'</b></div><div><small>Stop</small><b class="dn">'+(o.stop?nf(o.stop):'-')+'</b></div><div><small>Hedef</small><b class="up">'+(o.tgt?nf(o.tgt):'-')+'</b></div></div>':'')+
@@ -5364,7 +5368,7 @@ function stNext(){const el=document.getElementById('sigtoast');stCur=STQ.shift()
  el.classList.add('on');const bar=el.querySelector('.stbar i');bar.style.transition='none';bar.style.width='100%';requestAnimationFrame(()=>requestAnimationFrame(()=>{bar.style.transition='width 20s linear';bar.style.width='0%'}));
  clearTimeout(stTimer);stTimer=setTimeout(stClose,20000);
  try{if(navigator.vibrate)navigator.vibrate([90,60,90])}catch(e){}}
-function stClose(){clearTimeout(stTimer);const el=document.getElementById('sigtoast');el.classList.remove('on');stCur=null;setTimeout(()=>{if(!stCur)stNext()},380)}
+function stClose(all){if(all)STQ.length=0;clearTimeout(stTimer);const el=document.getElementById('sigtoast');el.classList.remove('on');stCur=null;setTimeout(()=>{if(!stCur)stNext()},380)}
 function stGo(){const o=stCur;if(!o)return;stClose();try{selectSym(o.sym,'bist');showTab('chart')}catch(e){}}
 function stJr(){const o=stCur;if(!o)return;if(o.jrDone){stClose();showTab('jr');return}
  try{const key=o.sym+'|'+(o.dir||'AL')+'|'+todayStr()+'|'+o.src;if(!S.jr.some(j=>j.sig===key)&&o.entry){
