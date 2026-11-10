@@ -807,9 +807,10 @@ var FIRSAT_TG=true;   // v14.34 (08.11, Fatih: "Fırsat A ve B Telegram'a gitsin
 /* v14.35 (08.11, Fatih: 'Algıyla kodun ortak noktası yıldızlı olsun, Telegram'a yıldızlı gelsin') ERKEN AL 21 — Fatih'in TradingView göstergesi
    'ARSLAN ERKEN AL 21 + Merdiven' içindeki 21 şart sayısının birebir JS karşılığı (5 dk mum). ERKEN AL = şart sayısı ≥ ERKEN_MIN (14) ve yeşil mum.
    Algı ateşlediğinde son 2 kapanmış 5 dk mumdan biri ya da oluşan mum ERKEN AL ise sinyal ⭐ YILDIZLI. Algı kuralı DEĞİŞMEDİ. */
-var ERKEN_MIN=16,ERKEN_TF='e5';
-function erkenCalc(cs,mn){
+var ERKEN_MIN=14,ERKEN_TF='e5';   // v14.43: göstergenin varsayılanı 14 (GİRİŞ de bu eşikle)
+function erkenCalc(cs,mn,tfs){
  const n=cs.length;if(n<60)return null;
+ tfs=tfs||300;const aN=tfs<=300?12:tfs<=900?16:tfs<=3600?8:tfs<=14400?10:20,mF=tfs<=900?8:12,mS=tfs<=900?17:26;   // göstergedeki autoN / MACD zaman dilimine göre
  const O=cs.map(c=>c.open),H=cs.map(c=>c.high),L=cs.map(c=>c.low),C=cs.map(c=>c.close),V=cs.map(c=>c.volume||0);
  const emaA=(a,p)=>{const k=2/(p+1);let e=null;return a.map(v=>e=(e==null?v:v*k+e*(1-k)))};
  const smaA=(a,p)=>a.map((_,i)=>{if(i<p-1)return NaN;let s=0;for(let j=i-p+1;j<=i;j++)s+=a[j];return s/p});
@@ -820,7 +821,7 @@ function erkenCalc(cs,mn){
  const atr14=atr(14),atr20=atr(20),atr10=atr(10);
  const e5=emaA(C,5),e8=emaA(C,8),e13=emaA(C,13),e20=emaA(C,20);
  const sd20=stdA(C,20),volAvg=smaA(V,20);
- const m1=emaA(C,8),m2=emaA(C,17),macd=m1.map((v,i)=>v-m2[i]),sig=emaA(macd,9),hist=macd.map((v,i)=>v-sig[i]);
+ const m1=emaA(C,mF),m2=emaA(C,mS),macd=m1.map((v,i)=>v-m2[i]),sig=emaA(macd,9),hist=macd.map((v,i)=>v-sig[i]);
  // VWMA, VWAP (gün başında sıfırlanır, hlc3)
  const vwma=C.map((_,i)=>{if(i<19)return NaN;let a=0,b=0;for(let j=i-19;j<=i;j++){a+=C[j]*V[j];b+=V[j]}return b>0?a/b:C[i]});
  const dk=t=>Math.floor((t+10800)/86400);let pv=0,vv=0,pd=null;const vwap=C.map((_,i)=>{const d=dk(cs[i].time);if(d!==pd){pv=0;vv=0;pd=d}const tp=(H[i]+L[i]+C[i])/3;pv+=tp*V[i];vv+=V[i];return vv>0?pv/vv:tp});
@@ -854,8 +855,8 @@ function erkenCalc(cs,mn){
  const xUp=i=>i>0&&macd[i]>sig[i]&&macd[i-1]<=sig[i-1];
  function at(i){
   if(i<55)return null;
-  let sq=false;for(let j=i;j>=Math.max(0,i-12);j--)if(ttm(j)||rib(j)){sq=true;break}
-  let hp=-Infinity;for(let j=i-12;j<i;j++)hp=Math.max(hp,H[j]);
+  let sq=false;for(let j=i;j>=Math.max(0,i-aN);j--)if(ttm(j)||rib(j)){sq=true;break}
+  let hp=-Infinity;for(let j=i-aN;j<i;j++)hp=Math.max(hp,H[j]);
   const rng=Math.max(H[i]-L[i],1e-9),cp=H[i]>L[i]?(C[i]-L[i])/(H[i]-L[i]):.5,rv=volAvg[i]>0?V[i]/volAvg[i]:0;
   let mx=false;for(let j=i;j>=Math.max(1,i-3);j--)if(xUp(j)){mx=true;break}
   let cmfA=0,cmfB=0;for(let j=i-19;j<=i;j++){cmfA+=mfv[j];cmfB+=V[j]}
@@ -885,14 +886,15 @@ function myStarKey(e){return e.sym+'|'+e.t}
 async function myStarScan(list){const c=myStarCfg();if(!c||MYST.busy||!list||!list.length||Date.now()-MYST.at<20000)return;MYST.busy=1;MYST.at=Date.now();let n=0,ch=0;
  try{for(const e of list){if(n>=6)break;if(!(e.px>0)||!e.t)continue;const k=myStarKey(e),o=MYST.r[k],now=Date.now();
    if(o&&(o.done||now<o.next))continue;n++;
-   const cs=await getBars(e.sym,ERKEN_TF,true).catch(()=>null);if(!cs||!cs.length){MYST.r[k]={done:0,next:now+120000};continue}
-   const from=Math.floor(e.t/1000)-15*60,to=Math.floor(e.t/1000)+c.wait*60;const E=erkenCalc(cs,c.min);let hit=null;
-   if(E)for(let i=0;i<=E.last;i++){const t=cs[i].time;if(t<from||t>to)continue;const r=E.at(i);if(r&&r.buy&&Math.abs(r.px/e.px-1)*100<=c.band){hit=r;break}}
-   const end=now/1000>to||cs[cs.length-1].time>to;MYST.r[k]=hit?{done:1,ok:1,px:hit.px,n:hit.n,t:hit.t*1000}:{done:end?1:0,ok:0,next:now+120000};ch++}}catch(x){}
+   // v14.43: Merdiven GİRİŞİ (15 sn) — ateşlemeden 15 dk önce ile 'izleme süresi' sonrası arası
+   const B=await girisBars(e.sym).catch(()=>null);if(!B||!B.s15||!B.s15.length){MYST.r[k]={done:0,next:now+120000};continue}
+   const from=Math.floor(e.t/1000)-15*60,to=Math.floor(e.t/1000)+c.wait*60;const G=girisCalc(B,c.min);let hit=null;
+   if(G)for(const g of G.ev){if(g.t<from||g.t>to)continue;if(Math.abs(g.px/e.px-1)*100<=c.band){hit=g;break}}
+   const cs=B.s15,end=now/1000>to||cs[cs.length-1].time>to;MYST.r[k]=hit?{done:1,ok:1,px:hit.px,n:hit.n,t:hit.t*1000}:{done:end?1:0,ok:0,next:now+120000};ch++}}catch(x){}
  MYST.busy=0;if(ch)try{if(S.tab==='algi')renderAlgi()}catch(x){}}
 function myStarOf(e){const c=myStarCfg();if(!c)return null;const o=MYST.r[myStarKey(e)];return o?o:{pend:1}}
 function myStarSave(){const g=id=>+String((document.getElementById(id)||{}).value||'').replace(',','.');
- const b=Math.min(3,Math.max(0.1,g('my_band')||0.5)),mn=Math.round(Math.min(21,Math.max(10,g('my_min')||16))),w=Math.round(Math.min(240,Math.max(5,g('my_wait')||60)));
+ const b=Math.min(3,Math.max(0.1,g('my_band')||0.5)),mn=Math.round(Math.min(21,Math.max(10,g('my_min')||14))),w=Math.round(Math.min(240,Math.max(5,g('my_wait')||60)));
  LS.set('starMy',{band:b,min:mn,wait:w});MYST.r={};MYST.at=0;try{renderAlgi(true)}catch(e){}alert('✓ Kendi ayarın kaydedildi: ±%'+String(b).replace('.',',')+' · '+mn+'/21 · '+w+' dk. Yalnız bu cihazda geçerli.')}
 function myStarOff(){LS.set('starMy',null);MYST.r={};try{renderAlgi(true)}catch(e){}}
 function myStarPanel(){const c=myStarCfg(),n=x=>String(x).replace('.',','),v=c||{band:ERKEN_BAND,min:ERKEN_MIN,wait:ERKEN_WAIT};
@@ -914,8 +916,8 @@ function starItems(SL,YL){const out=[],seen=new Set(),my=myStarCfg();
  return out.sort((a,b)=>b.t-a.t)}
 function starBox(SL,YL,past){const L=starItems(SL,YL),my=myStarCfg(),hm=t=>new Date(t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
  const pend=my&&(SL||[]).some(e=>{const o=MYST.r[myStarKey(e)];return !o||!o.done});
- let h='<div class="ysh"><b>⭐ YILDIZLI SİNYALLER</b><span>'+L.length+(my?' · kendi ayarınla (±%'+String(my.band).replace('.',',')+')':' · Algı + ERKEN AL girişi')+(pend?' · ⏳ hesaplanıyor':'')+'</span></div>';
- if(!L.length)return h+'<div class="note" style="padding:2px 12px 8px">'+(past?'O gün yıldızlı sinyal yok.':'Bugün henüz yıldızlı sinyal yok. Algı ateşlendikten sonra göstergenin ERKEN AL girişi fiyata yakın gelirse burada belirir.')+'</div>';
+ let h='<div class="ysh"><b>⭐ YILDIZLI SİNYALLER</b><span>'+L.length+(my?' · kendi ayarınla (±%'+String(my.band).replace('.',',')+')':' · Algı + gösterge GİRİŞİ')+(pend?' · ⏳ hesaplanıyor':'')+'</span></div>';
+ if(!L.length)return h+'<div class="note" style="padding:2px 12px 8px">'+(past?'O gün yıldızlı sinyal yok.':'Bugün henüz yıldızlı sinyal yok. Algı ateşlendikten sonra göstergenin GİRİŞ sinyali (15 sn) fiyata yakın gelirse burada belirir.')+'</div>';
  return h+'<div class="ysg">'+L.map(x=>{const q=S.umap[x.sym],cur=q&&q.close&&x.px?(q.close/x.px-1)*100:null,v=past?x.rcE:cur;
   const res=x.o31===1?'<b class="up">+%3 ✅</b>':x.o31===2?'<b class="dn">−%1 ❌</b>':x.done?'<span style="color:var(--dim)">sonuçsuz</span>':'<span class="wrn">⏳ açık</span>';
   const df=x.apx&&x.px?(x.px/x.apx-1)*100:null;
@@ -924,7 +926,7 @@ function starBox(SL,YL,past){const L=starItems(SL,YL),my=myStarCfg(),hm=t=>new D
    '<div class="ysc2"><span>🎯 Giriş</span><b>'+hm(x.t)+'</b><b>'+nf(x.px)+'</b>'+(df!=null?'<i>'+(df>=0?'+':'')+nf(df,2)+'%</i>':'')+'</div>'+
    '<div class="ysc3"><span>'+(x.n?x.n+'/21 şart':'')+'</span><span>Stop '+nf(x.px*0.99)+' · Hedef '+nf(x.px*1.03)+'</span><span>'+res+'</span></div></div>'}).join('')+'</div>'}
 function starPanel(){const own=!!LS.get('ownTok',''),n=x=>String(x).replace('.',',');
- const info='Algı sinyal verdikten sonra göstergenin <b>ERKEN AL</b> girişi (5 dk grafik, en az <b>'+ERKEN_MIN+'/21</b> şart) Algı fiyatının <b>−%'+n(ERKEN_BAND)+' … +%'+n(ERKEN_BAND)+'</b> arasında gelirse ⭐. Algı\'dan sonra <b>'+ERKEN_WAIT+' dk</b> izlenir · günde en çok <b>'+ERKEN_MAX+'</b> yıldızlı mesaj.';
+ const info='Algı sinyal verdikten sonra göstergenin <b>GİRİŞ</b> sinyali (Merdiven, 15 sn mum: en az <b>'+ERKEN_MIN+'/21</b> şart, yeşil mum, gün tepesinden en az %'+n(GIRIS_DROP)+' aşağıda) Algı fiyatının <b>−%'+n(ERKEN_BAND)+' … +%'+n(ERKEN_BAND)+'</b> arasında gelirse ⭐. Algı\'dan 15 dk önce ile <b>'+ERKEN_WAIT+' dk</b> sonrası arasına bakılır · günde en çok <b>'+ERKEN_MAX+'</b> yıldızlı mesaj.';
  if(!own)return '<div class="note" style="padding:2px 12px 6px">⭐ Telegram grubu ayarı: '+info+'</div>'+myStarPanel();
  return myStarPanel()+'<details class="ppset" data-k="grpstar" style="margin:4px 12px 6px"><summary>📨 Telegram grubu yıldız ayarı · ±%'+n(ERKEN_BAND)+' · '+ERKEN_MIN+'/21</summary><div class="note" style="padding:6px 0">'+info+'</div><div class="adg" style="margin-top:4px">'+
   '<label>Fiyat aralığı (± %)<input id="st_band" inputmode="decimal" value="'+n(ERKEN_BAND)+'"></label>'+
@@ -942,6 +944,50 @@ async function starSave(){const b=srvBase(S.tvproxy),g=id=>+String((document.get
 function erkenStarOf(cs,p0,fromT){const E=erkenCalc(cs);if(!E)return null;let best=null;for(let i=E.last;i>=0;i--){const r=E.at(i);if(!r)continue;if(fromT!=null&&r.t<fromT)break;if(fromT==null&&i<E.last-2)break;
  const inB=p0>0?Math.abs(r.px/p0-1)*100<=ERKEN_BAND:true;if(r.buy&&inB)return Object.assign({ok:1},r);if(!best||r.n>best.n)best=r}return best?Object.assign({ok:0},best):null}
 async function erkenStar(sym,p0,fromT){try{const cs=await getBars(sym,ERKEN_TF,true);return erkenStarOf(cs,p0,fromT)}catch(e){return null}}
+/* v14.43 (10.11, Fatih + sinyal grubu anketi: 'yıldız ERKEN AL'e değil göstergenin GİRİŞ sinyaline bağlansın') MERDİVEN GİRİŞİ — 'ARSLAN ERKEN AL 21 + Merdiven' göstergesinin
+   MERDİVEN bölümünün birebir JS karşılığı. Hesap 15 sn mumlarının akışında:
+   GİRİŞ = 15 sn mumu ERKEN AL (≥ERKEN_MIN/21, yeşil) VE fiyat gün tepesinden ≥ GIRIS_DROP % aşağıda VE merdiven boşta (ya da 4 sa'ya kadar tamamlanmış).
+   Stop = giriş mumunun düşüğü; basamaklar 1 dk → 5 dk → 15 dk → 1 sa → 2 sa → 4 sa ERKEN AL (her biri o zaman diliminin mumu KAPANINCA), stop o mumun düşüğüne çıkar;
+   son basamağın mumu stop altında KAPANIRSA çıkış. Üst zaman dilimi değerleri mum kapanışında görünür (göstergedeki lookahead_off). */
+var GIRIS_DROP=1.0;
+const GTF=[['g1',60],['e5',300],['g15',900],['g60',3600],['g120',7200],['g240',14400]];
+function girisCalc(B,mn,drop){
+ const s=B.s15;if(!s||s.length<60)return null;mn=mn||ERKEN_MIN;drop=drop==null?GIRIS_DROP:drop;
+ const E15=erkenCalc(s,mn,15);if(!E15)return null;
+ const dk=t=>Math.floor((t+10800)/86400),last=s[s.length-1].time+15;
+ // üst zaman dilimi mumlarının kapanış olayları: {end, hit, lo, cl}
+ const T=GTF.map(([k,sec])=>{const cs=B[k]||[],E=cs.length>=60?erkenCalc(cs,mn,sec):null,out=[];
+  for(let j=0;j<cs.length;j++){const nx=j+1<cs.length?cs[j+1].time:Infinity,end=Math.min(cs[j].time+sec,nx);if(end>last)break;
+   const r=E?E.at(j):null;out.push({end,hit:!!(r&&r.buy),lo:cs[j].low,cl:cs[j].close})}
+  return {ev:out,p:0}});
+ // gün tepesi: 15 sn penceresinden önceki aynı günün 1 dk mumları
+ const d0=dk(s[0].time);let sHigh=null;(B.g1||[]).forEach(c=>{if(dk(c.time)===d0&&c.time+60<=s[0].time)sHigh=sHigh==null?c.high:Math.max(sHigh,c.high)});
+ T.forEach(x=>{while(x.p<x.ev.length&&x.ev[x.p].end<=s[0].time)x.p++});   // pencere başlamadan kapananlar: olay sayılmaz
+ let lAct=false,lStage=0,lStop=null,lStopTf=0,lEntry=null,pd=d0;const ev=[];
+ for(let i=0;i<s.length;i++){const b=s[i],ct=b.time+15;
+  if(dk(b.time)!==pd){pd=dk(b.time);sHigh=null}
+  sHigh=sHigh==null?b.high:Math.max(sHigh,b.high);
+  const nb=T.map(x=>{let e=null;while(x.p<x.ev.length&&x.ev[x.p].end<=ct){e=x.ev[x.p];x.p++}return e});   // bu 15 sn mumunda kapanan basamak mumu
+  const r=E15.at(i),sS=!!(r&&r.buy),sC=b.close,sDrop=sHigh>0?(sHigh-sC)/sHigh*100:0;
+  const canEnter=sS&&sDrop>=drop&&(!lAct||lStage>=6);
+  const stopHit=lAct&&(lStopTf===0?sC<lStop:(nb[lStopTf-1]&&nb[lStopTf-1].cl<lStop));
+  const adv=lAct&&lStage<6&&nb[lStage]&&nb[lStage].hit;
+  if(canEnter){lAct=true;lEntry=sC;lStop=b.low;lStopTf=0;lStage=0;ev.push({t:b.time,px:sC,stop:b.low,n:r.n,drop:sDrop})}
+  else if(stopHit)lAct=false;
+  else if(adv){lStop=nb[lStage].lo;lStage++;lStopTf=lStage}
+ }
+ return {ev,lAct,lStage,lStop,lEntry};
+}
+const GBC={};
+async function girisBars(sym){const ttl={g15s:15000,g1:40000,e5:60000},out={};
+ await Promise.all([['s15','g15s']].concat(GTF.map(x=>[x[0],x[0]])).map(async([k,tf])=>{const key=sym+'|'+tf,c=GBC[key],now=Date.now();
+  if(c&&now-c.at<(ttl[tf]||180000)){out[k]=c.cs;return}
+  try{const cs=await getBars(sym,tf,true);GBC[key]={at:now,cs};out[k]=cs}catch(e){out[k]=c?c.cs:null}}));
+ const ks=Object.keys(GBC);if(ks.length>600)ks.slice(0,ks.length-400).forEach(k=>delete GBC[k]);
+ return out}
+// Algı fiyatı p0, GİRİŞ en erken fromT (sn) → bant içindeki ilk GİRİŞ {ok:1,px,t,n,stop}; yoksa {ok:0}
+async function girisStar(sym,p0,fromT,band,mn){try{const B=await girisBars(sym);if(!B.s15||!B.s15.length)return null;const G=girisCalc(B,mn);if(!G)return null;band=band||ERKEN_BAND;
+ for(const g of G.ev){if(g.t<fromT)continue;if(!(p0>0)||Math.abs(g.px/p0-1)*100<=band)return Object.assign({ok:1},g)}return {ok:0}}catch(e){return null}}
 function tgIdxOk(){try{const v=S.mkt&&S.mkt.XU100&&S.mkt.XU100.ch;const x=v!=null&&isFinite(v)?v:S.idxCh;return !(x!=null&&isFinite(x)&&x<0)}catch(e){return true}}
 async function autoRun(manual){
  const m=$('#tgmsg');
@@ -2126,7 +2172,8 @@ async function tdBars(sym,tf,n){
  return j.values.map(v=>{const d=v.datetime.split(' ')[0],tt=v.datetime.split(' ')[1];let time;if(isDaily(tf))time=d;else{const a=d.split('-').map(Number),b=tt.split(':').map(Number);time=Date.UTC(a[0],a[1]-1,a[2],b[0],b[1])/1000}return{time,open:+v.open,high:+v.high,low:+v.low,close:+v.close,volume:+v.volume||0}});
 }
 /* ================= TradingView mum verisi (bist-tv Worker /bars) ================= */
-const TVTF={'1min':['1',800,2500],'5min':['5',800,2500],'15min':['15',700,2000],'1h':['60',800,3000],'4h':['240',400,1500],'1day':['1D',300,1300],'1week':['1W',160,520],'1month':['1M',100,240],'k1':['1',120,120],'k5':['5',120,120],'k15':['15',120,120],'k30':['30',120,120],'e5':['5',300,300]};   // v14.29 EMA Katman (kısa çekim)
+const TVTF={'g15s':['15S',800,800],'g1':['1',400,400],'g15':['15',200,200],'g60':['60',150,150],'g120':['120',150,150],'g240':['240',150,150],   // v14.43 Merdiven GİRİŞ (15 sn + basamaklar)
+ '1min':['1',800,2500],'5min':['5',800,2500],'15min':['15',700,2000],'1h':['60',800,3000],'4h':['240',400,1500],'1day':['1D',300,1300],'1week':['1W',160,520],'1month':['1M',100,240],'k1':['1',120,120],'k5':['5',120,120],'k15':['15',120,120],'k30':['30',120,120],'e5':['5',300,300]};   // v14.29 EMA Katman (kısa çekim)
 const TVB={q:[],t:null,n:0,err:''};
 const istDate=t=>new Date((t+10800)*1000).toISOString().slice(0,10);
 function tvBarsBase(){return S.tvproxy&&/^wss?:\/\//.test(S.tvproxy)?S.tvproxy.replace(/^ws/,'http').replace(/\/+$/,''):''}
@@ -3669,7 +3716,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="14.42";window.APPV=APP_VER;
+  const APP_VER="14.43";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -3949,25 +3996,25 @@ function tvReconnectReport(){
  function msgFire(e,f,o){
   const fl=[];if(e.f.D)fl.push('alış emirleri yükseliyor');if(f.brk)fl.push(f.abv?'VWAP üstünde kırılım':'kırılım');if(e.f.G)fl.push('sektör birlikte yükseliyor: '+htmlEsc((o.sector?secTr(o.sector):'-').slice(0,22))+' ('+e.g+' hisse)');
   const w1=['Alıcılar %'+nf((f.fc||0)*100,0)];if(f.rv!=null)w1.push('hacim normalin '+P(f.rv,1)+' katı');
-  if(e.star)w1.unshift('⭐ ERKEN AL girişi '+(e.epx?P(e.epx):'')+' · '+e.en+'/21 (5 dk) · Algı fiyatının ±%'+nf(ERKEN_BAND,1)+' içinde');
+  if(e.star)w1.unshift('⭐ Gösterge GİRİŞİ (15 sn) '+(e.epx?P(e.epx):'')+' · '+e.en+'/21 · Algı fiyatının ±%'+nf(ERKEN_BAND,1)+' içinde'+(e.est?' · gösterge stopu '+P(e.est):''));
   return tgCard({ic:e.star?'⭐':'⚡',dir:'AL',sym:e.s,src:(e.star?'⭐ YILDIZLI · ':'')+'Algı'+(f.fc>=.8?' · 💪 güçlü':''),px:e.p0,ch:f.ch||0,tp:e.p0*1.03,sl:e.p0*0.99,   // v9.0: hedef +%3, stop −%1
    why:[w1.join(' · '),fl.join(' · '),'Para girişi '+P(f.fa,1)+' kat hızlandı · skor '+e.sc+'/100'],
    note:(e.f.sh?'\n⚠️ Az işlem gören hisse — fiyatı kolay oynatılabilir':'')+sigNoteTxt(e.s)+(function(){const hn=typeof haberNote==='function'?haberNote(e.s):'';return hn?'\n'+htmlEsc(hn):''})()});   // v14.19: haber notu (Algı kuralı değişmez)
  }
 
  /* ---------- ana dongu (5 sn) ---------- */
- async function starWatch(now){   // v14.38: Algı'dan SONRA gelen ERKEN AL girişi (±%0,5) → ⭐ Telegram + karne src 'yildiz'
+ async function starWatch(now){   // v14.38: Algı'dan SONRA gelen gösterge girişi (±%0,5) → ⭐ Telegram + karne src 'yildiz' · v14.43: ERKEN AL (5 dk) yerine Merdiven GİRİŞİ (15 sn)
   if(AL._swBusy||!AL.starW||!AL.starW.length)return;AL._swBusy=true;
   try{for(const w of AL.starW.slice()){
    if(now>w.until||w.e.star){AL.starW.splice(AL.starW.indexOf(w),1);continue}
    if(now<w.next)continue;w.next=now+60000;
-   const es=await erkenStar(w.e.s,w.e.p0,Math.floor(w.e.t/1000)-60);if(!es||!es.ok)continue;
-   const e=w.e;e.star=1;e.en=es.n;e.epx=es.px;AL.starW.splice(AL.starW.indexOf(w),1);
+   const es=await girisStar(w.e.s,w.e.p0,Math.floor(w.e.t/1000)-15*60);if(!es||!es.ok)continue;
+   const e=w.e;e.star=1;e.en=es.n;e.epx=es.px;e.est=es.stop;AL.starW.splice(AL.starW.indexOf(w),1);
    const SD=AL.starDay&&AL.starDay.d===e.d?AL.starDay:(AL.starDay={d:e.d,n:0});
    if(SD.n<ERKEN_MAX){SD.n++;
     if(!e.tg){e.tg=1;tg(msgFire(e,w.f,w.o),tgKb(e.s))}
-    else tg('⭐ <b>'+e.s+'</b> · ERKEN AL girişi geldi\n<blockquote>Giriş <code>'+P(es.px)+'</code> · Algı sinyali '+P(e.p0)+' ('+hm(e.t)+') · '+es.n+'/21 şart (5 dk)</blockquote>',tgKb(e.s))}
-   sigPost({src:'yildiz',sym:e.s,t:Date.now(),px:es.px,sc:es.n,dir:'AL',meta:{algi:e.p0,at:e.t,en:es.n,tg:e.tg?1:0}});
+    else tg('⭐ <b>'+e.s+'</b> · gösterge GİRİŞİ geldi\n<blockquote>Giriş <code>'+P(es.px)+'</code> ('+hm(es.t*1000)+', 15 sn) · Algı sinyali '+P(e.p0)+' ('+hm(e.t)+') · '+es.n+'/21 şart · gösterge stopu '+P(es.stop)+'</blockquote>',tgKb(e.s))}
+   sigPost({src:'yildiz',sym:e.s,t:Date.now(),px:es.px,sc:es.n,dir:'AL',meta:{algi:e.p0,at:e.t,en:es.n,tg:e.tg?1:0,gt:es.t*1000,gst:es.stop,gv:2}});
    AL.dirty=true}}catch(x){}
   AL._swBusy=false}
  function run(){
@@ -4031,13 +4078,13 @@ function tvReconnectReport(){
      st.cnt=0;st.cool=now+30*60000;stage='ates';
      const gate=!e.mute&&f.fc>=.8&&f.rv!=null&&f.rv>=2&&tgIdxOk()&&!(f.abv&&f.brk);   // v14.22 kovalayan gitmez · v14.8 BIST 100 artı · v10.9 güçlü + hacim ≥2 kat
      (async()=>{   // v14.35 (08.11, Fatih): ERKEN AL 21 (5 dk) ile ortak → ⭐ YILDIZLI; yıldızlı her Algı Telegram'a gider (günde en çok 10), diğerleri eski kapıyla
-      let es=null;try{es=await Promise.race([erkenStar(sym,p0),sleep(9000).then(()=>null)])}catch(x){}
-      e.star=es&&es.ok?1:0;e.en=es?es.n:null;if(es&&es.ok)e.epx=es.px;
-      if(!e.star&&!e.mute)(AL.starW=AL.starW||[]).push({e,f,o,until:now+ERKEN_WAIT*60000,next:now+60000});   // sonradan gelecek ERKEN AL girişi için izle
+      let es=null;try{es=await Promise.race([girisStar(sym,p0,Math.floor(now/1000)-15*60),sleep(12000).then(()=>null)])}catch(x){}   // v14.43: Merdiven GİRİŞİ (15 sn), Algı'dan en çok 15 dk önce
+      e.star=es&&es.ok?1:0;e.en=es&&es.ok?es.n:null;if(es&&es.ok){e.epx=es.px;e.est=es.stop}
+      if(!e.star&&!e.mute)(AL.starW=AL.starW||[]).push({e,f,o,until:now+ERKEN_WAIT*60000,next:now+60000});   // sonradan gelecek gösterge GİRİŞİ için izle
       const SD=AL.starDay&&AL.starDay.d===e.d?AL.starDay:(AL.starDay={d:e.d,n:0});
       const st1=e.star&&!e.mute&&SD.n<ERKEN_MAX;if(st1)SD.n++;
       if(gate||st1){e.tg=1;tg(msgFire(e,f,o),tgKb(sym))}
-     sigPost({src:'algi',sym:sym,t:now,px:p0,sc:sc,dir:'AL',meta:{tg:e.tg?1:0,fa:f.fa!=null?+(+f.fa).toFixed(1):null,rv:f.rv!=null?+(+f.rv).toFixed(1):null,fc:f.fc!=null?+(+f.fc).toFixed(2):null,ch:f.ch!=null?+(+f.ch).toFixed(2):null,brk:!!f.brk,abv:!!f.abv,bid:!!f.fd,tema:!!gOk,endeks:!!hOk,sig:!(o.voltl>=1e7),sessiz:!!e.mute,star:e.star,en:e.en}});
+     sigPost({src:'algi',sym:sym,t:now,px:p0,sc:sc,dir:'AL',meta:{tg:e.tg?1:0,fa:f.fa!=null?+(+f.fa).toFixed(1):null,rv:f.rv!=null?+(+f.rv).toFixed(1):null,fc:f.fc!=null?+(+f.fc).toFixed(2):null,ch:f.ch!=null?+(+f.ch).toFixed(2):null,brk:!!f.brk,abv:!!f.abv,bid:!!f.fd,tema:!!gOk,endeks:!!hOk,sig:!(o.voltl>=1e7),sessiz:!!e.mute,star:e.star,en:e.en,gv:2}});
       if(S.tab==='algi')try{renderAlgi()}catch(x){}
      })();
      try{notify('⚡ Algı: '+sym,'Skor '+sc+' · '+nf(f.p))}catch(x){}
@@ -4126,7 +4173,7 @@ function tvReconnectReport(){
   if(SL&&SL.length&&myStarCfg())try{myStarScan(SL)}catch(x){}   // v14.40 kişisel ⭐
   if(past&&!SL){}else if(SL&&(past||S.botAlive||SL.length)){   // v14.1: ana sunucunun Algı ateşlemeleri (karnedekiyle birebir)
    if(!SL.length)h+='<div class="note">'+(past?'O gün Algı ateşlemesi yok (hafta sonu ya da tatil olabilir).':'Bugün henüz ateşleme yok.')+'</div>';
-   else h+='<div class="note" style="padding:2px 12px 6px">'+SL.length+' ateşleme'+(past?' · +%3: '+SL.filter(e=>e.o31===1).length+' · stop: '+SL.filter(e=>e.o31===2).length:'')+' · ⭐ = göstergenin ERKEN AL girişi Algı fiyatına yakın (yıldızlı) · 📨 = Telegram\'a gitti · 📰 = o sırada hisseyle ilgili haber vardı<br><span style="color:#22c55e">●</span> geri çekilmede geldi · <span style="color:#22c55e">●●</span> ayrıca 15 dk EMA 20\'nin %2+ altında (karnede en iyi grup) · <span style="color:#8b93a1">●</span> kovalayan (VWAP üstü + kırılım; karnede zayıf)</div><table><tr><th>Sembol</th><th>Saat</th><th>Giriş</th><th>'+(past?'Gün sonu':'Şimdi')+'</th><th>Zirve</th><th>Güç</th><th>Sonuç</th></tr>'+SL.map(e=>{
+   else h+='<div class="note" style="padding:2px 12px 6px">'+SL.length+' ateşleme'+(past?' · +%3: '+SL.filter(e=>e.o31===1).length+' · stop: '+SL.filter(e=>e.o31===2).length:'')+' · ⭐ = göstergenin GİRİŞ sinyali (15 sn) Algı fiyatına yakın (yıldızlı) · 📨 = Telegram\'a gitti · 📰 = o sırada hisseyle ilgili haber vardı<br><span style="color:#22c55e">●</span> geri çekilmede geldi · <span style="color:#22c55e">●●</span> ayrıca 15 dk EMA 20\'nin %2+ altında (karnede en iyi grup) · <span style="color:#8b93a1">●</span> kovalayan (VWAP üstü + kırılım; karnede zayıf)</div><table><tr><th>Sembol</th><th>Saat</th><th>Giriş</th><th>'+(past?'Gün sonu':'Şimdi')+'</th><th>Zirve</th><th>Güç</th><th>Sonuç</th></tr>'+SL.map(e=>{
     const m=e.meta||{},q=S.umap[e.sym],now=past?e.rc:(q&&q.close&&e.px?(q.close/e.px-1)*100:null),tg=m.tg!=null?m.tg===1:(m.fc>=.8&&m.rv>=2);
     const res=e.o31===1?'<b class="up">+%3 ✅</b>':e.o31===2?'<b class="dn">−%1 ❌</b>':e.done?'<span style="color:var(--dim)">sonuçsuz</span>':'<span class="wrn">⏳ açık</span>';
     const hn=typeof haberNote==='function'?haberNote(e.sym,e.t+30*60e3):'';

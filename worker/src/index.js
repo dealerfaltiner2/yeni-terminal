@@ -42,7 +42,7 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type'
 };
 const SCAN_COLS = ['name', 'close', 'change', 'change_abs', 'volume', 'high', 'low', 'open'];
-const TFS = ['1', '3', '5', '15', '30', '45', '60', '120', '180', '240', '1D', '1W', '1M'];
+const TFS = ['15S', '1', '3', '5', '15', '30', '45', '60', '120', '180', '240', '1D', '1W', '1M'];   // v14.43: 15S = Merdiven GİRİŞİ (15 sn mum, TradingView Premium)
 let authCache = { token: null, t: 0, err: null };
 const barCache = new Map();
 
@@ -250,7 +250,7 @@ async function bars(env, url, anon = false) {
   const n = Math.max(10, Math.min(10000, parseInt(url.searchParams.get('n') || '300', 10) || 300));
   const syms = [...new Set((url.searchParams.get('s') || '').split(',').map(normSym).filter(Boolean))].slice(0, 8);
   if (!syms.length) return json({ ok: false, error: 'sembol yok (?s=THYAO veya ?s=THYAO,EREGL)' }, 400);
-  const ttl = /^\d+$/.test(tf) ? 20000 : 120000;
+  const ttl = tf === '15S' ? 12000 : /^\d+$/.test(tf) ? 20000 : 120000;
   const now = Date.now(), data = {}, need = [];
   for (const s of syms) {
     const c = barCache.get(s + '|' + tf + '|' + n + (anon ? '|a' : ''));
@@ -1165,7 +1165,7 @@ export default {
       const T = trNow(); const inSess = T.wd >= 1 && T.wd <= 5 && T.m >= 590 && T.m < 1095;
       if (!inSess) { try { await btStep(env); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'btStep: ' + String(e && e.message || e).slice(0, 200), 'btStep'); } }
       try { await ecalPoll(env, UA); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'ekonomik takvim: ' + String(e && e.message || e).slice(0, 150), 'ecal'); }
-      try { await probe(env, scanRaw, UA); } catch (e) {}
+      try { await probe(env, scanRaw, UA, fetchBarsTV); } catch (e) {}
       try { await kaphStep(env, UA); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'KAP geçmişi: ' + String(e && e.message || e).slice(0, 150), 'kaphStep'); }
       // v14.3: EMA hedef merdiveni araştırması (bir kerelik, seans dışında, meta 'emar_on'='1' iken dakikada 1 hisse)
       if (!inSess && !(T.wd >= 1 && T.wd <= 5 && T.m >= 560 && T.m < 1100)) { try { const er = await emarStep(env, fetchBarsTV); if (er) await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('emar_last', ?)").bind(JSON.stringify({ at: Date.now(), ...er })).run(); } catch (e) { await errAdd(env, 'sunucu', 'hata', 'EMA araştırması: ' + String(e && e.message || e).slice(0, 150), 'emarStep'); }

@@ -3,7 +3,7 @@ import { geceNow } from './gece.js';
 import { tvAlertCall } from './tvalert.js';
 // Tek seferlik deneme: D1 meta 'probe_req' varsa her dakika BİR deneme yapar, sonucu 'probe:<ad>' satırına yazar.
 // (Yeni TradingView kaynaklarını sunucudan denemek için; istek yokken hiçbir şey yapmaz.)
-export async function probe(env, scanRaw, UA) {
+export async function probe(env, scanRaw, UA, barsTV) {
   const q = await env.BT.prepare("SELECT v FROM meta WHERE k = 'probe_req'").first();
   if (!q) return null;
   const from = new Date(Date.now() - 864e5).toISOString(), to = new Date(Date.now() + 3 * 864e5).toISOString();
@@ -35,7 +35,11 @@ export async function probe(env, scanRaw, UA) {
     // 28.10 (v14.24): Gece Kuşu tek seferlik deneme sepeti (günün kapanışıyla) — probe_req = bu satırın sırası
     ['gece_now', () => geceNow(env, scanRaw)],
     // 09.11: TradingView alarm servisi denemesi — meta 'tva_req' = {m, p, b}; probe_req = bu satırın sırası
-    ['tva_call', () => tvAlertCall(env, UA)]
+    ['tva_call', () => tvAlertCall(env, UA)],
+    // 10.11 (v14.43): 15 sn mum (Merdiven GİRİŞİ) TradingView'dan geliyor mu? — meta 'bars_test_in' = {s, tf, n} (yoksa GARAN 15S 800) → probe:bars_test = sayı, ilk/son mum
+    ['bars_test', async () => { const q = await env.BT.prepare("SELECT v FROM meta WHERE k = 'bars_test_in'").first(); const A = q ? JSON.parse(q.v) : {}; const s = A.s || 'BIST:GARAN', tf = A.tf || '15S', n = A.n || 800;
+      const got = await barsTV(env, [s], tf, n, 12000); const st = got[s] || {}; const arr = st.m ? [...st.m.values()].filter(v => v && v.length >= 5).sort((a, b) => a[0] - b[0]) : [];
+      return JSON.stringify({ s, tf, n: arr.length, err: st.err || null, ilk: arr[0] || null, son: arr[arr.length - 1] || null, bars: A.full ? arr : undefined }); }]
   ];
   const i = parseInt(q.v, 10) || 0;
   if (i >= L.length) { await env.BT.prepare("DELETE FROM meta WHERE k = 'probe_req'").run(); return null; }

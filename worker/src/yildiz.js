@@ -1,7 +1,7 @@
 // v14.39 (08.11, Fatih: 'yıldızlı sinyalin ayarlarını elle değiştirebilelim — ±%0,5 yerine ±%1 ya da ±%0,7 gibi')
 // ⭐ Yıldız ayarları D1 meta 'yildiz_cfg': band (Algı fiyatına ± %), min (ERKEN AL en az şart / 21), wait (Algı'dan sonra kaç dk izlenir), max (günde en çok yıldızlı mesaj).
 // GET /yildiz (DATA) → ayarlar; POST /yildiz-set (yalnız sahip) → kaydeder. Terminal ve ana sunucu (motor) 5 dk'da bir okur.
-export const STAR_DEF = { band: 0.5, min: 16, wait: 60, max: 10 };
+export const STAR_DEF = { band: 0.5, min: 14, wait: 60, max: 10 };   // v14.43: min 14 = göstergenin varsayılanı (GİRİŞ)
 const lim = (v, a, b, d) => { v = +v; return isFinite(v) ? Math.min(b, Math.max(a, v)) : d; };
 export function starCfg(o) {
   o = o || {};
