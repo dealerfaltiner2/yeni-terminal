@@ -20,11 +20,14 @@ function readCfg() {
   if (!c || !c.ls || !c.ls.tvproxy || !c.ls.ownTok) throw new Error('ayar.json eksik — kurulumu eşleştirme koduyla yeniden yap');
   return c;
 }
-const STATE = { started: Date.now(), restarts: 0, lastBeat: 0, last: {}, err: '' };
+const STATE = { started: Date.now(), restarts: 0, lastBeat: 0, last: {}, err: '', loop: Date.now() };
+// 11.11: süreli bekleme — sayfa donarsa page.evaluate/browser.close sonsuza dek bekliyordu (16:08 olayı: motor sustu, günlüğe hiçbir şey yazmadı)
+const within = (p, ms, what) => Promise.race([p, sleep(ms).then(() => { throw new Error(what + ' ' + Math.round(ms / 1000) + ' sn yanıt vermedi'); })]);
 // tek kopya kilidi + durum sayfası
 function lock() {
   return new Promise((res, rej) => {
     const srv = http.createServer((q, r) => {
+      if (q.url === '/h') { r.writeHead(200, { 'Content-Type': 'application/json' }); r.end(JSON.stringify({ loop: STATE.loop, beat: STATE.lastBeat })); return; }
       r.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       const b = STATE.last || {};
       r.end('<meta http-equiv="refresh" content="10"><body style="font:15px system-ui;background:#0b111b;color:#e9eff7;padding:20px"><h2>BIST sinyal motoru</h2>' +
@@ -46,6 +49,7 @@ async function session(cfg) {
     try { browser = await chromium.launch(Object.assign({}, LA, o)); break; } catch (e) { lerr = e; }
   }
   if (!browser) throw lerr;
+  STATE.loop = Date.now();
   let dead = false;
   browser.on('disconnected', () => { dead = true; });
   try {
@@ -55,12 +59,13 @@ async function session(cfg) {
     page.on('pageerror', e => { STATE.err = e.message; log('sayfa hatası:', e.message); });
     page.on('crash', () => { dead = true; log('sayfa çöktü'); });
     await page.goto(SITE + '?bot=1&t=' + Date.now(), { waitUntil: 'domcontentloaded', timeout: 90e3 });
-    log('terminal açıldı (sunucu modu)');
+    log('terminal açıldı (sunucu modu)'); STATE.loop = Date.now();
     const t0 = Date.now(); let fails = 0, refreshDone = '';
     while (!dead) {
       await sleep(30e3);
+      STATE.loop = Date.now();
       try {
-        const b = await page.evaluate(() => window.BOT ? { beat: BOT.beat, tv: BOT.tv, uni: BOT.uni, algi: BOT.algi, ver: BOT.ver, srv: BOT.srv } : null);
+        const b = await within(page.evaluate(() => window.BOT ? { beat: BOT.beat, tv: BOT.tv, uni: BOT.uni, algi: BOT.algi, ver: BOT.ver, srv: BOT.srv } : null), 20e3, 'sayfa');
         if (b && b.beat) { STATE.lastBeat = Date.now(); STATE.last = b; fails = 0; } else fails++;
         if (b && Date.now() - b.beat > 180e3) { log('nabız durdu → yeniden başlatılıyor'); break; }
         // 10.11: sayfa canlı ama sunucuyla konuşamıyorsa (17:23 olayı) — seansta 5 dk sunucu teması yoksa yeniden başlat
@@ -71,7 +76,10 @@ async function session(cfg) {
       const n = trNow(), key = n.day + n.hm;
       if ((n.hm === '09:40' || n.hm === '18:25') && refreshDone !== key && Date.now() - t0 > 5 * 60e3) { refreshDone = key; log('günlük tazeleme (' + n.hm + ')'); break; }
     }
-  } finally { try { await browser.close(); } catch (e) {} }
+  } finally {
+    try { await within(browser.close(), 15e3, 'tarayıcı kapanışı'); }
+    catch (e) { log(e.message, '→ tarayıcı zorla kapatılıyor'); try { const bp = browser.process && browser.process(); if (bp) bp.kill(); } catch (e2) {} }
+  }
 }
 // 08.10 GÖZETMEN: şirket antivirüsü (Bitdefender) gizli pencere açan .vbs betiklerini siliyordu → .vbs ve ayrı bekçi KALDIRILDI.
 // Artık bu dosya iki rol oynar: düz 'node bot.js' = GÖZETMEN (görünür, simge durumunda küçültülmüş pencere; tek kopya kilidi 47124),
@@ -91,21 +99,34 @@ if (!process.argv.includes('--isci')) {
     const start = () => {
       if (!fs.existsSync(__filename)) { log('bot.js bulunamadı (antivirüs silmiş olabilir) — kurulumu yeniden yap'); setTimeout(start, 60e3); return; }
       lastStart = Date.now();
-      child = spawn(process.execPath, [__filename, '--isci'], { cwd: DIR, stdio: 'ignore', windowsHide: true });   // 10.11: 'inherit' değil — pencere donarsa motor da donuyordu
-      child.on('exit', code => { log('motor kapandı (kod ' + code + ') → 10 sn sonra yeniden başlatılıyor'); child = null; setTimeout(start, 10e3); });
+      const c = spawn(process.execPath, [__filename, '--isci'], { cwd: DIR, stdio: 'ignore', windowsHide: true });   // 10.11: 'inherit' değil — pencere donarsa motor da donuyordu
+      child = c;
+      c.on('exit', code => { if (child !== c) return; log('motor kapandı (kod ' + code + ') → 10 sn sonra yeniden başlatılıyor'); child = null; setTimeout(start, 10e3); });
     };
     start();
-    const ping = () => new Promise(res => { const q = http.get('http://127.0.0.1:47123', r => { r.resume(); res(r.statusCode === 200); }); q.setTimeout(8000, () => { q.destroy(); res(false); }); q.on('error', () => res(false)); });
+    // 11.11: motorun yalnız 'açık' olması yetmez — iç döngüsü (STATE.loop) 5 dk ilerlemediyse de takılmış sayılır
+    const ping = () => new Promise(res => {
+      const q = http.get('http://127.0.0.1:47123/h', r => { let d = ''; r.on('data', c => d += c); r.on('end', () => { try { res(JSON.parse(d)); } catch (e) { res(r.statusCode === 200 ? {} : null); } }); });
+      q.setTimeout(8000, () => { q.destroy(); res(null); }); q.on('error', () => res(null));
+    });
     setInterval(async () => {
       if (!child || Date.now() - lastStart < 3 * 60e3) return;
-      fails = (await ping()) ? 0 : fails + 1;
-      if (fails >= 3) { fails = 0; log('motor 3 dk yanıt vermedi → yeniden başlatılıyor'); try { child.kill(); } catch (e) {} }
+      const h = await ping();
+      fails = h ? 0 : fails + 1;
+      if (fails >= 3) { fails = 0; log('motor 3 dk yanıt vermedi → yeniden başlatılıyor'); try { child.kill(); } catch (e) {} return; }
+      if (h && h.loop && Date.now() - h.loop > 5 * 60e3 && Date.now() - lastStart > 6 * 60e3) {
+        log('motor döngüsü ' + Math.round((Date.now() - h.loop) / 60e3) + ' dk ilerlemedi (sayfa donmuş) → yeniden başlatılıyor');
+        const old = child; try { old.kill(); } catch (e) {}
+        // kill sonrası 'exit' 10 sn içinde gelmezse süreci yeniden başlatmayı yine de dene (kilit 47123 serbest kalınca yeni kopya açılır)
+        setTimeout(() => { if (child === old) { log('eski motor kapanmadı → yeni kopya deneniyor'); child = null; start(); } }, 30e3);
+      }
     }, 60e3);
   });
 } else (async () => {
   try { await lock(); } catch (e) { log('motor zaten çalışıyor, bu kopya kapanıyor'); process.exit(0); }
   log('motor başladı');
   for (;;) {
+    STATE.loop = Date.now();
     let cfg;
     try { cfg = readCfg(); } catch (e) { STATE.err = e.message; log(e.message); await sleep(60e3); continue; }
     try { await session(cfg); } catch (e) { STATE.err = e.message; log('hata:', e.message); }
