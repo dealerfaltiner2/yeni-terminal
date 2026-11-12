@@ -1,3 +1,4 @@
+globalThis.__KARNE_TG = true;   // v15.0: karne mesajı kapalı varsayılan; testler gönderim yolunu sınar
 // Sunucu karne mantığı testi (node:sqlite ile D1 taklidi): ölçüm, takılan hisse, 21:00 son saat, Telegram reddinde yeniden deneme, hata defteri.
 import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath } from 'node:url';

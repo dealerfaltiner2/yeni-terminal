@@ -423,6 +423,7 @@ async function tgBlock(env, today, esc) {
   if (ks.length > 1) msg += '\n   Toplam: ' + n + ' sinyal → <b>' + tlTxt(pt) + '</b>';
   return msg;
 }
+export function karneTgOn() { return !!globalThis.__KARNE_TG; }
 export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
   let pend = 0, tryN = 0;
   const now = Date.now(), today = trDay(now), m = trMin(now), wd = new Date(now + TRMS).getUTCDay();
@@ -434,6 +435,8 @@ export async function sigSummary(env, tgSend, kvGet, esc, nf, force = false) {
     const p = await env.BT.prepare('SELECT count(*) n FROM sig WHERE d = ? AND done = 0').bind(today).first();
     pend = p ? +p.n || 0 : 0;
     if (pend && m < 1260) return null;
+    // v15.0 (12.11, Fatih: 'karne tamamen kalksın'): akşam karne mesajı Telegram'a GİTMEZ; 'sigsum' yine yazılır (kanal/haftalık bekleyenler için). Testler globalThis.__KARNE_TG=true ile açar.
+    if (!karneTgOn()) { await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('sigsum', ?)").bind(today).run(); return { mesaj: 'karne mesajı kapalı' }; }
     // Gönderim başarısızsa (Telegram reddi vb.) 10 dk'da bir yeniden dene, en çok 12 kez
     const tr = await env.BT.prepare("SELECT v FROM meta WHERE k = 'sigsum_try'").first();
     const tt = tr ? JSON.parse(tr.v) : null;
@@ -615,6 +618,7 @@ export function momExits(rows, amt = 100000) {
 export async function weeklySummary(env, tgSend, kvGet, esc, pushSend) {
   const d = new Date(Date.now() + TRMS), wd = d.getUTCDay(), m = d.getUTCHours() * 60 + d.getUTCMinutes(), today = d.toISOString().slice(0, 10);
   if (wd !== 5 || m < 1110) return null;
+  if (!karneTgOn()) return null;   // v15.0: Cuma haftalık rapor da kapalı
   const ss = await env.BT.prepare("SELECT v FROM meta WHERE k = 'sigsum'").first(); if (!ss || ss.v !== today) return null;
   const ws = await env.BT.prepare("SELECT v FROM meta WHERE k = 'weeksum'").first(); if (ws && ws.v === today) return null;
   await env.BT.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('weeksum', ?)").bind(today).run();
