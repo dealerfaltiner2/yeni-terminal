@@ -81,6 +81,8 @@ function install(page, opt = {}) {
       { t: Date.now() - 864e5, sym: 'KTDUN', px: 50, sc: 4, meta: { tg: 0 }, done: 1, o31: 2, rc: -1.2 }] : [
       { t: Date.now() - 120000, sym: 'KTBUG', px: 40, sc: 4, meta: { tg: 1 }, done: 0, o31: null },
       { t: Date.now() - 7200e3, sym: 'KTHDF', px: 30, sc: 4, meta: { tg: 0 }, done: 1, o31: 1, rc: 2.5 }] }) });
+    if (u.includes('/sigtoday') && /[?&]src=firsat-[AB]/.test(u)) { const A = /src=firsat-A/.test(u), past = /[?&]d=\d{4}-/.test(u);   // v15.1 Fırsat sinyal kartları
+      return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, at: Date.now(), list: A ? (past ? [{ t: Date.now() - 864e5, sym: 'FRDUN', dir: 'AL', px: 10, done: 1, o31: 2, rc: -1, meta: { tg: 1 } }] : [{ t: Date.now() - 30 * 60e3, sym: 'FRSAA', dir: 'AL', px: 50, done: 0, o31: null, meta: { tg: 1 } }, { t: Date.now() - 20 * 60e3, sym: 'FRSAT', dir: 'SAT', px: 20, done: 0, meta: {} }]) : (past ? [] : [{ t: Date.now() - 10 * 60e3, sym: 'FRSBB', dir: 'AL', px: 8, done: 0, meta: {} }]) }) }); }
     if (u.includes('/sigtoday') && /[?&]src=oto/.test(u)) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, at: Date.now(), list: [
       { t: Date.now() - 60000, src: 'algi', sym: 'JANTS', dir: 'AL', px: 12.38, meta: { fc: 0.83, rv: 7.6 }, done: 0, o31: null, mfe: 1.2 },
       { t: Date.now() - 3600e3, src: 'firsat-A', sym: 'ASELS', dir: 'AL', px: 100, meta: {}, done: 1, o31: 2, mfe: 0.4 }] }) });

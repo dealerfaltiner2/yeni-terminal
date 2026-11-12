@@ -81,6 +81,12 @@ async function page(b, opt) {
             cikan: /listeden çıkanlar \(1\)/.test(body.innerText), uyari: /sinyal değildir/.test(body.innerText), baslik: !!document.querySelector('#t-aisec .sechd'), geri: !!document.querySelector('#t-aisec .bkb'),
             sigar: b && b.scrollWidth <= b.clientWidth + 2, e20: body.querySelectorAll('.aic .ae').length === 2, q: q.ZZTST && q.ZZTST[0] === 100 && q.ZZTST[3] === 5e7 }; });
         ok('AI Seçtikleri: alt menüden açılır, kartlar + etiketler + çıkanlar, yazı sığıyor, anlık veri paketi', a && Object.values(a).every(Boolean), JSON.stringify(a)); }
+      // v15.1: Fırsat ekranı — bugün gelen A/B kartları (SAT yok), gün seçici, Tara düğmesi, gelişmiş kapalı
+      { const fr = await T(async () => { const W = ms => new Promise(r => setTimeout(r, ms)); FRS.at = 0; FRS.list = null; showTab('op'); await W(1200); const el = document.getElementById('opsig'), t = el.innerText;
+          const r = { kart: el.querySelectorAll('.sgc').length === 2 && /FRSAA/.test(t) && /FRSBB/.test(t) && !/FRSAT/.test(t), harf: !!el.querySelector('.sgg.a'), grup: /Gruba gitti/.test(t), ozet: /Bugün 2 sinyal/.test(t),
+            tara: !!document.querySelector('#t-op #deepbtn') && document.getElementById('deepbtn').getBoundingClientRect().width > 100, gelismis: !!document.querySelector('#t-op details.opadv #filtsheet') && !document.querySelector('#t-op details.opadv').open };
+          frsDay(alPrevDay(1)); await W(800); const t2 = document.getElementById('opsig').innerText; r.dun = /FRDUN/.test(t2) && /Stop oldu/.test(t2) && !/FRSAA/.test(t2); frsDay(''); showTab('now'); return r; });
+        ok('Fırsat: bugünün A/B sinyalleri kart (SAT hariç), gün seçici, Tara düğmesi, gelişmiş kapalı', fr && Object.values(fr).every(Boolean), JSON.stringify(fr)); }
       // v15.0: sade düzen — 5 düğme, gruplar, kalkan bölümler, rozetler, başlıkta arama
       { const sd = await T(async () => { const W = ms => new Promise(r => setTimeout(r, ms)); const r = {};
           const lb = [...document.querySelectorAll('#tabs button')].filter(b => getComputedStyle(b).display !== 'none').map(b => b.querySelector('.lbl').textContent);
@@ -115,7 +121,7 @@ async function page(b, opt) {
         ok('EMA Katman: hesap (dönüş/tam/aşağı), tarama, sekme, menüde simge', kt && Object.values(kt).every(Boolean), JSON.stringify(kt)); }
       // v14.31: EMA Katman 'gelenler' listesi (saat, giriş, sonuç, gün seçici)
       { const kg = await T(async () => { KTMS.list = null; KTMS.day = ''; KTMS.at = 0; showTab('katman'); await new Promise(r => setTimeout(r, 1200)); let t = document.getElementById('t-katman').innerText;
-          const r = { bugun: /Bugün gelenler/.test(t) && /KTBUG/.test(t) && /KTHDF/.test(t) && /\+%3/.test(t) && /isabet %100/.test(t) };
+          const r = { bugun: /BUGÜN GELENLER/.test(t) && /KTBUG/.test(t) && /KTHDF/.test(t) && /\+%3/.test(t) && /isabet %100/.test(t) };
           ktmDay(alPrevDay(1)); await new Promise(r => setTimeout(r, 1000)); t = document.getElementById('t-katman').innerText; r.dun = /KTDUN/.test(t) && /stop/.test(t) && !/KTBUG/.test(t);
           ktmDay(''); showTab('now'); return r; });
         ok('EMA Katman: gün içi gelenler listesi ve gün seçici', kg && Object.values(kg).every(Boolean), JSON.stringify(kg)); }
@@ -404,8 +410,8 @@ async function page(b, opt) {
         tgaGate({ url: 'javascript:alert(1)', title: '<i>x</i>' }); r.bad = b.querySelectorAll('button').length; r.esc = !b.querySelector('i'); b.remove(); return r; });
       ok('Kanal kapısı: "Kanala katıl" ve "Katıldım, aç" düğmeleri; bozuk bağlantıda katıl düğmesi yok, başlık kaçışlı', /Kanala katıl, Pusula açılsın/.test(gt.t) && gt.n === 2 && gt.bad === 1 && gt.esc, JSON.stringify(gt).slice(0, 200));
       const al = await p.evaluate(async () => { S.botAlive = true; ALS.at = 0; ALS.seen = null; alSrvLoad(); await new Promise(r => setTimeout(r, 1200)); showTab('algi'); await new Promise(r => setTimeout(r, 300));
-        const t = document.getElementById('t-algi').textContent; return { n: (ALS.list || []).length, jants: /JANTS/.test(t), sahol: /SAHOL/.test(t), tg: /📨/.test(t), srv: /Ana sunucudan/.test(t), toast: (typeof stCur !== 'undefined' && stCur && stCur.sym) || (STQ[0] && STQ[0].sym) || '',
-          dots: (() => { const tr = [...document.querySelectorAll('#t-algi tr.row')]; const j = tr.find(x => /JANTS/.test(x.textContent)), s2 = tr.find(x => /SAHOL/.test(x.textContent)); return !!(j && j.querySelector('.ald.ok') && s2 && s2.querySelector('.ald.gr')); })(),
+        const t = document.getElementById('t-algi').textContent; return { n: (ALS.list || []).length, jants: /JANTS/.test(t), sahol: /SAHOL/.test(t), tg: /📨/.test(t), srv: !!document.querySelector('#t-algi .sgc'), toast: (typeof stCur !== 'undefined' && stCur && stCur.sym) || (STQ[0] && STQ[0].sym) || '',
+          dots: (() => { const tr = [...document.querySelectorAll('#t-algi .sgc')]; const j = tr.find(x => /JANTS/.test(x.textContent)), s2 = tr.find(x => /SAHOL/.test(x.textContent)); return !!(j && j.querySelector('.ald.ok') && s2 && s2.querySelector('.ald.gr')); })(),
           e20: alE20At(Array.from({ length: 40 }, (_, i) => ({ time: 1e6 + i * 900, close: 100 })), (1e6 + 40 * 900) * 1000, 97) > 2 }; });
       ok('Algı tek kaynak: ana sunucunun ateşlemeleri listede (Telegram işaretiyle), yeni olan üstten kart olarak çıkıyor', al.n === 2 && al.jants && al.sahol && al.tg && al.srv && al.toast === 'JANTS', JSON.stringify(al));
       ok('Algı listesinde iyi/kötü grup noktası (yeşil geri çekilme, gri kovalayan) ve EMA 20 uzaklığı', al.dots && al.e20, JSON.stringify({ dots: al.dots, e20: al.e20 }));
@@ -428,16 +434,16 @@ async function page(b, opt) {
       ok('İzleme: Otomatik liste (⭐ ekle, Geri al, 👁 gizle) + Benim listem (yazarak ekle, ✕ çıkar) + Keşfet ☆', Object.values(wo).every(Boolean), JSON.stringify(wo));
       const ar = await p.evaluate(async () => { const old = S.botAlive; S.botAlive = true; ALR.at = 0; ALR.v = null; alRowsLoad(); await new Promise(r => setTimeout(r, 800));
         showTab('algi'); renderAlgi(); const srv = !!alRowsSrv(), t = document.getElementById('t-algi').textContent;
-        const lbl = () => [...document.querySelectorAll('#t-algi .alc')].map(c => c.querySelector('.als').textContent + ':' + c.querySelector('.alt').textContent);
-        const L1 = lbl(); const res = { srv, src: /Ana sunucudan/.test(t), cards: /SRVAL/.test(t) && /SRVHZ/.test(t), srvAl: L1.some(x => /SRVAL:.*AL sinyali/.test(x)) };
+        const chips = () => [...document.querySelectorAll('#t-algi .sgrad button')].map(c => c.textContent).join('|');
+        const L1 = chips(); const res = { srv, src: /Ana sunucudan/.test(t), cards: /SRVAL/.test(L1) && /SRVHZ/.test(L1), srvAl: !/AL sinyali/.test(L1) };
         const oldRows = S.algi.rows; ALR.v = null; S.algi.rows = [{ s: 'LOCAL', sc: 80, stage: 'ates', g: 0, f: { fa: 3, rv: 2, fc: 0.8 }, o: { voltl: 5e7 } }]; renderAlgi();
-        const L2 = lbl(); res.local = L2.some(x => /LOCAL:.*Hazırlanıyor/.test(x)) && !L2.some(x => /LOCAL:.*AL sinyali/.test(x));
+        const L2 = chips(); res.local = /LOCAL/.test(L2) && !/AL sinyali/.test(L2) && !/Ana sunucudan/.test(document.getElementById('t-algi').textContent);
         S.algi.rows = oldRows; S.botAlive = old; renderAlgi(); const mv = document.getElementById('mvertxt'); res.menu = !!mv && /v\d/.test(mv.textContent) && !!document.querySelector('#more .mver button'); return res; });
       const dy = await p.evaluate(async () => { const old = S.botAlive; S.botAlive = true; showTab('algi'); const pd = alPrevDay(); alDay(pd); await new Promise(r => setTimeout(r, 900)); renderAlgi();
-        const t = document.getElementById('t-algi').textContent; const r = { list: /DUNAL/.test(t) && /DUNST/.test(t), gs: /Gün sonu/.test(t), cnt: /\+%3: 1/.test(t) && /stop: 1/.test(t), btn: !!document.querySelector('#t-algi .aldays button.on') };
+        const t = document.getElementById('t-algi').textContent; const r = { list: /DUNAL/.test(t) && /DUNST/.test(t), gs: /Gün sonu/.test(t), cnt: /1 hedef/.test(t) && /1 stop/.test(t), btn: !!document.querySelector('#t-algi .sgdays button.on') };
         await new Promise(r2 => setTimeout(r2, 50)); window.__shot = 1;
-        alDay(''); renderAlgi(); r.back = /BUGÜN ATEŞLENENLER/.test(document.getElementById('t-algi').textContent); S.botAlive = old; return r; });
-      await p.evaluate(async () => { const old = S.botAlive; S.botAlive = true; showTab('algi'); alDay(alPrevDay()); await new Promise(r => setTimeout(r, 600)); renderAlgi(); document.querySelectorAll('.sigtoast,#sigtoast,#wtoast').forEach(e => e.remove()); window.__uyeOld = document.documentElement.className; document.documentElement.classList.remove('uye'); document.querySelectorAll('.tab').forEach(e => e.classList.toggle('on', e.id === 't-algi')); const a = document.querySelector('#t-algi .aldays'); if (a) a.scrollIntoView(); });
+        alDay(''); renderAlgi(); r.back = /Bugün (\d+ sinyal|henüz)/.test(document.getElementById('t-algi').textContent) && !/O GÜN GELEN/.test(document.getElementById('t-algi').textContent); S.botAlive = old; return r; });
+      await p.evaluate(async () => { const old = S.botAlive; S.botAlive = true; showTab('algi'); alDay(alPrevDay()); await new Promise(r => setTimeout(r, 600)); renderAlgi(); document.querySelectorAll('.sigtoast,#sigtoast,#wtoast').forEach(e => e.remove()); window.__uyeOld = document.documentElement.className; document.documentElement.classList.remove('uye'); document.querySelectorAll('.tab').forEach(e => e.classList.toggle('on', e.id === 't-algi')); const a = document.querySelector('#t-algi .sgdays'); if (a) a.scrollIntoView(); });
       await p.screenshot({ path: require('path').join(OUT, 'algi-gun.png') });
       await p.evaluate(() => { document.documentElement.className = window.__uyeOld; alDay(''); });
       ok('Algı gün seçici: önceki günün ateşlemeleri sunucudan, gün sonu ve sayılarla; Bugün\'e dönüş', Object.values(dy).every(Boolean), JSON.stringify(dy));

@@ -3733,7 +3733,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="15.0";window.APPV=APP_VER;
+  const APP_VER="15.1";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4198,43 +4198,42 @@ function tvReconnectReport(){
   const tgs=(!BOTMODE&&S.botAlive)?' · sinyaller <b>Ana sunucudan</b> (herkeste aynı)':!AL.cfg.tg?' · Telegram kapalı':!alChat()?' · <span class="wrn">Telegram Chat ID yok</span>':!S.tgTok?' · <span class="wrn">bot token yok (Ayarlar)</span>':' · Telegram ✓';
   return '<div class="note" style="padding:8px 12px">'+s+tgs+(AL.err?'<br><span class="dn">'+htmlEsc(AL.err)+'</span>':'')+'</div>';
  }
- function vCanli(){
-  const today=dayKey(Date.now());
-  const ev=AL.log.filter(e=>e.d===today).slice().reverse();
-  // v14.11 (24.10, Fatih: 'dünkü sinyaller nerede'): gün seçici — Bugün · Önceki gün · tarih (sunucudan, herkeste aynı; geçmiş günde 'Şimdi' yerine 'Gün sonu')
-  const dsel=ALS.day||'',past=!!dsel,pd=alPrevDay();
-  let h='<div class="note" style="padding:6px 12px 2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><b style="color:#ffb020">⚡ '+(past?alDayTxt(dsel).toUpperCase()+' ATEŞLENENLER':'BUGÜN ATEŞLENENLER')+'</b>'+
-   (isUye()?'':'<span class="aldays"><button class="'+(past?'':'on')+'" onclick="alDay(\'\')">Bugün</button><button class="'+(dsel===pd?'on':'')+'" onclick="alDay(\''+pd+'\')">'+alDayTxt(pd)+'</button><label class="'+(past&&dsel!==pd?'on':'')+'">📅<input type="date" value="'+(dsel||'')+'" max="'+alPrevDay(0)+'" onchange="alDay(this.value)"></label></span>')+'</div>';
-  const SLx=()=>past?(ALS.hist[dsel]||null):(!BOTMODE&&window.ALS&&ALS.list)?ALS.list:null;
-  if(!isUye()){h+=starBox(SLx(),past?(ALS.yhist[dsel]||[]):(ALS.ylist||[]),past);h+=starPanel()}
+ function vCanli(){   // v15.1 SADE ALGI: gün seçici + özet + yıldızlılar + sinyal kartları (3, 'daha göster') + radar çipleri + kapalı ayar/açıklama
+  const today=dayKey(Date.now()),dsel=ALS.day||'',past=!!dsel,pd=alPrevDay(),uy=isUye();
   const SL=past?(ALS.hist[dsel]||null):(!BOTMODE&&window.ALS&&ALS.list)?ALS.list:null;
-  if(past&&!SL)h+='<div class="note">Yükleniyor…</div>';
-  if(SL&&SL.length&&myStarCfg())try{myStarScan(SL)}catch(x){}   // v14.40 kişisel ⭐
-  if(past&&!SL){}else if(SL&&(past||S.botAlive||SL.length)){   // v14.1: ana sunucunun Algı ateşlemeleri (karnedekiyle birebir)
-   if(!SL.length)h+='<div class="note">'+(past?'O gün Algı ateşlemesi yok (hafta sonu ya da tatil olabilir).':'Bugün henüz ateşleme yok.')+'</div>';
-   else h+='<div class="note" style="padding:2px 12px 6px">'+SL.length+' ateşleme'+(past?' · +%3: '+SL.filter(e=>e.o31===1).length+' · stop: '+SL.filter(e=>e.o31===2).length:'')+' · ⭐ = göstergenin GİRİŞ sinyali (15 sn) Algı fiyatına yakın (yıldızlı) · 📨 = Telegram\'a gitti · 📰 = o sırada hisseyle ilgili haber vardı<br><span style="color:#22c55e">●</span> geri çekilmede geldi · <span style="color:#22c55e">●●</span> ayrıca 15 dk EMA 20\'nin %2+ altında (karnede en iyi grup) · <span style="color:#8b93a1">●</span> kovalayan (VWAP üstü + kırılım; karnede zayıf)</div><table><tr><th>Sembol</th><th>Saat</th><th>Giriş</th><th>'+(past?'Gün sonu':'Şimdi')+'</th><th>Zirve</th><th>Güç</th><th>Sonuç</th></tr>'+SL.map(e=>{
-    const m=e.meta||{},q=S.umap[e.sym],now=past?e.rc:(q&&q.close&&e.px?(q.close/e.px-1)*100:null),tg=m.tg!=null?m.tg===1:(m.fc>=.8&&m.rv>=2);
-    const res=e.o31===1?'<b class="up">+%3 ✅</b>':e.o31===2?'<b class="dn">−%1 ❌</b>':e.done?'<span style="color:var(--dim)">sonuçsuz</span>':'<span class="wrn">⏳ açık</span>';
-    const hn=typeof haberNote==='function'?haberNote(e.sym,e.t+30*60e3):'';
-    return '<tr class="row" onclick="algiGo(\''+e.sym+'\')"><td class="sym"'+(hn?' title="'+htmlEsc(hn)+'"':'')+'>'+htmlEsc(e.sym)+(typeof alDot==='function'?alDot(e):'')+(function(){const my=myStarOf(e);return my?(my.ok?' ⭐':my.pend||!my.done?' <span title="yıldız hesaplanıyor" style="opacity:.5">⏳</span>':''):(m.star?' ⭐':'')})()+(tg?' 📨':'')+(hn?' 📰':'')+'</td><td>'+hm(e.t)+'</td><td>'+(e.px?nf(e.px):'-')+'</td><td class="'+cls(now)+'">'+(now!=null?pct(now):'-')+'</td><td class="up">'+(e.mfe!=null?pct(e.mfe):'-')+'</td><td>'+(m.fc!=null?'%'+nf(m.fc*100,0)+(m.fc>=.8?' 💪':''):'-')+'</td><td>'+res+'</td></tr>'}).join('')+'</table>';
+  let h=uy?'':sgDays(dsel,pd,'alDay');
+  if(!uy)h+=starBox(SL,past?(ALS.yhist[dsel]||[]):(ALS.ylist||[]),past);
+  if(SL&&SL.length&&myStarCfg())try{myStarScan(SL)}catch(x){}
+  let L=null;
+  if(SL)L=SL.map(e=>({sym:e.sym,t:e.t,px:e.px,o31:e.o31,done:e.done,rc:e.rc,m:e.meta||{},e}));
+  else if(!past)L=AL.log.filter(e=>e.d===today).map(e=>({sym:e.s,t:e.t,px:e.p0,o31:e.res==='hit'?1:e.res==='fail'?2:null,done:!!e.res,m:{},e:null}));
+  if(!L)h+='<div class="sgnote">Yükleniyor…</div>';
+  else{
+   L.sort((a,b)=>b.t-a.t);L.forEach(x=>{x.st=sgState('algi',x.sym,x.px,x.o31,x.done,x.rc,past)});
+   h+=sgSum(L,past?alDayTxt(dsel):'');
+   if(!L.length)h+='<div class="sgnote">'+(past?'O gün Algı sinyali yok (hafta sonu ya da tatil olabilir).':'Bugün henüz Algı sinyali yok.')+'</div>';
+   else{const all=!!SGX.all.algi,show=all?L:L.slice(0,3);
+    h+='<div class="sglbl">'+(past?'O GÜN GELEN SİNYALLER':'GELEN SİNYALLER')+'</div>'+show.map(x=>{const m=x.m,tg=m.tg!=null?m.tg===1:(m.fc>=.8&&m.rv>=2);
+      let star=!!m.star;try{const my=x.e&&myStarOf(x.e);if(my)star=!!my.ok}catch(e){}
+      const w=[];if(m.fc!=null)w.push('Alıcılar %'+nf(m.fc*100,0));if(m.rv!=null)w.push('hacim normalin '+nf(m.rv,1)+' katı');
+      let why=w.length?w.join(', ')+'.':'';const hn=x.e&&typeof haberNote==='function'?haberNote(x.sym,x.t+30*60e3):'';if(hn)why+=(why?' ':'')+hn;
+      const nw=sgNow(x.sym);
+      return sgCard({sym:x.sym,dot:x.e&&typeof alDot==='function'?alDot(x.e):'',tag:(star?'★ Yıldızlı ':'')+(tg?'· Gruba gitti':''),st:x.st,l:'Sinyal '+sgHm(x.t)+' · '+nf(x.px),r:past?(x.rc!=null?'Gün sonu '+pct(x.rc):''):(nw?'Şimdi '+nf(nw):''),why,go:"algiGo('"+x.sym+"')"})}).join('');
+    if(L.length>3)h+='<button class="sgmore" onclick="SGX.all.algi=!SGX.all.algi;renderAlgi(true)">'+(all?'Daha az göster':(L.length-3)+' sinyal daha göster')+' ›</button>'}
   }
-  else if(!ev.length)h+='<div class="note">Bugün henüz ateşleme yok.</div>';
-  else h+='<table><tr><th>Sembol</th><th>Saat</th><th>Giriş</th><th>Şimdi</th><th>Zirve</th><th>Durum</th><th>Skor</th></tr>'+ev.map(e=>{
-   const q=S.umap[e.s];const now=q&&q.close?(q.close/e.p0-1)*100:null;
-   const stt=e.res?RES[e.res]:(e.fade?'<b style="color:#fb923c">🟠 sönüyor</b>':e.conf?'<b class="up">✅ teyit</b>':'<span class="wrn">⏳ açık</span>');
-   return '<tr class="row" onclick="algiGo(\''+e.s+'\')"><td class="sym">'+e.s+(e.mute?' 🔇':'')+(e.f&&e.f.sh?' ⚠':'')+'</td><td>'+hm(e.t)+'</td><td>'+nf(e.p0)+'</td><td class="'+cls(now)+'">'+(now!=null?pct(now):'-')+'</td><td class="up">'+pct((e.hi/e.p0-1)*100)+'</td><td>'+stt+'</td><td>'+e.sc+'</td></tr>'}).join('')+'</table>';
-  // v6.4: okunur kart görünümü (simge yerine düz Türkçe)
-  h+='<div class="note" style="padding:10px 12px 2px"><b style="color:#7dd3fc">RADAR · ŞU AN İZLENENLER</b> — '+(alRowsSrv()?'<b>Ana sunucudan</b>, herkeste aynı':(!BOTMODE&&S.botAlive)?'bu telefonun kendi hesabı (sunucu listesi bekleniyor); gerçek sinyaller yalnız yukarıdaki listede':'skor '+AL.cfg.minSc+' ve üstüne çıkıp şartlar tutunca sinyal verir')+'</div>';
-  const SR=alRowsSrv(),r=SR?SR.rows:AL.rows;   // v14.10: Ana sunucu varken radar kartları da sunucudan (herkeste aynı)
-  if(!r.length)h+=sess().open?'<div class="note">Veri birikiyor — ilk ölçümler ~1 dk içinde gelir.</div>':'<div class="nempty" style="margin:4px 12px">Piyasa kapalı; radar 10:00\'da yeniden başlar. Bugünkü sinyallerin sonucunu <b>Sinyaller</b> ve <b>İsabet</b> sekmelerinde görebilirsin.<div class="nqa" style="margin-top:10px"><button onclick="showTab(\'algi\')">⚡ Sinyaller</button><button onclick="showTab(\'now\')">🏠 Yarın izlenecekler</button><button onclick="infoOpen(\'algi\')">ⓘ Algı nasıl çalışır?</button></div></div>';
-  else h+=r.map(x=>algiCard(x,!!SR)).join('');
-  h+='<details class="alhelp" data-k="alhelp"><summary>❔ Bu ekran nasıl okunur?</summary><div>'+
-   '<b>Durum:</b> 👀 <b>İzlemede</b> = para girmeye başladı ama fiyat henüz tepki vermedi · ⏳ <b>Hazırlanıyor</b> = bütün şartlar tuttu, 15 sn teyit bekleniyor · ⚡ <b>AL sinyali</b> = sinyal verildi (giriş/stop/hedef Telegram\'da).<br>'+
-   '<b>Skor çubuğu:</b> 0–100. Dikey çizgi sinyal eşiği ('+AL.cfg.minSc+'). Gri = zayıf, sarı = ilgi var, yeşil = sinyal bölgesi.<br>'+
-   '<b>Anlık hacim:</b> son 1 dakikadaki TL hacmi, günün dakika ortalamasının kaç katı. <b>Günlük hacim:</b> bugünkü hacim normal güne göre kaç kat. <b>Alıcılar:</b> son işlemlerin yüzde kaçı satış kademesinden (alıcı istekli) yapıldı — %65 üstü güçlü.<br>'+
-   'Karta dokun → grafik açılır.</div></details>';
+  if(!past){const SR=alRowsSrv(),r=(SR?SR.rows:AL.rows)||[];
+   h+='<div class="sglbl">RADAR · ŞU AN HAZIRLANANLAR'+(SR?' <span>Ana sunucudan, herkeste aynı</span>':'')+'</div>';
+   if(!r.length)h+='<div class="sgnote">'+(sess().open?'Veri birikiyor, ilk ölçümler 1 dakika içinde gelir.':'Radar seansta (10:00–18:00) çalışır.')+'</div>';
+   else h+='<div class="sgrad">'+r.slice(0,10).map(x=>'<button onclick="algiGo(\''+x.s+'\')">'+htmlEsc(x.s)+'<i>'+(x.sc!=null?x.sc:'')+'</i></button>').join('')+'</div>'}
+  h+='<details class="sgfold" data-k="alset"><summary>Yıldız ayarım ve Algı nasıl çalışır?</summary><div class="sgfb">'+(uy?'':starPanel())+
+   '<p><b>Algı</b> hisseye para girişini canlı izler: anlık hacim, alıcıların oranı ve fiyat tepkisi. Puan '+AL.cfg.minSc+' ve üstüne çıkıp şartlar tutunca sinyal verir. Radar çiplerindeki sayı o anki puandır.</p>'+
+   '<p><b>★ Yıldızlı</b> = göstergenin GİRİŞ sinyali Algı fiyatına yakın geldi; çıkış göstergeye göre. Diğerlerinde hedef +%3, stop −%1.</p>'+
+   '<p><span style="color:#22c55e">●</span> geri çekilmede geldi · <span style="color:#8E8E93">●</span> kovalayan (VWAP üstü + kırılım).</p>'+
+   '<button class="sgbtn" onclick="alView(\'ayar\')">Radar ayarları</button></div></details>';
+  h+='<p class="sgdis">Hedef +%3, stop −%1 (sinyal fiyatından); yıldızlıda çıkış göstergeye göre. Yatırım tavsiyesi değildir.</p>';
   return h;
  }
+ window.alView=function(v){AL.view=v;renderAlgi(true)};
  function algiCard(x,srv){
   const f=x.f,o=x.o,sc=x.sc,min=AL.cfg.minSc;
   // v14.10: Ana sunucu çalışırken bu telefonun KENDİ hesabı 'AL sinyali' demez (gerçek sinyal yalnız sunucuda)
@@ -4359,14 +4358,15 @@ function tvReconnectReport(){
   const bar=document.getElementById('algibar'),body=document.getElementById('algibody');if(!bar||!body)return;
   if(!bar._built){bar.innerHTML=VIEWS.map(v=>'<button data-av="'+v[0]+'" class="'+(v[0]===AL.view?'on':'')+'">'+v[1]+'</button>').join('');bar._built=1;
    bar.onclick=e=>{const b=e.target.closest('[data-av]');if(!b)return;AL.view=b.dataset.av;[...bar.children].forEach(x=>x.classList.toggle('on',x===b));renderAlgi(true)}}
-  if(AL.view==='ayar'){if(!body._ayar||arguments[0]){body.innerHTML=statusLine()+vAyar();body._ayar=1;bindAyar()}return}
+  if(AL.view!=='ayar')AL.view='canli';   // v15.1: Radar/Sinyaller/İsabet alt sekmeleri kalktı (tek sade ekran)
+  if(AL.view==='ayar'){if(!body._ayar||arguments[0]){body.innerHTML='<button class="sgback" onclick="alView(\'canli\')">‹ Sinyallere dön</button>'+statusLine()+vAyar();body._ayar=1;bindAyar()}return}
   body._ayar=0;
   // v14.42: açık ayar kutusu yenilemede kapanmasın, yazı yazarken ekran yenilenmesin, sayfa başa zıplamasın
   const ae=document.activeElement;if(!arguments[0]&&ae&&body.contains(ae)&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName))return;
   const force=!!arguments[0],op={};body.querySelectorAll('details[data-k]').forEach(d=>{op[d.dataset.k]=d.open});
   const vals={};body.querySelectorAll('details[data-k] input[id]').forEach(i=>{vals[i.id]=i.value});
   const sc=document.scrollingElement||document.documentElement,y=sc.scrollTop,tb=document.getElementById('t-algi'),ty=tb?tb.scrollTop:0;
-  body.innerHTML=statusLine()+(AL.view==='canli'?vCanli():AL.view==='kayit'?vKayit():vKarne());
+  body.innerHTML=vCanli();
   body.querySelectorAll('details[data-k]').forEach(d=>{if(op[d.dataset.k]!=null)d.open=op[d.dataset.k];if(d.open&&!force)d.querySelectorAll('input[id]').forEach(i=>{if(vals[i.id]!=null)i.value=vals[i.id]})});
   try{sc.scrollTop=y;if(tb)tb.scrollTop=ty}catch(e){}
  }
@@ -7272,26 +7272,30 @@ async function aisecE20Load(L){if(AIE.busy)return;AIE.busy=1;let n=0;try{for(con
 function aisecE20Txt(sym){const x=aisecE20(sym);if(!x)return '<div class="ae">EMA 20 (15 dk) hesaplanıyor…</div>';const a=Math.abs(x.d);
  return '<div class="ae">'+(a<0.15?'Fiyat 15 dakikalık EMA 20 ile aynı seviyede':'Fiyat 15 dakikalık EMA 20\'nin <b>%'+nf(a,1)+' '+(x.d>0?'üstünde':'altında')+'</b>')+' ('+nf(x.v)+') · ortalama '+(x.up?'yukarı':'aşağı')+' eğimli · <i>yalnız bilgi</i></div>'}
 function aisecHm(t){return new Date(t+3*3600e3).toISOString().slice(11,16)}
-function renderAisec(){const el=$('#aisecbody');if(!el)return;aisecLoad();const v=AIS.v;
+function renderAisec(){const el=$('#aisecbody');if(!el)return;aisecLoad();const v=AIS.v;   // v15.1 sade kart dili
  if(isUye()){el.innerHTML='<div class="note" style="padding:14px">Bu bölüm üye sürümünde yok.</div>';return}
- if(!v){el.innerHTML='<div class="note" style="padding:14px">'+(AIS.err?'Liste alınamadı, bağlantı bekleniyor…':'Yükleniyor…')+'</div>';return}
+ if(!v){el.innerHTML='<div class="sgnote">'+(AIS.err?'Liste alınamadı, bağlantı bekleniyor…':'Yükleniyor…')+'</div>';return}
  const ms=(typeof mktSt==='function')?mktSt():null,open=ms?ms.k==='open'||ms.k==='kap':true,today=new Date(Date.now()+3*3600e3).toISOString().slice(0,10),isT=v.d===today;
- const L=v.list||[],O=v.out||[];let h='';
- h+='<div class="aih"><span class="dot'+(open&&isT?'':' off')+'"></span>';
+ const L=v.list||[],O=v.out||[];
+ let h='<div class="sgsum">Sistemin bugünkü sinyallerine ve hacme göre seçtiği <b>en çok 8 hisse</b>. Seansta 10 dakikada bir yenilenir.</div>';
+ h+='<div class="aih sgsub"><span class="dot'+(open&&isT?'':' off')+'"></span>';
  if(!v.at)h+='<span>Henüz liste yok</span>';
- else if(open&&isT)h+='<span>Ana sunucu seçti · güncelleme <b>'+aisecHm(v.at)+'</b>'+(v.next?' · sonraki ~'+aisecHm(v.next):'')+'</span>';
+ else if(open&&isT)h+='<span>Son güncelleme <b>'+aisecHm(v.at)+'</b>'+(v.next?' · sonraki ~'+aisecHm(v.next):'')+'</span>';
  else h+='<span>Seans kapalı · '+(isT?'bugünün':htmlEsc(String(v.d||'').split('-').reverse().join('.'))+' gününün')+' son listesi ('+aisecHm(v.at)+')</span>';
- h+='</div>';
- if(!L.length)h+='<div class="note" style="padding:12px 4px">'+(open?'Şu an listeye girecek hisse yok. Seans içinde 10 dakikada bir yeniden bakılır; geri alım, Momentum, güçlü Algı ya da Fırsat A sinyali gelen hisseler buraya eklenir.':'Bu gün listeye hisse girmedi.')+'</div>';
+ h+='</div><div class="sglbl">LİSTEDE · '+L.length+' HİSSE</div>';
+ if(!L.length)h+='<div class="sgnote">'+(open?'Şu an listeye girecek hisse yok. Geri alım, Momentum, güçlü Algı ya da Fırsat A sinyali gelen hisseler buraya eklenir.':'Bu gün listeye hisse girmedi.')+'</div>';
  try{aisecE20Load(L)}catch(x){}
  h+=L.map(e=>{const lq=(S.quotes[e.s]&&S.quotes[e.s].close)||(S.umap[e.s]&&S.umap[e.s].close)||e.now||null,p=lq&&e.px?(lq/e.px-1)*100:e.p;
-  let st='',sc='';if(e.hit||(p!=null&&p>=3))st='✓ +%3 geldi',sc='up';else if(p!=null&&p<=-1)st='Stopa geldi −%1',sc='dn';else st='Stop '+nf(e.px*0.99)+' · hedef '+nf(e.px*1.03);
+  const st=(e.hit||(p!=null&&p>=3))?{k:'g',t:'Hedef oldu · +%3'}:(p!=null&&p<=-1)?{k:'r',t:'Stopa geldi · −%1'}:{k:p!=null&&p>=1?'g':'n',t:'Sürüyor'+(p!=null?' · '+pct(p):'')};
   const ks=(e.k||[]).map(k=>'<i'+(k==='tk'?' class="w"':'')+'>'+(AIS_K[k]||htmlEsc(k))+'</i>').join('');
-  return '<div class="aic" onclick="selectSym(\''+htmlEsc(e.s)+'\',\'bist\');showTab(\'chart\')"><div class="at">'+nAvatar(e.s)+'<div class="an"><b>'+htmlEsc(e.s)+'</b> '+wStar(e.s)+'<small>'+e.sc+' puan · '+aisecHm(e.t)+'\'de girdi · '+nf(e.px)+'</small></div><div class="ap"><b>'+(lq?nf(lq):'–')+'</b><span class="'+cls(p)+'">'+(p!=null?pct(p):'')+'</span></div></div>'+
-   '<div class="ak">'+ks+'</div><div class="ax">'+(e.ai?'<em>✨</em>':'')+htmlEsc(e.note||'')+'</div>'+aisecE20Txt(e.s)+'<div class="af"><span class="'+sc+'">'+st+'</span><span>Grafiği aç ›</span></div></div>'}).join('');
- if(O.length){const why={stop:'Stop (−%1)',taban:'Tabana kilitlendi'};h+='<details class="aiout"><summary>Bugün listeden çıkanlar ('+O.length+')</summary>'+O.slice().reverse().map(x=>'<div><span><b>'+htmlEsc(x.s)+'</b> · '+aisecHm(x.t)+'–'+aisecHm(x.at)+'</span><span class="'+cls(x.p)+'">'+(why[x.why]||htmlEsc(x.why||''))+(x.p!=null?' '+pct(x.p):'')+'</span></div>').join('')+'</details>'}
- h+='<div class="aint">Deneme listesi, <b>sinyal değildir</b>. Seçimi sistemin kendi verisi yapar (bugünün sinyalleri + o anki hacim); yapay zekâ yalnız nedenini yazar. Listeye girenler karneye sessizce yazılır. Yatırım tavsiyesi değildir.</div>';
- el.innerHTML=h}
+  return '<div class="aic sgc" onclick="selectSym(\''+htmlEsc(e.s)+'\',\'bist\');showTab(\'chart\')"><div class="sgt"><div><b class="sgs">'+htmlEsc(e.s)+'</b> '+wStar(e.s)+'</div><span class="sgp '+st.k+'">'+st.t+'</span></div>'+
+   '<div class="sgl"><span>Seçildi '+aisecHm(e.t)+' · '+nf(e.px)+'</span><span>'+(lq?'Şimdi '+nf(lq):'')+'</span></div>'+
+   '<div class="ax sgw">'+(e.ai?'<em>✨</em>':'')+htmlEsc(e.note||'')+'</div><div class="ak">'+ks+'</div>'+aisecE20Txt(e.s)+'</div>'}).join('');
+ if(O.length){const why={stop:'Stop (−%1)',taban:'Tabana kilitlendi'};h+='<details class="sgfold aiout" data-k="aiout"><summary>Bugün listeden çıkanlar ('+O.length+')</summary><div class="sgfb">'+O.slice().reverse().map(x=>'<div class="sgor"><span><b>'+htmlEsc(x.s)+'</b> · '+aisecHm(x.t)+'–'+aisecHm(x.at)+'</span><span class="'+cls(x.p)+'">'+(why[x.why]||htmlEsc(x.why||''))+(x.p!=null?' '+pct(x.p):'')+'</span></div>').join('')+'</div></details>'}
+ h+='<details class="sgfold" data-k="aihow"><summary>Liste nasıl seçiliyor?</summary><div class="sgfb"><p>Seçimi sistemin kendi verisi yapar: bugünün sinyalleri (seans içi geri alım, Momentum, güçlü Algı, Fırsat A) ve o anki hacim. Yapay zekâ yalnız nedenini tek cümleyle yazar. Girdiği fiyattan −%1 düşen hisse listeden çıkar. Listeye girenler ölçülür.</p></div></details>';
+ h+='<p class="sgdis aint">Deneme listesidir, <b>sinyal değildir</b>. Yatırım tavsiyesi değildir.</p>';
+ const op={};el.querySelectorAll('details[data-k]').forEach(d=>op[d.dataset.k]=d.open);
+ el.innerHTML=h;el.querySelectorAll('details[data-k]').forEach(d=>{if(op[d.dataset.k])d.open=true})}
 </script>
 <style>.ysh{display:flex;align-items:baseline;gap:8px;padding:8px 12px 4px}.ysh b{color:#f5c542;font-size:13px;letter-spacing:.3px}.ysh span{color:var(--dim);font-size:11px}.ysg{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;padding:2px 12px 10px}.ysc{border:1px solid rgba(245,197,66,.55);border-radius:12px;padding:9px 11px;background:linear-gradient(135deg,rgba(245,197,66,.13),rgba(245,197,66,.03));cursor:pointer;box-shadow:0 0 0 1px rgba(245,197,66,.08) inset}.ysc1{display:flex;align-items:center;gap:6px;font-size:15px;margin-bottom:5px}.ysc1 b{color:#f5c542}.ysc2{display:grid;grid-template-columns:62px 48px 1fr auto;gap:6px;font-size:12px;padding:1px 0}.ysc2 span{color:var(--dim)}.ysc2 i{font-style:normal;color:var(--dim);font-size:11px}.ysc3{display:flex;justify-content:space-between;gap:6px;font-size:11px;color:var(--dim);margin-top:5px;border-top:1px dashed rgba(245,197,66,.25);padding-top:5px;flex-wrap:wrap}.ald{font-style:normal;font-size:10px;margin-left:3px;letter-spacing:-1px;vertical-align:1px}.ald.ok{color:#22c55e}.ald.gr{color:#8b93a1}</style>
 <script>
@@ -7346,38 +7350,35 @@ function ktmSrvLoad(force){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b))
  if(!force&&Date.now()-KTMS.at<20e3)return;KTMS.at=Date.now();
  fetch(dq(b+'/sigtoday?src=katman')).then(r=>r.json()).then(j=>{if(j&&j.ok){KTMS.list=j.list||[];if(S.tab==='katman')renderKatman()}}).catch(()=>{})}
 function ktmDay(d){d=String(d||'');if(d&&d>=alPrevDay(0))d='';KTMS.day=d;ktmSrvLoad(true);renderKatman()}
-function ktmGelen(){const d=KTMS.day,L=d?KTMS.hist[d]:KTMS.list,p1=alPrevDay(1);
- const db=(v,t)=>'<button class="'+(KTMS.day===v?'on':'')+'" onclick="ktmDay(\''+v+'\')">'+t+'</button>';
- let h='<div class="ktmg"><div class="ktmgh"><b>🎯 '+(d?alDayTxt(d):'Bugün')+' gelenler</b><span class="seg">'+db('','Bugün')+db(p1,alDayTxt(p1).split(' ').slice(0,2).join(' '))+
-  '<label class="ktmcal">📅<input type="date" value="'+(d||'')+'" max="'+alPrevDay(0)+'" onchange="ktmDay(this.value)"></label></span></div>';
- if(!L){h+='<div class="note" style="padding:8px 2px">⏳ Yükleniyor…</div></div>';return h}
- const R=L.slice().sort((a,b)=>a.t-b.t);
- if(!R.length)return h+'<div class="note" style="padding:8px 2px">'+(d?'Bu gün Dönüş anı sinyali yok.':'Bugün henüz Dönüş anı sinyali gelmedi. Ana sunucu 10:30–17:30 arası BIST 30\'u 3 dakikada bir tarar.')+'</div></div>';
- let hh=0,ss=0;
- const rows=R.map(e=>{const m=e.meta||{},q=S.umap[e.sym],nw=!d&&q&&q.close?q.close:null,cur=nw&&e.px?(nw/e.px-1)*100:null,tm=new Date(e.t+3*3600e3).toISOString().slice(11,16);
-  if(e.o31===1)hh++;else if(e.o31===2)ss++;
-  const sn=e.o31===1?'<b class="up">✅ +%3</b>':e.o31===2?'<b class="dn">❌ stop</b>':e.done&&e.rc!=null?'<span class="'+cls(e.rc)+'">Gün sonu '+pct(e.rc)+'</span>':cur!=null?'<span class="'+cls(cur)+'">Şimdi '+pct(cur)+'</span>':'açık';
-  return '<tr class="row" onclick="xrayOpen(\''+htmlEsc(e.sym)+'\')"><td>'+tm+'</td><td class="sym">'+htmlEsc(e.sym)+(m.tg===1?' <span title="Telegram\'a gitti">📨</span>':'')+'</td><td>'+nf(e.px)+'</td><td>'+sn+'</td></tr>'}).join('');
- h+='<div class="note" style="padding:2px 2px 6px">'+R.length+' sinyal'+(hh+ss?' · ✅ '+hh+' hedef · ❌ '+ss+' stop · isabet %'+Math.round(hh/(hh+ss)*100):'')+' · 📨 = Telegram\'a gitti (BIST 100 artıyken)</div>'+
-  '<table class="ktmgt"><tr><th>Saat</th><th>Hisse</th><th>Giriş</th><th>Sonuç</th></tr>'+rows+'</table></div>';
+function ktmGelen(){const d=KTMS.day,L=d?KTMS.hist[d]:KTMS.list,p1=alPrevDay(1);   // v15.1 sade kart dili
+ let h=sgDays(d,p1,'ktmDay');
+ if(!L)return h+'<div class="sgnote">⏳ Yükleniyor…</div>';
+ const R=L.map(e=>({sym:e.sym,t:e.t,px:e.px,o31:e.o31,done:e.done,rc:e.rc,m:e.meta||{}})).sort((a,b)=>b.t-a.t);
+ R.forEach(x=>{x.st=sgState('katman',x.sym,x.px,x.o31,x.done,x.rc,!!d)});
+ h+=sgSum(R,d?alDayTxt(d):'');
+ const hh=R.filter(x=>x.o31===1).length,ss=R.filter(x=>x.o31===2).length;
+ h+='<div class="sglbl">'+(d?alDayTxt(d).toUpperCase()+' GELENLER':'BUGÜN GELENLER')+(hh+ss?' <span>isabet %'+Math.round(hh/(hh+ss)*100)+'</span>':'')+'</div>';
+ if(!R.length)return h+'<div class="sgnote">'+(d?'Bu gün Dönüş anı sinyali yok.':'Bugün henüz Dönüş anı sinyali gelmedi. Ana sunucu 10:30–17:30 arası BIST 30\'u 3 dakikada bir tarar.')+'</div>';
+ h+=R.map(x=>{const nw=!d?sgNow(x.sym):null;return sgCard({sym:x.sym,tag:x.m.tg===1?'· Gruba gitti':'',st:x.st,l:'Sinyal '+sgHm(x.t)+' · '+nf(x.px),r:d?(x.rc!=null?'Gün sonu '+pct(x.rc):''):(nw?'Şimdi '+nf(nw):''),go:"xrayOpen('"+x.sym+"')"})}).join('');
  return h}
 setInterval(()=>{try{if(BOTMODE||S.tab!=='katman'||document.hidden||KTMS.day)return;if(Date.now()-KTMS.at>=(mktSt()==='open'?20e3:5*60e3))ktmSrvLoad(true)}catch(e){}},5000);
 function ktmSet(v){KTM.set=v;LS.set('ktmset',v);KTM.at=0;renderKatman();ktmRun()}
-function renderKatman(){const el=document.getElementById('ktmbody');if(!el)return;
+function renderKatman(){const el=document.getElementById('ktmbody');if(!el)return;   // v15.1 sade: gelenler kartları + katman satırları (4 kutu + durum)
  if(!KTM.at&&!KTM.busy)setTimeout(ktmRun,0);if(!KTMS.day&&!KTMS.list)ktmSrvLoad();
  const syms=ktmSyms(),R=syms.map(s=>[s,KTM.m[s]]).filter(x=>x[1]),cnt={};R.forEach(x=>cnt[x[1].du]=(cnt[x[1].du]||0)+1);
  R.sort((a,b)=>KTM_D[a[1].du][2]-KTM_D[b[1].du][2]||b[1].pu-a[1].pu||(a[1].du==='donus'?a[1].L[3].ago-b[1].L[3].ago:0));
  const sb=(v,t)=>'<button class="'+(KTM.set===v?'on':'')+'" onclick="ktmSet(\''+v+'\')">'+t+'</button>';
- let h=ktmGelen()+'<div class="ktmsub">Şu an · katman durumu</div><div class="ktmtop"><div class="seg">'+sb('x30','BIST 30')+sb('wl','İzleme listem')+'</div><button class="ktmrf" onclick="KTM.at=0;ktmRun()">'+(KTM.busy?'⏳':'🔄')+' Yenile</button></div>';
- h+='<div class="ktmsum">'+['donus','tam','geri','zayif','asagi'].map(k=>'<span class="ks-'+k+'">'+KTM_D[k][0]+' '+KTM_D[k][1]+' <b>'+(cnt[k]||0)+'</b></span>').join('')+'</div>';
- if(!R.length)h+='<div class="note" style="margin:12px;padding:14px;text-align:center">'+(KTM.busy||!KTM.at?'⏳ Dört zaman diliminin mumları yükleniyor…':KTM.set==='wl'&&!syms.length?'İzleme listen boş.':htmlEsc(KTM.err||'Veri yok.'))+'</div>';
- else h+=R.map(([s,r])=>{const q=S.umap[s],px=q&&q.close?q.close:r.px;
-  return '<div class="ktmrow ktm-'+r.du+'" onclick="xrayOpen(\''+htmlEsc(s)+'\')"><div class="kh"><b>'+htmlEsc(s)+'</b><span>'+nf(px)+(q&&q.change!=null?' <i class="'+cls(q.change)+'">'+pct(q.change)+'</i>':'')+'</span><em>'+KTM_D[r.du][0]+' '+KTM_D[r.du][1]+'</em></div>'+
-   (sigStampHtml(s,['katman'])||(r.tt&&(r.du==='donus'||r.du==='tam')?'<div class="sstamp">⏱ 1 dk dönüşü <b>'+new Date(r.tt+3*3600e3).toISOString().slice(11,16)+'</b> · fiyat <b>'+nf(r.tp)+'</b></div>':''))+
-   '<div class="kbs">'+r.L.map(ktmBox).join('')+'</div><div class="kt">'+ktmTxt(r)+'</div></div>'}).join('');
- h+='<div class="note" style="padding:8px 14px 14px;color:var(--dim)">'+(KTM.at?'Son tarama '+new Date(KTM.at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})+(mktSt&&mktSt()==='open'?' · seansta dakikada bir yenilenir':' · seans kapalı, son seansın verisi')+'. ':'')+
-  'EMA\'lar: 30 dk ve 15 dk 8/13/21 · 5 dk 5/8/13 · 1 dk 3/5/8. Sinyal değildir; yatırım tavsiyesi değildir.</div>';
- el.innerHTML=h}
+ let h=ktmGelen()+'<div class="sglbl">ŞU AN KATMANLAR <button class="sgrf" onclick="KTM.at=0;ktmRun()">'+(KTM.busy?'⏳':'Yenile')+'</button></div><div class="sgseg">'+sb('x30','BIST 30')+sb('wl','İzleme listem')+'</div>';
+ h+='<div class="sgsub">'+['donus','tam','geri','zayif','asagi'].filter(k=>cnt[k]).map(k=>KTM_D[k][1]+' '+cnt[k]).join(' · ')+(R.length?'':'')+'</div>';
+ h+='<div class="sgsub">Kutular: 30 dk · 15 dk · 5 dk · 1 dk. Yeşil = o zaman diliminde yukarı. Durumlar: Dönüş anı, Tam uyum, Geri çekiliyor, Zayıf, Aşağı.</div>';
+ if(!R.length)h+='<div class="sgnote">'+(KTM.busy||!KTM.at?'⏳ Dört zaman diliminin mumları yükleniyor…':KTM.set==='wl'&&!syms.length?'İzleme listen boş.':htmlEsc(KTM.err||'Veri yok.'))+'</div>';
+ else h+='<div class="sglist">'+R.map(([s,r])=>{const q=S.umap[s],px=q&&q.close?q.close:r.px,k=r.du==='donus'||r.du==='tam'?'g':r.du==='asagi'||r.du==='zayif'?'r':r.du==='geri'?'o':'n';
+  return '<div class="ktmrow sgkr" onclick="xrayOpen(\''+htmlEsc(s)+'\')"><div class="sgkn"><b>'+htmlEsc(s)+'</b><small>'+nf(px)+(q&&q.change!=null?' <i class="'+cls(q.change)+'">'+pct(q.change)+'</i>':'')+'</small></div><div class="kbs">'+r.L.map(ktmBox).join('')+'</div><span class="sgp '+k+'">'+KTM_D[r.du][1]+'</span></div>'}).join('')+'</div>';
+ h+='<details class="sgfold" data-k="ktmhow"><summary>EMA Katman nasıl çalışır?</summary><div class="sgfb"><p>Dört zaman diliminde EMA sırasına bakar: 30 dk ve 15 dk 8/13/21 · 5 dk 5/8/13 · 1 dk 3/5/8. <b>Dönüş anı</b> = büyük yön yukarı, 1 dakikalık yeniden yukarı döndü. <b>Tam uyum</b> = dört katman da yukarı, geç kalmış olabilirsin. <b>Geri çekiliyor</b> = büyük yön yukarı, kısa vade aşağı.</p>'+
+  (KTM.at?'<p>Son tarama '+new Date(KTM.at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})+(mktSt&&mktSt()==='open'?' · seansta dakikada bir yenilenir.':' · seans kapalı, son seansın verisi.')+'</p>':'')+'</div></details>';
+ h+='<p class="sgdis">Deneme sinyalidir, gruba gitmez. Yatırım tavsiyesi değildir.</p>';
+ const op={};el.querySelectorAll('details[data-k]').forEach(d=>op[d.dataset.k]=d.open);
+ el.innerHTML=h;el.querySelectorAll('details[data-k]').forEach(d=>{if(op[d.dataset.k])d.open=true})}
 setInterval(()=>{try{if(BOTMODE||S.tab!=='katman'||document.hidden||KTM.busy)return;if(Date.now()-KTM.at>=(mktSt()==='open'?60e3:30*60e3))ktmRun()}catch(e){}},5000);
 /* v14.32 (04.11, gruptan @zarifmelodi: 'bütün sinyallerde hissenin altında sinyalin geldiği saat ve sinyal fiyatı yazsın'): sigStampOf/sigStampHtml —
    bugünün sunucu karnesinden (SIGT genel liste + ALS Algı + KTMS Katman) o hissenin İLK sinyali: kaynak, saat, fiyat, şimdiki fark. Fırsat kartı, Algı radar kartı, EMA Katman kartı, röntgen başlığı. Yalnız görünüm. */
@@ -7515,6 +7516,123 @@ window.icKarne=function(){return ''};
  setTimeout(tick,3000);setInterval(tick,20000);
  try{grpSync(S.tab||'now')}catch(e){}
 })();
+</script>
+<style>
+/* ================= v15.1 SADE SİNYAL EKRANLARI (Algı · Fırsat · AI Seçtikleri · EMA Katman): tek kart dili ================= */
+#algibar{display:none!important}
+#algibody,#aisecbody,#ktmbody,#opsig{padding:0 14px}
+.sgdays{display:flex;gap:18px;align-items:center;margin:4px 0 10px;font-size:14px;color:#8E8E93}
+.sgdays button{background:none;border:0;padding:0 0 4px;color:#8E8E93;font:inherit;cursor:pointer}
+.sgdays button.on{color:#F2F2F7;font-weight:600;border-bottom:2px solid var(--pir,#FF6A00)}
+.sgdays label{position:relative;cursor:pointer}.sgdays label.on{color:#F2F2F7;font-weight:600}
+.sgdays input{position:absolute;inset:0;opacity:0;width:100%}
+.sgsum{background:#1C1C1E;border-radius:12px;padding:11px 14px;font-size:14px;color:#D1D1D6;line-height:1.4;margin:0 0 6px}
+.sgsum b{color:#F2F2F7}.sgsum .h{color:#4CC35A}.sgsum .s{color:#EF5350}
+.sgsub{font-size:13px;color:#8E8E93;margin:6px 2px;line-height:1.4}
+.sglbl{font-size:13px;color:#8E8E93;font-weight:600;margin:18px 2px 8px;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
+.sglbl span{font-weight:500;letter-spacing:0;color:#6E6E73}
+.sgc{background:#1C1C1E;border-radius:14px;padding:13px 14px;margin:0 0 10px;cursor:pointer;border:0}
+.sgc.star{border:1px solid #5A3415}
+.sgt{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.sgs{font-size:17px;color:#F2F2F7}
+.sgtag{font-size:12px;color:#8E8E93;margin-left:6px}
+.sgg{display:inline-block;width:24px;height:24px;border-radius:7px;text-align:center;line-height:24px;font-size:13px;font-weight:700;margin-right:8px;background:#2C2C2E;color:#D1D1D6}
+.sgg.a{background:#13261A;color:#4CC35A}
+.sgl{font-size:13px;color:#8E8E93;margin-top:6px;display:flex;justify-content:space-between;gap:8px;font-variant-numeric:tabular-nums}
+.sgw{font-size:13px;color:#C7C7CC;margin-top:7px;line-height:1.4}
+.sgp{flex:none;font-size:12px;padding:3px 9px;border-radius:12px;background:#2C2C2E;color:#D1D1D6;white-space:nowrap}
+.sgp.g{background:#13261A;color:#4CC35A}.sgp.r{background:#2A1414;color:#EF5350}.sgp.o{background:#2A1E10;color:#FF8A3D}
+.sgmore{background:none;border:0;color:#FF8A3D;font:inherit;font-size:14px;padding:2px 2px 4px;cursor:pointer}
+.sgrad{display:flex;gap:8px;flex-wrap:wrap}
+.sgrad button{background:#1C1C1E;border:0;border-radius:10px;padding:8px 11px;font:inherit;font-size:14px;color:#F2F2F7;cursor:pointer}
+.sgrad i{font-style:normal;color:#FF8A3D;margin-left:6px;font-size:12px}
+.sgnote{font-size:14px;color:#8E8E93;padding:10px 2px;line-height:1.45}
+.sgfold{background:#1C1C1E;border-radius:12px;margin:12px 0 0}
+.sgfold>summary{list-style:none;cursor:pointer;padding:13px 14px;font-size:15px;color:#D1D1D6;display:flex;justify-content:space-between}
+.sgfold>summary::-webkit-details-marker{display:none}
+.sgfold>summary::after{content:'›';color:#6E6E73;transition:transform .2s}
+.sgfold[open]>summary::after{transform:rotate(90deg)}
+.sgfb{padding:0 14px 12px;font-size:13.5px;color:#C7C7CC;line-height:1.5}
+.sgfb p{margin:6px 0}
+.sgbtn,.sgback{background:#2C2C2E;border:0;border-radius:10px;color:#F2F2F7;font:inherit;font-size:14px;padding:9px 14px;cursor:pointer;margin-top:6px}
+.sgback{margin:4px 14px 8px}
+.sgdis{font-size:12px;color:#6E6E73;margin:12px 2px 16px;line-height:1.4}
+.sgor{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid #2C2C2E}
+.sgseg{display:flex;background:#1C1C1E;border-radius:10px;padding:3px;gap:3px}
+.sgseg button{flex:1;padding:8px;border-radius:8px;border:0;background:transparent;color:#D1D1D6;font:inherit;font-size:14px;cursor:pointer}
+.sgseg button.on{background:#3A3A3C;color:#F2F2F7;font-weight:600}
+.sgrf{margin-left:auto;background:none;border:0;color:#FF8A3D;font:inherit;font-size:13px;cursor:pointer}
+.sglist{background:#1C1C1E;border-radius:14px;overflow:hidden}
+.sgkr{display:flex!important;align-items:center;gap:10px;padding:11px 12px!important;margin:0!important;border:0!important;border-bottom:1px solid #2C2C2E!important;border-radius:0!important;background:transparent!important;cursor:pointer}
+.sgkr:last-child{border-bottom:0!important}
+.sgkn{width:74px;flex:none}.sgkn b{display:block;font-size:15px;color:#F2F2F7}.sgkn small{font-size:11.5px;color:#8E8E93}.sgkn i{font-style:normal}
+.sgkr .kbs{display:flex;gap:4px;margin:0!important}
+.sgkr .kbx{font-size:10px!important;padding:3px 4px!important;border-radius:5px!important;min-width:0!important}
+.sgkr .sgp{margin-left:auto}
+.aic.sgc .ak{margin:8px 0 0}.aic.sgc .ae{font-size:12px;color:#8E8E93;margin-top:7px}
+#aisecbody .aih.sgsub{margin:6px 2px}
+/* Fırsat */
+#t-op .opadv{margin:12px 14px}
+#t-op .opadv .bar{background:transparent!important;padding:6px 0!important}
+#t-op>.sglbl{margin:18px 16px 8px}
+.sgtara{padding:4px 14px 8px}
+.sgtara #deepbtn{display:block;width:100%;padding:11px;font-size:15px;background:var(--pir,#FF6A00)!important;color:#000!important;font-weight:700!important;border:0!important;border-radius:10px!important}
+</style>
+<script>
+/* v15.1 ortak sinyal kartı yardımcıları */
+var SGX={all:{}};
+function sgHm(t){return new Date(t+3*3600e3).toISOString().slice(11,16)}
+function sgNow(sym){const q=S.quotes[sym]||S.umap[sym];return q&&q.close?q.close:null}
+// Durum: sunucu sonucu (o31) varsa o; yoksa geçmiş günde gün sonu; bugün ise ekran açıkken görülen en yüksek/en düşük (TRK) ve şimdiki fiyat
+function sgState(src,sym,px,o31,done,rc,past){
+ if(o31===1)return {k:'g',c:'h',t:'Hedef oldu · +%3'};
+ if(o31===2)return {k:'r',c:'s',t:'Stop oldu · −%1'};
+ if(past||done)return {k:'n',c:'e',t:rc!=null?'Gün sonu · '+pct(rc):'Sonuçsuz'};
+ const q=sgNow(sym);if(!q||!px)return {k:'n',c:'o',t:'Sürüyor'};
+ const key=src+'|'+sym,T=TRK[key]=TRK[key]||{hi:px,lo:px};T.hi=Math.max(T.hi,q);T.lo=Math.min(T.lo,q);
+ const hh=T.hi>=px*1.03,ss=T.lo<=px*0.99;
+ if(hh&&!ss)return {k:'g',c:'h',t:'Hedefe ulaştı · +%3'};
+ if(ss&&!hh)return {k:'r',c:'s',t:'Stopa değdi · −%1'};
+ const ch=(q/px-1)*100;return {k:ch>=1?'g':'n',c:'o',t:'Sürüyor · '+pct(ch)}}
+function sgSum(L,day){let h=0,s=0,o=0,e=0;L.forEach(x=>{const c=x.st&&x.st.c;if(c==='h')h++;else if(c==='s')s++;else if(c==='o')o++;else e++});
+ return '<div class="sgsum">'+(day?htmlEsc(day):'Bugün')+' <b>'+L.length+' sinyal</b>'+(L.length?' · <span class="h">'+h+' hedef</span> · <span class="s">'+s+' stop</span>'+(o?' · '+o+' sürüyor':'')+(e?' · '+e+' gün sonu':''):'')+'</div>'}
+function sgDays(sel,prev,fn){const lbl=alDayTxt(prev).split(' ').slice(0,2).join(' ');
+ return '<div class="sgdays"><button class="'+(sel?'':'on')+'" onclick="'+fn+'(\'\')">Bugün</button><button class="'+(sel===prev?'on':'')+'" onclick="'+fn+'(\''+prev+'\')">'+lbl+'</button>'+
+  '<label class="'+(sel&&sel!==prev?'on':'')+'">'+(sel&&sel!==prev?alDayTxt(sel).split(' ').slice(0,2).join(' '):'Tarih seç')+'<input type="date" value="'+(sel||'')+'" max="'+alPrevDay(0)+'" onchange="'+fn+'(this.value)"></label></div>'}
+function sgCard(o){return '<div class="sgc'+(o.cls?' '+o.cls:'')+'" onclick="'+htmlEsc(o.go||'')+'"><div class="sgt"><div>'+(o.grade||'')+'<b class="sgs">'+htmlEsc(o.sym)+'</b>'+(o.dot||'')+(o.tag?'<span class="sgtag">'+htmlEsc(o.tag.replace(/^· /,''))+'</span>':'')+'</div><span class="sgp '+o.st.k+'">'+o.st.t+'</span></div>'+
+ '<div class="sgl"><span>'+(o.l||'')+'</span><span>'+(o.r||'')+'</span></div>'+(o.why?'<div class="sgw">'+htmlEsc(o.why)+'</div>':'')+'</div>'}
+/* v15.1 FIRSAT: üstte bugün (ya da seçilen gün) gelen A/B sinyalleri kart olarak; tarama araçları 'Kendin tara'; ayrıntılı filtreler 'Gelişmiş' içinde */
+var FRS={day:'',at:0,list:null,hist:{}};
+function frsLoad(force){const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b)||isUye())return;const d=FRS.day;
+ const get=src=>fetch(dq(b+'/sigtoday?src='+src+(d?'&d='+d:''))).then(r=>r.json()).then(j=>j&&j.ok?(j.list||[]).map(e=>Object.assign({src},e)):[]).catch(()=>null);
+ if(d){if(FRS.hist[d]&&!force)return;Promise.all([get('firsat-A'),get('firsat-B')]).then(([a,b2])=>{FRS.hist[d]=(a||[]).concat(b2||[]);if(S.tab==='op')sgFirsat()});return}
+ if(!force&&Date.now()-FRS.at<30e3)return;FRS.at=Date.now();
+ Promise.all([get('firsat-A'),get('firsat-B')]).then(([a,b2])=>{if(a||b2){FRS.list=(a||[]).concat(b2||[]);if(S.tab==='op')sgFirsat()}})}
+function frsDay(d){d=String(d||'');if(d&&d>=alPrevDay(0))d='';FRS.day=d;frsLoad(true);sgFirsat()}
+function sgFirsat(){const el=document.getElementById('opsig');if(!el)return;if(isUye()){el.innerHTML='';return}
+ const d=FRS.day,src=d?FRS.hist[d]:FRS.list;let h=sgDays(d,alPrevDay(1),'frsDay');
+ if(!src){el.innerHTML=h+'<div class="sgnote">Yükleniyor…</div>';frsLoad();return}
+ const L=src.filter(e=>!e.dir||e.dir==='AL').map(e=>({sym:e.sym,t:e.t,px:e.px,o31:e.o31,done:e.done,rc:e.rc,m:e.meta||{},g:e.src==='firsat-A'?'A':'B'})).sort((a,b)=>b.t-a.t);
+ L.forEach(x=>{x.st=sgState('firsat-'+x.g,x.sym,x.px,x.o31,x.done,x.rc,!!d)});
+ h+=sgSum(L,d?alDayTxt(d):'')+'<div class="sglbl">'+(d?'O GÜN GELEN FIRSATLAR':'BUGÜN GELEN FIRSATLAR')+'</div>';
+ if(!L.length)h+='<div class="sgnote">'+(d?'O gün Fırsat sinyali yok.':'Bugün henüz Fırsat sinyali yok. Ana sunucu seansta 15 dakikada bir tarar.')+'</div>';
+ else{const all=!!SGX.all.op,show=all?L:L.slice(0,4);
+  h+=show.map(x=>{const nw=!d?sgNow(x.sym):null;return sgCard({sym:x.sym,grade:'<span class="sgg'+(x.g==='A'?' a':'')+'">'+x.g+'</span>',tag:x.m.tg===1?'Gruba gitti':'',st:x.st,l:'Sinyal '+sgHm(x.t)+' · '+nf(x.px),r:d?(x.rc!=null?'Gün sonu '+pct(x.rc):''):(nw?'Şimdi '+nf(nw):''),go:"selectSym('"+x.sym+"','bist');showTab('chart')"})}).join('');
+  if(L.length>4)h+='<button class="sgmore" onclick="SGX.all.op=!SGX.all.op;sgFirsat()">'+(all?'Daha az göster':(L.length-4)+' sinyal daha göster')+' ›</button>'}
+ el.innerHTML=h}
+(function(){try{
+ const op=document.getElementById('t-op');if(!op||op.dataset.sg)return;op.dataset.sg=1;
+ const bars=op.querySelectorAll(':scope>.bar'),b1=bars[0],b2=bars[1];
+ b1.insertAdjacentHTML('beforebegin','<div id="opsig"></div><div class="sglbl">KENDİN TARA</div>');
+ const db=document.getElementById('deepbtn');if(db&&b1){db.textContent='⚡ Tara';const w=document.createElement('div');w.className='sgtara';w.appendChild(db);b1.after(w)}
+ const adv=document.createElement('details');adv.className='sgfold opadv';adv.innerHTML='<summary>Gelişmiş: filtreler, kurulum türü, tablo görünümü</summary><div class="sgfb"></div>';
+ const fb=adv.querySelector('.sgfb');[b2,document.getElementById('filtsheet'),document.getElementById('setbar')].forEach(x=>{if(x)fb.appendChild(x)});
+ const note=document.getElementById('opnote');(note||op.lastElementChild).after(adv);
+ op.insertAdjacentHTML('beforeend','<p class="sgdis" style="margin:12px 16px 16px">A notu gruba gider, B yalnız burada. Yatırım tavsiyesi değildir.</p>');
+ const _ro=window.renderOps;if(typeof _ro==='function')window.renderOps=renderOps=function(){const r=_ro.apply(this,arguments);try{sgFirsat()}catch(e){}return r};
+ const _st=window.showTab;window.showTab=function(t){const r=_st.apply(this,arguments);try{if(S.tab==='op'){frsLoad();sgFirsat()}}catch(e){}return r};
+ setInterval(()=>{try{if(S.tab==='op'&&!document.hidden&&!FRS.day)frsLoad()}catch(e){}},15000);
+}catch(e){}})();
 </script>
 </body>
 </html>

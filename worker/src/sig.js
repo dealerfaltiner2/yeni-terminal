@@ -516,13 +516,13 @@ export async function sigToday(env, src, day) {
   if (!env.BT) return { ok: false, error: 'D1 yok' };
   // v14.11 (24.10, Fatih: 'dünkü sinyaller nerede'): src=algi&d=YYYY-MM-DD → o günün Algı ateşlemeleri (sig_d indeksi, son 60 gün, 5 dk önbellek)
   // v14.31 (03.10, Fatih'in arkadaşı: 'EMA Katman'da da Algı gibi gelenlerin saati ve listesi kalsın'): src=katman da aynı yoldan (bugün + geçmiş gün)
-  const ONE = src === 'algi' || src === 'katman' || src === 'yildiz';   // v14.41 yıldızlılar da
+  const ONE = src === 'algi' || src === 'katman' || src === 'yildiz' || src === 'firsat-A' || src === 'firsat-B';   // v14.41 yıldızlılar da · v15.1 Fırsat A/B (Sinyaller ekranı gün seçici)
   if (ONE && day && /^\d{4}-\d{2}-\d{2}$/.test(day) && day !== trDay(Date.now())) {
     const lo = trDay(Date.now() - 60 * 86400e3);
     if (day < lo || day > trDay(Date.now())) return { ok: true, at: Date.now(), d: day, list: [] };
     const c = algiDayCache.get(src + day); if (c && Date.now() - c.at < 5 * 60e3) return c.v;
     await sigEnsure(env);
-    const rs = (await env.BT.prepare("SELECT t, sym, px, sc, meta, done, o31, mfe, mae, rc, og FROM sig INDEXED BY sig_d WHERE d = ? AND src = ? ORDER BY t DESC LIMIT 200").bind(day, src).all()).results || [];
+    const rs = (await env.BT.prepare("SELECT t, sym, dir, px, sc, meta, done, o31, mfe, mae, rc, og FROM sig INDEXED BY sig_d WHERE d = ? AND src = ? ORDER BY t DESC LIMIT 200").bind(day, src).all()).results || [];
     const v = { ok: true, at: Date.now(), d: day, list: rs.map(r => { let m = null; try { m = r.meta ? JSON.parse(r.meta) : null; } catch (e) {} return { ...r, meta: m }; }) };
     if (algiDayCache.size > 20) algiDayCache.clear();
     algiDayCache.set(src + day, { at: Date.now(), v });
@@ -532,7 +532,7 @@ export async function sigToday(env, src, day) {
     const ac = algiCache[src]; if (ac && Date.now() - ac.at < 20e3) return ac.v;
     await sigEnsure(env);
     const a0 = Date.parse(trDay(Date.now()) + 'T00:00:00Z') - TRMS;
-    const rs = (await env.BT.prepare("SELECT t, sym, px, sc, meta, done, o31, mfe, mae, rc, og FROM sig INDEXED BY sig_t WHERE t >= ? AND src = ? ORDER BY t DESC LIMIT 120").bind(a0, src).all()).results || [];
+    const rs = (await env.BT.prepare("SELECT t, sym, dir, px, sc, meta, done, o31, mfe, mae, rc, og FROM sig INDEXED BY sig_t WHERE t >= ? AND src = ? ORDER BY t DESC LIMIT 120").bind(a0, src).all()).results || [];
     const v = { ok: true, at: Date.now(), list: rs.map(r => { let m = null; try { m = r.meta ? JSON.parse(r.meta) : null; } catch (e) {} return { ...r, meta: m }; }) };
     algiCache[src] = { at: Date.now(), v };
     return v;
