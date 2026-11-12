@@ -40,6 +40,14 @@ function install(page, opt = {}) {
     if (u.includes('/pair-create')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, code: 'ABCDE-FGH23', exp: Date.now() + 9e5 }) });
     if (u.includes('/aiyorum')) { let b = {}; try { b = JSON.parse(r.request().postData() || '{}'); } catch (e) {} globalThis.__AI_REQ = b;
       return r.fulfill({ contentType: 'application/json', body: JSON.stringify(b.f && b.f.px > 0 ? { ok: true, txt: b.s + ' yükseliş düzeninde, fiyat günün ortalamasının üstünde. Direnç aşılırsa hareket hızlanabilir.', at: Date.now() } : { ok: false, err: 'yorum için yeterli veri yok' }) }); }
+    if (u.includes('/lab-karar')) { let b = {}; try { b = JSON.parse(r.request().postData() || '{}'); } catch (e) {} globalThis.__LAB_KARAR = b; return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, karar: b.karar }) }); }
+    if (/\/lab(\?|$)/.test(u.split('#')[0])) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, at: Date.now(), weeks: ['2026-10-12', '2026-10-19', '2026-10-26', '2026-11-02', '2026-11-09'],   // v15.4
+      rows: [{ k: 'algi', ad: 'Algı', w: [{ n: 371, r: -0.16 }, { n: 504, r: 0.11 }, null, { n: 517, r: 0.19 }, { n: 4, r: 1 }], up: { n: 900, r: 0.04 }, dn: { n: 800, r: -0.08 } },
+        { k: 'firsat-B', ad: 'Fırsat B <x>', w: [{ n: 88, r: -0.55 }, { n: 50, r: -0.24 }, { n: 27, r: -0.18 }, { n: 76, r: -0.06 }, { n: 156, r: -0.06 }], up: null, dn: { n: 161, r: -0.3 } }],
+      okuma: ['**Fırsat B** ölçülen 5 haftanın hepsinde eksi.'],
+      rapor: { at: Date.now() - 864e5, hafta: '9 Kasım haftası', baslik: 'Telegram\'a giden Algı başabaş altında', maddeler: ['Algı işlem başı −%0,09', 'En iyi **Geri alım** +%0,29'], elenen: 7,
+        oneri: { id: 'o46', baslik: 'AI Seçtikleri\'ni borsa yönüne göre ayrı ölç', txt: 'Kural değişmez.', asama: 1 } },
+      defter: [{ v: 'v14.47', t: '10 Kas', ne: 'Fırsat B Telegram\'dan kalktı', sonra: 'Karnede hâlâ eksi (−%0,06)' }] }) });
     if (u.includes('/aisec-set')) { globalThis.__AISEC_SET = (globalThis.__AISEC_SET || 0) + 1; return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, n: 2, yeni: 0, ai: 0 }) }); }
     if (u.includes('/gece')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, g: { d: '2026-10-30', st: 'alindi', list: [{ s: 'ZZGEC', c: 10, ch: 1, p0: 10.1 }, { s: 'ZZGE2', c: 20, ch: 0.5, p0: 19.9 }], hist: [{ d: '2026-10-28', s: '2026-10-29', ort: 0.6, n: 8, w: 5 }] } }) });   // v14.23
     if (u.includes('/haber')) { const now = Date.now();   // v14.19 Haber Merkezi

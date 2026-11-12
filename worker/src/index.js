@@ -15,6 +15,7 @@ import { tvAlertHook } from './tvalert.js';
 import { endeksRoute } from './endeks.js';
 import { aiYorumRoute } from './aiyorum.js';
 import { aisecSet, aisecGet } from './aisec.js';
+import { labRoute } from './lab.js';
 import { paperRoute } from './paper.js';
 // BIST TV Köprüsü v5.5 — Cloudflare Worker (bist-tv)
 // Yayın: GitHub → Cloudflare Workers Builds (otomatik). Kodu burada değiştir, Cloudflare editöründe değil.
@@ -741,12 +742,12 @@ async function btStep(env) {
 }
 /* ---------- v5.6: ana cihaz (sahip) kilidi + bağlı cihazlar (D1: meta 'owner', tablo dev) ---------- */
 // Sahip kodu D1'de durur → gerekirse Claude D1'den sıfırlayabilir. Kod yokken (ilk kurulum) eski davranış sürer.
-const OWN_ROUTES = new Set(['sigexit', 'yildiz-set', 'aisec-set', 'algirows-set', 'uyeler', 'sync', 'prefs', 'cron-test', 'pine-sync', 'pine-test', 'devices', 'dev-block', 'dev-ok', 'siglog', 'sig-eval', 'pair-create', 'push-sub', 'push-off', 'push-send', 'pos', 'paper-set', 'flow', 'derin']);
+const OWN_ROUTES = new Set(['lab-karar', 'sigexit', 'yildiz-set', 'aisec-set', 'algirows-set', 'uyeler', 'sync', 'prefs', 'cron-test', 'pine-sync', 'pine-test', 'devices', 'dev-block', 'dev-ok', 'siglog', 'sig-eval', 'pair-create', 'push-sub', 'push-off', 'push-send', 'pos', 'paper-set', 'flow', 'derin']);
 // v6.8 YENİ CİHAZ ONAYI: ana cihaz belirlenmişse, onaylanmamış (ok=0) cihaz canlı veri / tarama / mum alamaz.
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
 const DEV_GRACE = Date.UTC(2026, 9, 6); // 6 Ekim 2026
-const DATA_ROUTES = new Set(['yildiz', 'algirows', 'bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key', 'paper', 'sigsym', 'yorum', 'tedbir', 'kesif', 'endeks', 'aiyorum', 'aisec', 'haber', 'gece']);
+const DATA_ROUTES = new Set(['lab', 'yildiz', 'algirows', 'bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key', 'paper', 'sigsym', 'yorum', 'tedbir', 'kesif', 'endeks', 'aiyorum', 'aisec', 'haber', 'gece']);
 const devCache = new Map();
 let ownerCache = { v: undefined, at: 0 }, devReady = false;
 async function ownerTok(env) {
@@ -1013,6 +1014,7 @@ export default {
       case 'algirows': return algiRowsGet(env, json, anon);
       case 'aisec-set': if (request.method === 'POST') return aisecSet(request, env, json); break;   // v14.16 Yapay zekâ seçtikleri
       case 'aisec': return aisecGet(env, json, anon);
+      case 'lab': case 'lab-karar': return labRoute(route, request, env, json, anon);   // v15.4 Araştırma laboratuvarı (sağlamlık tablosu + haftalık rapor + sürüm defteri)
       case 'haber': return haberRoute(env, json, anon);   // v14.19 Haber Merkezi
       case 'gece': return geceRoute(env, json, anon);   // v14.23 Gece Kuşu
       case 'flow': return flowRoute(request, env, url, json);

@@ -91,7 +91,7 @@ async function page(b, opt) {
       { const sd = await T(async () => { const W = ms => new Promise(r => setTimeout(r, ms)); const r = {};
           const lb = [...document.querySelectorAll('#tabs button')].filter(b => getComputedStyle(b).display !== 'none').map(b => b.querySelector('.lbl').textContent);
           r.bes = lb.join('|') === 'Ana Sayfa|Sinyaller|Piyasa|Haberler|Menü';
-          r.menu = [...document.querySelectorAll('#more .mgrid [data-t]')].map(b => b.dataset.t).join() === 'watch,chart,alarm,jr,set';
+          r.menu = [...document.querySelectorAll('#more .mgrid [data-t]')].map(b => b.dataset.t).join() === 'watch,chart,alarm,jr,arge,set';
           for (const t of ['lab', 'gece', 'live', 'crypto']) { showTab(t); if (S.tab !== 'now') r['kalkti_' + t] = false; }
           document.querySelector('#tabs [data-g="sinyal"]').click(); await W(200);
           r.sinyal = S.tab === 'algi' && document.querySelector('#tabs [data-g="sinyal"]').classList.contains('on') && /Sinyaller/.test(document.querySelector('#t-algi .sechd h1').textContent);
@@ -352,6 +352,11 @@ async function page(b, opt) {
       await p.evaluate(() => { xrayClose(); S.mkt = S.mkt || {}; S.mkt.XU100 = { c: 10800, ch: 0.5 }; showTab('now'); renderNow(); }); await p.waitForTimeout(1500);
       const bh = await p.evaluate(() => { renderNow(); const b = document.querySelector('#nowbody .brf'); const t = b ? b.innerText : ''; return { baslik: !!document.querySelector('#nowbody .brft') && document.querySelector('#nowbody .brft').textContent.length > 8, one: document.querySelectorAll('#nowbody .brfp').length >= 2, piyasa: /Piyasa/.test(t) && /Gram altın|Dolar/.test(t), haber: /Önemli haberler/.test(t), uyari: /yatırım tavsiyesi değildir/.test(t), pusula: !!document.querySelector('#nowbody .brfpc svg.brfcp .brfnd') && document.querySelectorAll('#nowbody .brff').length === 3 && /SAT/.test(document.querySelector('#nowbody .brfcp').textContent) }; });
       ok('Ana sayfa Brifing: günün başlığı, pusula kartı (ibre + 3 çubuk), öne çıkanlar, piyasa tablosu, haberler', bh && Object.values(bh).every(Boolean), JSON.stringify(bh));
+      const lb = await p.evaluate(async () => { const tile = !!document.querySelector('#more [data-t="arge"]'); showTab('arge'); await new Promise(r => setTimeout(r, 900)); const el = document.getElementById('argebody');
+        const m = { tile, ring: !!el.querySelector('svg.labring'), rows: el.querySelectorAll('.labmx tr').length, az: el.querySelectorAll('.labmx td.lz').length, esc: !/<x>/.test(el.innerHTML.replace(/&lt;x&gt;/g, '')) && /Fırsat B &lt;x&gt;/.test(el.innerHTML), okuma: el.querySelectorAll('.labpt').length, red: !!el.querySelector('.labmx td[style*="240,122,106"]'), head: !!document.querySelector('#t-arge .sechd') };
+        ARG.view = 'rapor'; renderArge(); m.rapor = /başabaş altında/.test(el.textContent) && el.querySelectorAll('.labbt button').length === 3 && el.querySelectorAll('.labas span.ok').length === 1 && el.querySelectorAll('.labdf').length === 1;
+        labKarar('bekle'); await new Promise(r => setTimeout(r, 500)); m.karar = /Bekletiliyor/.test(el.textContent); ARG.view = 'lab'; return m; });
+      ok('Araştırma laboratuvarı: menüde, döngü halkası, sağlamlık tablosu (az/kırmızı, kaçışlı), okuma, haftalık rapor + karar düğmeleri + defter', lb.tile && lb.ring && lb.rows === 3 && lb.az >= 3 && lb.esc && lb.okuma === 1 && lb.red && lb.head && lb.rapor && lb.karar, JSON.stringify(lb));
       const kh = await p.evaluate(async () => { showTab('kesif'); await new Promise(r => setTimeout(r, 800)); renderKesif(); const el = document.getElementById('kesifbody');
         return { items: el.querySelectorAll('.kesi').length, quick: el.querySelectorAll('.kesq button').length, menu: !!document.querySelector('#t-kesif .grpbar [data-gt="kesif"]'), bar: getComputedStyle(document.querySelector('#tabs [data-g="piyasa"]')).display }; });
       ok('Keşfet: 3 hızlı liste + 16 hazır liste, Piyasa çip şeridinde ve alt çubukta var', kh.items === 16 && kh.quick === 3 && kh.menu && kh.bar !== 'none', JSON.stringify(kh));
