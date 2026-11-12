@@ -3734,7 +3734,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="15.5";window.APPV=APP_VER;
+  const APP_VER="15.6";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -7875,7 +7875,8 @@ html.cam.onnow #top,html.cam.onnow #tick{display:none}
 html.tgfs.onnow .kph{padding-top:calc(var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
 .kp{padding-top:6px}
 .kph{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.kpst{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 11px;border-radius:20px;white-space:nowrap}
+.kph .brfm{min-width:0;flex:none}.kph .brfm b{white-space:nowrap}.kph>div:last-child{min-width:0}
+.kpst{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:14px;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}.kpst i{flex:none}
 .kpst i{width:7px;height:7px;border-radius:50%;background:currentColor}
 .kpst.open{color:#5BD49B;background:rgba(91,212,155,.12);border:1px solid rgba(91,212,155,.3)}.kpst.open i{box-shadow:0 0 8px #5BD49B;animation:kpp 1.6s ease-in-out infinite}
 .kpst.wait{color:#E0A458;background:rgba(224,164,88,.12);border:1px solid rgba(224,164,88,.3)}
@@ -7885,11 +7886,11 @@ html.tgfs.onnow .kph{padding-top:calc(var(--tg-safe-area-inset-top,0px) + var(--
 .kpc{text-align:center;font-size:12px;color:#7D8AA3;font-weight:600;margin-top:8px}
 .kpc b{color:#C5CCD9;font-variant-numeric:tabular-nums}.kpc .ok{color:#5BD49B}
 .kpg{margin-top:10px;border-radius:22px;padding:10px 12px 14px;background:radial-gradient(100% 80% at 50% 100%,#17284A,#111A2B 70%);border:1px solid #23324F;box-shadow:0 16px 36px -20px rgba(0,0,0,.8)}
-.kpg svg.kpgs{display:block;width:100%;max-width:358px;height:auto;margin:0 auto}
+.kpg svg.kpgs{display:block;width:100%;max-width:230px;height:auto;margin:2px auto 0}
 .kpg .seg{transition:opacity .8s}
 #kpn{transition:transform 1.4s cubic-bezier(.2,.9,.25,1.15)}
-.kpsc{text-align:center;margin-top:-4px}.kpsc b{font-size:32px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;transition:color .6s}.kpsc span{font-size:14px;font-weight:700;margin-left:4px}
-.kpex{text-align:center;font-size:11.5px;color:#7D8AA3;line-height:1.4;margin:4px 8px 0}
+.kpsc{text-align:center;margin-top:-2px}.kpsc b{font-size:26px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;transition:color .6s}.kpsc span{font-size:14px;font-weight:700;margin-left:4px}
+.kpex{text-align:center;font-size:11px;color:#7D8AA3;line-height:1.4;margin:4px 8px 0}
 .kpx{display:flex;align-items:baseline;justify-content:center;gap:8px;margin-top:10px;flex-wrap:wrap}
 .kpx small{font-size:13px;color:#9AA6BC;font-weight:600}.kpx b{font-size:26px;font-weight:800;letter-spacing:-.4px;font-variant-numeric:tabular-nums;border-radius:6px;padding:0 3px}.kpx span{font-weight:700;font-size:15px}
 .kpsp{margin:6px -4px 0;height:48px}.kpsp svg{display:block;width:100%;height:48px}
@@ -7924,10 +7925,10 @@ var KOK={l:'',sp:'',q:''};
 var KOK_TK={XU100:'BIST 100',XU030:'BIST 30',BANKA:'Banka endeksi','SINAİ':'Sınai endeksi',USD:'Dolar/TL',EUR:'Euro/TL',ALTIN:'Ons altın ($)','GÜMÜŞ':'Gümüş ($)',BTC:'Bitcoin ($)',ETH:'Ethereum ($)','S&P VADELİ':'S&P 500 vadeli','DOLAR END.':'Dolar endeksi','ABD 10Y':'ABD 10 yıllık faiz'};
 function kokX(){const q=S.quotes&&S.quotes.XU100,m=(S.mkt||{}).XU100||{};if(q&&q.close>0&&q.change!=null&&isFinite(q.change))return {c:q.close,ch:q.change};return {c:m.c,ch:m.ch!=null?m.ch:S.idxCh}}
 function kokSt(){const ms=mktSt(),live=typeof tvAlive==='function'&&tvAlive();
- if(ms.k==='open')return live?{c:'open',t:'Canlı · seans açık'}:{c:'wait',t:'Seans açık · veri bekleniyor'};
- if(ms.k==='kap')return {c:'kap',t:'Kapanış seansı · 18:10'};
- if(ms.k==='pre')return {c:'pre',t:(ms.t==='Açılış seansı'?'Açılış seansı · ':'')+ms.sub};
- return {c:'cl',t:'Piyasa kapalı · '+ms.sub}}
+ if(ms.k==='open')return live?{c:'open',t:'Canlı'}:{c:'wait',t:'Veri bekleniyor'};
+ if(ms.k==='kap')return {c:'kap',t:'Kapanış seansı'};
+ if(ms.k==='pre')return {c:'pre',t:ms.t==='Açılış seansı'?'Açılış seansı':ms.sub};
+ return {c:'cl',t:/^Açılışa/.test(ms.sub)?ms.sub:'Kapalı · '+String(ms.sub).replace("'da açılır",'')}}
 function kokClock(){const d=new Date(Date.now()+3*3600e3),G=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'],A=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
  let t=d.getUTCDate()+' '+A[d.getUTCMonth()]+' '+G[d.getUTCDay()]+' · <b>'+d.toISOString().slice(11,19)+'</b>';
  const ms=mktSt();if(ms.k==='open'&&typeof TVL!=='undefined'&&TVL.last){const a=Math.max(0,Math.round((Date.now()-TVL.last)/1000));t+=' · son veri '+(a<2?'<b class="ok">şimdi</b>':a+' sn önce')}
