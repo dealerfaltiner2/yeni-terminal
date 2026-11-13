@@ -3734,7 +3734,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="15.16";window.APPV=APP_VER;
+  const APP_VER="15.17";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -5101,10 +5101,10 @@ function renderHaber(){
   const syms=String(r.syms||'').split(',').filter(x=>/^[A-Z0-9]{3,7}$/.test(x));const ic=r.yon>0?'🟢':r.yon<0?'🔴':'⚪';
   const g=dk!==lastD?'<div class="habday">'+dk+'</div>':'';lastD=dk;
   return g+'<div class="kaprow habrow y'+(r.yon||0)+(r.onem>=3?' hab3':'')+'"><div class="kh">'+ic+' <span class="habsrc">'+htmlEsc(r.ad||r.src)+'</span>'+(r.onem>=3?' <span class="kg">çok önemli</span>':'')+
-   (syms.length?' '+syms.map(x=>'<b onclick="xrayOpen(\''+x+'\')">'+x+'</b>').join(' '):'')+'<span class="kt">'+hm+'</span></div>'+
+   (syms.length?' '+syms.slice(0,3).map(x=>'<b onclick="xrayOpen(\''+x+'\')">'+x+'</b><em class="hbp" data-s="'+x+'" data-t="'+r.t+'"></em>').join(' '):'')+'<span class="kt">'+hm+'</span></div>'+
    '<div class="ks"><b>'+htmlEsc(r.title||'')+'</b>'+(r.txt?'<br>'+htmlEsc(String(r.txt).slice(0,300)):'')+'</div>'+
    (r.url&&/^https:\/\//.test(r.url)?'<div class="km"><a href="'+htmlEsc(r.url)+'" target="_blank" rel="noopener">Kaynağı aç ↗</a></div>':'')+'</div>'}).join('');
- el.innerHTML=h;
+ el.innerHTML=h;try{habPx()}catch(e){}
 }
 /* v14.23 GECE KUŞU (Fatih onayıyla; DEVIR 7a): sunucu 17:40'ta BIST 100'den 8 hisselik akşam sepeti seçer (Telegram), kapanışta alınır, ertesi sabah açılışta satılır (v14.28 v2: sabah güçlü/öğleden sonra zayıf seçimi, Cuma/tatil öncesi yok).
    Terminal yalnız gösterir: GET /gece → meta 'gece' {d, st: secildi|alindi|satildi, list, res, hist}. */
@@ -7989,8 +7989,8 @@ function kokPatch(){
 function kokOne(Y,ch,ok,bk,uy,sigs){const P=[],U=(S.uni||[]).filter(o=>o&&o.close>0&&o.change!=null&&isFinite(o.change));
  const L=brfSec();if(L.length>=2){const t=L[0],b=L[L.length-1];P.push('En güçlü sektör <b>'+htmlEsc(t.ad)+'</b> <span class="'+cls(t.v)+'">'+pct(t.v)+'</span>, en zayıf <b>'+htmlEsc(b.ad)+'</b> <span class="'+cls(b.v)+'">'+pct(b.v)+'</span>.')}
  try{const B=ENDX.s100&&ENDX.s100.size>=50?U.filter(o=>ENDX.s100.has(o.name)):[];if(B.length>=20){const a=B.slice().sort((p,q)=>q.change-p.change),t=a[0],z=a[a.length-1];
-  P.push('BIST 100\'de en çok yükselen <a onclick="xrayOpen(\''+t.name+'\')"><b>'+t.name+'</b></a> <span class="up">'+pct(t.change)+'</span>, en çok düşen <a onclick="xrayOpen(\''+z.name+'\')"><b>'+z.name+'</b></a> <span class="dn">'+pct(z.change)+'</span>.')}}catch(e){}
- const V=U.filter(o=>o.voltl>0).sort((p,q)=>q.voltl-p.voltl)[0];if(V)P.push('En yüksek işlem hacmi <a onclick="xrayOpen(\''+V.name+'\')"><b>'+V.name+'</b></a>: '+(V.voltl>=1e9?nf(V.voltl/1e9,1)+' milyar':nf(V.voltl/1e6,0)+' milyon')+' TL (<span class="'+cls(V.change)+'">'+pct(V.change)+'</span>).');
+  P.push('BIST 100\'de en çok yükselen <a onclick="xrayOpen(\''+t.name+'\')"><b>'+t.name+'</b></a> '+kokLp(t)+', en çok düşen <a onclick="xrayOpen(\''+z.name+'\')"><b>'+z.name+'</b></a> '+kokLp(z)+'.')}}catch(e){}
+ const V=U.filter(o=>o.voltl>0).sort((p,q)=>q.voltl-p.voltl)[0];if(V)P.push('En yüksek işlem hacmi <a onclick="xrayOpen(\''+V.name+'\')"><b>'+V.name+'</b></a> '+kokLp(V)+' · '+(V.voltl>=1e9?nf(V.voltl/1e9,1)+' milyar':nf(V.voltl/1e6,0)+' milyon')+' TL.');
  if(U.length>=50){const tv=U.filter(o=>o.change>=9.5).length,tb=U.filter(o=>o.change<=-9.5).length;P.push('Tavanda <b class="up">'+tv+'</b>, tabanda <b class="dn">'+tb+'</b> hisse var.')}
  if(ok&&bk.ch!=null&&isFinite(bk.ch)&&Math.abs(bk.ch-ch)>=0.8)P.push('Bankalar endeksten ayrışıyor: banka <span class="'+cls(bk.ch)+'">'+pct(bk.ch)+'</span>, BIST 100 <span class="'+cls(ch)+'">'+pct(ch)+'</span>.');
  if(!uy&&sigs.length){const S2=sigs.map(o=>sgState(o.src,o.sym,o.px,o.o!=null?o.o:(o.res==='hit'?1:o.res==='fail'?2:null),o.done,null,false)),h=S2.filter(z=>z.c==='h').length,s=S2.filter(z=>z.c==='s').length,oo=S2.length-h-s;
@@ -8275,5 +8275,29 @@ function kokNw(){const e=document.getElementById('kpnw');if(!e)return;const L=ko
 .kpnw a em.kpnp{font-style:normal;font-size:11px;font-weight:700;margin:0 6px 0 -1px;font-variant-numeric:tabular-nums;color:#9A9A9A}.kpnw a em.kpnp:empty{display:none}
 .kpnw a em.kpnp.u{color:#3DDC84}.kpnw a em.kpnp.d{color:#FF5A4E}
 </style>
+<style>
+/* v15.17 canlı fiyatlar: Öne çıkanlar + Haber Merkezi */
+.kplp{font-variant-numeric:tabular-nums;font-weight:700;border-radius:5px;padding:0 2px}.kplp i{font-style:normal;font-weight:600;color:#9A9A9A;margin-right:4px}
+#haberbody em.hbp{font-style:normal;font-size:12px;font-weight:700;margin:0 4px 0 3px;font-variant-numeric:tabular-nums;color:var(--dim)}#haberbody em.hbp:empty{display:none}
+#haberbody em.hbp.u{color:var(--up,#3DDC84)}#haberbody em.hbp.d{color:var(--dn,#FF5A4E)}#haberbody em.hbp small{font-size:11px;font-weight:600;color:var(--dim);margin-left:4px}
+#haberbody em.hbp small.u{color:var(--up,#3DDC84)}#haberbody em.hbp small.d{color:var(--dn,#FF5A4E)}
+</style>
+<script>
+/* v15.17 (13.11, Fatih: 'yapılacak her şeyi yap') — (1) Öne çıkanlar maddelerinde hisse fiyatı + günlük %, değişince parlar (kokLp/pxFl).
+   (2) Haber Merkezi'nde her hisse kodunun yanında canlı fiyat + günlük % ve 'haberden beri %' (haber anındaki 5 dk mum kapanışına göre; HBP önbelleği 2 dk, turda en çok 4 hisse). Yalnız görünüm. */
+function kokLp(o){const q=S.quotes[o.name]||{},c=q.close>0?q.close:o.close,ch=q.change!=null&&isFinite(q.change)?q.change:o.change;
+ return '<span class="kplp '+cls(ch)+pxFl('kl'+o.name,c)+'"><i>'+nf(c)+'</i>'+pct(ch)+'</span>'}
+var HBP={};
+function habBarPx(sym,t){const c=HBP[sym];if(!c||!c.cs)return null;let v=null;for(const b of c.cs){const bt=(typeof b.time==='number'?b.time:Date.parse(b.time)/1000)*1000;if(bt<=t)v=b.close;else break}return v}
+function habPx(){if(S.tab!=='haber')return;const els=document.querySelectorAll('#haberbody em.hbp');if(!els.length)return;let need=0;
+ els.forEach(x=>{const s=x.dataset.s,t=+x.dataset.t,q=S.quotes[s]||S.umap[s]||{},c=q.close,ch=q.change;
+  const c0=HBP[s]&&HBP[s].cs?habBarPx(s,t):null;
+  if((!HBP[s]||Date.now()-HBP[s].at>120e3)&&need<4&&!(HBP[s]&&HBP[s].busy)){need++;const o=HBP[s]=Object.assign(HBP[s]||{},{busy:1,at:Date.now()});getBars(s,'5min',true).then(cs=>{o.cs=cs;o.busy=0;habPx()}).catch(()=>{o.busy=0})}
+  if(!(c>0)){if(x.innerHTML)x.innerHTML='';return}
+  let since=c0>0&&Date.now()-t<4*864e5?(c/c0-1)*100:null;if(since!=null&&Math.abs(since)>25)since=null;   // uyuşmayan veri (bölünme vb.) gösterilmez
+  const h=nf(c)+(ch!=null&&isFinite(ch)?' '+pct(ch):'')+(since!=null?'<small class="'+(since>0.05?'u':since<-0.05?'d':'')+'">haberden beri '+pct(since)+'</small>':'');
+  if(x.innerHTML!==h)x.innerHTML=h;x.className='hbp '+(ch>0?'u':ch<0?'d':'')})}
+setInterval(()=>{try{if(!document.hidden)habPx()}catch(e){}},5000);
+</script>
 </body>
 </html>
