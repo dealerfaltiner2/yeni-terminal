@@ -3734,7 +3734,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="15.7";window.APPV=APP_VER;
+  const APP_VER="15.8";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -7938,13 +7938,13 @@ function kokClock(){const d=new Date(Date.now()+3*3600e3),G=['Pazar','Pazartesi'
 function kokSess(){const s=nowSess(),m=s.m,f=Math.max(0,Math.min(1,(m-600)/480));let r;
  if(s.open){const k=1080-m;r='Kapanışa '+(k>=60?Math.floor(k/60)+' sa ':'')+(k%60)+' dk'}else{const ms=mktSt();r=ms.k==='kap'?'Kapanış seansı':s.wk&&m>=1080?'Seans bitti':ms.sub}
  return {f:s.open?f:(s.wk&&m>=1080?1:0),r}}
-function kokGauge(){const R=120,P=a=>[R*Math.sin(a*Math.PI/180),-R*Math.cos(a*Math.PI/180)],S5=[[-90,-54,'#F07A6A'],[-54,-18,'#E8997A'],[-18,18,'#FF7A1A'],[18,54,'#9BD39A'],[54,90,'#5BD49B']];
- let h='';S5.forEach((z,i)=>{const [x1,y1]=P(z[0]+1.5),[x2,y2]=P(z[1]-1.5);h+='<path class="seg" data-i="'+i+'" d="M'+x1.toFixed(1)+','+y1.toFixed(1)+' A'+R+','+R+' 0 0,1 '+x2.toFixed(1)+','+y2.toFixed(1)+'" fill="none" style="stroke:'+z[2]+'" stroke-width="12" stroke-linecap="round" opacity=".35"/>'});
- for(let a=-90;a<=90;a+=10){const s=Math.sin(a*Math.PI/180),c=Math.cos(a*Math.PI/180);h+='<line x1="'+((R-16)*s).toFixed(1)+'" y1="'+(-(R-16)*c).toFixed(1)+'" x2="'+((R-22)*s).toFixed(1)+'" y2="'+(-(R-22)*c).toFixed(1)+'" style="stroke:#3A4A66" stroke-width="1.4"/>'}
- return '<svg class="kpgs" viewBox="-150 -138 300 168" role="img" aria-label="Yön göstergesi">'+h+
-  '<text x="-128" y="20" text-anchor="middle" style="fill:#F07A6A;font:800 12px Inter,system-ui">SAT</text><text x="128" y="20" text-anchor="middle" style="fill:#5BD49B;font:800 12px Inter,system-ui">AL</text><text x="0" y="-96" text-anchor="middle" style="fill:#7D8AA3;font:700 10px Inter,system-ui">NÖTR</text>'+
-  '<g id="kpn" style="transform:rotate(0deg)"><polygon points="0,-104 6,0 -6,0" style="fill:#EEF1F6"/></g><circle r="12" style="fill:#FF7A1A"/><circle r="5" style="fill:#0A1220"/></svg>'}
-function kokRing(id,lab){return '<div><svg viewBox="-29 -29 58 58"><circle r="22" fill="none" style="stroke:#1E2A40" stroke-width="6"/><circle class="ar" id="'+id+'a" r="22" fill="none" style="stroke:#5BD49B;stroke-dasharray:0 139" stroke-width="6" stroke-linecap="round" transform="rotate(-90)"/><text id="'+id+'t" y="4" text-anchor="middle" style="fill:#EEF1F6;font:700 11px Inter,system-ui">–</text></svg><small>'+lab+'</small></div>'}
+function kokGauge(){const R=46,P=a=>[R*Math.sin(a*Math.PI/180),-R*Math.cos(a*Math.PI/180)],S5=[[-90,-54,'#FF5A4E'],[-54,-18,'#FF8A6A'],[-18,18,'#FF7A1A'],[18,54,'#8EDB9E'],[54,90,'#3DDC84']];
+ let h='';S5.forEach((z,i)=>{const [x1,y1]=P(z[0]+2),[x2,y2]=P(z[1]-2);h+='<path class="seg" data-i="'+i+'" d="M'+x1.toFixed(1)+','+y1.toFixed(1)+' A'+R+','+R+' 0 0,1 '+x2.toFixed(1)+','+y2.toFixed(1)+'" fill="none" style="stroke:'+z[2]+'" stroke-width="7" stroke-linecap="round" opacity=".3"/>'});
+ for(let a=-90;a<=90;a+=15){const s=Math.sin(a*Math.PI/180),c=Math.cos(a*Math.PI/180),r1=R-7,r2=a%45?R-10:R-12;h+='<line x1="'+(r1*s).toFixed(1)+'" y1="'+(-r1*c).toFixed(1)+'" x2="'+(r2*s).toFixed(1)+'" y2="'+(-r2*c).toFixed(1)+'" style="stroke:#555" stroke-width="1"/>'}
+ return '<svg class="kpgs" viewBox="-58 -54 116 64" role="img" aria-label="Yön göstergesi">'+h+
+  '<text x="-46" y="9" text-anchor="middle" style="fill:#FF5A4E;font:800 7.5px Inter,system-ui">SAT</text><text x="46" y="9" text-anchor="middle" style="fill:#3DDC84;font:800 7.5px Inter,system-ui">AL</text>'+
+  '<g id="kpn" style="transform:rotate(0deg)"><polygon points="0,-38 3.2,0 -3.2,0" style="fill:#fff"/></g><circle r="5.5" style="fill:#FF7A1A"/><circle r="2.2" style="fill:#000"/></svg>'}
+function kokRing(id,lab){return '<div class="kpm"><div class="t"><small>'+lab+'</small><b id="'+id+'t">–</b></div><i class="trk"><u class="ar" id="'+id+'a"></u></i></div>'}
 function kokSpark(x){const P=IDXD.pts;if(!P||P.length<3)return '';const cs=P.map(p=>p.c),s=nowSess();if(s.open&&x.c>0)cs.push(x.c);
  const W=300,H=48,pv=IDXD.prev||cs[0],mn=Math.min(pv,...cs),mx=Math.max(pv,...cs),rg=mx-mn||1,N=Math.max(cs.length,97),X=i=>(i/(N-1)*W).toFixed(1),Y=v=>(4+(mx-v)/rg*(H-8)).toFixed(1);
  const last=cs[cs.length-1],col=last>=pv?'#5BD49B':'#F07A6A',ln=cs.map((c,i)=>X(i)+','+Y(c)).join(' ');
@@ -7956,15 +7956,14 @@ function kokTop(){
  return '<div class="kph"><div class="brfm"><svg viewBox="0 0 24 24" fill="none" stroke="#FF7A1A" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M15.5 8.5l-2 5-5 2 2-5z" fill="#FF7A1A"/></svg><div><b>BIST Pusula</b></div></div>'+
   '<div style="display:flex;gap:8px;align-items:center"><span class="kpst" id="kpst"><i></i><span></span></span><button class="brfs" aria-label="Hisse ara" onclick="xrayOpen()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button></div></div>'+
   '<div class="kpc" id="kpclk"></div>'+
-  '<div class="kpg">'+kokGauge()+
-  '<div class="kpsc"><b id="kpsc">–</b><span id="kplb"></span></div>'+
-  '<div class="kpex">Yön puanı (−100 satıcılı … +100 alıcılı): endeks, yükselen/düşen hisse dengesi, bankalar ve VİOP\'tan hesaplanır. Sinyal değildir.</div>'+
-  '<div class="kpx"><small>BIST 100</small><b id="kpx">–</b><span id="kpxc"></span></div><div class="kpsp" id="kpsp"></div>'+
+  '<div class="kpg kpgc"><div class="kpr1"><div class="kpgw">'+kokGauge()+'<div class="kpsc"><b id="kpsc">–</b><span id="kplb"></span></div></div>'+
+  '<div class="kpxi"><small>BIST 100</small><div class="kpx"><b id="kpx">–</b><span id="kpxc"></span></div><div class="kpexs" title="−100 satıcılı … +100 alıcılı. Sinyal değildir.">Yön puanı: endeks, genişlik, bankalar ve VİOP</div></div></div>'+
+  '<div class="kpsp" id="kpsp"></div>'+
   '<div class="kpsb"><div class="t"><span>10:00</span><span id="kpsr"></span><span>18:00</span></div><div class="b"><i id="kpsf"></i><u id="kpsd"></u></div></div>'+
   '<div class="kprg">'+kokRing('kr1','Endeks')+kokRing('kr2','Genişlik')+kokRing('kr3','Bankalar')+kokRing('kr4','VİOP')+'</div>'+
   '<div class="kpq" id="kpq"></div></div>'}
 function kokSet(id,v){const e=document.getElementById(id);if(e&&e.innerHTML!==v)e.innerHTML=v;return e}
-function kokRingSet(id,frac,col,txt){const a=document.getElementById(id+'a');if(a){a.style.strokeDasharray=(138.2*Math.max(0,Math.min(1,frac))).toFixed(1)+' 139';a.style.stroke=col}kokSet(id+'t',txt)}
+function kokRingSet(id,frac,col,txt){const a=document.getElementById(id+'a');if(a){a.style.width=(Math.max(0,Math.min(1,frac))*100).toFixed(1)+'%';a.style.background=col}const t=kokSet(id+'t',txt);if(t)t.style.color=col==='#7D8AA3'?'#9A9A9A':col}
 function kokPatch(){
  const mk=S.mkt||{},x=kokX(),ch=x.ch,ok=ch!=null&&isFinite(ch);let Y=null;try{Y=pusYon()}catch(e){}
  const st=kokSt(),se=document.getElementById('kpst');if(se){se.className='kpst '+st.c;se.lastChild.textContent=st.t}
@@ -8075,6 +8074,23 @@ html.cam #t-now .brfg .pl{background:#1A1A1A;color:#DDD}html.cam #t-now .brfg .p
 html.cam #t-now .kpw small{color:#8A8A8A}html.cam #t-now .brfe,html.cam #t-now .brfd{color:#6E6E6E}
 html.cam #t-now details.brfy>summary b{color:#FF8A2A}
 html.cam #t-now .kpsv{color:#FF9A3D;background:rgba(255,106,0,.08);border-color:rgba(255,122,26,.4)}
+</style>
+<style>
+/* v15.8 KOMPAKT KOKPİT (13.11, Fatih: 'pusula çok büyük, fazla yer kaplıyor, tam profesyonel olsun'): gösterge solda küçük (118 px), BIST 100 sağda; halkalar yerine 4 ince çubuk. Yalnız görünüm. */
+html.cam #t-now .kpgc{padding:12px 14px 12px}
+.kpr1{display:flex;align-items:center;gap:12px}
+.kpgw{flex:none;width:118px;text-align:center}
+.kpg svg.kpgs{width:118px;max-width:none;height:auto;margin:0}
+.kpgw .kpsc{margin-top:-2px;line-height:1}.kpgw .kpsc b{font-size:20px;font-weight:800}.kpgw .kpsc span{display:block;font-size:11px;font-weight:700;margin:2px 0 0}
+.kpxi{flex:1;min-width:0}.kpxi>small{font-size:11px;color:#9A9A9A;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.kpxi .kpx{justify-content:flex-start;margin:2px 0 0;gap:8px}.kpxi .kpx b{font-size:30px;padding:0}.kpxi .kpx span{font-size:14px}
+.kpexs{font-size:11px;color:#7A7A7A;margin-top:4px;line-height:1.35}
+.kpgc .kpsp{height:38px;margin:8px -2px 0}.kpgc .kpsp svg{height:38px}
+.kpgc .kpsb{margin:4px 0 0}.kpgc .kpsb .b{height:3px}.kpgc .kpsb .b u{width:9px;height:9px;top:-3px;margin-left:-4.5px}
+.kprg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+.kpm .t{display:flex;justify-content:space-between;align-items:baseline;gap:4px}.kpm small{font-size:11px;color:#9A9A9A;font-weight:600;white-space:nowrap}.kpm b{font-size:12.5px;font-variant-numeric:tabular-nums}
+.kpm .trk{display:block;height:4px;border-radius:2px;background:#222;margin-top:5px;overflow:hidden}.kpm .ar{display:block;height:100%;width:0;border-radius:2px;transition:width 1.2s ease,background .6s}
+.kpgc .kpq{margin-top:10px;padding-top:8px}
 </style>
 </body>
 </html>
