@@ -107,7 +107,7 @@ async function page(b, opt) {
           r.rozet = document.getElementById('bdg-sinyal').classList.contains('on') && +document.getElementById('bdg-sinyal').textContent >= 1 && document.getElementById('dot-haber').classList.contains('on');
           document.querySelector('#tabs [data-g="sinyal"]').click(); document.querySelector('#tabs [data-g="haber"]').click(); await W(50); showTab('now'); bdgUpd();
           r.sondu = !document.getElementById('bdg-sinyal').classList.contains('on') && !document.getElementById('dot-haber').classList.contains('on');
-          renderNow(); const h = document.getElementById('nowbody').textContent; r.ana = /Önemli haberler/.test(h) && !/Kâğıt üzerinde bot/.test(h) && !/Gece Kuşu/.test(h);
+          renderNow(); const h = document.getElementById('nowbody').textContent; r.ana = !!document.getElementById('kpnw') && !/Önemli haberler/.test(h) && !/Kâğıt üzerinde bot/.test(h) && !/Gece Kuşu/.test(h);
           return r; });
         await p.screenshot({ path: path.join(OUT, 'sade-ana.png') });
         ok('Sade düzen: 5 düğme, gruplar ve çipler, Karne/Gece/Canlı/Kripto kalktı, rozetler, başlıkta arama', sd && Object.values(sd).every(Boolean), JSON.stringify(sd)); }
@@ -351,7 +351,7 @@ async function page(b, opt) {
       ok('Röntgen: fiyat aralığı (günlük/aylık/yıllık) ve 6 dönem getirisi görünüyor', xr.rows === 3 && xr.tiles === 6 && /Dönem getirisi/.test(xr.txt) && /son bir yılın en düşüğünden/.test(xr.txt), JSON.stringify({ rows: xr.rows, tiles: xr.tiles }));
       await p.evaluate(() => { xrayClose(); S.mkt = S.mkt || {}; S.mkt.XU100 = { c: 10800, ch: 0.5 }; showTab('now'); renderNow(); }); await p.waitForTimeout(1500);
       const bh = await p.evaluate(() => { renderNow(); const n1 = document.getElementById('kpn'); S.mkt.XU100 = { c: 10900, ch: 1.9 }; renderNow(); const b = document.querySelector('#nowbody .brf'); const t = b ? b.textContent : '';
-        return { baslik: !!document.querySelector('#nowbody .brft') && document.querySelector('#nowbody .brft').textContent.length > 8, one: document.querySelectorAll('#nowbody .brfp').length >= 2, piyasa: /Dolar\/TL/.test(t) && /Ons altın/.test(t), haber: /Önemli haberler/.test(t), uyari: /yatırım tavsiyesi değildir/.test(t),
+        return { baslik: !!document.querySelector('#nowbody .brft') && document.querySelector('#nowbody .brft').textContent.length > 8, one: document.querySelectorAll('#nowbody .brfp').length >= 2, piyasa: /Dolar\/TL/.test(t) && /Ons altın/.test(t), haber: !!document.getElementById('kpnw') && !/Önemli haberler/.test(t), uyari: /yatırım tavsiyesi değildir/.test(t),
           kokpit: !!n1 && n1 === document.getElementById('kpn') && /rotate\(/.test(n1.style.transform) && document.querySelectorAll('#nowbody .kprg .ar').length === 4 && /SAT/.test(document.querySelector('#nowbody .kpgs').textContent) && /Yön puanı/.test(t),
           tek: document.querySelectorAll('#nowbody #kpst').length === 1 && !/Açılışa/.test(document.getElementById('kpclk').textContent), gizli: document.documentElement.classList.contains('onnow') && getComputedStyle(document.getElementById('tick')).display === 'none' }; });
       ok('Ana sayfa Kokpit: yön göstergesi yerinde güncelleniyor (ibre aynı öğe), 4 halka, seans durumu tek yerde, üst şerit gizli, öne çıkanlar, piyasa, haberler', bh && Object.values(bh).every(Boolean), JSON.stringify(bh));

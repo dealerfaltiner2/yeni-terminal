@@ -3734,7 +3734,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="15.13";window.APPV=APP_VER;
+  const APP_VER="15.14";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -8023,8 +8023,7 @@ function kokLow(o){const {Y,ch,ok,bk,VI}=o,s=nowSess(),ms=mktSt(),uy=isUye();let
  h+=kokWatch();   // v15.12: canlı satırlar (fiyat, gün içi çizgi, %)
  const n=Date.now();let NL=(HAB.list||[]).filter(z=>z.onem>=2);if(!NL.length)NL=(NOWK.list||[]).filter(k=>k.onem>=2).map(k=>({t:k.t,syms:k.syms,title:k.subj,onem:k.onem,yon:k.yon}));
  NL=NL.filter(z=>z.t&&n-z.t<20*3600e3).sort((a,b)=>b.t-a.t).slice(0,3);
- h+='<div class="brfk"><span>Önemli haberler</span><a onclick="grpOpen(\'haber\')">Tümü ›</a></div>';
- h+=NL.length?'<div class="brfb">'+NL.map(z=>{const sy=String(z.syms||'').split(',').filter(v=>/^[A-Z0-9]{3,7}$/.test(v))[0];return '<button class="brfn" onclick="'+(sy?'xrayOpen(\''+sy+'\')':'grpOpen(\'haber\')')+'"><span class="t">'+ecHm(z.t)+'</span><span>'+(sy?'<b>'+sy+'</b> · ':'')+htmlEsc(String(z.title||'').slice(0,90))+(z.yon>0?' <span class="up">▲</span>':z.yon<0?' <span class="dn">▼</span>':'')+'</span></button>'}).join('')+'</div>':'<div class="brfe">'+(HAB.list||NOWK.list?'Son saatlerde önemli haber yok.':'Yükleniyor…')+'</div>';
+ // v15.14: 'Önemli haberler' kartı kalktı — aynı haberler en üstteki kayan şeritte (tekrar olmasın)
  try{const yc=typeof yorumCard==='function'?yorumCard():'';if(yc){const y0=YRM.list&&YRM.list[0],sn=y0?String(y0.txt||'').replace(/\*\*/g,'').replace(/•/g,'').replace(/\s+/g,' ').trim().slice(0,70):'';
   h+='<details class="brfy" data-k="brfy"'+(window.__brfy?' open':'')+' ontoggle="window.__brfy=this.open"><summary><b>Pusula\'nın piyasa yorumu</b><span>'+htmlEsc(sn)+'… devamı</span></summary>'+yc+'</details>'}}catch(x3){}
  try{if(PUBLIC_OPEN&&tgUid())h+='<section class="pinv"><div><b>Arkadaşını davet et</b><span>Pusula\'yı bir arkadaşına gönder; kendi bağlantınla gelenler sayılır.</span></div><button onclick="tgInvite()">👥 Davet et</button></section>'}catch(x4){}
@@ -8206,16 +8205,21 @@ function kdDraw(){const k=KD.k;if(!k)return;const b=document.querySelector('#kds
  const st=k==='VIOP'?'15 dk gecikmeli':/^BIST/.test(I[1])?(ms.k==='open'?'<span class="ok">● Canlı</span>':'Seans kapalı · son fiyat'):'<span class="ok">● Canlı</span> · 7/24 piyasa (borsa saatinden bağımsız)';
  const lbl={g:'Gün',h:'Hafta',a:'3 Ay',y:'Yıl'};
  const hi=a.length?Math.max(...a.map(c=>c.high)):null,lo=a.length?Math.min(...a.map(c=>c.low)):null;
- b.innerHTML='<div class="kdh"><b id="kdpx">'+(px?nf(px,dg):'–')+'</b><span class="'+cls(L&&L.ch)+'">'+(L&&L.ch!=null?pct(L.ch)+' bugün':'')+'</span></div><div class="kdl">'+st+' · '+new Date(Date.now()+3*3600e3).toISOString().slice(11,19)+'</div>'+
-  '<div class="kdr">'+Object.keys(lbl).map(r=>'<button class="'+(KD.r===r?'on':'')+'" onclick="kdRange(\''+r+'\')">'+lbl[r]+'</button>').join('')+'</div>'+
-  '<div class="kdc">'+(a.length>=2?kdSvg(a,ref,px,dg,KD.r):'<div class="em">'+(cs===null?'Grafik verisi gelmedi':'Yükleniyor…')+'</div>')+'</div>'+
-  (a.length>=2?'<div class="kdt"><span>'+(KD.r==='g'?hm(T(a[0])):dm(T(a[0])))+'</span><span>'+lbl[KD.r]+(rch!=null?' boyunca <b class="'+cls(rch)+'">'+pct(rch)+'</b>':'')+'</span><span>'+(KD.r==='g'?hm(T(a[a.length-1])):dm(T(a[a.length-1])))+'</span></div>':'')+
-  '<div class="kds"><div><small>'+(KD.r==='g'?'Önceki kapanış':'Dönem başı')+'</small><b>'+(ref?nf(ref,dg):'–')+'</b></div><div><small>Açılış</small><b>'+(a.length?nf(a[0].open,dg):'–')+'</b></div>'+
-  '<div><small>'+lbl[KD.r]+' en yüksek</small><b class="up">'+(hi!=null?nf(hi,dg):'–')+'</b></div><div><small>'+lbl[KD.r]+' en düşük</small><b class="dn">'+(lo!=null?nf(lo,dg):'–')+'</b></div></div>'+
+ const A='<div class="kdh"><b>'+(px?nf(px,dg):'–')+'</b><span class="'+cls(L&&L.ch)+'">'+(L&&L.ch!=null?pct(L.ch)+' bugün':'')+'</span></div><div class="kdl">'+st+'</div>',
+  B='<div class="kdc">'+(a.length>=2?kdSvg(a,ref,px,dg,KD.r):'<div class="em">'+(cs===null?'Grafik verisi gelmedi':'Yükleniyor…')+'</div>')+'</div>'+
+  (a.length>=2?'<div class="kdt"><span>'+(KD.r==='g'?hm(T(a[0])):dm(T(a[0])))+'</span><span>'+lbl[KD.r]+(rch!=null?' boyunca <b class="'+cls(rch)+'">'+pct(rch)+'</b>':'')+'</span><span>'+(KD.r==='g'?hm(T(a[a.length-1])):dm(T(a[a.length-1])))+'</span></div>':''),
+  C='<div class="kds"><div><small>'+(KD.r==='g'?'Önceki kapanış':'Dönem başı')+'</small><b>'+(ref?nf(ref,dg):'–')+'</b></div><div><small>Açılış</small><b>'+(a.length?nf(a[0].open,dg):'–')+'</b></div>'+
+  '<div><small>'+lbl[KD.r]+' en yüksek</small><b class="up">'+(hi!=null?nf(hi,dg):'–')+'</b></div><div><small>'+lbl[KD.r]+' en düşük</small><b class="dn">'+(lo!=null?nf(lo,dg):'–')+'</b></div></div>';
+ // v15.14: iskelet bir kez (hisse değişince), sonra yalnız değişen parça yazılır → düğmeye basarken dokunuş kaybolmaz
+ if(b.dataset.kk!==k){b.dataset.kk=k;b.innerHTML='<div id="kdA"></div><div class="kdclk" id="kdT"></div><div class="kdr">'+Object.keys(lbl).map(r=>'<button data-r="'+r+'" onclick="kdRange(\''+r+'\')">'+lbl[r]+'</button>').join('')+'</div><div id="kdB"></div><div id="kdC"></div>'+
   (I[2]?'<button class="kdgo" onclick="psClose(\'kdsheet\');selectSym(\''+I[2]+'\',\'bist\')">📈 Grafikte aç (göstergelerle)</button>':'')+
   '<div class="brfd" style="margin-top:10px">Fiyat 3 sn\'de bir, çizgi dakikada bir yenilenir. Bilgi amaçlıdır.</div>'}
+ b.querySelectorAll('.kdr button').forEach(x=>x.classList.toggle('on',x.dataset.r===KD.r));
+ const put=(id,h)=>{const e=document.getElementById(id);if(e&&e.__h!==h){e.__h=h;e.innerHTML=h}};put('kdA',A);put('kdB',B);put('kdC',C);
+ const tt=document.getElementById('kdT');if(tt)tt.textContent='Güncellendi '+new Date(Date.now()+3*3600e3).toISOString().slice(11,19)}
 function kdRange(r){KD.r=r;kdDraw();kdLoad(KD.k,r)}
-function kdOpen(k){if(!KD_I[k])return;KD.k=k;KD.r='g';const m=psEl('kdsheet','');m.querySelector('.psbar b').textContent=KD_I[k][0];psOpen('kdsheet');kdDraw();kdLoad(k,'g');
+function kdReset(){const b=document.querySelector('#kdsheet .psb');if(b)b.dataset.kk=''}
+function kdOpen(k){if(!KD_I[k])return;KD.k=k;KD.r='g';const m=psEl('kdsheet','');kdReset();m.querySelector('.psbar b').textContent=KD_I[k][0];psOpen('kdsheet');kdDraw();kdLoad(k,'g');
  clearInterval(KD.tm);KD.tm=setInterval(()=>{if(!ovOpen('kdsheet')){clearInterval(KD.tm);KD.k=null;return}kdDraw();kdLoad(KD.k,KD.r)},3000)}
 function ydOpen(){const m=psEl('ydsheet','Yön puanı');psOpen('ydsheet');ydDraw();clearInterval(KD.ytm);KD.ytm=setInterval(()=>{if(!ovOpen('ydsheet')){clearInterval(KD.ytm);return}ydDraw()},5000)}
 function ydDraw(){const b=document.querySelector('#ydsheet .psb');if(!b)return;let Y=null;try{Y=pusYon()}catch(e){}
@@ -8224,12 +8228,12 @@ function ydDraw(){const b=document.querySelector('#ydsheet .psb');if(!b)return;l
  const AC={'Endeks':'BIST 100 günlük değişimi (±%2 tam puan)','Yükselen/düşen':'Artıda ve ekside hisse dengesi','Ortanca hisse':'Ortadaki hissenin değişimi','VİOP':'BIST 30 vadeli (15 dk gecikmeli)','Bankalar':'Banka endeksi (±%2,5 tam puan)','Trend':'Piyasa rejimi'};
  const yh=kokYhPts();let sv='';if(yh){const W=340,H=90,X=m=>((m-600)/480*W).toFixed(1),Yv=v=>(H/2-v/100*(H/2-6)).toFixed(1);
   sv='<div class="brfk" style="margin-top:14px"><span>Gün içi seyir</span></div><svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:90px;display:block"><line x1="0" x2="'+W+'" y1="'+H/2+'" y2="'+H/2+'" style="stroke:rgba(255,255,255,.25)" stroke-dasharray="3 4"/><polyline fill="none" style="stroke:'+col+'" stroke-width="2" points="'+yh.map(z=>X(z[0])+','+Yv(z[1])).join(' ')+'"/></svg><div class="kdt"><span>10:00</span><span>0 = kararsız</span><span>18:00</span></div>'}
- b.innerHTML='<div class="kdh"><b style="color:'+col+'">'+f(Y.sc)+'</b><span style="color:'+col+'">'+htmlEsc(Y.lab)+'</span></div><div class="kdl">−100 satıcılı … +100 alıcılı · 5 sn\'de bir yenilenir · sinyal değildir</div>'+
+ const YH='<div class="kdh"><b style="color:'+col+'">'+f(Y.sc)+'</b><span style="color:'+col+'">'+htmlEsc(Y.lab)+'</span></div><div class="kdl">−100 satıcılı … +100 alıcılı · 5 sn\'de bir yenilenir · sinyal değildir</div>'+
   '<div class="brfk" style="margin-top:14px"><span>Neden bu yön?</span></div>'+Y.P.map(([n,w,v])=>{const c=v>0?'#3DDC84':v<0?'#FF5A4E':'#888',l=v>=0?50:50+v*50,wd=Math.abs(v)*50;
   return '<div class="ydp"><span>'+htmlEsc(n)+'<small>ağırlık %'+Math.round(w*100)+'</small></span><span><span class="ydb"><i></i><u style="left:'+l+'%;width:'+wd+'%;background:'+c+'"></u></span><small style="margin-top:4px">'+(AC[n]||'')+'</small></span><b style="color:'+c+'">'+f(Math.round(v*100))+'</b></div>'}).join('')+
   (Y.b1n?'<div class="kds"><div><small>BIST 100 yükselen</small><b class="up">'+Y.b1u+'</b></div><div><small>BIST 100 düşen</small><b class="dn">'+Y.b1d+'</b></div></div>':'')+
   (Y.div?'<div class="kpsv" style="margin-top:12px">'+htmlEsc(Y.div)+'</div>':'')+sv+
-  '<button class="kdgo" onclick="psClose(\'ydsheet\');kdOpen(\'XU100\')">BIST 100 canlı grafiği</button>'}
+  '<button class="kdgo" onclick="psClose(\'ydsheet\');kdOpen(\'XU100\')">BIST 100 canlı grafiği</button>';if(b.__h!==YH){b.__h=YH;b.innerHTML=YH}}
 // dokunma: tek dinleyici
 (function(){const b=document.getElementById('nowbody');if(!b||b.__kd)return;b.__kd=1;b.addEventListener('click',e=>{if(S.tab!=='now')return;const t=e.target;if(t.closest('a,button'))return;
  const d=t.closest('[data-kd]');if(d){kdOpen(d.dataset.kd);return}
@@ -8253,5 +8257,14 @@ function kokNw(){const e=document.getElementById('kpnw');if(!e)return;const L=ko
 (function(){const _g=goBack,_c=canBack;goBack=window.goBack=function(){if(ovOpen('kdsheet')){psClose('kdsheet');return 'detay'}if(ovOpen('ydsheet')){psClose('ydsheet');return 'detay'}if(ovOpen('tksheet')){psClose('tksheet');return 'detay'}return _g.apply(this,arguments)};
  canBack=window.canBack=function(){return ovOpen('kdsheet')||ovOpen('ydsheet')||ovOpen('tksheet')||_c.apply(this,arguments)}})();
 </script>
+<style>
+/* v15.14 (13.11, Fatih: 'şimdi düzelt'): dokunulabilir kutularda küçük '›' işareti */
+#nowbody .kpq>div[data-kd],#nowbody .kpw>div[data-kd]{position:relative}
+#nowbody .kpq>div[data-kd]::after,#nowbody .kpw>div[data-kd]::after{content:"›";position:absolute;top:-2px;right:5px;font-size:15px;font-weight:700;color:rgba(255,138,42,.75);line-height:1}
+#nowbody .kprg>div{min-width:0}
+#nowbody .kprg{gap:12px}#nowbody .kpm small{font-size:10.5px}#nowbody .kpm b{font-size:11.5px}
+#nowbody .kpxi>small::after,#nowbody .kpgw .kpsc span::after{content:" ›";color:rgba(255,138,42,.85);font-weight:800}
+.kdclk{font-size:11px;color:var(--dim);margin-top:2px;font-variant-numeric:tabular-nums}
+</style>
 </body>
 </html>
