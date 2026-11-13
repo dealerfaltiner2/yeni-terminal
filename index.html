@@ -3734,7 +3734,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="15.15";window.APPV=APP_VER;
+  const APP_VER="15.16";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -8249,9 +8249,12 @@ KOK.nw='';
 function kokNwItems(){const n=Date.now();let L=(HAB.list||[]).filter(z=>z.onem>=2);if(!L.length)L=(NOWK.list||[]).filter(k=>k.onem>=1).map(k=>({t:k.t,syms:k.syms,title:k.subj,onem:k.onem,yon:k.yon}));
  return L.filter(z=>z.t&&n-z.t<24*3600e3).sort((a,b)=>b.t-a.t).slice(0,10)}
 function kokNw(){const e=document.getElementById('kpnw');if(!e)return;const L=kokNwItems();
- const one=L.map(z=>{const sy=String(z.syms||'').split(',').filter(v=>/^[A-Z0-9]{3,7}$/.test(v))[0];return '<a onclick="'+(sy?'xrayOpen(\''+sy+'\')':'grpOpen(\'haber\')')+'"><i>'+ecHm(z.t)+'</i>'+(sy?'<b>'+sy+'</b>':'')+htmlEsc(String(z.title||'').slice(0,110))+(z.yon>0?' ▲':z.yon<0?' ▼':'')+'</a>'}).join('');
+ const one=L.map(z=>{const sy=String(z.syms||'').split(',').filter(v=>/^[A-Z0-9]{3,7}$/.test(v))[0];return '<a onclick="'+(sy?'xrayOpen(\''+sy+'\')':'grpOpen(\'haber\')')+'"><i>'+ecHm(z.t)+'</i>'+(sy?'<b>'+sy+'</b><em class="kpnp" data-s="'+sy+'"></em>':'')+htmlEsc(String(z.title||'').slice(0,110))+(z.yon>0?' ▲':z.yon<0?' ▼':'')+'</a>'}).join('');
  const h=one?'<div class="tr" style="animation-duration:'+Math.max(25,L.reduce((a,z)=>a+String(z.title||'').length,0)*0.16).toFixed(0)+'s">'+one+one+'</div>':'';
- if(h!==KOK.nw){KOK.nw=h;e.innerHTML=h;e.style.display=h?'':'none'}}
+ if(h!==KOK.nw){KOK.nw=h;e.innerHTML=h;e.style.display=h?'':'none'}
+ // v15.16: hisse adının yanında canlı fiyat + günlük % (yerinde güncellenir, akış baştan başlamaz)
+ e.querySelectorAll('.kpnp').forEach(x=>{const q=S.quotes[x.dataset.s]||S.umap[x.dataset.s]||{},c=q.close,ch=q.change;
+  const t=c>0?nf(c)+(ch!=null&&isFinite(ch)?' '+pct(ch):''):'';if(x.textContent!==t)x.textContent=t;x.className='kpnp '+(ch>0?'u':ch<0?'d':'')})}
 (function(){const _p=kokPatch;kokPatch=function(){const o=_p.apply(this,arguments);try{kokNw()}catch(x){}return o}})();
 (function(){const _r=kokRender;kokRender=function(el){const had=!!el.querySelector(':scope>.kp');if(!had)KOK.nw='';return _r.apply(this,arguments)}})();
 // geri: açık detay pencereleri önce kapanır
@@ -8266,6 +8269,11 @@ function kokNw(){const e=document.getElementById('kpnw');if(!e)return;const L=ko
 #nowbody .kprg{gap:12px}#nowbody .kpm small{font-size:10.5px}#nowbody .kpm b{font-size:11.5px}
 #nowbody .kpxi>small::after,#nowbody .kpgw .kpsc span::after{content:" ›";color:rgba(255,138,42,.85);font-weight:800}
 .kdclk{font-size:11px;color:var(--dim);margin-top:2px;font-variant-numeric:tabular-nums}
+</style>
+<style>
+/* v15.16 kayan haberlerde hisse fiyatı */
+.kpnw a em.kpnp{font-style:normal;font-size:11px;font-weight:700;margin:0 6px 0 -1px;font-variant-numeric:tabular-nums;color:#9A9A9A}.kpnw a em.kpnp:empty{display:none}
+.kpnw a em.kpnp.u{color:#3DDC84}.kpnw a em.kpnp.d{color:#FF5A4E}
 </style>
 </body>
 </html>
