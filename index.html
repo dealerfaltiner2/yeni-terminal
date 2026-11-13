@@ -3734,7 +3734,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="15.9";window.APPV=APP_VER;
+  const APP_VER="15.10";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -7936,7 +7936,7 @@ function kokClock(){const d=new Date(Date.now()+3*3600e3),G=['Pazar','Pazartesi'
  else if(S.botKnown&&S.botAlive)t+=' · <span class="ok">Ana sunucu çalışıyor</span>';
  return t}
 function kokSess(){const s=nowSess(),m=s.m,f=Math.max(0,Math.min(1,(m-600)/480));let r;
- if(s.open){const k=1080-m;r='Kapanışa '+(k>=60?Math.floor(k/60)+' sa ':'')+(k%60)+' dk'}else{const ms=mktSt();r=ms.k==='kap'?'Kapanış seansı':s.wk&&m>=1080?'Seans bitti':ms.sub}
+ if(s.open){const k=1080-m;r='Kapanışa '+(k>=60?Math.floor(k/60)+' sa ':'')+(k%60)+' dk'}else{const ms=mktSt();r=ms.k==='kap'?'Kapanış seansı':s.wk&&m>=1080?'Bugünkü seans bitti':'Önceki seans'}   // v15.10: açılışa kalan süre yalnız başlıktaki rozette (tekrar yok)
  return {f:s.open?f:(s.wk&&m>=1080?1:0),r}}
 function kokGauge(){const R=46,P=a=>[R*Math.sin(a*Math.PI/180),-R*Math.cos(a*Math.PI/180)],S5=[[-90,-54,'#FF5A4E'],[-54,-18,'#FF8A6A'],[-18,18,'#FF7A1A'],[18,54,'#8EDB9E'],[54,90,'#3DDC84']];
  let h='';S5.forEach((z,i)=>{const [x1,y1]=P(z[0]+2),[x2,y2]=P(z[1]-2);h+='<path class="seg" data-i="'+i+'" d="M'+x1.toFixed(1)+','+y1.toFixed(1)+' A'+R+','+R+' 0 0,1 '+x2.toFixed(1)+','+y2.toFixed(1)+'" fill="none" style="stroke:'+z[2]+'" stroke-width="7" stroke-linecap="round" opacity=".3"/>'});
@@ -8011,7 +8011,7 @@ function kokLow(o){const {Y,ch,ok,bk,VI}=o,s=nowSess(),ms=mktSt(),uy=isUye();let
   h+='<div class="kpnx"><div class="ic">⏰</div><div><b>Sıradaki önemli veri: '+brfDayLbl(e.t)+ecHm(e.t)+' · '+htmlEsc(ecTitle(e))+'</b><small>'+(k>=60?Math.floor(k/60)+' sa ':'')+(k%60)+' dk sonra'+(e.f!=null?' · beklenti '+htmlEsc(String(e.f))+(e.u||''):'')+' · veri saatinde fiyatlar sert oynayabilir</small></div></div>'}
  const hd=String(brfHead(ch,ms)).split('; sıradaki')[0],sigs=uy?[]:liveSignals();
  h+='<div class="kpcard kphd"><h1 class="brft">'+htmlEsc(hd)+'</h1></div>';
- h+=kokPos();
+ // v15.10: açık pozisyonlar ana sayfadan kalktı (Menü → İşlemlerim'de); yerine doğrudan Öne çıkanlar
  const P=kokOne(Y,ch,ok,bk,uy,sigs);if(P.length)h+='<div class="brfk"><span>Öne çıkanlar</span></div><div class="kpcard" style="padding:2px 14px">'+P.map((t,i)=>'<div class="brfp"><i>'+(i+1)+'</i><span>'+t+'</span></div>').join('')+'</div>';
  if(!s.open){const W=[['S&P 500 vadeli','S&P VADELİ',2],['Dolar endeksi','DOLAR END.',2],['ABD 10 yıllık faiz','ABD 10Y',3],['Bitcoin ($)','BTC',0]].map(([a,k,d])=>{const v=(S.mkt||{})[k];return v&&v.c?'<div><small>'+a+'</small><b>'+nf(v.c,d)+'</b><i class="'+cls(v.ch)+'">'+(v.ch!=null?pct(v.ch):'')+'</i></div>':''}).join('');
   if(W)h+='<div class="brfk"><span>Dünya piyasaları · şimdi</span></div><div class="kpw">'+W+'</div>'}
