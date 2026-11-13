@@ -3734,7 +3734,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="15.8";window.APPV=APP_VER;
+  const APP_VER="15.9";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4567,10 +4567,10 @@ function infoOpen(key){
 }
 function infoClose(){const box=document.getElementById('infosheet');box.classList.remove('open');setTimeout(()=>box.classList.remove('on'),260)}
 document.getElementById('infosheet').addEventListener('click',e=>{if(e.target.classList.contains('bd'))infoClose()});
-// Bölüm başlıkları: her sekmenin en üstüne ad + kısa açıklama + "Bu nedir?"
+// Bölüm başlıkları: her sekmenin en üstüne ad + kısa açıklama + "Nasıl okunur?" (v15.9; eskiden "Bu nedir?")
 (function(){
  for(const k of Object.keys(IC)){const t=document.getElementById('t-'+k);if(!t||t.querySelector(':scope>.sechd'))continue;const c=IC[k];
-  t.insertAdjacentHTML('afterbegin','<div class="sechd"><div class="st"><h1>'+c.t+'</h1><div class="ss">'+c.s+'</div></div><button class="ibtn" onclick="infoOpen(\''+k+'\')"><i>i</i>Bu nedir?</button></div>')}
+  t.insertAdjacentHTML('afterbegin','<div class="sechd"><div class="st"><h1>'+c.t+'</h1><div class="ss">'+c.s+'</div></div><button class="ibtn" onclick="infoOpen(\''+k+'\')" aria-label="Bu bölüm nasıl okunur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 5.5C4.5 4 7.5 4 12 6c4.5-2 7.5-2 10-.5V19c-2.5-1.5-5.5-1.5-10 .5-4.5-2-7.5-2-10-.5z"/><path d="M12 6v13.5"/></svg>Nasıl okunur?</button></div>')}
  // Gruplu menü: kutular SİNYAL / PİYASA / BENİM altında, her kutuda kısa açıklama ve ⓘ
  try{const g=document.querySelector('#more .mgrid');if(!g)return;const tiles={};g.querySelectorAll('button[data-t]').forEach(b=>tiles[b.dataset.t]=b);
   const frag=document.createDocumentFragment();
@@ -8091,6 +8091,13 @@ html.cam #t-now .kpgc{padding:12px 14px 12px}
 .kpm .t{display:flex;justify-content:space-between;align-items:baseline;gap:4px}.kpm small{font-size:11px;color:#9A9A9A;font-weight:600;white-space:nowrap}.kpm b{font-size:12.5px;font-variant-numeric:tabular-nums}
 .kpm .trk{display:block;height:4px;border-radius:2px;background:#222;margin-top:5px;overflow:hidden}.kpm .ar{display:block;height:100%;width:0;border-radius:2px;transition:width 1.2s ease,background .6s}
 .kpgc .kpq{margin-top:10px;padding-top:8px}
+</style>
+<style>
+/* v15.9 (13.11, Fatih: '"Bu nedir" yerine daha anlamlı bir şey, nasıl okunur gibi'): bölüm başlığındaki bilgi düğmesi kitap simgesi + 'Nasıl okunur?' */
+.ibtn svg{width:15px;height:15px;flex:none}
+html.mx .ibtn svg,html.cam .ibtn svg{color:#FF8A2A}
+html.mx .ibtn{padding:6px 11px 6px 9px!important}
+@media (max-width:360px){.ibtn{font-size:11px!important;padding:5px 8px!important}}
 </style>
 </body>
 </html>
