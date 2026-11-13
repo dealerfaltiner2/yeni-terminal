@@ -3734,7 +3734,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="15.14";window.APPV=APP_VER;
+  const APP_VER="15.15";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -5351,6 +5351,7 @@ function nMe(){const td=todayStr(),J=S.jr||[];const cl=J.filter(j=>j.closeD===td
 function renderNow(){
  const el=document.getElementById('nowbody');if(!el)return;nowKapLoad();ecalLoad();tedbLoad();idxLoad();sigTodayLoad();
  if(typeof pusCam==='function'&&pusCam()&&typeof renderNowCam==='function'){if(typeof kokRender==='function')kokRender(el);else el.innerHTML=renderNowCam();return}
+ if(document.documentElement.classList.contains('cam')){document.documentElement.classList.toggle('onnow',S.tab==='now');if(!el.firstChild)el.innerHTML='<div class="nempty" style="text-align:center;padding:40px 0;color:#8A8A8A">Pusula hazırlanıyor…</div>';return}   // v15.15: sayfanın geri kalanı yüklenmeden ilk çizim eski ekrana düşüp 'paperCard' hatası veriyordu
  const s=nowSess(),today=new Date(Date.now()+3*3600e3).toISOString().slice(0,10);
  let h='<div class="xsearch" onclick="xrayOpen()"><b>🔍</b><span>Hisse sorgula: not, puan, seviye</span><em>RÖNTGEN</em></div>'+nHero(),main='',side='';
  const prepTime=s.wk&&((s.m>=480&&s.m<600)||s.m>=1095);
@@ -5360,7 +5361,7 @@ function renderNow(){
   main+=nSec('🔭',s.pre?'Bugün ilk bakılacaklar':'Yarın izlenecekler','','',wl.length||'')+'<div class="nnote">Günü zirvesine yakın, normalden yüksek hacimle ve %1,5–7 artıda kapatanlar. Sinyal değil; açılışta ilk bakılacak liste.</div>'+
    (wl.length?wl.map(o=>nowRow({sym:o.name,src:secTr(o.sector)||'BIST',sub:'Hacim normalin '+nf(rvolOf(o),1)+' katı · zirveye %'+nf((1-o.close/o.high)*100,1),val:nf(o.close),chg:o.change})).join(''):'<div class="nempty">Bu şartlara uyan hisse yok.</div>');
   if(SIGT.list&&SIGT.list.length)main+=nLive()}
- main=(typeof yorumCard==='function'?yorumCard():'')+paperCard()+main;
+ main=(typeof yorumCard==='function'?yorumCard():'')+(typeof paperCard==='function'?paperCard():'')+main;
  main+=nPulse()+nSectors();
  side+=nWatch()+nMe();
  const K=window.KSTAT;
