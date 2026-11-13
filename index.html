@@ -3734,7 +3734,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="15.11";window.APPV=APP_VER;
+  const APP_VER="15.12";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -7951,7 +7951,7 @@ function kokSpark(x){const P=IDXD.pts;if(!P||P.length<3)return '';const cs=P.map
  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none"><defs><linearGradient id="kpsg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+col+'" stop-opacity=".3"/><stop offset="1" stop-color="'+col+'" stop-opacity="0"/></linearGradient></defs>'+
   '<line x1="0" x2="'+W+'" y1="'+Y(pv)+'" y2="'+Y(pv)+'" style="stroke:rgba(255,255,255,.22)" stroke-dasharray="4 5" vector-effect="non-scaling-stroke"/><polygon fill="url(#kpsg)" points="0,'+H+' '+ln+' '+X(cs.length-1)+','+H+'"/>'+
   '<polyline fill="none" style="stroke:'+col+'" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" points="'+ln+'"/>'+
-  (s.open?'<circle cx="'+X(cs.length-1)+'" cy="'+Y(last)+'" r="3.5" style="fill:'+col+'"><animate attributeName="r" values="3;5.5;3" dur="1.6s" repeatCount="indefinite"/></circle>':'')+'</svg>'}
+  kokYhSvg(W,H,N)+(s.open?'<circle cx="'+X(cs.length-1)+'" cy="'+Y(last)+'" r="3.5" style="fill:'+col+'"><animate attributeName="r" values="3;5.5;3" dur="1.6s" repeatCount="indefinite"/></circle>':'')+'</svg>'+kokYhLeg()}
 function kokTop(){
  return '<div class="kph"><div class="brfm"><svg viewBox="0 0 24 24" fill="none" stroke="#FF7A1A" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M15.5 8.5l-2 5-5 2 2-5z" fill="#FF7A1A"/></svg><div><b>BIST Pusula</b></div></div>'+
   '<div style="display:flex;gap:8px;align-items:center"><span class="kpst" id="kpst"><i></i><span></span></span><button class="brfs" aria-label="Hisse ara" onclick="xrayOpen()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button></div></div>'+
@@ -8005,20 +8005,22 @@ function kokPos(){const op=(S.jr||[]).filter(j=>j.r==null);if(!op.length)return 
    '<small>Giriş '+nf(j.e)+' · Stop '+nf(j.l)+' · Hedef '+nf(tp)+(px?' · şimdi '+nf(px):'')+'</small><div class="bar"><u style="left:'+pp.toFixed(1)+'%"></u></div></div>'}).join('')+'</div>'}
 function kokLow(o){const {Y,ch,ok,bk,VI}=o,s=nowSess(),ms=mktSt(),uy=isUye();let h='';
  try{const ne=ecNear(45);if(ne.length)h+='<div class="nwarn brfwarn">⚠️ <b>'+ne.map(z=>ecHm(z.t)+' '+htmlEsc(ecTitle(z))).join(', ')+'</b>: veri saatinde fiyatlar sert oynayabilir.</div>'}catch(x1){}
- try{if(VI&&!VI.old&&s.wk&&s.m<600)h+='<div class="nwarn info brfwarn">📈 <b>VİOP açıldı:</b> BIST 30 vadeli '+pct(VI.ch)+' → endeks '+(VI.ch>0.3?'yukarı':VI.ch<-0.3?'aşağı':'yatay')+' açılabilir.</div>'}catch(x1){}
+ const AB=kokAcilis(VI);   // v15.12: 09:00–10:00 açılış beklentisi kartı (VİOP satırının ve sıradaki veri kartının yerine)
+ try{if(!AB&&VI&&!VI.old&&s.wk&&s.m<600)h+='<div class="nwarn info brfwarn">📈 <b>VİOP açıldı:</b> BIST 30 vadeli '+pct(VI.ch)+' → endeks '+(VI.ch>0.3?'yukarı':VI.ch<-0.3?'aşağı':'yatay')+' açılabilir.</div>'}catch(x1){}
  if(ms.k==='open'&&LS.get('ownTok','')&&S.botKnown&&!S.botAlive&&!BOTMODE)h+='<div class="kpsv">⚠️ Ana sunucu kapalı: Algı ve Fırsat taraması şu an bu telefondan yapılıyor. Uygulamayı açık tut ya da ev bilgisayarını kontrol et.</div>';
- const e=brfNext(30);if(e){const k=Math.max(0,Math.round((e.t-Date.now())/60e3));
+ const e=brfNext(30);if(AB)h+=AB;else if(e){const k=Math.max(0,Math.round((e.t-Date.now())/60e3));
   h+='<div class="kpnx"><div class="ic">⏰</div><div><b>Sıradaki önemli veri: '+brfDayLbl(e.t)+ecHm(e.t)+' · '+htmlEsc(ecTitle(e))+'</b><small>'+(k>=60?Math.floor(k/60)+' sa ':'')+(k%60)+' dk sonra'+(e.f!=null?' · beklenti '+htmlEsc(String(e.f))+(e.u||''):'')+' · veri saatinde fiyatlar sert oynayabilir</small></div></div>'}
  const hd=String(brfHead(ch,ms)).split('; sıradaki')[0],sigs=uy?[]:liveSignals();
  h+='<div class="kpcard kphd"><h1 class="brft">'+htmlEsc(hd)+'</h1></div>';
  // v15.10: açık pozisyonlar ana sayfadan kalktı (Menü → İşlemlerim'de); yerine doğrudan Öne çıkanlar
- const P=kokOne(Y,ch,ok,bk,uy,sigs);if(P.length)h+='<div class="brfk"><span>Öne çıkanlar</span></div><div class="kpcard" style="padding:2px 14px">'+P.map((t,i)=>'<div class="brfp"><i>'+(i+1)+'</i><span>'+t+'</span></div>').join('')+'</div>';
+ h+=kokAlarm();
+ const SC=kokSecRow(),P=kokOne(Y,ch,ok,bk,uy,sigs).filter(t=>!SC||!/^En güçlü sektör/.test(t));if(P.length||SC)h+='<div class="brfk"><span>Öne çıkanlar</span></div><div class="kpcard" style="padding:2px 14px">'+SC+P.map((t,i)=>'<div class="brfp"><i>'+(i+1)+'</i><span>'+t+'</span></div>').join('')+'</div>';
  if(!s.open){const W=[['S&P 500 vadeli','S&P VADELİ',2],['Dolar endeksi','DOLAR END.',2],['ABD 10 yıllık faiz','ABD 10Y',3],['Bitcoin ($)','BTC',0]].map(([a,k,d])=>{const v=(S.mkt||{})[k];return v&&v.c?'<div><small>'+a+'</small><b>'+nf(v.c,d)+'</b><i class="'+cls(v.ch)+'">'+(v.ch!=null?pct(v.ch):'')+'</i></div>':''}).join('');
   if(W)h+='<div class="brfk"><span>Dünya piyasaları · şimdi</span></div><div class="kpw">'+W+'</div>'}
  if(!uy&&sigs.length){h+='<div class="brfk"><span>Sinyaller · bugün '+sigs.length+'</span><a onclick="grpOpen(\'sinyal\')">Tümü ›</a></div><div class="brfb">'+sigs.slice(0,3).map(o=>{const st=sgState(o.src,o.sym,o.px,o.o!=null?o.o:(o.res==='hit'?1:o.res==='fail'?2:null),o.done,null,false),star=o.meta&&o.meta.star;
    return '<button class="brfg" onclick="selectSym(\''+htmlEsc(o.sym)+'\',\'bist\');showTab(\'chart\')"><b>'+htmlEsc(o.sym)+(star?' <span style="color:#FF7A1A;font-weight:500;font-size:12.5px">★ Yıldızlı</span>':'')+'</b><span class="pl '+st.k+'">'+st.t+'</span><small>'+htmlEsc((typeof SST_N!=='undefined'&&SST_N[o.src])||o.src)+' · '+sgHm(o.t)+' · giriş '+nf(o.px)+'</small></button>'}).join('')+'</div>'}
  else{const wl=watchTomorrow();if(wl.length)h+='<div class="brfk"><span>'+(uy&&s.open?'Bugün güçlü gidenler':(s.pre?'Bugün':(s.wd===5||s.wd===6||s.wd===0)?'Pazartesi':'Yarın')+' ilk bakılacaklar')+'</span></div><div class="brfw">'+wl.map(o=>'<button onclick="xrayOpen(\''+o.name+'\')">'+htmlEsc(o.name)+'<i class="'+cls(o.change)+'">'+pct(o.change)+'</i></button>').join('')+'</div><div class="brfd" style="margin-top:6px">Günün zirvesine yakın, yüksek hacimle %1,5–7 artıda olanlar. Sinyal değil.</div>'}
- const WL=W();if(WL.length)h+='<div class="brfk"><span>İzleme listem</span><a onclick="showTab(\'watch\')">Düzenle ›</a></div><div class="brfw">'+WL.slice(0,12).map(z=>{const q=S.quotes[z]||S.umap[z]||{};return '<button onclick="xrayOpen(\''+htmlEsc(z)+'\')">'+htmlEsc(z)+'<i class="'+cls(q.change)+'">'+(q.change!=null?pct(q.change):'')+'</i></button>'}).join('')+'</div>';
+ h+=kokWatch();   // v15.12: canlı satırlar (fiyat, gün içi çizgi, %)
  const n=Date.now();let NL=(HAB.list||[]).filter(z=>z.onem>=2);if(!NL.length)NL=(NOWK.list||[]).filter(k=>k.onem>=2).map(k=>({t:k.t,syms:k.syms,title:k.subj,onem:k.onem,yon:k.yon}));
  NL=NL.filter(z=>z.t&&n-z.t<20*3600e3).sort((a,b)=>b.t-a.t).slice(0,3);
  h+='<div class="brfk"><span>Önemli haberler</span><a onclick="grpOpen(\'haber\')">Tümü ›</a></div>';
@@ -8099,5 +8101,56 @@ html.mx .ibtn svg,html.cam .ibtn svg{color:#FF8A2A}
 html.mx .ibtn{padding:6px 11px 6px 9px!important}
 @media (max-width:360px){.ibtn{font-size:11px!important;padding:5px 8px!important}}
 </style>
+<style>
+/* v15.12 KOKPİT EKLERİ (13.11, Fatih: 'ana sayfada ne eksik' → 'sırıtmasın'): yeni kart yok — mevcut kartların içine yerleşir. Yalnız görünüm, sinyal kuralı DEĞİŞMEDİ. */
+.kpgc .kpsp{height:auto}
+.kpspl{display:flex;gap:12px;font-size:10px;color:#8A8A8A;font-weight:600;margin:2px 2px 0;white-space:nowrap;overflow:hidden}
+.kpspl i{display:inline-block;width:12px;height:0;border-top:2px solid #5BD49B;vertical-align:middle;margin-right:4px}.kpspl i.y{border-top:1.5px dashed #FF8A2A}
+.kpspl b{color:#DDD;font-variant-numeric:tabular-nums}
+.kpsec{display:flex;flex-wrap:wrap;gap:6px;padding:11px 0 10px;border-bottom:1px solid #1E1E1E}
+.kpsec button{display:inline-flex;gap:5px;align-items:baseline;border:0;border-radius:8px;padding:4px 8px;font:600 12px Inter,var(--fnt,system-ui),sans-serif;color:#DDD;background:#1A1A1A;cursor:pointer}
+.kpsec button i{font-style:normal;font-weight:800;font-variant-numeric:tabular-nums}
+.kpsec button.g{background:rgba(61,220,132,.12)}.kpsec button.g i{color:#3DDC84}.kpsec button.r{background:rgba(255,90,78,.12)}.kpsec button.r i{color:#FF5A4E}
+.kpal{display:flex;align-items:center;gap:10px;margin-top:10px;padding:9px 12px;border-radius:14px;border:1px solid rgba(255,122,26,.45);background:rgba(255,106,0,.07);font-size:13px;color:#EEE;cursor:pointer;line-height:1.35}
+.kpal .ic{flex:none;font-size:16px}.kpal small{display:block;color:#9A9A9A;font-size:11.5px;margin-top:1px}.kpal .tr{margin-left:auto;flex:none;width:44px;height:4px;border-radius:2px;background:#222;overflow:hidden}.kpal .tr u{display:block;height:100%;background:#FF7A1A}
+.kpwl{display:grid;grid-template-columns:minmax(58px,1fr) 64px auto 62px;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #1E1E1E;cursor:pointer}.kpwl:last-child{border-bottom:0}
+.kpwl b{font-size:14px}.kpwl .p{text-align:right;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;border-radius:5px;padding:0 3px}
+.kpwl .c{text-align:center;font-size:12px;font-weight:800;border-radius:7px;padding:3px 0;font-variant-numeric:tabular-nums;background:#1A1A1A;color:#AAA}.kpwl .c.up{background:rgba(61,220,132,.12)}.kpwl .c.dn{background:rgba(255,90,78,.12)}
+.kpwl svg{display:block}.kpwm{display:block;text-align:center;font-size:12.5px;color:#FF8A2A;font-weight:600;padding:8px 0 6px;cursor:pointer}
+.kpnx .ab{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:5px;font-size:12px;color:#B5B5B5}.kpnx .ab b{font-size:12px;font-weight:700}.kpnx .ab2{margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,122,26,.25);font-size:12px;color:#B5B5B5}
+</style>
+<script>
+/* v15.12 KOKPİT EKLERİ — (1) yön puanının gün içi seyri BIST 100 çizgisinin üstünde kesik turuncu çizgi (LS 'kokyh', seansta 5 dk'da bir örnek),
+   (2) Öne çıkanlar kartının başında sektör şeridi (en güçlü 3 + en zayıf 2; sektör cümlesinin yerine), (3) 09:00–10:00 açılış beklentisi (VİOP / S&P 500 vadeli / Dolar/TL; sıradaki veri kartının yerine, veri içinde),
+   (4) İzleme listem canlı satırlar (fiyat, gün içi çizgi, %, parlama), (5) yalnız fiyat bir alarma %1'den yakınsa ince satır. Yalnız görünüm, sinyal değil. */
+var KYH=null;
+function kokYhGet(){if(!KYH){KYH=LS.get('kokyh',null);if(!KYH||!Array.isArray(KYH.p))KYH={d:'',p:[]}}return KYH}
+function kokYhAdd(sc){const s=nowSess();if(!s.open||sc==null||!isFinite(sc))return;const d=todayStr(),h=kokYhGet();if(h.d!==d){h.d=d;h.p=[]}
+ const l=h.p[h.p.length-1];if(l&&s.m-l[0]<5){if(s.m-l[0]<1)return;l[1]=sc}else h.p.push([s.m,sc]);
+ try{LS.set('kokyh',h)}catch(e){}}
+function kokYhPts(){const h=kokYhGet();return h.p&&h.p.length>=2?h.p:null}
+function kokYhSvg(W,H,N){const p=kokYhPts();if(!p)return '';const X=m=>(Math.max(0,Math.min(1,(m-600)/5/(N-1)))*W).toFixed(1),Y=v=>(H/2-Math.max(-100,Math.min(100,v))/100*(H/2-4)).toFixed(1);
+ return '<polyline fill="none" style="stroke:#FF8A2A" stroke-width="1.5" stroke-dasharray="3 3" opacity=".85" vector-effect="non-scaling-stroke" stroke-linejoin="round" points="'+p.map(z=>X(z[0])+','+Y(z[1])).join(' ')+'"/>'}
+function kokYhLeg(){const p=kokYhPts();if(!p)return '';const f=v=>(v>0?'+':v<0?'−':'')+Math.abs(v),a=p[0],z=p[p.length-1],hm=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+ return '<div class="kpspl"><span><i></i>BIST 100</span><span><i class="y"></i>Yön puanı: '+hm(a[0])+' <b>'+f(a[1])+'</b> → '+(nowSess().open?'şimdi':hm(z[0]))+' <b>'+f(z[1])+'</b></span></div>'}
+(function(){const _p=kokPatch;kokPatch=function(){const o=_p.apply(this,arguments);try{if(o&&o.Y)kokYhAdd(o.Y.sc)}catch(e){}return o}})();
+function kokSecRow(){const L=brfSec();if(L.length<5)return '';const T=L.slice(0,3),B=L.slice(-2).filter(x=>!T.includes(x));
+ const b=x=>'<button class="'+(x.v>0.05?'g':x.v<-0.05?'r':'')+'" onclick="showTab(\'heat\')">'+htmlEsc(x.ad)+'<i>'+pct(x.v)+'</i></button>';
+ return '<div class="kpsec" aria-label="Sektörler: en güçlü ve en zayıf">'+T.map(b).join('')+B.map(b).join('')+'</div>'}
+function kokAcilis(VI){const s=nowSess();if(!s.wk||s.m<540||s.m>=600)return '';const mk=S.mkt||{},sp=mk['S&P VADELİ']||{},us=mk.USD||{},P=[],ab=[];
+ const fresh=VI&&!VI.old&&VI.ch!=null&&isFinite(VI.ch);
+ if(fresh){P.push([.6,VI.ch]);ab.push('VİOP <b class="'+cls(VI.ch)+'">'+pct(VI.ch)+'</b>'+(VI.pr!=null?' · prim '+pct(VI.pr):''))}else ab.push('VİOP 09:45\'te açılır');
+ if(sp.ch!=null&&isFinite(sp.ch)){P.push([.3,sp.ch]);ab.push('S&P 500 vadeli <b class="'+cls(sp.ch)+'">'+pct(sp.ch)+'</b>')}
+ if(us.ch!=null&&isFinite(us.ch)){P.push([.1,-us.ch*2]);ab.push('Dolar/TL <b>'+pct(us.ch)+'</b>')}
+ if(!P.length)return '';const w=P.reduce((a,x)=>a+x[0],0),v=P.reduce((a,x)=>a+x[0]*x[1],0)/w,yon=v>0.3?'yukarı':v<-0.3?'aşağı':'yatay',ic=v>0.3?'↗':v<-0.3?'↘':'→';
+ const e=brfNext(6);let nx='';if(e){const k=Math.max(0,Math.round((e.t-Date.now())/60e3));nx='<div class="ab2">⏰ Sıradaki veri '+ecHm(e.t)+' · <b style="color:#fff">'+htmlEsc(ecTitle(e))+'</b> · '+(k>=60?Math.floor(k/60)+' sa ':'')+(k%60)+' dk sonra'+(e.f!=null?' · beklenti '+htmlEsc(String(e.f))+(e.u||''):'')+'</div>'}
+ return '<div class="kpnx" style="align-items:flex-start"><div class="ic">'+ic+'</div><div style="min-width:0;flex:1"><b>Açılış beklentisi: '+yon+(fresh?'':' (VİOP olmadan)')+'</b><div class="ab">'+ab.map(t=>'<span>'+t+'</span>').join('')+'</div>'+nx+'</div></div>'}
+function kokAlarm(){const L=[];(S.alarms||[]).forEach(a=>{if(a.hit)return;const q=S.quotes[a.s]||S.umap[a.s];if(!q||!(q.close>0)||!(a.l>0))return;const d=Math.abs(a.l-q.close)/q.close*100;if(d<=1)L.push({a,q,d})});
+ return L.sort((x,y)=>x.d-y.d).slice(0,2).map(({a,q,d})=>'<div class="kpal" onclick="showTab(\'alarm\')"><span class="ic">🔔</span><div><b>'+htmlEsc(a.s)+'</b> alarmına <b style="color:#FF8A2A">%'+nf(d,1)+'</b> kaldı<small>Alarm '+nf(a.l)+' '+(a.dir==='up'?'↑':'↓')+' · şimdi '+nf(q.close)+'</small></div><span class="tr"><u style="width:'+Math.round((1-d)*100)+'%"></u></span></div>').join('')}
+function kokWatch(){const WL=W();if(!WL.length)return '';const N=6;
+ const R=WL.slice(0,N).map((z,i)=>{const q=S.quotes[z]||S.umap[z]||{};let sp='';try{sp=(sparkFor(z,64,22)||'').replace(/(id="|url\(#)g[a-z0-9]{1,6}/g,'$1kw'+i).replace(/#00d3a0/g,'#3DDC84').replace(/#ff5566/g,'#FF5A4E')}catch(e){}
+  return '<div class="kpwl" onclick="xrayOpen(\''+htmlEsc(z)+'\')"><b>'+htmlEsc(z)+'</b><span>'+sp+'</span><span class="p'+(q.close?pxFl('kw'+z,q.close):'')+'">'+(q.close?nf(q.close):'–')+'</span><span class="c '+cls(q.change)+'">'+(q.change!=null?pct(q.change):'–')+'</span></div>'}).join('');
+ return '<div class="brfk"><span>İzleme listem</span><a onclick="showTab(\'watch\')">Düzenle ›</a></div><div class="kpcard" style="padding:2px 14px">'+R+(WL.length>N?'<a class="kpwm" onclick="showTab(\'watch\')">+'+(WL.length-N)+' hisse daha</a>':'')+'</div>'}
+</script>
 </body>
 </html>
