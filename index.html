@@ -3734,7 +3734,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="15.10";window.APPV=APP_VER;
+  const APP_VER="15.11";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -7937,7 +7937,7 @@ function kokClock(){const d=new Date(Date.now()+3*3600e3),G=['Pazar','Pazartesi'
  return t}
 function kokSess(){const s=nowSess(),m=s.m,f=Math.max(0,Math.min(1,(m-600)/480));let r;
  if(s.open){const k=1080-m;r='Kapanışa '+(k>=60?Math.floor(k/60)+' sa ':'')+(k%60)+' dk'}else{const ms=mktSt();r=ms.k==='kap'?'Kapanış seansı':s.wk&&m>=1080?'Bugünkü seans bitti':'Önceki seans'}   // v15.10: açılışa kalan süre yalnız başlıktaki rozette (tekrar yok)
- return {f:s.open?f:(s.wk&&m>=1080?1:0),r}}
+ return {f:s.open?f:1,r}}   // seans dışında çizgi önceki/bugünkü tam seansı gösterir → çubuk dolu
 function kokGauge(){const R=46,P=a=>[R*Math.sin(a*Math.PI/180),-R*Math.cos(a*Math.PI/180)],S5=[[-90,-54,'#FF5A4E'],[-54,-18,'#FF8A6A'],[-18,18,'#FF7A1A'],[18,54,'#8EDB9E'],[54,90,'#3DDC84']];
  let h='';S5.forEach((z,i)=>{const [x1,y1]=P(z[0]+2),[x2,y2]=P(z[1]-2);h+='<path class="seg" data-i="'+i+'" d="M'+x1.toFixed(1)+','+y1.toFixed(1)+' A'+R+','+R+' 0 0,1 '+x2.toFixed(1)+','+y2.toFixed(1)+'" fill="none" style="stroke:'+z[2]+'" stroke-width="7" stroke-linecap="round" opacity=".3"/>'});
  for(let a=-90;a<=90;a+=15){const s=Math.sin(a*Math.PI/180),c=Math.cos(a*Math.PI/180),r1=R-7,r2=a%45?R-10:R-12;h+='<line x1="'+(r1*s).toFixed(1)+'" y1="'+(-r1*c).toFixed(1)+'" x2="'+(r2*s).toFixed(1)+'" y2="'+(-r2*c).toFixed(1)+'" style="stroke:#555" stroke-width="1"/>'}
