@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <script>/* v11.7: yalnız Telegram mini uygulaması olarak açılınca */if(/tgWebAppData=/.test(location.hash))document.write('<script src="https://telegram.org/js/telegram-web-app.js"><\/script>')</script>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,600&display=swap" rel="stylesheet">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
@@ -3734,7 +3734,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="15.17";window.APPV=APP_VER;
+  const APP_VER="15.18";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -8281,6 +8281,11 @@ function kokNw(){const e=document.getElementById('kpnw');if(!e)return;const L=ko
 #haberbody em.hbp{font-style:normal;font-size:12px;font-weight:700;margin:0 4px 0 3px;font-variant-numeric:tabular-nums;color:var(--dim)}#haberbody em.hbp:empty{display:none}
 #haberbody em.hbp.u{color:var(--up,#3DDC84)}#haberbody em.hbp.d{color:var(--dn,#FF5A4E)}#haberbody em.hbp small{font-size:11px;font-weight:600;color:var(--dim);margin-left:4px}
 #haberbody em.hbp small.u{color:var(--up,#3DDC84)}#haberbody em.hbp small.d{color:var(--dn,#FF5A4E)}
+
+/* ===== v15.18 YAZI: Inter (15.11, Fatih: 'yazı stili üst versiyon' → öneri A) — yalnız cam/Matrix temada; klasik aynı. Rakamlar eşit genişlikte (tnum). */
+html.cam,html.cam.mx{--fnt:'Inter',-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Roboto,Arial,sans-serif;--fntc:'Inter',-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',Roboto,Arial,sans-serif;--sans:var(--fnt)}
+html.cam body{font-feature-settings:"tnum" 1,"cv05" 1;-webkit-font-smoothing:antialiased}
+html.cam button,html.cam input,html.cam select,html.cam textarea{font-family:var(--fnt)}
 </style>
 <script>
 /* v15.17 (13.11, Fatih: 'yapılacak her şeyi yap') — (1) Öne çıkanlar maddelerinde hisse fiyatı + günlük %, değişince parlar (kokLp/pxFl).
