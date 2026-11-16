@@ -1,0 +1,133 @@
+//@version=6
+// Pusula Footprint — her mumda gerçekleşen alıcılı / satıcılı işlem (TradingView footprint verisi, Premium gerekir).
+// Gösterir: dengesizlik kutuları (bir fiyat adımında alıcı satıcının ≥3 katı ya da tersi), art arda dengesizlik bölgeleri,
+// mumun yoğun noktası (en çok işlem gören fiyat), mum altında fark (alıcılı − satıcılı), gizli alıcı / zayıf yükseliş işaretleri,
+// tablo: son 5 mum + gün içi birikimli fark. Yalnız bilgi; Pusula sinyallerine karışmaz.
+indicator("Pusula Footprint", overlay = true, max_boxes_count = 500, max_labels_count = 500)
+
+grpA = "Footprint"
+tpr     = input.int(1, "Satır başına fiyat adımı", minval = 1, group = grpA, tooltip = "1 = her fiyat adımı ayrı satır. Pahalı hissede kalabalıksa 2-5 yap.")
+imbP    = input.int(300, "Dengesizlik eşiği (%)", minval = 110, group = grpA, tooltip = "300 = bir tarafın hacmi diğerinin 3 katı.")
+nBar    = input.int(40, "Kaç mumda çizilsin", minval = 5, maxval = 150, group = grpA)
+showImb = input.bool(true, "Dengesizlik kutuları", group = grpA)
+showStk = input.bool(true, "Art arda dengesizlik bölgesi", group = grpA)
+stkN    = input.int(3, "Bölge için art arda satır", minval = 2, group = grpA)
+stkLen  = input.int(20, "Bölge kaç mum uzasın", minval = 3, group = grpA)
+showDl  = input.bool(true, "Mum altında fark", group = grpA)
+showPoc = input.bool(true, "Mumun yoğun noktası", group = grpA)
+grpS = "İşaretler"
+showDiv = input.bool(true, "Gizli alıcı / zayıf yükseliş", group = grpS)
+divP    = input.float(20, "Ters fark eşiği (toplam hacmin %)", minval = 5, group = grpS)
+showTbl = input.bool(true, "Tablo", group = "Tablo")
+
+footprint fp = request.footprint(tpr, 70, imbP)
+
+bool  has  = not na(fp)
+float bV   = has ? fp.buy_volume() : na
+float sV   = has ? fp.sell_volume() : na
+float dl   = has ? fp.delta() : na
+float tot  = nz(bV) + nz(sV)
+float bP   = tot > 0 ? bV / tot * 100 : na
+
+float pocM = na
+if has
+    volume_row pr = fp.poc()
+    if not na(pr)
+        pocM := (pr.up_price() + pr.down_price()) / 2
+plot(showPoc ? pocM : na, "Yoğun nokta", color = color.new(#FF7A1A, 0), style = plot.style_circles, linewidth = 2)
+
+// gün içi birikimli fark
+var float cd = 0.0
+if timeframe.change("D")
+    cd := 0.0
+cd += nz(dl)
+
+var int nOk = 0
+if has and tot > 0
+    nOk += 1
+
+fmtV(float v) =>
+    float a = math.abs(v)
+    string s = a >= 1e6 ? str.tostring(a / 1e6, "#.#") + "Mn" : a >= 1e3 ? str.tostring(a / 1e3, "#.#") + "bin" : str.tostring(a, "#")
+    (v >= 0 ? "+" : "-") + s
+
+bool inWin = last_bar_index - bar_index < nBar and barstate.isconfirmed
+
+drawZone(float top, float bot, bool buy) =>
+    color c = buy ? color.lime : color.red
+    box.new(bar_index, top, bar_index + stkLen, bot, bgcolor = color.new(c, 85), border_color = color.new(c, 40), border_style = line.style_dashed)
+
+if has and inWin and (showImb or showStk)
+    array<volume_row> rs = fp.rows()
+    int sz = rs.size()
+    if sz > 0
+        int   bRun = 0
+        float bTop = na
+        float bBot = na
+        int   sRun = 0
+        float sTop = na
+        float sBot = na
+        for i = 0 to sz - 1
+            volume_row r = rs.get(i)
+            float up = r.up_price()
+            float dn = r.down_price()
+            bool bi = r.has_buy_imbalance()
+            bool si = r.has_sell_imbalance()
+            if showImb and (bi or si)
+                color c = bi ? color.lime : color.red
+                box.new(time, up, time_close, dn, xloc = xloc.bar_time, bgcolor = color.new(c, 65), border_color = color.new(c, 15))
+            if bi
+                bRun += 1
+                bTop := na(bTop) ? up : math.max(bTop, up)
+                bBot := na(bBot) ? dn : math.min(bBot, dn)
+            else
+                if showStk and bRun >= stkN
+                    drawZone(bTop, bBot, true)
+                bRun := 0
+                bTop := na
+                bBot := na
+            if si
+                sRun += 1
+                sTop := na(sTop) ? up : math.max(sTop, up)
+                sBot := na(sBot) ? dn : math.min(sBot, dn)
+            else
+                if showStk and sRun >= stkN
+                    drawZone(sTop, sBot, false)
+                sRun := 0
+                sTop := na
+                sBot := na
+        if showStk and bRun >= stkN
+            drawZone(bTop, bBot, true)
+        if showStk and sRun >= stkN
+            drawZone(sTop, sBot, false)
+
+if has and inWin and showDl and tot > 0
+    label.new(bar_index, low, fmtV(dl), yloc = yloc.belowbar, style = label.style_none, textcolor = dl >= 0 ? color.lime : color.red, size = size.tiny)
+
+// fiyat düşerken alıcılı ağır basıyorsa gizli alıcı; fiyat çıkarken satıcılı ağır basıyorsa zayıf yükseliş
+bool gizli = has and tot > 0 and close < open and dl > 0 and dl / tot * 100 >= divP
+bool zayif = has and tot > 0 and close > open and dl < 0 and -dl / tot * 100 >= divP
+plotshape(showDiv and gizli, "Gizli alıcı", shape.triangleup, location.belowbar, color.lime, size = size.tiny)
+plotshape(showDiv and zayif, "Zayıf yükseliş", shape.triangledown, location.abovebar, color.orange, size = size.tiny)
+alertcondition(gizli, "Gizli alıcı", "Pusula Footprint: fiyat düşerken alıcılı işlem ağır bastı")
+alertcondition(zayif, "Zayıf yükseliş", "Pusula Footprint: fiyat çıkarken satıcılı işlem ağır bastı")
+
+var table t = table.new(position.top_right, 3, 8, bgcolor = color.new(color.black, 15), border_width = 1)
+if showTbl and barstate.islast
+    if nOk == 0
+        table.cell(t, 0, 0, "Footprint verisi yok", text_color = color.orange)
+        table.cell(t, 0, 1, "Premium ve gün içi zaman dilimi gerekir", text_color = color.silver, text_size = size.small)
+    else
+        table.cell(t, 0, 0, "Saat", text_color = color.white)
+        table.cell(t, 1, 0, "Alıcı %", text_color = color.white)
+        table.cell(t, 2, 0, "Fark", text_color = color.white)
+        for i = 0 to 4
+            string hm = (i == 0 ? "şimdi " : "") + str.format_time(time[i], "HH:mm", "Europe/Istanbul")
+            float p = bP[i]
+            float d = dl[i]
+            table.cell(t, 0, i + 1, hm, text_color = color.silver)
+            table.cell(t, 1, i + 1, na(p) ? "-" : str.tostring(p, "#") + "%", text_color = na(p) ? color.gray : p >= 50 ? color.lime : color.orange)
+            table.cell(t, 2, i + 1, na(d) ? "-" : fmtV(d), text_color = na(d) ? color.gray : d >= 0 ? color.lime : color.red)
+        table.cell(t, 0, 6, "Gün içi toplam fark", text_color = color.white)
+        table.cell(t, 2, 6, fmtV(cd), text_color = cd >= 0 ? color.lime : color.red)
+        table.cell(t, 0, 7, cd >= 0 ? "Gün boyu alıcılar baskın" : "Gün boyu satıcılar baskın", text_color = color.silver, text_size = size.small)
