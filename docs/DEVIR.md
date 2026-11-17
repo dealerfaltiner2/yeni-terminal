@@ -451,3 +451,11 @@ v12.8 veri paketi: 10.000 mum canlıda denenmedi; sorun olursa 5.000 öner.
 - A (önerildi): arkadaş cihazları oturumsuz (eski üye yolu, 15 dk gecikmeli fiyat); sinyaller sunucudan canlı ve aynı kalır.
 - B (araştırıldı): Ana sunucu (motor, 200 hisse canlı) saniyede bir değişen fiyatları Cloudflare Durable Object 'yayın odası'na yollar, arkadaşlar odaya bağlanır (TradingView'a hiç bağlanmaz). Ücretsiz plan: DO 100k istek/gün, 13k GB-s/gün; gelen WS mesajı 20:1 sayılır → ~1.440 istek/gün, giden mesaj ücretsiz. Grafik geçmişi /bars, son mum odadan; motor yoksa gecikmeli yedek. Not: B tespit riskini azaltır, veri paylaşımını değil.
 - Fatih: 'şimdilik böyle kalsın' — hiçbiri yapılmadı. Aynı gün dev tablosundan 11 ölü kayıt silindi (CLAUDE.md notu).
+
+## 7c. 17–18.11 gece: 'Instagram stratejileri' testleri (Fatih TradingView'da çalıştırdı; Claude Pine strateji kodu verdi)
+- VWAP + EMA 9 kesişimi (algo.jan '%85 prop firm' videosu): SSAAT 5 dk 118 işlem %20 isabet, kâr faktörü 0,56, −%16. Filtreli sürüm (kesişme sayacı, VWAP eğimi, 1 sa EMA50, hacim, saat, ATR stop + 2R + EMA21 takip): SSAAT +%2 (35), GARAN 5 dk 1,15 (162, işlem başı %0,025 < bir kademe), GARAN 15 dk 0,95 (237). Kenar yok.
+- ORB (10:00–10:30 aralığı, retest, VWAP/genişlik/hacim/trend süzgeci, stop aralık ortası, 2R, başa baş): 15 dk GARAN 1,80 (45, +%12,9) ama THYAO 1,12 · ASELS 0,86 · AKBNK 0,91 → toplam ~başabaş, GARAN şans.
+- RSI(2) Connors (günlük, 200 gün ort. üstü + RSI2<10, 5 gün ort. üstü çıkış): TradingView'da FROTO 2016+ 80 işlem PF 1,51 ama al-tut %2263'e karşı %100 (zamanın %11'i içeride).
+  D1 gunluk ile BIST 30 2017–2026 (Cutler RSI2, −0,1 maliyet, ~13.000 işlem): işlem başı +0,30; AYNI hisselerde 200 gün ort. üstünde rastgele al 3 gün tut +0,32 (yıllara göre: 2018 +0,21/−0,35, 2021 +0,04/+0,40, 2024 +0,38/+0,38…). RSI2 dip alımı kenar EKLEMİYOR; kazanç TL yükseliş eğiliminden.
+  DİKKAT: bu tek sorgu (json_each, 30 hisse) D1'de 3,6M satır okudu — günlük sınırın %70'i. gunluk tablosunda json_each ile çoklu hisse taraması YAPMA; tek hisse ya da küçük parça.
+- Fatih yine de canlı denemek istedi → v15.19 RSI2 Dönüş (deneme), Telegram'a gider. 2–4 hafta sonra karnede src 'rsi2' (rc) ile bak.
