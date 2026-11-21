@@ -91,7 +91,7 @@ async function page(b, opt) {
       { const sd = await T(async () => { const W = ms => new Promise(r => setTimeout(r, ms)); const r = {};
           const lb = [...document.querySelectorAll('#tabs button')].filter(b => getComputedStyle(b).display !== 'none').map(b => b.querySelector('.lbl').textContent);
           r.bes = lb.join('|') === 'Ana Sayfa|Sinyaller|Piyasa|Haberler|Menü';
-          r.menu = [...document.querySelectorAll('#more .mgrid [data-t]')].map(b => b.dataset.t).join() === 'watch,chart,alarm,jr,arge,set';
+          r.menu = [...document.querySelectorAll('#more .mgrid [data-t]')].map(b => b.dataset.t).join() === 'duyuru,watch,chart,alarm,jr,arge,set';
           for (const t of ['lab', 'gece', 'live', 'crypto']) { showTab(t); if (S.tab !== 'now') r['kalkti_' + t] = false; }
           document.querySelector('#tabs [data-g="sinyal"]').click(); await W(200);
           r.sinyal = S.tab === 'algi' && document.querySelector('#tabs [data-g="sinyal"]').classList.contains('on') && /Sinyaller/.test(document.querySelector('#t-algi .sechd h1').textContent);
@@ -365,6 +365,18 @@ async function page(b, opt) {
       ok('Kokpit dokun-aç (v15.13): kayan haberler, Dolar kutusu canlı detay penceresi, geri kapatır, göstergeye dokununca yön puanı', Object.values(k13).every(Boolean), JSON.stringify(k13));
       const tk = await p.evaluate(() => { showTab('kesif'); const vis = getComputedStyle(document.getElementById('tick')).display !== 'none'; document.getElementById('tick').click(); const b = document.querySelector('#tksheet .tkl'); const r = { vis, sheet: !!b && /Dolar\/TL/.test(b.textContent) && /S&P 500 vadeli/.test(b.textContent) }; psClose('tksheet'); return r; });
       ok('Üst şerit başka sekmelerde görünüyor, dokununca etiketli tüm piyasa listesi açılıyor', tk.vis && tk.sheet, JSON.stringify(tk));
+      { const dy = await p.evaluate(async () => { const W = ms => new Promise(r => setTimeout(r, ms)); const r = {};   // v15.20 Duyurular
+          LS.set('duySeen', 0); DUY.at = 0; DUY.neu = null; duyLoad(true); await W(600); showTab('now'); await W(50); duyBadge();
+          r.dot = document.getElementById('dot-menu').classList.contains('on') && document.getElementById('dot-duy').classList.contains('on');
+          r.home = /Yeni duyuru|yeni duyuru/.test(duyHome());
+          showTab('duyuru'); await W(300); const el = document.getElementById('duybody');
+          r.cards = el.querySelectorAll('.duyc').length >= 2; r.first = /Derinlik motoru|Deneme/.test(el.querySelector('.duyc.first h3').textContent);
+          r.esc = /Deneme &lt;x&gt; duyurusu/.test(el.innerHTML) && !/<x>/.test(el.innerHTML.replace(/&lt;x&gt;/g, ''));
+          r.tl = !!el.querySelector('.duytl .st.bitti') && !!el.querySelector('.duytl .st.simdi');
+          r.nw = el.querySelectorAll('.duyh .nw').length >= 1; r.head = !!document.querySelector('#t-duyuru .sechd');
+          r.seen = duyUnread().length === 0; showTab('now'); await W(50); r.dotOff = !document.getElementById('dot-menu').classList.contains('on') && duyHome() === '';
+          return r; });
+        ok('Duyurular: menüde nokta + ana sayfa satırı, kartlar, takvim, kaçış, açınca okundu', Object.values(dy).every(Boolean), JSON.stringify(dy)); }
       const lb = await p.evaluate(async () => { const tile = !!document.querySelector('#more [data-t="arge"]'); showTab('arge'); await new Promise(r => setTimeout(r, 900)); const el = document.getElementById('argebody');
         const m = { tile, ring: !!el.querySelector('svg.labring'), rows: el.querySelectorAll('.labmx tr').length, az: el.querySelectorAll('.labmx td.lz').length, esc: !/<x>/.test(el.innerHTML.replace(/&lt;x&gt;/g, '')) && /Fırsat B &lt;x&gt;/.test(el.innerHTML), okuma: el.querySelectorAll('.labpt').length, red: !!el.querySelector('.labmx td[style*="240,122,106"]'), head: !!document.querySelector('#t-arge .sechd') };
         ARG.view = 'rapor'; renderArge(); m.rapor = /başabaş altında/.test(el.textContent) && el.querySelectorAll('.labbt button').length === 3 && el.querySelectorAll('.labas span.ok').length === 1 && el.querySelectorAll('.labdf').length === 1;

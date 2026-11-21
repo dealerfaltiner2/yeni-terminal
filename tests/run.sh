@@ -37,6 +37,7 @@ echo "== Günlük arşiv"; node gunluk.mjs || fail=1
 echo "== RSI2 Dönüş (deneme)"; node rsi2.mjs || fail=1
 echo "== Araştırma laboratuvarı"; node lab.mjs || fail=1
 echo "== Mikro motor (derinlik)"; node mikro.mjs || fail=1
+echo "== Duyurular"; node duyuru.mjs || fail=1
 echo "== Arayüz"; timeout 300 node ui.js || fail=1
 echo "== Sunucu (yerel)"; timeout 300 bash worker.sh > out_worker.txt 2>/dev/null; wr=$?; grep -v agent-proxy out_worker.txt; rm -f out_worker.txt; [ $wr = 0 ] || fail=1
 echo; [ $fail = 0 ] && echo "SONUÇ: HEPSİ GEÇTİ" || echo "SONUÇ: HATA VAR"

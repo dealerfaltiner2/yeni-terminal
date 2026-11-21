@@ -1,4 +1,5 @@
 import { yildizRoute } from './yildiz.js';
+import { duyuruRoute } from './duyuru.js';
 import { tgPlain } from './tgfmt.js';
 import { flowRoute } from './flow.js';
 import { kaphStep } from './kaph.js';
@@ -748,7 +749,7 @@ const OWN_ROUTES = new Set(['lab-karar', 'sigexit', 'yildiz-set', 'aisec-set', '
 // Özellik eklendiğinde kayıtlı tüm cihazlar onaylı sayıldı. Ana cihaz kodu (own) gelen cihaz kendiliğinden onaylanır.
 // Eski sürümler veri yollarında cihaz kimliği göndermiyor → DEV_GRACE tarihine kadar kimliksiz isteğe izin (güncelleme süresi).
 const DEV_GRACE = Date.UTC(2026, 9, 6); // 6 Ekim 2026
-const DATA_ROUTES = new Set(['lab', 'yildiz', 'algirows', 'bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key', 'paper', 'sigsym', 'yorum', 'tedbir', 'kesif', 'endeks', 'aiyorum', 'aisec', 'haber', 'gece', 'rsi2']);
+const DATA_ROUTES = new Set(['duyuru', 'lab', 'yildiz', 'algirows', 'bars', 'scan', 'tv-scan', 'news', 'status', 'test', 'sigstats', 'errlog', 'kap', 'midas', 'ecal', 'sigtoday', 'push-key', 'paper', 'sigsym', 'yorum', 'tedbir', 'kesif', 'endeks', 'aiyorum', 'aisec', 'haber', 'gece', 'rsi2']);
 const devCache = new Map();
 let ownerCache = { v: undefined, at: 0 }, devReady = false;
 async function ownerTok(env) {
@@ -1001,6 +1002,7 @@ export default {
       case 'pos': return posRoute(request, env, json);
       case 'paper': case 'paper-set': return paperRoute(route, request, env, json);
       case 'tvalert': return tvAlertHook(request, env, json);   // 09.11 TradingView alarm webhook'u
+      case 'duyuru': return duyuruRoute(env, json);   // v15.20 Duyurular
       case 'yildiz': case 'yildiz-set': return yildizRoute(route, request, env, json);   // v14.39 ⭐ yıldız ayarları
       case 'push-key': case 'push-sub': case 'push-off': case 'push-send': return pushRoute(route, request, env, url, json);
       case 'errlog': if (request.method === 'POST') return errLogRoute(request, env, url, json); break;

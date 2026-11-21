@@ -520,6 +520,7 @@ td.fl-up,td.fl-dn{border-radius:4px}
   <div class="tab" id="t-gece"><div id="gecebody"></div></div>
   <div class="tab" id="t-katman"><div id="ktmbody"></div></div>
   <div class="tab" id="t-arge"><div id="argebody"></div></div>
+  <div class="tab" id="t-duyuru"><div id="duybody"></div></div>
 
   <div class="tab" id="t-haber">
    <div class="bar"><div class="seg" id="haberseg"><button data-f="hepsi">Tümü</button><button data-f="onemli">Çok önemli</button><button data-f="genel">Genel piyasa</button><button data-f="takip">Takibim</button></div><button onclick="habLoad(true)">↻ Yenile</button></div>
@@ -680,10 +681,10 @@ td.fl-up,td.fl-dn{border-radius:4px}
   <button data-g="sinyal"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 3L5 13h6l-1 8 8-10h-6z"/></svg></span><span class="lbl">Sinyaller</span><b class="tbdg" id="bdg-sinyal"></b></button>
   <button data-g="piyasa"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg></span><span class="lbl">Piyasa</span></button>
   <button data-g="haber"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h6"/></svg></span><span class="lbl">Haberler</span><i class="tdot" id="dot-haber"></i></button>
-  <button data-more="1" id="morebtn"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></span><span class="lbl">Menü</span></button>
+  <button data-more="1" id="morebtn"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></span><span class="lbl">Menü</span><i class="tdot" id="dot-menu"></i></button>
 </div>
 </div>
-<div id="more"><div class="bd"></div><div class="sh"><div class="grab"></div><div class="mhead"><b>Menü</b><button class="mclose" aria-label="Kapat">✕</button></div><div class="mver"><span id="mvertxt">Sürüm</span><button onclick="window.appUpdate&&window.appUpdate()">🔄 Güncellemeyi kontrol et</button></div><div class="mgrid"><button data-t="watch" style="--tc:#fbbf24"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 3 14.8 8.8 21 9.6 16.5 14 17.6 20.3 12 17.3 6.4 20.3 7.5 14 3 9.6 9.2 8.8"/></svg><span>İzleme listem</span></button><button data-t="chart" style="--tc:#22d3a6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="7" y1="3" x2="7" y2="21"/><rect x="5" y="7" width="4" height="8" rx="1"/><line x1="17" y1="4" x2="17" y2="20"/><rect x="15" y="9" width="4" height="6" rx="1"/></svg><span>Grafik</span></button><button data-t="alarm" style="--tc:#ff5d6c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.8 2H4.2z"/><path d="M10 21h4"/></svg><span>Alarm</span></button><button data-t="jr" style="--tc:#4ade80"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg><span>İşlemlerim</span></button><button data-t="arge" style="--tc:#E0A458"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/></svg><span>Araştırma</span></button><button data-t="set" style="--tc:#94a3b8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>Ayarlar</span></button></div></div></div>
+<div id="more"><div class="bd"></div><div class="sh"><div class="grab"></div><div class="mhead"><b>Menü</b><button class="mclose" aria-label="Kapat">✕</button></div><div class="mver"><span id="mvertxt">Sürüm</span><button onclick="window.appUpdate&&window.appUpdate()">🔄 Güncellemeyi kontrol et</button></div><div class="mgrid"><button data-t="duyuru" style="--tc:#FF7A1A"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg><span>Duyurular</span><b class="mdot" id="dot-duy"></b></button><button data-t="watch" style="--tc:#fbbf24"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 3 14.8 8.8 21 9.6 16.5 14 17.6 20.3 12 17.3 6.4 20.3 7.5 14 3 9.6 9.2 8.8"/></svg><span>İzleme listem</span></button><button data-t="chart" style="--tc:#22d3a6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="7" y1="3" x2="7" y2="21"/><rect x="5" y="7" width="4" height="8" rx="1"/><line x1="17" y1="4" x2="17" y2="20"/><rect x="15" y="9" width="4" height="6" rx="1"/></svg><span>Grafik</span></button><button data-t="alarm" style="--tc:#ff5d6c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.8 2H4.2z"/><path d="M10 21h4"/></svg><span>Alarm</span></button><button data-t="jr" style="--tc:#4ade80"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg><span>İşlemlerim</span></button><button data-t="arge" style="--tc:#E0A458"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/></svg><span>Araştırma</span></button><button data-t="set" style="--tc:#94a3b8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>Ayarlar</span></button></div></div></div>
 <div id="pal" onclick="if(event.target.id==='pal')closePal()"><div id="palbox"><input id="palin" placeholder="Hisse veya kripto ara" autocomplete="off"><div id="pallist"></div></div></div>
 
 <script>
@@ -1074,7 +1075,7 @@ setInterval(()=>{if(S.autoOn)autoRun(false)},15*60*1000);
 function saveCap(){S.cap=+$('#cap').value||0;S.rskp=+$('#rsk').value||1;LS.set('cap',S.cap);LS.set('rskp',S.rskp);renderRisk();alert('Kaydedildi')}
 async function testSrc(){const m=$('#srcmsg');m.textContent='test...';try{const cs=await getBars('THYAO','15min');m.innerHTML='<b class="up">Çalışıyor</b> — '+cs.length+' mum'}catch(e){m.innerHTML='<b class="dn">Başarısız</b> — '+e.message}}
 function mark(t){if(S.tab===t)draw(t);else S.dirty[t]=1}
-function draw(t){S.dirty[t]=0;const f={op:function(){try{renderOps()}catch(e){$('#oplist').innerHTML='<div class="note"><b class="dn">Ekran hatası:</b> '+String(e.message||e)+'</div>'}},live:renderLive,reg:renderReg,brief:renderBrief,lab:renderLab,watch:renderWatch,cal:calTab,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,kap:function(){loadKap(false)},haber:function(){try{renderHaber()}catch(e){}},kesif:function(){try{renderKesif()}catch(e){}},aisec:function(){try{renderAisec()}catch(e){}},gece:function(){try{renderGece()}catch(e){}},katman:function(){try{renderKatman()}catch(e){}},arge:function(){try{renderArge()}catch(e){}},crypto:renderCrypto,jr:renderJr,perf:renderPerf,risk:renderRisk}[t];if(f)f()}
+function draw(t){S.dirty[t]=0;const f={op:function(){try{renderOps()}catch(e){$('#oplist').innerHTML='<div class="note"><b class="dn">Ekran hatası:</b> '+String(e.message||e)+'</div>'}},live:renderLive,reg:renderReg,brief:renderBrief,lab:renderLab,watch:renderWatch,cal:calTab,mov:renderMov,heat:renderHeat,port:renderPort,alarm:renderAlarms,kap:function(){loadKap(false)},haber:function(){try{renderHaber()}catch(e){}},kesif:function(){try{renderKesif()}catch(e){}},aisec:function(){try{renderAisec()}catch(e){}},gece:function(){try{renderGece()}catch(e){}},katman:function(){try{renderKatman()}catch(e){}},arge:function(){try{renderArge()}catch(e){}},duyuru:function(){try{renderDuyuru()}catch(e){}},crypto:renderCrypto,jr:renderJr,perf:renderPerf,risk:renderRisk}[t];if(f)f()}
 const BACKUP_VER=12;
 function backupObj(){
  return {wl:WL,alarms:S.alarms,tx:S.tx,jr:S.jr,tdkey:S.key,src:S.src,cap:S.cap,rskp:S.rskp,
@@ -3734,7 +3735,7 @@ function tvReconnectReport(){
  }catch(e){}
  // ---- surum kontrolu ----
  try{
-  const APP_VER="15.18";window.APPV=APP_VER;
+  const APP_VER="15.20";window.APPV=APP_VER;
   const UPD={last:0,remote:'',err:''};
   const base=()=>location.href.split('#')[0].split('?')[0];
   const bar=document.getElementById('updbar');
@@ -4455,6 +4456,9 @@ const IC={
   ['SEKMELER',['<b>Yükselen / Düşen</b>: günlük değişime göre','<b>Hacim ₺</b>: bugünkü TL hacmine göre','<b>Momentum</b>: son ~50 saniyedeki fiyat değişimi','<b>Tavana / Tabana yakın</b>: sınıra %3\'ten az kalanlar']],
   ['SÜTUNLAR',['<b>VWAP</b>: günün hacim ağırlıklı ortalaması ve fiyatın ona uzaklığı','<b>Hız</b>: saniyede el değiştiren lot','<b>Spread</b>: alış ile satış kademesi arasındaki fark (%)']],
   ['DİKKAT','Bu ekran sinyal vermez, anlık tablodur. Momentum listesinin başındakiler çok hızlı hareket ediyor olabilir; kovalamadan önce Algı\'ya bak.',1]]},
+ duyuru:{ic:'📣',c:'#FF7A1A',t:'Duyurular',s:'Pusula\'da yenilikler ve planlar',sec:[
+  ['NEDİR?','Pusula\'ya eklenen yenilikler, sıradaki işler ve önemli değişiklikler burada duyurulur. Yeni duyuru gelince Menü düğmesinde turuncu nokta ve ana sayfada kısa bir satır görünür.'],
+  ['DİKKAT','Duyurular bilgi amaçlıdır, yatırım tavsiyesi değildir.',1]]},
  arge:{ic:'🧪',c:'#E0A458',t:'Araştırma',s:'Laboratuvar · haftalık rapor',sec:[
   ['NEDİR?','Pusula\'nın kendini geliştirme döngüsü. Her fikir sırayla şu aşamalardan geçer: <b>Fikir</b> → <b>Geçmiş test</b> (eski dönemde bulunur, dokunulmamış son haftalarda doğrulanır) → <b>Sessiz deneme</b> (karneye yazılır, Telegram\'a gitmez) → <b>Haftalık inceleme</b> → <b>Senin onayın</b>.'],
   ['SAĞLAMLIK TABLOSU','Her sinyal kaynağının son 5 haftada ve borsa artı/eksi günlerinde işlem başı ortalama sonucu: +%3 hedef, −%1 stop; ikisi de olmazsa gün sonu. Komisyon ve kayma hariç (gerçekte yaklaşık %0,1–0,2 daha düşük). 10\'dan az sinyal olan kutu <b>az</b> yazar.'],
@@ -4547,8 +4551,8 @@ const IC={
  set:{ic:'⚙️',c:'#94a3b8',t:'Ayarlar',s:'Bağlantı, Telegram, cihazlar',rel:['radar'],sec:[
   ['NELER VAR?',['<b>Veri bağlantısı</b>: sunucu adresi ve bağlantı testi','<b>Telegram</b>: bot ve sohbet ayarı (yalnız ana cihazda)','<b>Ana cihaz · bağlı cihazlar</b>: kimlerin girdiği, yeni cihaz onayı, engelleme','<b>Sunucu</b>: sunucu radarı, alarm ve KAP bildirimleri','<b>Yedek</b>: ayarlarını dosyaya ya da sunucuya kaydet (yalnız ana cihazda)']]]},
 };
-const IC_GRP=[['MENÜ',['watch','chart','alarm','jr','arge','set']]];   // v15.0: diğer bölümler Sinyaller / Piyasa / Haberler sekmelerinin içinde
-const IC_TD={arge:'Sinyaller her havada tutuyor mu?',gece:'Akşam al, sabah sat sepeti',katman:'4 zaman diliminde EMA dizilimi',watch:'Kendi listen ve otomatik liste',aisec:'Sistemin bugün seçtikleri',haber:'TCMB, SPK, KAP, ajans',kesif:'Hazır hisse listeleri',live:'Anlık yükselen/düşen',lab:'Sinyaller tuttu mu?',kap:'Bildirimler ve tepkisi',mov:'Gap, zirve, hacim',alarm:'Fiyat gelince haber ver',brief:'Günün kısa özeti',reg:'Trend mi, yatay mı?',heat:'Sektörler tek bakışta',cal:'Veri ve faiz günleri',crypto:'Büyük kriptolar',jr:'Günlük, portföy, performans, risk',perf:'Kazanç/kayıp istatistiği',risk:'Kaç lot almalıyım?',port:'Pozisyon ve kâr/zarar',set:'Bağlantı, Telegram, cihaz, veri paketi'};
+const IC_GRP=[['MENÜ',['duyuru','watch','chart','alarm','jr','arge','set']]];   // v15.0: diğer bölümler Sinyaller / Piyasa / Haberler sekmelerinin içinde
+const IC_TD={duyuru:'Yenilikler ve planlar',arge:'Sinyaller her havada tutuyor mu?',gece:'Akşam al, sabah sat sepeti',katman:'4 zaman diliminde EMA dizilimi',watch:'Kendi listen ve otomatik liste',aisec:'Sistemin bugün seçtikleri',haber:'TCMB, SPK, KAP, ajans',kesif:'Hazır hisse listeleri',live:'Anlık yükselen/düşen',lab:'Sinyaller tuttu mu?',kap:'Bildirimler ve tepkisi',mov:'Gap, zirve, hacim',alarm:'Fiyat gelince haber ver',brief:'Günün kısa özeti',reg:'Trend mi, yatay mı?',heat:'Sektörler tek bakışta',cal:'Veri ve faiz günleri',crypto:'Büyük kriptolar',jr:'Günlük, portföy, performans, risk',perf:'Kazanç/kayıp istatistiği',risk:'Kaç lot almalıyım?',port:'Pozisyon ve kâr/zarar',set:'Bağlantı, Telegram, cihaz, veri paketi'};
 window.KSTAT=null; // 2. aşama: sunucu karnesi (kaynak → {h,s})
 function icKarne(c){
  try{if(!c.k||!window.KSTAT||!KSTAT.src)return '';
@@ -8005,6 +8009,7 @@ function kokPos(){const op=(S.jr||[]).filter(j=>j.r==null);if(!op.length)return 
   return '<div class="kppz" onclick="xrayOpen(\''+htmlEsc(j.s)+'\')"><b>'+htmlEsc(j.s)+' <span style="font-size:12px;color:'+(al?'#5BD49B':'#F07A6A')+'">'+(al?'AL':'SAT')+'</span></b><b class="n '+cls(chg)+'">'+(chg!=null?pct(chg):'–')+(r!=null?' <span style="color:#9AA6BC;font-weight:600">· '+(r>=0?'+':'')+nf(r,2)+'R</span>':'')+'</b>'+
    '<small>Giriş '+nf(j.e)+' · Stop '+nf(j.l)+' · Hedef '+nf(tp)+(px?' · şimdi '+nf(px):'')+'</small><div class="bar"><u style="left:'+pp.toFixed(1)+'%"></u></div></div>'}).join('')+'</div>'}
 function kokLow(o){const {Y,ch,ok,bk,VI}=o,s=nowSess(),ms=mktSt(),uy=isUye();let h='';
+ try{if(typeof duyHome==='function')h+=duyHome()}catch(x0){}   // v15.20 okunmamış duyuru satırı
  try{const ne=ecNear(45);if(ne.length)h+='<div class="nwarn brfwarn">⚠️ <b>'+ne.map(z=>ecHm(z.t)+' '+htmlEsc(ecTitle(z))).join(', ')+'</b>: veri saatinde fiyatlar sert oynayabilir.</div>'}catch(x1){}
  const AB=kokAcilis(VI);   // v15.12: 09:00–10:00 açılış beklentisi kartı (VİOP satırının ve sıradaki veri kartının yerine)
  try{if(!AB&&VI&&!VI.old&&s.wk&&s.m<600)h+='<div class="nwarn info brfwarn">📈 <b>VİOP açıldı:</b> BIST 30 vadeli '+pct(VI.ch)+' → endeks '+(VI.ch>0.3?'yukarı':VI.ch<-0.3?'aşağı':'yatay')+' açılabilir.</div>'}catch(x1){}
@@ -8304,5 +8309,133 @@ function habPx(){if(S.tab!=='haber')return;const els=document.querySelectorAll('
   if(x.innerHTML!==h)x.innerHTML=h;x.className='hbp '+(ch>0?'u':ch<0?'d':'')})}
 setInterval(()=>{try{if(!document.hidden)habPx()}catch(e){}},5000);
 </script>
+<script>
+/* v15.20 (21.11, Fatih: 'BIST Pusula'ya duyurular ekle, orada görünsün, güzel bir şekilde') DUYURULAR — yalnız bilgi, sinyal kuralı DEĞİŞMEDİ.
+   Menü → Duyurular (t-duyuru). Yerleşik duyurular DUY_DEF + sunucudan GET /duyuru (D1 meta 'duyuru'; yayın gerekmeden yeni duyuru eklenir, aynı id yerleşiği ezer, gizle:true saklar).
+   Okunmamış (t > LS 'duySeen'): Menü düğmesinde turuncu nokta (#dot-menu), menü kutusunda nokta (#dot-duy), ana sayfada tek satır (duyHome). Sayfa açılınca okundu sayılır. */
+const DUY_DEF=[
+ {id:'mikro-1',t:Date.UTC(2026,10,21,3,30),tag:'Yakında',ic:'📊',baslik:'Derinlik motoru geliyor: emir defterini okuyan yeni sinyal',
+  ozet:'Pusula\'ya 10 kademe derinliği ve anlık işlem akışını saniye saniye okuyan yeni bir motor ekleniyor. İlk adım tamamlandı; canlı deneme 1 Aralık\'ta başlıyor.',
+  bloklar:[
+   {p:'Bugüne kadar sinyaller fiyat ve hacimden çıkıyordu. Yeni motor bunlara ek olarak **alış ve satış tarafında bekleyen emirlere** (ilk 10 kademe) ve **gerçekleşen her işleme** (alıcı mı vurdu, satıcı mı) bakacak. Amaç, fiyat hareket etmeden hemen önceki dengeyi yakalamak.'},
+   {h:'Neye bakacak?'},
+   {li:['**Hangi taraf ağır?** İlk 3, 5 ve 10 kademede alıcılar mı satıcılar mı daha güçlü.',
+        '**Satış tarafı gerçekten eriyor mu?** Kademedeki lot işlemle mi bitti, yoksa emir mi silindi.',
+        '**Güçlü alım var mı?** Satış kademesine vuran alımların hızı ve büyüklüğü.',
+        '**Sahte duvarlar:** Gelip fiyat yaklaşmadan silinen büyük emirler hesaba katılmaz.',
+        '**Genel yön:** Günün ortalama fiyatı (VWAP) ve 15 dakikalık trend uymuyorsa sinyal verilmez.']},
+   {h:'Sinyal nasıl oluşacak?'},
+   {li:['**1. Aday:** Alış tarafı ağır, satış tarafı ince ve alım başlamış.',
+        '**2. Teyit (1–3 saniye içinde):** Satış kademesi gerçekten işlemle eridi, alım güçlü ve genel yön uygun.',
+        '**3. Kart:** 0–100 güven puanı, giriş fiyatı, iki hedef ve stop (stop en çok %1).']},
+   {h:'Takvim'},
+   {adim:[['bitti','Motorun çekirdeği','Hesaplamalar yazıldı, 46 farklı piyasa senaryosunda denendi.'],
+          ['simdi','1 Aralık · Canlı veri','Derinlik ve işlem akışı bağlanacak; ana sunucunun kaç hisseyi rahat izlediği ölçülecek.'],
+          ['sonra','İlk hafta · Sessiz deneme','Sinyaller yalnız kayda yazılır, Telegram\'a hiçbir şey gitmez. Eşikler gerçek veriyle ayarlanır.'],
+          ['sonra','2–3 hafta sonra · Karar','Sonuçlar iyiyse Algı ve Fırsat kartlarına **"derinlik teyitli"** etiketi gelir, ardından Telegram.']]},
+   {not:'Mevcut sinyaller (Algı, Fırsat, yıldızlı) değişmiyor. Yeni motor kendini kanıtlayana kadar sessiz çalışacak. Bilgi amaçlıdır, yatırım tavsiyesi değildir.'}]}
+];
+const DUY={srv:null,at:0,busy:0,open:{},neu:null};
+function duyLoad(force){if(DUY.busy||(!force&&Date.now()-DUY.at<600e3))return;const b=srvBase(S.tvproxy);if(!/^https:\/\//.test(b))return;
+ DUY.busy=1;DUY.at=Date.now();
+ fetch(dq(b+'/duyuru')).then(r=>r.json()).then(j=>{if(j&&j.ok&&Array.isArray(j.list))DUY.srv=j.list}).catch(()=>{}).finally(()=>{DUY.busy=0;duyBadge();if(S.tab==='duyuru')renderDuyuru()})}
+function duyList(){const m={};for(const d of DUY_DEF)m[d.id]=d;for(const d of (DUY.srv||[]))m[d.id]=d;
+ return Object.values(m).filter(d=>d&&!d.gizle&&d.t<=Date.now()+60e3).sort((a,b)=>b.t-a.t)}
+function duySeen(){return +LS.get('duySeen',0)||0}
+function duyUnread(){const s=duySeen();return duyList().filter(d=>d.t>s)}
+function duyFmt(t){return htmlEsc(t).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')}
+function duyDate(t){try{const d=new Date(t+3*3600e3),A=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+ const g=Math.floor((Date.now()+3*3600e3)/864e5)-Math.floor((t+3*3600e3)/864e5);
+ return g===0?'Bugün':g===1?'Dün':d.getUTCDate()+' '+A[d.getUTCMonth()]+(d.getUTCFullYear()!==new Date().getUTCFullYear()?' '+d.getUTCFullYear():'')}catch(e){return ''}}
+function duyBadge(){try{if(window.BOTMODE)return;const n=S.tab==='duyuru'?0:duyUnread().length;
+ const a=document.getElementById('dot-menu');if(a)a.classList.toggle('on',n>0);const b=document.getElementById('dot-duy');if(b)b.classList.toggle('on',n>0)}catch(e){}}
+function duyHome(){if(window.BOTMODE)return '';const u=duyUnread();if(!u.length)return '';const d=u[0];
+ return '<div class="kpduy" onclick="showTab(\'duyuru\')"><span class="ic">'+htmlEsc(d.ic||'📣')+'</span><span class="tx"><b>'+(u.length>1?u.length+' yeni duyuru':'Yeni duyuru')+'</b><span>'+htmlEsc(d.baslik)+'</span></span><em>›</em></div>'}
+function duyBody(d){let h='';
+ for(const b of (d.bloklar||[])){
+  if(b.p!=null)h+='<p>'+duyFmt(b.p)+'</p>';
+  else if(b.h!=null)h+='<h4>'+htmlEsc(b.h)+'</h4>';
+  else if(b.li)h+='<ul>'+b.li.map(x=>'<li>'+duyFmt(x)+'</li>').join('')+'</ul>';
+  else if(b.adim)h+='<div class="duytl">'+b.adim.map(a=>'<div class="st '+htmlEsc(a[0])+'"><i>'+(a[0]==='bitti'?'✓':'')+'</i><div><b>'+htmlEsc(a[1])+(a[0]==='simdi'?'<em>Sıradaki</em>':a[0]==='bitti'?'<em class="ok">Tamamlandı</em>':'')+'</b><span>'+duyFmt(a[2])+'</span></div></div>').join('')+'</div>';
+  else if(b.not!=null)h+='<div class="duynot">'+duyFmt(b.not)+'</div>'}
+ return h}
+function duyTog(id){DUY.open[id]=!DUY.open[id];renderDuyuru()}
+function renderDuyuru(){const el=document.getElementById('duybody');if(!el)return;duyLoad(false);
+ const L=duyList(),seen=duySeen();
+ if(DUY.neu==null)DUY.neu=L.filter(d=>d.t>seen).map(d=>d.id);   // bu oturumda 'Yeni' rozeti sayfa açıkken kalsın
+ if(L.length&&L[0].t>seen)LS.set('duySeen',L[0].t);
+ if(L.length&&DUY.open[L[0].id]==null)DUY.open[L[0].id]=true;
+ let h='';
+ if(!L.length)h='<div class="duyempty">Şimdilik duyuru yok.</div>';
+ L.forEach((d,i)=>{const o=!!DUY.open[d.id],nw=DUY.neu.includes(d.id);
+  h+='<article class="duyc'+(i===0?' first':'')+(o?' open':'')+'">'
+   +'<div class="duyh" onclick="duyTog(\''+htmlEsc(d.id).replace(/'/g,'')+'\')"><span class="ic">'+htmlEsc(d.ic||'📣')+'</span><div class="dmt">'
+   +'<div class="tg"><span class="tag t-'+htmlEsc((d.tag||'Bilgi').toLowerCase().replace('ı','i').replace('ö','o').replace('ü','u').replace('ğ','g'))+'">'+htmlEsc(d.tag||'Bilgi')+'</span>'+(nw?'<span class="nw">Yeni</span>':'')+'<span class="dt">'+duyDate(d.t)+'</span></div>'
+   +'<h3>'+htmlEsc(d.baslik)+'</h3></div></div>'
+   +(d.ozet?'<p class="oz">'+duyFmt(d.ozet)+'</p>':'')
+   +(d.bloklar&&d.bloklar.length?'<div class="duyb">'+(o?duyBody(d):'')+'</div><button class="duym" onclick="duyTog(\''+htmlEsc(d.id).replace(/'/g,'')+'\')">'+(o?'Kapat':'Devamını oku')+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>':'')
+   +'</article>'});
+ el.innerHTML=h;duyBadge()}
+(function(){if(window.BOTMODE)return;
+ setTimeout(()=>{duyLoad(true);duyBadge()},2500);
+ setInterval(()=>{try{if(!document.hidden){duyLoad(false);duyBadge()}}catch(e){}},20000);
+ const _st=window.showTab;window.showTab=function(t){_st.apply(this,arguments);try{duyBadge()}catch(e){}}})();
+</script>
+<style>
+/* v15.20 DUYURULAR */
+#t-duyuru{background:#000}
+#duybody{padding:4px 14px 28px;font-family:var(--fnt,Inter,-apple-system,system-ui,sans-serif)}
+.duyc{background:#141416;border:1px solid #232327;border-radius:18px;padding:14px 15px 10px;margin:12px 0;position:relative;overflow:hidden}
+.duyc.first{border-color:rgba(255,122,26,.45);background:radial-gradient(120% 90% at 100% 0,rgba(255,122,26,.16),rgba(255,122,26,0) 55%),#141416;box-shadow:0 0 0 1px rgba(255,122,26,.08),0 10px 30px -14px rgba(255,122,26,.45)}
+.duyh{display:flex;gap:12px;align-items:flex-start;cursor:pointer}
+.duyh .ic{flex:none;width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:21px;background:rgba(255,122,26,.12);border:1px solid rgba(255,122,26,.3)}
+.duyh .dmt{min-width:0;flex:1}
+.duyh .tg{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.duyh .tag{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,.07);color:#C9CDD6}
+.duyh .tag.t-yakinda{background:rgba(255,122,26,.15);color:#FFB066}
+.duyh .tag.t-yeni{background:rgba(91,212,155,.14);color:#5BD49B}
+.duyh .tag.t-onemli{background:rgba(240,122,106,.15);color:#F07A6A}
+.duyh .tag.t-guncelleme{background:rgba(120,160,255,.13);color:#A9C1FF}
+.duyh .nw{font-size:10.5px;font-weight:800;color:#000;background:#FF7A1A;padding:2px 8px;border-radius:10px;box-shadow:0 0 12px rgba(255,122,26,.6)}
+.duyh .dt{font-size:12px;color:#8A8F99;margin-left:auto}
+.duyh h3{margin:7px 0 0;font-size:17px;line-height:1.3;font-weight:700;color:#fff;letter-spacing:-.1px}
+.duyc .oz{margin:10px 0 2px;font-size:14px;line-height:1.5;color:#C9CDD6}
+.duyb{font-size:14px;line-height:1.55;color:#D9DCE3}
+.duyb p{margin:12px 0 0}
+.duyb h4{margin:18px 0 6px;font-size:11.5px;letter-spacing:1.2px;text-transform:uppercase;color:#FF7A1A;font-weight:700}
+.duyb ul{margin:0;padding:0;list-style:none}
+.duyb li{position:relative;padding:7px 0 7px 16px;border-top:1px solid #222226}
+.duyb li:first-child{border-top:0}
+.duyb li::before{content:'';position:absolute;left:2px;top:15px;width:6px;height:6px;border-radius:50%;background:#FF7A1A}
+.duyb b{color:#fff}
+.duytl{position:relative;margin:4px 0 2px}
+.duytl .st{display:flex;gap:12px;position:relative;padding:0 0 14px}
+.duytl .st::before{content:'';position:absolute;left:10px;top:24px;bottom:2px;width:2px;background:#2A2A2F}
+.duytl .st:last-child::before{display:none}
+.duytl .st>i{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid #3A3A40;background:#141416;display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:800;color:#000;margin-top:1px;box-sizing:border-box}
+.duytl .st.bitti>i{background:#5BD49B;border-color:#5BD49B}
+.duytl .st.bitti::before{background:#5BD49B}
+.duytl .st.simdi>i{border-color:#FF7A1A;box-shadow:0 0 0 4px rgba(255,122,26,.18);animation:duyp 1.8s ease-in-out infinite}
+.duytl .st.simdi>i::after{content:'';width:8px;height:8px;border-radius:50%;background:#FF7A1A}
+@keyframes duyp{50%{box-shadow:0 0 0 7px rgba(255,122,26,.06)}}
+.duytl .st>div>b{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:14px;color:#fff}
+.duytl .st>div>b em{font-style:normal;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:9px;background:rgba(255,122,26,.15);color:#FFB066}
+.duytl .st>div>b em.ok{background:rgba(91,212,155,.14);color:#5BD49B}
+.duytl .st>div>span{display:block;font-size:13px;color:#A9AEB8;margin-top:2px;line-height:1.45}
+.duynot{margin:16px 0 4px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid #26262B;font-size:12.5px;color:#A9AEB8;line-height:1.5}
+.duym{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;margin-top:10px;padding:9px 0 3px;border:0;border-top:1px solid #232327;background:none;color:#FF7A1A;font:600 13.5px var(--fnt,inherit)}
+.duym svg{width:16px;height:16px;transition:transform .2s}
+.duyc.open .duym svg{transform:rotate(180deg)}
+.duyempty{text-align:center;color:#8A8F99;padding:40px 0;font-size:14px}
+#more .mgrid button[data-t="duyuru"]{position:relative}
+.mdot{position:absolute;top:12px;left:44px;width:10px;height:10px;border-radius:50%;background:#FF7A1A;box-shadow:0 0 0 2px #161618,0 0 10px rgba(255,122,26,.8);display:none}
+.mdot.on{display:block}
+.kpduy{display:flex;align-items:center;gap:11px;margin:10px 0 2px;padding:10px 12px;border-radius:14px;cursor:pointer;background:linear-gradient(90deg,rgba(255,122,26,.16),rgba(255,122,26,.04));border:1px solid rgba(255,122,26,.35)}
+.kpduy .ic{flex:none;width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:17px;background:rgba(255,122,26,.18)}
+.kpduy .tx{min-width:0;flex:1;display:flex;flex-direction:column}
+.kpduy .tx b{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:#FF7A1A}
+.kpduy .tx span{font-size:13.5px;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpduy em{font-style:normal;color:#FF7A1A;font-size:22px;line-height:1}
+</style>
 </body>
 </html>
